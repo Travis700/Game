@@ -193,7 +193,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _look(relative: Vector2) -> void:
-	var sensitivity := mouse_sensitivity * Profile.mouse_sensitivity
+	# The player's setting from the Esc menu (Profile is an autoload, looked up by path so this
+	# script also compiles where autoloads aren't loaded yet).
+	var profile := get_node_or_null("/root/Profile")
+	var sensitivity := mouse_sensitivity * (float(profile.get("mouse_sensitivity")) if profile else 1.0)
 	rotate_y(-relative.x * sensitivity)
 	var pitch := head.rotation.x - relative.y * sensitivity
 	if seated_desk >= 0:
