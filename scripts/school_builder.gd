@@ -22,6 +22,9 @@ const WALL_T := 0.25
 const DOOR_H := 2.4
 const SCHOOL_NAME := "WESTFIELD HIGH SCHOOL"
 
+## The time clock in the guard room. Main connects it to the shift.
+var clock_machine: Interactable
+
 var _mats: Dictionary = {}
 
 
@@ -64,6 +67,9 @@ func _make_materials() -> void:
 	_add_mat("clock_screen", Color(0.02, 0.06, 0.02), 0.3, Color(0.2, 0.9, 0.3), 1.2)
 	_add_mat("vending_glow", Color(0.1, 0.1, 0.12), 0.3, Color(0.7, 0.85, 1.0), 1.0)
 	_add_mat("light_panel", Color(1, 1, 1), 0.5, Color(1.0, 0.95, 0.85), 2.0)
+	_add_mat("light_panel_off", Color(0.55, 0.55, 0.52), 0.5)
+	_add_mat("flood_glow", Color(1, 1, 1), 0.3, Color(1.0, 0.97, 0.9), 4.0)
+	_add_mat("flood_off", Color(0.15, 0.15, 0.16), 0.3)
 	_add_mat("lamp_glow", Color(1, 0.8, 0.5), 0.5, Color(1.0, 0.7, 0.4), 3.0)
 	_add_mat("glass", Color(0.6, 0.75, 0.8), 0.1, Color.BLACK, 0.0, 0.25)
 	_add_mat("fence", Color(0.35, 0.37, 0.38), 0.5, Color.BLACK, 0.0, 0.35)
@@ -181,20 +187,54 @@ func _sign(text: String, pos: Vector3, facing: Vector3, font_size := 56, color :
 	add_child(label)
 
 
-func _light(pos: Vector3, energy := 0.6, light_range := 8.0, flicker := false, panel := true,
-		color := Color(1.0, 0.95, 0.85)) -> void:
+## A light that ShiftLighting switches between its before-shift and night brightness.
+## `night_energy` of 0 means the light is switched off when the shift starts.
+## `day_energy` below 0 means "a well-lit version of the night value".
+func _light(pos: Vector3, night_energy := 0.6, light_range := 8.0, flicker := false, panel := true,
+		color := Color(1.0, 0.95, 0.85), day_energy := -1.0) -> OmniLight3D:
 	var light: OmniLight3D
 	if flicker:
 		light = FlickerLight.new()
 	else:
 		light = OmniLight3D.new()
+	if day_energy < 0.0:
+		day_energy = maxf(night_energy * 3.5, 2.4)
 	light.position = pos
-	light.light_energy = energy
+	light.light_energy = day_energy
 	light.omni_range = light_range
 	light.light_color = color
+	light.set_meta("day_energy", day_energy)
+	light.set_meta("night_energy", night_energy)
+	light.add_to_group(ShiftLighting.SCHOOL_LIGHTS)
 	add_child(light)
 	if panel:
-		_box(Vector3(pos.x, WALL_H - 0.03, pos.z), Vector3(1.2, 0.04, 0.3), "light_panel", false)
+		light.set_meta("panel", _box(Vector3(pos.x, WALL_H - 0.03, pos.z), Vector3(1.2, 0.04, 0.3), "light_panel", false))
+	return light
+
+
+## A floodlight that is on before the shift and cut when the night starts.
+## `rotation_deg` aims it: a spotlight with no rotation points north (-Z).
+func _floodlight(pos: Vector3, rotation_deg: Vector3, energy: float, light_range: float, angle: float) -> void:
+	var housing := _box(pos, Vector3(0.6, 0.35, 0.35), "dark", false)
+	housing.rotation_degrees = rotation_deg
+	var lens := _box_mesh(Vector3(0.5, 0.27, 0.02), "flood_glow")
+	lens.position = Vector3(0, 0, -0.18)
+	housing.add_child(lens)
+	var light := SpotLight3D.new()
+	light.position = pos
+	light.rotation_degrees = rotation_deg
+	light.light_energy = energy
+	light.spot_range = light_range
+	light.spot_angle = angle
+	light.light_color = Color(1.0, 0.97, 0.9)
+	light.set_meta("lens", lens)
+	light.add_to_group(ShiftLighting.FLOODLIGHTS)
+	add_child(light)
+
+
+## Hands out shared materials, e.g. so lighting can dim every ceiling panel at once.
+func get_material(mat_name: String) -> StandardMaterial3D:
+	return _mats[mat_name]
 
 
 # --- Areas -------------------------------------------------------------------
@@ -232,11 +272,27 @@ func _build_fence() -> void:
 	for side: float in [-1.0, 1.0]:
 		_box(Vector3(side * GATE_HALF, 1.35, FENCE_Z), Vector3(0.15, 2.7, 0.15), "metal")
 	_box(Vector3(0, 2.75, FENCE_Z), Vector3(GATE_HALF * 2.0 + 0.3, 0.5, 0.08), "dark")
-	# Street lamps either side of the gate.
+	# Lamps either side of the gate: bright while people arrive, dimmed for the night.
 	for side: float in [-1.0, 1.0]:
-		_box(Vector3(side * 4.0, 2.25, 47.0), Vector3(0.15, 4.5, 0.15), "metal")
-		_box(Vector3(side * 4.0, 4.5, 47.0), Vector3(0.5, 0.15, 0.3), "lamp_glow", false)
-		_light(Vector3(side * 4.0, 4.3, 47.0), 2.0, 14.0, false, false, Color(1.0, 0.72, 0.42))
+		_lamp_post(Vector3(side * 4.0, 0, 47.0), 1.0, 4.0)
+	# Street lights along the road. They belong to the town, so they stay on all night.
+	var street_x := -60.0
+	while street_x <= 60.0:
+		_lamp_post(Vector3(street_x, 0, 60.5), 2.2, 2.2)
+		street_x += 20.0
+	# Floodlights on the front of the building, aimed down at the yard...
+	for flood_x: float in [-32.0, -18.0, -8.0, 8.0, 18.0, 32.0]:
+		_floodlight(Vector3(flood_x, 3.2, 20.45), Vector3(-40, 180, 0), 9.0, 28.0, 55.0)
+	# ...and two on poles in the yard, washing the brick front with light.
+	for side: float in [-1.0, 1.0]:
+		_box(Vector3(side * 22.0, 0.6, 40.0), Vector3(0.15, 1.2, 0.15), "metal")
+		_floodlight(Vector3(side * 22.0, 1.3, 40.0), Vector3(12, side * -10.0, 0), 16.0, 45.0, 38.0)
+
+
+func _lamp_post(base: Vector3, night_energy: float, day_energy: float) -> void:
+	_box(base + Vector3(0, 2.25, 0), Vector3(0.15, 4.5, 0.15), "metal")
+	_box(base + Vector3(0, 4.5, 0), Vector3(0.5, 0.15, 0.3), "lamp_glow", false)
+	_light(base + Vector3(0, 4.3, 0), night_energy, 16.0, false, false, Color(1.0, 0.72, 0.42), day_energy)
 
 
 func _build_walls() -> void:
@@ -300,8 +356,7 @@ func _build_guard_room() -> void:
 		_chair(Vector3(x, 0, 18.0))
 
 	# Clock machine on the east wall.
-	_interactable(Vector3(19.72, 1.4, 13.0), Vector3(0.3, 0.6, 0.5), "metal", "Clock in",
-			"The time clock isn't wired up yet. Clocking in arrives in a later build.")
+	clock_machine = _interactable(Vector3(19.72, 1.4, 13.0), Vector3(0.3, 0.6, 0.5), "metal", "Clock in", "")
 	_box(Vector3(19.56, 1.52, 13.0), Vector3(0.02, 0.15, 0.35), "clock_screen", false)
 
 	# Vending machine on the east wall.
@@ -417,25 +472,30 @@ func _build_signs() -> void:
 
 func _build_lights() -> void:
 	const CEILING := WALL_H - 0.3
-	# Over the front doors.
-	_light(Vector3(0, 3.0, 21.0), 1.2, 8.0, false, false, Color(1.0, 0.85, 0.6))
+	# Over the front doors: welcoming before the shift, off once the building is locked up.
+	_light(Vector3(0, 3.0, 21.0), 0.0, 9.0, false, false, Color(1.0, 0.85, 0.6), 3.0)
 	# Lobby and front office.
-	_light(Vector3(0, CEILING, 15.0), 0.8, 9.0)
-	_light(Vector3(-13.0, CEILING, 15.0), 0.5, 9.0, true)
-	# Guard room is the brightest place in the building.
-	_light(Vector3(9.5, CEILING, 15.0), 1.1, 9.0)
-	_light(Vector3(16.5, CEILING, 15.0), 1.1, 9.0)
-	# Main hallway: a light every 8 m, two of them on their way out.
+	_light(Vector3(0, CEILING, 15.0), 0.5, 9.0)
+	_light(Vector3(-13.0, CEILING, 15.0), 0.4, 9.0, true)
+	# Guard room stays the brightest place in the building.
+	_light(Vector3(9.5, CEILING, 15.0), 1.0, 9.0, false, true, Color(1.0, 0.95, 0.85), 2.8)
+	_light(Vector3(16.5, CEILING, 15.0), 1.0, 9.0, false, true, Color(1.0, 0.95, 0.85), 2.8)
+	# Main hallway: a light every 8 m. At night some go off and two start failing.
+	var hall_off := [-28.0, -12.0, 20.0, 36.0]
+	var hall_flicker := [-20.0, 28.0]
 	var x := -36.0
 	while x <= 36.0:
-		_light(Vector3(x, CEILING, 7.0), 0.55, 8.0, x == -20.0 or x == 28.0)
+		_light(Vector3(x, CEILING, 7.0), 0.0 if x in hall_off else 0.5, 8.0, x in hall_flicker)
 		x += 8.0
 	# Cafeteria, kitchen, closet.
-	for pos: Vector3 in [Vector3(-30, CEILING, -5), Vector3(-15, CEILING, -5), Vector3(-30, CEILING, -20)]:
-		_light(pos, 0.4, 12.0)
-	_light(Vector3(-15, CEILING, -20), 0.4, 12.0, true)
-	_light(Vector3(0, CEILING, -21), 0.45, 9.0)
-	_light(Vector3(0, CEILING, -4), 0.25, 7.0, true)
+	_light(Vector3(-30, CEILING, -5), 0.35, 12.0)
+	_light(Vector3(-15, CEILING, -5), 0.0, 12.0)
+	_light(Vector3(-30, CEILING, -20), 0.0, 12.0)
+	_light(Vector3(-15, CEILING, -20), 0.35, 12.0, true)
+	_light(Vector3(0, CEILING, -21), 0.35, 9.0)
+	_light(Vector3(0, CEILING, -4), 0.2, 7.0, true)
 	# Gym.
-	for pos: Vector3 in [Vector3(15, CEILING, -5), Vector3(30, CEILING, -5), Vector3(15, CEILING, -21), Vector3(30, CEILING, -21)]:
-		_light(pos, 0.5, 13.0)
+	_light(Vector3(15, CEILING, -5), 0.4, 13.0)
+	_light(Vector3(30, CEILING, -5), 0.0, 13.0)
+	_light(Vector3(15, CEILING, -21), 0.0, 13.0)
+	_light(Vector3(30, CEILING, -21), 0.35, 13.0)

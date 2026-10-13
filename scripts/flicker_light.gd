@@ -1,17 +1,23 @@
 class_name FlickerLight
 extends OmniLight3D
-## A ceiling light on its way out: mostly steady, with the occasional stutter.
+## A ceiling light on its way out: steady until the night starts, then it stutters now and then.
+
+var flickering := false
 
 var _base_energy := 1.0
 var _timer := 0.0
 
 
-func _ready() -> void:
+## Starts flickering around the light's current brightness.
+func start_flickering() -> void:
 	_base_energy = light_energy
-	_timer = randf_range(1.0, 5.0)
+	_timer = randf_range(0.5, 3.0)
+	flickering = true
 
 
 func _process(delta: float) -> void:
+	if not flickering:
+		return
 	_timer -= delta
 	if _timer > 0.0:
 		return

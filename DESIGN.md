@@ -13,8 +13,8 @@ A first-person co-op light-horror game for 1–4 players. The players are night 
 
 ## 2. Core loop
 
-1. **Before the shift.** Players spawn at the school's front gate, walk into the building and go to the guard room. They can buy items from the vending machine.
-2. **Clock in.** Each player enters their employee number on the clock machine in the guard room. The night starts once the players have clocked in.
+1. **Before the shift.** Players spawn at the school's front gate, walk into the building and go to the guard room. They can buy items from the vending machine. The school is brightly lit (street lights, floodlights on the building, every light on inside) so arriving feels ordinary and safe.
+2. **Clock in.** Each player enters their employee number on the clock machine in the guard room. The night starts once the players have clocked in: the floodlights cut out one by one, some ceiling lights click off, the rest dim, the fog closes in and the faulty lights start to flicker.
 3. **During the shift (midnight to 6am).** Players watch the cameras from the desks, patrol the school, handle monsters and hazards, and log anomalies on their own clipboards.
 4. **Clock out at 6am.** A player only gets paid if they make it back to the clock machine and clock out.
 5. **End of night.** Scores are tallied, and players spend points on items before the next night.
