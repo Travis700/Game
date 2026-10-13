@@ -19,6 +19,10 @@ const SPECTRAL_LAYER := 1 << 12
 const HIDDEN_FROM_CAMERAS := 1 << 11
 
 var names: Array[String] = []
+## The lowest difficulty each camera's wing is open at.
+var difficulties: Array[int] = []
+## Tonight's difficulty: cameras in closed wings can't be picked on the monitors.
+var difficulty := 1
 ## The guard whose computer this is. Set by Main.
 var viewer: Node3D
 ## Feeds currently on at least one monitor, as feed keys (see `key`). Set by GuardRoom.
@@ -41,6 +45,7 @@ func build(spots: Array[Dictionary]) -> void:
 	for i in spots.size():
 		var spot := spots[i]
 		names.append(spot["name"])
+		difficulties.append(spot.get("difficulty", 1))
 		for spectral: bool in [false, true]:
 			var viewport := SubViewport.new()
 			viewport.name = "Feed%d%s" % [i + 1, "Spectral" if spectral else ""]
@@ -62,6 +67,20 @@ func build(spots: Array[Dictionary]) -> void:
 
 func count() -> int:
 	return names.size()
+
+
+## Can this camera be shown at tonight's difficulty?
+func is_open(camera_index: int) -> bool:
+	return difficulties[camera_index] <= difficulty
+
+
+## The cameras that can be shown tonight, in order.
+func open_cameras() -> Array[int]:
+	var result: Array[int] = []
+	for i in count():
+		if is_open(i):
+			result.append(i)
+	return result
 
 
 static func key(camera_index: int, spectral: bool) -> int:

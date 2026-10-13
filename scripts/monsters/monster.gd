@@ -27,6 +27,8 @@ var state := "":
 var visual_layers := 1
 ## Harmless characters (the real night cleaner, a real student) can't be logged as monsters.
 var harmless := false
+## Some monsters slip away once a guard logs them on the clipboard (e.g. the Other Cleaner).
+var leaves_when_logged := false
 
 var _agent: NavigationAgent3D
 
@@ -131,6 +133,28 @@ func catch_nearby() -> bool:
 ## Roughly where its eyes are, for line-of-sight checks.
 func eye_position() -> Vector3:
 	return global_position + Vector3(0, 1.6, 0)
+
+
+## True if any living guard is shining their flashlight at this monster.
+func is_lit(max_distance := 14.0) -> bool:
+	return director.lit_by_flashlight(global_position + Vector3(0, 0.6, 0), max_distance)
+
+
+## Adds something guards can press E on while looking at this monster (on every computer).
+## It doesn't block anyone. Connect to its `used` signal.
+func add_talk_point(prompt: String, size := Vector3(0.7, 1.9, 0.7)) -> Interactable:
+	var point := Interactable.new()
+	point.prompt = prompt
+	point.collision_layer = Interactable.TALK_LAYER
+	point.collision_mask = 0
+	var shape := BoxShape3D.new()
+	shape.size = size
+	var collider := CollisionShape3D.new()
+	collider.shape = shape
+	point.add_child(collider)
+	point.position = Vector3(0, size.y * 0.5, 0)
+	add_child(point)
+	return point
 
 
 # --- Building blocks -----------------------------------------------------------------

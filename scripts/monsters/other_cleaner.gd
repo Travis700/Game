@@ -16,6 +16,7 @@ var _eyes: Array[MeshInstance3D] = []
 func _init() -> void:
 	display_name = "the other cleaner"
 	harmless = false
+	leaves_when_logged = true
 	state = "walk"
 
 

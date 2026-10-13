@@ -43,12 +43,13 @@ to pick them up. You can carry one thing at a time (shown in the bottom-right co
   seconds. That desk's monitors switch to spectral feeds, which show the Ghost.
 - **Lucky rabbit's foot (60):** carry it to a revive totem. Your roll revives on 5 in 6 instead of 4 in 6.
 
-Upgrades and points last for the whole run, and are lost if the whole team is caught.
+Upgrades and points last for the whole run, and are lost if the whole team is caught (unless the host
+ticked "Keep gear", which keeps upgrades and items).
 
 ## Monsters
 
-Each night brings more monsters (1, 1, 2, 2, 3, 3, 4, 4, 5 over the nine nights), picked from the ones
-that have unlocked. They can't come into the guard room until night 7. Spot one on camera and log it
+Each night brings more monsters (1, 1, 2, 2, 3, 3, 4, 4, 5 over the nine nights, plus one per open wing),
+picked from the ones that have unlocked and whose home is open at tonight's difficulty. They can't come into the guard room until night 7. Spot one on camera and log it
 on your clipboard as "Monster" in that area for points.
 
 | Monster | From night | Where | How it works |
@@ -61,6 +62,9 @@ on your clipboard as "Monster" in that area for points.
 | The Other Cleaner | 5 | Anywhere | A copy of the night cleaner, with no cart and its head at a wrong angle. Gets close, then attacks. Log it and it leaves. |
 | The Student | 5 | Main hallway | A kid who asks you to follow them. Usually a trap, and the fake never shows on the cameras. Sometimes they're real (+25). |
 | The Ghost | 5 | Anywhere | Invisible to your eyes. Drifts through walls toward the living and knocks out cameras it passes. Only spectral monitors show it, and the time clock lists one name too many. |
+| The Substitute | 1 | Classroom wing (difficulty 2+) | Takes the register when you come near: "Guard 2?" Look at it and press E to answer, or get detention. |
+| The Librarian | 2 | Library, West Hall (difficulty 2+) | Hates light and noise. Shine your flashlight on it or run nearby and it shushes you, then hunts you until it's dark and quiet. |
+| The Nurse | 3 | Classroom wing (difficulty 2+) | Follows any guard who's on their own, slowly and steadily, with a heart monitor's beep. Stick together and she leaves you be. |
 
 The real **night cleaner** works every night pushing a mop cart. They're harmless, and logging them is a false report.
 

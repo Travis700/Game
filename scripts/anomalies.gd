@@ -44,6 +44,26 @@ const DEFINITIONS: Array[Dictionary] = [
 	{"area": "Cafeteria", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_cafeteria"},
 	{"area": "Front Gate", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_gate"},
 	{"area": "Gym", "type": "Figure", "night": 3, "kind": "figure", "prop": "figure_bleachers"},
+	# Classroom wing (difficulty 2).
+	{"area": "Room 101", "type": "Extra object", "night": 1, "kind": "show", "prop": "backpack"},
+	{"area": "Room 103", "type": "Moved object", "night": 1, "kind": "move", "prop": "globe",
+		"to": Vector3(-52.0, 0, -4.0), "turn": 0.0},
+	{"area": "Room 103", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_classroom"},
+	{"area": "Library", "type": "Moved object", "night": 1, "kind": "move", "prop": "book_cart",
+		"to": Vector3(-72.0, 0, -2.5), "turn": 60.0},
+	{"area": "Library", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_library"},
+	{"area": "Nurse's Office", "type": "Missing object", "night": 1, "kind": "hide", "prop": "wheelchair"},
+	{"area": "West Hall", "type": "Extra object", "night": 1, "kind": "show", "prop": "wet_floor_sign"},
+	# Science wing (difficulty 3).
+	{"area": "Science Lab", "type": "Missing object", "night": 1, "kind": "hide", "prop": "skeleton"},
+	{"area": "Science Lab", "type": "Moved object", "night": 2, "kind": "move", "prop": "skeleton",
+		"to": Vector3(50.0, 0, -3.0), "turn": 120.0},
+	{"area": "Art Room", "type": "Extra object", "night": 1, "kind": "show", "prop": "clay_bust"},
+	{"area": "Locker Rooms", "type": "Extra object", "night": 1, "kind": "show", "prop": "duffel_bag"},
+	{"area": "Locker Rooms", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_showers"},
+	{"area": "East Hall", "type": "Moved object", "night": 1, "kind": "move", "prop": "hall_bin",
+		"to": Vector3(63.0, 0, 6.8), "turn": 30.0},
+	{"area": "East Hall", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_east_hall"},
 ]
 
 var school: SchoolBuilder
@@ -55,6 +75,8 @@ var players: Node3D
 var records: Dictionary = {}
 ## Props a monster is using tonight (e.g. the Mascot takes the mascot costume). Host only.
 var reserved_props: Array[String] = []
+## Tonight's difficulty: anomalies only happen in open wings.
+var difficulty := 1
 
 var _props: Dictionary = {}
 var _home: Dictionary = {}
@@ -89,17 +111,55 @@ func build(school_builder: SchoolBuilder) -> void:
 		[Vector3(0, 1.1, 0), Vector3(1.1, 0.25, 0.5), "costume"]], false)
 	_prop("kitchen_crate", Vector3(0, 0, -22.0), [[Vector3(0, 0.4, 0), Vector3(0.8, 0.8, 0.8), "wood"]], false)
 	_prop("counter_box", Vector3(-9.0, 1.1, 18.5), [[Vector3(0, 0.25, 0), Vector3(0.5, 0.5, 0.5), "cork"]], false)
+	_build_wing_props()
 	_figure("figure_hall", Vector3(30.0, 0, 6.5), -90.0)
 	_figure("figure_cafeteria", Vector3(-30.0, 0, -25.0), 150.0)
 	_figure("figure_gate", Vector3(12.0, 0, 47.5), 190.0)
 	_figure("figure_bleachers", Vector3(38.65, 1.35, -16.0), 220.0)
 
 
-## Area names guards can log, in the same order as the cameras.
-func areas() -> Array[String]:
+func _build_wing_props() -> void:
+	_prop("globe", Vector3(-46.0, 0.77, -12.2), [
+		[Vector3(0, 0.1, 0), Vector3(0.2, 0.2, 0.2), "wood"],
+		[Vector3(0, 0.38, 0), Vector3(0.36, 0.36, 0.36), "globe"]])
+	_prop("book_cart", Vector3(-62.0, 0, -2.4), [
+		[Vector3(0, 0.45, 0), Vector3(1.0, 0.9, 0.45), "metal"],
+		[Vector3(-0.2, 1.02, 0), Vector3(0.5, 0.25, 0.3), "red"],
+		[Vector3(0.25, 1.0, 0), Vector3(0.35, 0.2, 0.3), "plant"]])
+	_prop("wheelchair", Vector3(-72.0, 0, 17.5), [
+		[Vector3(0, 0.5, 0), Vector3(0.55, 0.08, 0.55), "dark"],
+		[Vector3(0, 0.85, 0.27), Vector3(0.55, 0.6, 0.05), "dark"],
+		[Vector3(-0.3, 0.35, 0), Vector3(0.04, 0.7, 0.7), "metal"],
+		[Vector3(0.3, 0.35, 0), Vector3(0.04, 0.7, 0.7), "metal"]])
+	_prop("skeleton", Vector3(44.0, 0, -12.5), [
+		[Vector3(0, 0.05, 0), Vector3(0.5, 0.1, 0.5), "dark"],
+		[Vector3(0, 0.9, 0), Vector3(0.06, 1.6, 0.06), "metal"],
+		[Vector3(0, 1.25, 0), Vector3(0.4, 0.5, 0.18), "bone"],
+		[Vector3(0, 1.7, 0), Vector3(0.22, 0.26, 0.24), "bone"],
+		[Vector3(0, 0.8, 0), Vector3(0.32, 0.12, 0.15), "bone"]])
+	_prop("hall_bin", Vector3(58.0, 0, 9.4), [[Vector3(0, 0.45, 0), Vector3(0.6, 0.9, 0.6), "dark"]])
+	_prop("backpack", Vector3(-52.8, 0, 13.0), [[Vector3(0, 0.25, 0), Vector3(0.4, 0.5, 0.25), "red"]], false)
+	_prop("wet_floor_sign", Vector3(-58.0, 0, 6.0), [[Vector3(0, 0.35, 0), Vector3(0.35, 0.7, 0.25), "yellow"]], false)
+	_prop("clay_bust", Vector3(66.0, 0.77, -12.0), [
+		[Vector3(0, 0.15, 0), Vector3(0.3, 0.3, 0.25), "clay"],
+		[Vector3(0, 0.45, 0), Vector3(0.2, 0.3, 0.22), "clay"]], false)
+	_prop("duffel_bag", Vector3(55.0, 0.44, 14.0), [[Vector3(0, 0.15, 0), Vector3(0.8, 0.3, 0.35), "plant"]], false)
+	_figure("figure_classroom", Vector3(-44.0, 0, -7.0), 160.0)
+	_figure("figure_library", Vector3(-70.0, 0, -7.5), 30.0)
+	_figure("figure_showers", Vector3(66.0, 0, 18.4), 90.0)
+	_figure("figure_east_hall", Vector3(66.0, 0, 6.5), 90.0)
+
+
+## Area names guards can log at this difficulty: the cameras' areas first, in camera order,
+## then any areas without a camera.
+func areas(max_difficulty := 1) -> Array[String]:
 	var names: Array[String] = []
 	for spot: Dictionary in school.camera_spots:
-		names.append(spot["name"])
+		if spot.get("difficulty", 1) <= max_difficulty:
+			names.append(spot["name"])
+	for area: String in SchoolBuilder.AREAS:
+		if area not in names and SchoolBuilder.area_difficulty(area) <= max_difficulty:
+			names.append(area)
 	return names
 
 
@@ -112,7 +172,8 @@ func spawn_random(night: int, minutes: float) -> bool:
 	var candidates: Array[int] = []
 	for i in DEFINITIONS.size():
 		var def := DEFINITIONS[i]
-		if def["night"] > night or records.has(i) or _prop_busy(def["prop"]) or def["prop"] in reserved_props:
+		if def["night"] > night or records.has(i) or _prop_busy(def["prop"]) or def["prop"] in reserved_props \
+				or SchoolBuilder.area_difficulty(def["area"]) > difficulty:
 			continue
 		if _guard_within(_props[def["prop"]].global_position, UNSEEN_DISTANCE):
 			continue
@@ -309,6 +370,12 @@ func _material(mat_name: String) -> Material:
 			var cone := StandardMaterial3D.new()
 			cone.albedo_color = Color(0.95, 0.4, 0.05)
 			return cone
+		"yellow", "globe", "bone", "clay":
+			var colours := {"yellow": Color(0.95, 0.8, 0.1), "globe": Color(0.2, 0.4, 0.75),
+				"bone": Color(0.85, 0.83, 0.75), "clay": Color(0.6, 0.38, 0.26)}
+			var plain := StandardMaterial3D.new()
+			plain.albedo_color = colours[mat_name]
+			return plain
 		"figure":
 			var shadow := StandardMaterial3D.new()
 			shadow.albedo_color = Color(0.02, 0.02, 0.025)

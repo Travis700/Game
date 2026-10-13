@@ -3,8 +3,8 @@ extends Node3D
 ## Decides which monsters come out each night and when, and gives them what they need:
 ## a navigation mesh to walk on, who's alive, who can see what, and catching guards.
 ##
-## Each monster has a home area and can only appear if that area is in tonight's map
-## (difficulty 1 includes every home used so far). The host runs all of this; monsters
+## Each monster has a home area and can only appear if that area is open tonight: the
+## classroom wing's monsters need difficulty 2, the science wing's need difficulty 3. The host runs all of this; monsters
 ## are spawned on every computer through the MonsterSpawner.
 
 signal guard_caught(peer_id: int, by: String)
@@ -30,6 +30,9 @@ const ROSTER := {
 	"other_cleaner": {"name": "The Other Cleaner", "home": "Lobby", "night": 5},
 	"student": {"name": "The Student", "home": "Main Hall West", "night": 5},
 	"ghost": {"name": "The Ghost", "home": "Lobby", "night": 5},
+	"substitute": {"name": "The Substitute", "home": "Room 101", "night": 1},
+	"librarian": {"name": "The Librarian", "home": "Library", "night": 2},
+	"nurse": {"name": "The Nurse", "home": "Nurse's Office", "night": 3},
 }
 ## The intercom: in-game minutes between the Principal's summonses, and real seconds to answer.
 const SUMMON_EVERY := Vector2(60.0, 100.0)
@@ -47,6 +50,8 @@ var anomalies: Anomalies
 var lockers: Lockers
 
 var night_number := 1
+## Tonight's difficulty: which wings are open. Monsters only come from open areas.
+var difficulty := 1
 ## Monsters coming out tonight and when: [{"kind", "at"}]. Host only.
 var tonight: Array[Dictionary] = []
 
@@ -93,7 +98,7 @@ func bake_navigation() -> void:
 	mesh.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
 	mesh.geometry_source_geometry_mode = NavigationMesh.SOURCE_GEOMETRY_GROUPS_WITH_CHILDREN
 	mesh.geometry_source_group_name = SchoolBuilder.NAV_SOURCE_GROUP
-	mesh.filter_baking_aabb = AABB(Vector3(-41, -1, -31), Vector3(82, 6, 80))
+	mesh.filter_baking_aabb = SchoolBuilder.NAV_BOUNDS
 	_navigation = NavigationRegion3D.new()
 	_navigation.name = "Navigation"
 	_navigation.navigation_mesh = mesh
@@ -109,10 +114,13 @@ func plan_night(number: int) -> void:
 	_credited.clear()
 	var pool: Array = []
 	for kind: String in ROSTER:
-		if ROSTER[kind]["night"] <= number and SchoolBuilder.AREAS.has(ROSTER[kind]["home"]):
+		var home: String = ROSTER[kind]["home"]
+		if ROSTER[kind]["night"] <= number and SchoolBuilder.area_difficulty(home) <= difficulty:
 			pool.append(kind)
 	pool.shuffle()
-	var count := mini(MONSTERS_PER_NIGHT[clampi(number - 1, 0, MONSTERS_PER_NIGHT.size() - 1)], pool.size())
+	# Bigger maps (for bigger teams) bring one more monster per open wing.
+	var wanted := MONSTERS_PER_NIGHT[clampi(number - 1, 0, MONSTERS_PER_NIGHT.size() - 1)] + difficulty - 1
+	var count := mini(wanted, pool.size())
 	for i in count:
 		tonight.append({"kind": pool[i], "at": randf_range(25.0, 150.0)})
 		if pool[i] == "mascot":
@@ -162,6 +170,12 @@ func _start(kind: String, minutes: float) -> void:
 		"ghost":
 			ghost_active = true
 			spawn("ghost", Vector3(-35, 0, -25))
+		"substitute":
+			spawn("substitute", Substitute.CLASSROOMS.pick_random())
+		"librarian":
+			spawn("librarian", Vector3(-70, 0, -3))
+		"nurse":
+			spawn("nurse", Vector3(-74, 0, 15))
 
 
 func spawn(kind: String, at: Vector3, extra := {}) -> void:
@@ -220,6 +234,12 @@ func _create_monster(data: Dictionary) -> Node:
 			monster = student
 		"ghost":
 			monster = SchoolGhost.new()
+		"substitute":
+			monster = Substitute.new()
+		"librarian":
+			monster = Librarian.new()
+		"nurse":
+			monster = Nurse.new()
 		_:
 			var shade := Shade.new()
 			shade.target_peer = data.get("target", 0)
@@ -285,6 +305,22 @@ func can_see(from: Vector3, guard: Guard) -> bool:
 	return _clear_line(from, guard.global_position + Vector3(0, 1.4, 0), guard)
 
 
+## Is a living guard shining their flashlight at this point? Only checks `only` if given.
+func lit_by_flashlight(point: Vector3, max_distance: float, only: Guard = null) -> bool:
+	for guard in living_guards():
+		if only != null and guard != only:
+			continue
+		if not guard.flashlight.visible:
+			continue
+		var from := guard.camera.global_position
+		var to_point := point - from
+		if to_point.length() > max_distance:
+			continue
+		if (-guard.camera.global_basis.z).angle_to(to_point) < deg_to_rad(24) and _clear_line(from, point, null):
+			return true
+	return false
+
+
 ## Is anyone looking at this monster: a living guard facing it, or a monitor showing it
 ## while someone is in the guard room?
 func is_watched(monster: Monster) -> bool:
@@ -329,7 +365,7 @@ func check_log(peer_id: int, area: String) -> bool:
 		var credited: Array = _credited.get_or_add(monster.name, [])
 		if peer_id not in credited and SchoolBuilder.area_at(monster.global_position) == area:
 			credited.append(peer_id)
-			if monster is OtherCleaner:
+			if monster.leaves_when_logged:
 				# Found out, it slips away.
 				get_tree().create_timer(2.0).timeout.connect(func() -> void:
 					if is_instance_valid(monster):

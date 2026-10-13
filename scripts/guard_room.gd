@@ -45,7 +45,8 @@ func build(school: SchoolBuilder, security: SecurityCameras, hud_layer: CanvasLa
 	for spot: Dictionary in school.monitor_spots:
 		var monitor := _screens.size()
 		_add_screen(spot["position"], monitor)
-		assignments.append(monitor % cameras.count())
+		var open := cameras.open_cameras()
+		assignments.append(open[monitor % open.size()])
 	for desk in school.desk_chairs.size():
 		var chair: Interactable = school.desk_chairs[desk]
 		chair.used.connect(_on_chair_used.bind(desk))
@@ -130,8 +131,9 @@ func on_desk_action(action: String) -> void:
 		"prev", "next":
 			if monitor >= 0:
 				var step := -1 if action == "prev" else 1
-				var count := cameras.count()
-				request_camera(monitor, (assignments[monitor] + step + count) % count)
+				var open := cameras.open_cameras()
+				var at := open.find(assignments[monitor])
+				request_camera(monitor, open[(maxi(at, 0) + step + open.size()) % open.size()])
 		"zoom":
 			if monitor >= 0:
 				_toggle_zoom(monitor)
@@ -296,6 +298,16 @@ func request_stand() -> void:
 		_request_stand.rpc_id(1)
 
 
+## Host, when the night starts: monitors showing a camera in a closed wing switch to an open
+## one, and when a wing opens, the monitors spread out over every open camera.
+func fit_to_open_cameras() -> void:
+	var open := cameras.open_cameras()
+	for monitor in assignments.size():
+		var camera := open[monitor % open.size()]
+		if assignments[monitor] != camera:
+			_set_camera.rpc(monitor, camera)
+
+
 ## Host only: frees the desk of a guard who left the session.
 func on_peer_left(peer_id: int) -> void:
 	_free_desks_of(peer_id)
@@ -310,7 +322,7 @@ func send_state_to(peer_id: int) -> void:
 func _request_camera(monitor: int, camera: int) -> void:
 	if not multiplayer.is_server():
 		return
-	if monitor < 0 or monitor >= assignments.size() or camera < 0 or camera >= cameras.count():
+	if monitor < 0 or monitor >= assignments.size() or camera < 0 or camera >= cameras.count() or not cameras.is_open(camera):
 		return
 	_set_camera.rpc(monitor, camera)
 

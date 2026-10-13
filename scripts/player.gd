@@ -81,6 +81,7 @@ func _ready() -> void:
 	set_physics_process(local)
 	set_process_unhandled_input(local)
 	interact_ray.enabled = local
+	interact_ray.collision_mask = 1 | Interactable.TALK_LAYER
 	if local:
 		interact_ray.add_exception(self)
 		camera.current = true
@@ -147,7 +148,7 @@ func stand(at: Vector3) -> void:
 	look_locked = false
 	head.position.y = STANDING_EYE_HEIGHT
 	global_position = at
-	interact_ray.collision_mask = 1
+	interact_ray.collision_mask = 1 | Interactable.TALK_LAYER
 
 
 func _unhandled_input(event: InputEvent) -> void:

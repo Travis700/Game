@@ -51,6 +51,10 @@ func _ready() -> void:
 	school = SchoolBuilder.new()
 	school.name = "School"
 	add_child(school)
+	var wing_doors := Node3D.new()
+	wing_doors.name = "WingDoors"
+	add_child(wing_doors)
+	school.build_wing_doors(wing_doors)
 
 	shift = Shift.new()
 	shift.name = "Shift"
@@ -108,7 +112,7 @@ func _ready() -> void:
 	clipboard = Clipboard.new()
 	clipboard.name = "Clipboard"
 	add_child(clipboard)
-	clipboard.set_areas(anomalies.areas())
+	clipboard.set_areas(anomalies.areas(1))
 	clipboard.closed.connect(func() -> void:
 		if _local_guard:
 			_local_guard.input_blocked = false)
@@ -505,7 +509,19 @@ func _start_night(number: int, difficulty: int) -> void:
 	print("[net] Night %d started at difficulty %d" % [number, difficulty])
 	night.number = number
 	night.difficulty = difficulty
+	_apply_difficulty(difficulty)
 	shift.begin()
+
+
+## Every computer, as the night starts: opens tonight's wings and their cameras and areas.
+func _apply_difficulty(difficulty: int) -> void:
+	school.open_wings(difficulty)
+	cameras.difficulty = difficulty
+	anomalies.difficulty = difficulty
+	director.difficulty = difficulty
+	clipboard.set_areas(anomalies.areas(difficulty))
+	if multiplayer.is_server():
+		guard_room.fit_to_open_cameras()
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -638,6 +654,8 @@ func on_report() -> void:
 ## Every computer, when the host starts the next night: back to the gate, lights on, desks empty.
 func on_next_night() -> void:
 	school.clock_machine.prompt = "Clock in"
+	# The wings stay locked until the night starts.
+	school.open_wings(1)
 	# Everyone starts the new night alive.
 	for guard: Guard in players.get_children():
 		guard.set_dead(false)
