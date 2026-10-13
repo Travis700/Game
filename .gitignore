@@ -1,0 +1,6 @@
+# Godot cache and generated files
+.godot/
+*.tmp
+/android/
+/export/
+.test/
