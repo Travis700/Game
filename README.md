@@ -65,6 +65,10 @@ on your clipboard as "Monster" in that area for points.
 | The Substitute | 1 | Classroom wing (difficulty 2+) | Takes the register when you come near: "Guard 2?" Look at it and press E to answer, or get detention. |
 | The Librarian | 2 | Library, West Hall (difficulty 2+) | Hates light and noise. Shine your flashlight on it or run nearby and it shushes you, then hunts you until it's dark and quiet. |
 | The Nurse | 3 | Classroom wing (difficulty 2+) | Follows any guard who's on their own, slowly and steadily, with a heart monitor's beep. Stick together and she leaves you be. |
+| The Crossing Guard | 1 | Science wing, east main hall (difficulty 3) | Blows its whistle and holds up a STOP sign at a "crossing". Don't move while the sign is up, or it runs you down. |
+| The Self-Portrait | 2 | Art room (difficulty 3) | A canvas painting one of the guards, a stage at a time (watch the Art Room camera). Finished, it catches them. Turn it to the wall (E) to wipe it. |
+| The Specimen | 3 | Science lab (difficulty 3) | Crawls after you in the dark. Catch it in your flashlight and it hides in the ceiling for a while. |
+| The Understudy | 4 | Locker rooms (difficulty 3) | Dressed as one of you, following at a distance. Stand still where it can see you and it steps in. Log it and it takes a bow. |
 
 The real **night cleaner** works every night pushing a mop cart. They're harmless, and logging them is a false report.
 

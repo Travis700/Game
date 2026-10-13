@@ -31,6 +31,8 @@ var harmless := false
 var leaves_when_logged := false
 
 var _agent: NavigationAgent3D
+## Real seconds it has been trying to move without getting anywhere.
+var _stuck_for := 0.0
 
 
 func _ready() -> void:
@@ -102,8 +104,25 @@ func move_to(target: Vector3, speed: float) -> bool:
 		face(direction)
 	velocity.x = direction.x * speed
 	velocity.z = direction.z * speed
+	var before := global_position
 	move_and_slide()
+	var delta := get_physics_process_delta_time()
+	if Vector2(global_position.x - before.x, global_position.z - before.z).length() < speed * delta * 0.15:
+		_stuck_for += delta
+	else:
+		_stuck_for = 0.0
 	return true
+
+
+## True when it has been pushing against something for over a second (e.g. cutting a corner
+## into furniture), so a behaviour can pick somewhere else to go.
+func is_stuck() -> bool:
+	return _stuck_for > 1.0
+
+
+## True once the last move_to target has been reached, or is as close as it can get.
+func arrived() -> bool:
+	return _agent.is_navigation_finished()
 
 
 func halt() -> void:
@@ -133,6 +152,11 @@ func catch_nearby() -> bool:
 ## Roughly where its eyes are, for line-of-sight checks.
 func eye_position() -> Vector3:
 	return global_position + Vector3(0, 1.6, 0)
+
+
+## Can a guard log this monster right now? (Not while it's hiding, for example.)
+func loggable() -> bool:
+	return true
 
 
 ## True if any living guard is shining their flashlight at this monster.

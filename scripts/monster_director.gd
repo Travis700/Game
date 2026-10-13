@@ -33,6 +33,10 @@ const ROSTER := {
 	"substitute": {"name": "The Substitute", "home": "Room 101", "night": 1},
 	"librarian": {"name": "The Librarian", "home": "Library", "night": 2},
 	"nurse": {"name": "The Nurse", "home": "Nurse's Office", "night": 3},
+	"crossing_guard": {"name": "The Crossing Guard", "home": "East Hall", "night": 1},
+	"self_portrait": {"name": "The Self-Portrait", "home": "Art Room", "night": 2},
+	"specimen": {"name": "The Specimen", "home": "Science Lab", "night": 3},
+	"understudy": {"name": "The Understudy", "home": "Locker Rooms", "night": 4},
 }
 ## The intercom: in-game minutes between the Principal's summonses, and real seconds to answer.
 const SUMMON_EVERY := Vector2(60.0, 100.0)
@@ -48,6 +52,8 @@ var guard_room: GuardRoom
 var cameras: SecurityCameras
 var anomalies: Anomalies
 var lockers: Lockers
+var school: SchoolBuilder
+var portrait: SelfPortrait
 
 var night_number := 1
 ## Tonight's difficulty: which wings are open. Monsters only come from open areas.
@@ -84,6 +90,11 @@ func build() -> void:
 	add_child(_spawner)
 	_spawner.spawn_path = _spawner.get_path_to(_container)
 	_spawner.spawn_function = _create_monster
+	portrait = SelfPortrait.new()
+	portrait.name = "SelfPortrait"
+	portrait.director = self
+	add_child(portrait)
+	portrait.build(school.self_portrait_easel)
 
 
 ## Host: works out where monsters can walk, from the school's floors, walls and furniture.
@@ -140,6 +151,7 @@ func update(minutes: float, delta: float) -> void:
 		plan["started"] = true
 		_start(plan["kind"], minutes)
 	lockers.update(minutes)
+	portrait.update(minutes)
 	_update_principal(minutes, delta)
 	for camera_index: int in _blackouts.keys():
 		if minutes >= _blackouts[camera_index]:
@@ -176,6 +188,14 @@ func _start(kind: String, minutes: float) -> void:
 			spawn("librarian", Vector3(-70, 0, -3))
 		"nurse":
 			spawn("nurse", Vector3(-74, 0, 15))
+		"crossing_guard":
+			spawn("crossing_guard", Vector3(75, 0, 7))
+		"self_portrait":
+			portrait.activate(minutes)
+		"specimen":
+			spawn("specimen", Vector3(58, 0, -6))
+		"understudy":
+			spawn("understudy", Vector3(50, 0, 15))
 
 
 func spawn(kind: String, at: Vector3, extra := {}) -> void:
@@ -207,6 +227,7 @@ func end_night() -> void:
 		camera_signal_changed.emit(camera_index, true)
 	_blackouts.clear()
 	lockers.reset_all()
+	portrait.deactivate()
 	anomalies.reserved_props.erase("mascot")
 	anomalies.set_prop_shown.rpc("mascot", true)
 
@@ -240,6 +261,12 @@ func _create_monster(data: Dictionary) -> Node:
 			monster = Librarian.new()
 		"nurse":
 			monster = Nurse.new()
+		"crossing_guard":
+			monster = CrossingGuard.new()
+		"specimen":
+			monster = Specimen.new()
+		"understudy":
+			monster = Understudy.new()
 		_:
 			var shade := Shade.new()
 			shade.target_peer = data.get("target", 0)
@@ -345,6 +372,11 @@ func is_watched(monster: Monster) -> bool:
 	return false
 
 
+## Tonight's clock, in in-game minutes. Host only.
+func minutes() -> float:
+	return _minutes
+
+
 func kill(guard: Guard, by: String) -> void:
 	if not guard.is_dead:
 		guard_caught.emit(guard.name.to_int(), by)
@@ -360,7 +392,7 @@ func tell(peer_id: int, text: String) -> void:
 func check_log(peer_id: int, area: String) -> bool:
 	for node: Node in _container.get_children():
 		var monster := node as Monster
-		if monster == null or monster is Shade or monster.harmless or monster.is_queued_for_deletion():
+		if monster == null or monster is Shade or monster.harmless or monster.is_queued_for_deletion() or not monster.loggable():
 			continue
 		var credited: Array = _credited.get_or_add(monster.name, [])
 		if peer_id not in credited and SchoolBuilder.area_at(monster.global_position) == area:
@@ -371,6 +403,9 @@ func check_log(peer_id: int, area: String) -> bool:
 					if is_instance_valid(monster):
 						remove_monster(monster))
 			return true
+	if portrait.active and portrait.stage > 0 and area == "Art Room" and peer_id not in portrait.credited:
+		portrait.credited.append(peer_id)
+		return true
 	if lockers.active and peer_id not in lockers.credited and lockers.has_open_in(area):
 		lockers.credited.append(peer_id)
 		return true

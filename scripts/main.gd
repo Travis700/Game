@@ -129,6 +129,7 @@ func _ready() -> void:
 	director.cameras = cameras
 	director.anomalies = anomalies
 	director.lockers = lockers
+	director.school = school
 	add_child(director)
 	director.build()
 	lockers.director = director
