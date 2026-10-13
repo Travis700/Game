@@ -14,6 +14,9 @@ var _hint: Label
 var _status: Label
 var _controls: Label
 var _clock: Label
+var _ghost_tint: ColorRect
+var _ghost_note: Label
+var _flash: ColorRect
 var _feed_view: Control
 var _feed_picture: TextureRect
 var _feed_title: Label
@@ -59,6 +62,24 @@ func _ready() -> void:
 
 	_build_feed_view()
 
+	_ghost_tint = ColorRect.new()
+	_ghost_tint.color = Color(0.35, 0.45, 0.7, 0.18)
+	_ghost_tint.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_ghost_tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ghost_tint.visible = false
+	add_child(_ghost_tint)
+	_ghost_note = _make_label(20, HORIZONTAL_ALIGNMENT_CENTER, VERTICAL_ALIGNMENT_TOP)
+	_ghost_note.offset_top = 48
+	_ghost_note.text = "You're a ghost. A teammate can try to bring you back at a revive totem."
+	_ghost_note.add_theme_color_override("font_color", Color(0.75, 0.85, 1.0))
+	_ghost_note.visible = false
+
+	_flash = ColorRect.new()
+	_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_flash.color = Color(0, 0, 0, 0)
+	add_child(_flash)
+
 
 func _process(delta: float) -> void:
 	if not visible:
@@ -78,6 +99,18 @@ func set_prompt(text: String) -> void:
 ## The night clock at the top of the screen, e.g. "NIGHT 1 · 2:05 AM". Empty hides it.
 func set_clock(text: String) -> void:
 	_clock.text = text
+
+
+## The faint blue look and reminder while you're a ghost.
+func set_ghost(on: bool) -> void:
+	_ghost_tint.visible = on
+	_ghost_note.visible = on
+
+
+## A quick full-screen flash of colour that fades out, e.g. red when you're caught.
+func flash(color: Color, seconds := 1.2) -> void:
+	_flash.color = color
+	create_tween().tween_property(_flash, "color:a", 0.0, seconds)
 
 
 ## Controls for what you're doing right now, e.g. while seated at the monitors.

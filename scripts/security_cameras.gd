@@ -49,6 +49,11 @@ func build(spots: Array[Dictionary]) -> void:
 		names.append(spot["name"])
 
 
+## The Camera3D behind a feed, e.g. to check what it can see.
+func camera(index: int) -> Camera3D:
+	return feeds[index].get_child(0) as Camera3D
+
+
 func texture(camera: int) -> Texture2D:
 	return feeds[camera].get_texture()
 

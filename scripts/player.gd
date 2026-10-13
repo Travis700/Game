@@ -38,6 +38,9 @@ var slot := 1
 var seated_desk := -1
 ## Mouse look is paused while a camera feed fills the screen.
 var look_locked := false
+## True once a monster has caught this guard. Ghosts can walk and watch, but can't use anything,
+## and only other ghosts can see them.
+var is_dead := false
 ## True while a menu like the clipboard has the mouse: the guard stands still and ignores keys.
 var input_blocked := false
 
@@ -60,7 +63,7 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	var uniform := StandardMaterial3D.new()
-	uniform.albedo_color = UNIFORM_COLORS[(slot - 1) % UNIFORM_COLORS.size()]
+	uniform.albedo_color = uniform_color()
 	body_mesh.material_override = uniform
 	name_tag.text = "Guard %d" % slot
 
@@ -79,6 +82,36 @@ func _ready() -> void:
 		camera.current = true
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		get_tree().call_group("game", "on_local_guard_ready", self)
+
+
+func uniform_color() -> Color:
+	return UNIFORM_COLORS[(slot - 1) % UNIFORM_COLORS.size()]
+
+
+## Called on every computer when this guard is caught or revived.
+func set_dead(dead: bool) -> void:
+	is_dead = dead
+	if dead:
+		flashlight.visible = false
+		is_running = false
+	interact_ray.enabled = is_local() and not dead
+
+
+## Shows or hides this guard for the player on this computer. Ghosts are only visible to
+## other ghosts, and look faint.
+func update_visibility(viewer_is_dead: bool) -> void:
+	var material := body_mesh.material_override as StandardMaterial3D
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA if is_dead else BaseMaterial3D.TRANSPARENCY_DISABLED
+	material.albedo_color.a = 0.3 if is_dead else 1.0
+	if is_local():
+		# Your own body only shows on the security cameras, and not at all once you're a ghost.
+		body_mesh.visible = not is_dead
+		visor.visible = not is_dead
+		return
+	var shown := not is_dead or viewer_is_dead
+	body_mesh.visible = shown
+	visor.visible = shown
+	name_tag.visible = shown
 
 
 ## True on the computer of the player controlling this guard.
@@ -121,7 +154,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		pass
 	elif event.is_action_pressed("pause"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	elif event.is_action_pressed("flashlight"):
+	elif event.is_action_pressed("flashlight") and not is_dead:
 		flashlight.visible = not flashlight.visible
 	elif event.is_action_pressed("interact"):
 		_interact()
@@ -204,7 +237,7 @@ func focused_interactable() -> Interactable:
 
 
 func _update_prompt() -> void:
-	var target := focused_interactable()
+	var target := focused_interactable() if not is_dead else null
 	var text := "[E] " + target.prompt if target else ""
 	if text != _prompt:
 		_prompt = text
@@ -212,6 +245,8 @@ func _update_prompt() -> void:
 
 
 func _interact() -> void:
+	if is_dead:
+		return
 	var target := focused_interactable()
 	if target:
 		target.interact(self)

@@ -22,6 +22,26 @@ The game opens on a menu: **Play solo**, **Host a game**, or **Join**.
 4. At 6:00 AM the lights come back on. Clock out at the time clock within about 90 seconds.
 5. The report shows everyone's pay: 100 for clocking out, +25 per correct log, -10 per false report.
 
+## Monsters
+
+Each night brings more monsters (1, 1, 2, 2, 3, 3, 4, 4, 5 over the nine nights), picked from the ones
+that have unlocked. They can't come into the guard room until night 7. Spot one on camera and log it
+on your clipboard as "Monster" in that area for points.
+
+| Monster | From night | Where | How it works |
+|---|---|---|---|
+| Hall Monitor | 1 | Main hallway | Walks the hallway. Leaves walkers alone, but chases anyone it sees running. |
+| The Mascot | 1 | Gym | Steps off its stand. Only moves while nobody is looking at it, in person or on a monitor. |
+| Lunch Lady | 2 | Cafeteria, kitchen | Blind and humming. Hears running from far away, walking only up close. |
+| Locker Thing | 3 | Main hallway | Locker doors swing open. Walk past an open one and you're pulled in. Press E to shut them. |
+
+**Getting caught:** you become a ghost. You can walk around and watch, but can't use anything, and
+only other ghosts can see you. Each death costs every guard 50 points. If the whole team is caught,
+the run starts over from night 1.
+
+**Revive totems:** three glowing stones are hidden around the school each night. A living guard can
+use one for a dead teammate: 4 in 6 brings them back, 2 in 6 lets a shade out that hunts whoever rolled.
+
 To test a whole night quickly, add `--fast-night` to the launch arguments (with `--solo` or `--host`):
 the night then lasts about a minute.
 
@@ -78,5 +98,10 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 - `scripts/anomalies.gd` — every anomaly and the props they move, hide or add.
 - `scripts/clipboard.gd` — the clipboard (incident log).
 - `scripts/report.gd` — the end-of-night report.
+- `scripts/monster_director.gd` — which monsters come out each night, navigation, catching guards.
+- `scripts/monsters/` — one script per monster.
+- `scripts/lockers.gd` — the hallway locker doors and the Locker Thing.
+- `scripts/totems.gd` — revive totems.
+- `scripts/sfx.gd` — simple generated sounds (whistle, humming, lockers).
 - `scripts/hud.gd` — crosshair, prompts and messages.
 - `scripts/controls.gd` — key bindings.

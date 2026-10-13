@@ -21,6 +21,19 @@ const WALL_H := 3.5
 const WALL_T := 0.25
 const DOOR_H := 2.4
 const SCHOOL_NAME := "WESTFIELD HIGH SCHOOL"
+## What each camera covers, so monsters and logs can tell which area a spot is in.
+const AREAS := {
+	"Front Gate": AABB(Vector3(-40, -1, 20), Vector3(80, 8, 28)),
+	"Lobby": AABB(Vector3(-6, -1, 10), Vector3(12, 6, 10)),
+	"Front Office": AABB(Vector3(-20, -1, 10), Vector3(14, 6, 10)),
+	"Main Hall West": AABB(Vector3(-40, -1, 4), Vector3(40, 6, 6)),
+	"Main Hall East": AABB(Vector3(0, -1, 4), Vector3(40, 6, 6)),
+	"Cafeteria": AABB(Vector3(-40, -1, -30), Vector3(35, 6, 34)),
+	"Kitchen": AABB(Vector3(-5, -1, -30), Vector3(10, 6, 18)),
+	"Gym": AABB(Vector3(5, -1, -30), Vector3(35, 6, 34)),
+}
+## Physics layer 1 holds the building, props and guards. Monsters live on their own layer.
+const NAV_SOURCE_GROUP := "nav_source"
 ## Size of each guard room monitor's picture, in metres (16:9 like the camera feeds).
 const MONITOR_SIZE := Vector2(0.96, 0.54)
 
@@ -37,7 +50,16 @@ var camera_spots: Array[Dictionary] = []
 var _mats: Dictionary = {}
 
 
+## The camera area a point is in, or "" if none (e.g. the guard room).
+static func area_at(point: Vector3) -> String:
+	for area: String in AREAS:
+		if (AREAS[area] as AABB).has_point(point):
+			return area
+	return ""
+
+
 func _ready() -> void:
+	add_to_group(NAV_SOURCE_GROUP)
 	_make_materials()
 	_build_grounds()
 	_build_walls()

@@ -25,6 +25,8 @@ var hud: CanvasLayer
 var clipboard: CanvasLayer
 var report: CanvasLayer
 var players: Node3D
+var director: MonsterDirector
+var totems: Totems
 
 var number := 1
 var minutes := 0.0
@@ -35,6 +37,7 @@ var _schedule: Array[float] = []
 var _stats: Dictionary = {}
 var _totals: Dictionary = {}
 var _deaths := 0
+var _restart_run := false
 var _clock_out_left := 0.0
 var _sync_timer := 0.0
 
@@ -93,6 +96,8 @@ func _on_shift_started() -> void:
 		return
 	_stats.clear()
 	_deaths = 0
+	director.plan_night(number)
+	totems.place_random()
 	# Spread tonight's anomalies across the night, starting about 20 minutes in.
 	_schedule.clear()
 	var count := 4 + number * 2
@@ -110,6 +115,7 @@ func _run_shift(delta: float) -> void:
 			_schedule[0] = minutes + 5.0
 			break
 	anomalies.update(minutes)
+	director.update(minutes, delta)
 
 	_sync_timer -= delta
 	if _sync_timer <= 0.0:
@@ -117,6 +123,10 @@ func _run_shift(delta: float) -> void:
 		_sync_clock.rpc(minutes, seconds_per_minute)
 
 	if minutes >= SHIFT_MINUTES:
+		# Morning: the monsters are gone, and only the living have to clock out.
+		director.end_night()
+		totems.clear_all()
+		shift.guards_required = director.living_guards().size()
 		_start_morning.rpc()
 
 
@@ -137,15 +147,45 @@ func _receive_log(area: String, type: String) -> void:
 		return
 	var peer := _sender()
 	var stats: Dictionary = _stats.get_or_add(peer, {"correct": 0, "false": 0})
-	if anomalies.check_log(peer, area, type, minutes):
+	var correct := director.check_log(peer, area) if type == "Monster" else anomalies.check_log(peer, area, type, minutes)
+	if correct:
 		stats["correct"] += 1
 	else:
 		stats["false"] += 1
 
 
+## Host: a guard was caught tonight.
+func record_death() -> void:
+	_deaths += 1
+
+
+## Host: the whole team has been caught. The run starts over from night 1.
+func fail_night() -> void:
+	if shift.state != Shift.State.ON_SHIFT:
+		return
+	director.end_night()
+	totems.clear_all()
+	_restart_run = true
+	var rows := _build_rows(false)
+	var summary := "The whole team was caught at %s.\nThe school keeps its secrets. The run starts over from night 1." % time_text()
+	_show_report.rpc(number, rows, summary, true)
+
+
 func _end_night() -> void:
 	if shift.state != Shift.State.MORNING:
 		return
+	var rows := _build_rows(true)
+	var appeared := anomalies.appeared_count()
+	var missed := anomalies.missed_count()
+	var summary := "%d anomal%s tonight, %d missed by everyone.   Guards lost: %d." % [
+		appeared, "y" if appeared == 1 else "ies", missed, _deaths]
+	summary += "\nPay: %d for clocking out, +%d per correct log, -%d per false report, -%d for each guard lost." % [
+		SURVIVAL_PAY, CORRECT_LOG_POINTS, FALSE_REPORT_POINTS, DEATH_PENALTY]
+	_show_report.rpc(number, rows, summary, false)
+
+
+## One row per guard for the report. `keep_pay` is false when the run is starting over.
+func _build_rows(keep_pay: bool) -> Array:
 	var rows: Array = []
 	for guard: Guard in players.get_children():
 		var peer := guard.name.to_int()
@@ -154,26 +194,25 @@ func _end_night() -> void:
 		var correct_points: int = stats["correct"] * CORRECT_LOG_POINTS
 		var false_points: int = stats["false"] * FALSE_REPORT_POINTS
 		var pay: int = (SURVIVAL_PAY if clocked_out else 0) + correct_points - false_points - _deaths * DEATH_PENALTY
-		_totals[peer] = _totals.get(peer, 0) + pay
+		if keep_pay:
+			_totals[peer] = _totals.get(peer, 0) + pay
+		else:
+			_totals[peer] = 0
 		rows.append({
-			"name": "Guard %d" % guard.slot, "clocked_out": clocked_out,
+			"name": "Guard %d" % guard.slot, "clocked_out": clocked_out, "died": guard.is_dead,
 			"correct": stats["correct"], "correct_points": correct_points,
 			"false": stats["false"], "false_points": false_points,
 			"pay": pay, "total": _totals[peer],
 		})
-	var appeared := anomalies.appeared_count()
-	var missed := anomalies.missed_count()
-	var summary := "%d anomal%s tonight, %d missed by everyone.   Guards lost: %d." % [
-		appeared, "y" if appeared == 1 else "ies", missed, _deaths]
-	summary += "\nPay: %d for clocking out, +%d per correct log, -%d per false report, -%d for each guard lost." % [
-		SURVIVAL_PAY, CORRECT_LOG_POINTS, FALSE_REPORT_POINTS, DEATH_PENALTY]
-	_show_report.rpc(number, rows, summary)
+	return rows
 
 
 func _on_next_night_requested() -> void:
 	if multiplayer.is_server():
 		anomalies.reset_all()
-		_begin_next_night.rpc(number + 1)
+		var next := 1 if _restart_run else number + 1
+		_restart_run = false
+		_begin_next_night.rpc(next)
 
 
 # --- Every computer --------------------------------------------------------------------
@@ -195,12 +234,12 @@ func _start_morning() -> void:
 
 
 @rpc("authority", "call_local", "reliable")
-func _show_report(night: int, rows: Array, summary: String) -> void:
+func _show_report(night: int, rows: Array, summary: String, restart: bool) -> void:
 	shift.state = Shift.State.REPORT
 	clipboard.close()
 	get_tree().call_group("game", "on_report")
 	hud.set_clock("")
-	report.show_report(night, rows, summary, multiplayer.is_server())
+	report.show_report(night, rows, summary, multiplayer.is_server(), restart)
 
 
 @rpc("authority", "call_local", "reliable")

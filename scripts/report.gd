@@ -59,21 +59,21 @@ func _ready() -> void:
 
 
 ## `rows` is one dictionary per guard; see Night._build_report.
-func show_report(night: int, rows: Array, summary: String, is_host: bool) -> void:
-	_title.text = "NIGHT %d REPORT" % night
+func show_report(night: int, rows: Array, summary: String, is_host: bool, restart := false) -> void:
+	_title.text = ("NIGHT %d: EVERYONE WAS CAUGHT" if restart else "NIGHT %d REPORT") % night
 	for child in _table.get_children():
 		child.queue_free()
 	for heading in COLUMNS:
 		_table.add_child(_cell(heading, 18, 0.6))
 	for row: Dictionary in rows:
 		_table.add_child(_cell(row["name"], 22))
-		_table.add_child(_cell("Yes" if row["clocked_out"] else "No", 22))
+		_table.add_child(_cell("Caught" if row.get("died", false) else ("Yes" if row["clocked_out"] else "No"), 22))
 		_table.add_child(_cell("%d  (+%d)" % [row["correct"], row["correct_points"]], 22))
 		_table.add_child(_cell("%d  (-%d)" % [row["false"], row["false_points"]], 22))
 		_table.add_child(_cell("%+d" % row["pay"], 22))
 		_table.add_child(_cell(str(row["total"]), 22))
 	_summary.text = summary
-	_next_button.text = "Start night %d" % (night + 1)
+	_next_button.text = "Start over from night 1" if restart else "Start night %d" % (night + 1)
 	_next_button.visible = is_host
 	_waiting.visible = not is_host
 	visible = true

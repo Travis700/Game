@@ -9,7 +9,8 @@ extends Node3D
 ## The props that can go missing or move (the lobby plant, the mascot costume, the mop bucket...)
 ## live here rather than in SchoolBuilder, so this script owns their normal state.
 
-const TYPES: Array[String] = ["Moved object", "Missing object", "Extra object", "Figure"]
+## What guards can log. "Monster" entries are checked by the MonsterDirector instead.
+const TYPES: Array[String] = ["Moved object", "Missing object", "Extra object", "Figure", "Monster"]
 ## Anomalies never appear or get cleared up while a guard is this close (metres).
 const UNSEEN_DISTANCE := 12.0
 ## A figure disappears when a guard gets this close.
@@ -52,6 +53,8 @@ var players: Node3D
 ## Anomaly index -> {"credited": [peer ids], "clear_at": minutes or -1, "ended_at": minutes or -1}.
 ## Holds every anomaly that has appeared tonight. Host only.
 var records: Dictionary = {}
+## Props a monster is using tonight (e.g. the Mascot takes the mascot costume). Host only.
+var reserved_props: Array[String] = []
 
 var _props: Dictionary = {}
 var _home: Dictionary = {}
@@ -109,7 +112,7 @@ func spawn_random(night: int, minutes: float) -> bool:
 	var candidates: Array[int] = []
 	for i in DEFINITIONS.size():
 		var def := DEFINITIONS[i]
-		if def["night"] > night or records.has(i) or _prop_busy(def["prop"]):
+		if def["night"] > night or records.has(i) or _prop_busy(def["prop"]) or def["prop"] in reserved_props:
 			continue
 		if _guard_within(_props[def["prop"]].global_position, UNSEEN_DISTANCE):
 			continue
@@ -221,6 +224,14 @@ func _set_active(index: int, on: bool) -> void:
 				prop.rotation_degrees = Vector3(0, def["turn"], def.get("tip", 0.0))
 			else:
 				prop.transform = _home[def["prop"]]
+
+
+## Shows or hides one of the props on every computer, e.g. when the Mascot steps off its stand.
+@rpc("authority", "call_local", "reliable")
+func set_prop_shown(prop_name: String, on: bool) -> void:
+	var prop: Node3D = _props[prop_name]
+	prop.transform = _home[prop_name]
+	_set_visible(prop, on)
 
 
 func _set_visible(prop: Node3D, on: bool) -> void:

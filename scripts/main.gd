@@ -31,6 +31,9 @@ var anomalies: Anomalies
 var night: Night
 var clipboard: CanvasLayer
 var school: SchoolBuilder
+var director: MonsterDirector
+var lockers: Lockers
+var totems: Totems
 var spawner: MultiplayerSpawner
 var _local_guard: Guard
 var _mode := ""
@@ -105,6 +108,31 @@ func _ready() -> void:
 		if _local_guard:
 			_local_guard.input_blocked = false)
 
+	lockers = Lockers.new()
+	lockers.name = "Lockers"
+	add_child(lockers)
+	lockers.build(school.get_material("locker"), school.get_material("dark"))
+
+	director = MonsterDirector.new()
+	director.name = "Monsters"
+	director.players = players
+	director.guard_room = guard_room
+	director.cameras = cameras
+	director.anomalies = anomalies
+	director.lockers = lockers
+	add_child(director)
+	director.build()
+	lockers.director = director
+	director.guard_caught.connect(_on_guard_caught)
+	director.message_for.connect(_tell)
+
+	totems = Totems.new()
+	totems.name = "Totems"
+	totems.director = director
+	add_child(totems)
+	totems.revive_rolled.connect(_on_revive_rolled)
+	totems.bad_roll.connect(_on_bad_roll)
+
 	var report := Report.new()
 	report.name = "Report"
 	add_child(report)
@@ -119,6 +147,8 @@ func _ready() -> void:
 	night.clipboard = clipboard
 	night.report = report
 	night.players = players
+	night.director = director
+	night.totems = totems
 	add_child(night)
 
 	menu = Menu.new()
@@ -187,6 +217,7 @@ func _use_test_window(side: int) -> void:
 func _play_solo() -> void:
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	_mode = "solo"
+	director.bake_navigation()
 	_enter_school()
 	_spawn_guard(1)
 
@@ -199,6 +230,7 @@ func _host() -> void:
 		return
 	multiplayer.multiplayer_peer = peer
 	_mode = "Hosting"
+	director.bake_navigation()
 	_enter_school()
 	_spawn_guard(1)
 	print("[net] Hosting on port %d" % PORT)
@@ -298,6 +330,14 @@ func _free_slot() -> int:
 
 
 func _update_guards_required() -> void:
+	if shift.state == Shift.State.ON_SHIFT and players.get_child_count() > 0 and director.living_guards().is_empty():
+		night.fail_night()
+		return
+	if shift.state == Shift.State.MORNING:
+		shift.guards_required = director.living_guards().size()
+		if shift.everyone_clocked_out():
+			night._end_night()
+		return
 	shift.guards_required = players.get_child_count()
 	if shift.state == Shift.State.PRE_SHIFT and shift.clocked_in_count() > 0 and shift.everyone_clocked_in():
 		_start_night.rpc()
@@ -360,6 +400,8 @@ func _receive_message(message: String) -> void:
 
 
 func _open_clipboard() -> void:
+	if _local_guard.is_dead:
+		return
 	if shift.state == Shift.State.PRE_SHIFT:
 		_show_local_message("Your clipboard is for logging anything odd once the shift has started.")
 		return
@@ -367,6 +409,89 @@ func _open_clipboard() -> void:
 		return
 	_local_guard.input_blocked = true
 	clipboard.open(guard_room.current_area())
+
+
+# --- Caught, ghosts and totems ---------------------------------------------------------------
+
+## Host: a monster caught a guard.
+func _on_guard_caught(peer_id: int, by: String) -> void:
+	var guard := players.get_node_or_null(str(peer_id)) as Guard
+	if guard == null or guard.is_dead:
+		return
+	night.record_death()
+	_guard_died.rpc(peer_id, by, guard.global_position)
+	if director.living_guards().is_empty():
+		night.fail_night()
+
+
+@rpc("authority", "call_local", "reliable")
+func _guard_died(peer_id: int, by: String, at: Vector3) -> void:
+	var guard := players.get_node_or_null(str(peer_id)) as Guard
+	if guard == null:
+		return
+	guard.set_dead(true)
+	director.place_corpse(peer_id, at, guard.uniform_color())
+	if guard == _local_guard:
+		guard_room.leave_desk()
+		clipboard.close()
+		guard.input_blocked = false
+		hud.flash(Color(0.6, 0.0, 0.0, 0.85), 2.0)
+		hud.set_ghost(true)
+		hud.show_message("You were caught by %s." % by)
+		Sfx.play_flat(self, Sfx.notes([110.0, 104.0, 98.0, 92.0], 0.35, 0.4, "saw"))
+	else:
+		hud.show_message("Guard %d was caught by %s." % [guard.slot, by])
+	_refresh_guard_visibility()
+
+
+## Host: a good roll at a revive totem.
+func _on_revive_rolled(user_peer: int, roll: int, revived_peer: int, at: Vector3) -> void:
+	var user := director.guard_by_peer(user_peer)
+	var revived := director.guard_by_peer(revived_peer)
+	if user == null or revived == null:
+		return
+	_announce.rpc("Guard %d rolled a %d at a totem. Guard %d is back!" % [user.slot, roll, revived.slot])
+	_guard_revived.rpc(revived_peer, at + Vector3(0.8, 0.1, 0))
+
+
+## Host: a bad roll lets something out of the totem.
+func _on_bad_roll(user_peer: int, roll: int, at: Vector3) -> void:
+	var user := director.guard_by_peer(user_peer)
+	_announce.rpc("Guard %d rolled a %d at a totem. Something climbs out..." % [user.slot if user else 0, roll])
+	director.summon_shade(at + Vector3(0, 0.1, 1.0), user_peer)
+
+
+@rpc("authority", "call_local", "reliable")
+func _guard_revived(peer_id: int, at: Vector3) -> void:
+	var guard := players.get_node_or_null(str(peer_id)) as Guard
+	if guard == null:
+		return
+	guard.set_dead(false)
+	director.remove_corpse(peer_id)
+	if guard == _local_guard:
+		guard.global_position = at
+		hud.set_ghost(false)
+		hud.flash(Color(0.3, 0.9, 0.8, 0.6), 1.5)
+	_refresh_guard_visibility()
+
+
+@rpc("authority", "call_local", "reliable")
+func _announce(text: String) -> void:
+	hud.show_message(text)
+
+
+## Host: sends a message to one player's screen.
+func _tell(peer_id: int, text: String) -> void:
+	if peer_id == multiplayer.get_unique_id():
+		_show_local_message(text)
+	else:
+		_receive_message.rpc_id(peer_id, text)
+
+
+func _refresh_guard_visibility() -> void:
+	var viewer_is_dead := _local_guard != null and _local_guard.is_dead
+	for guard: Guard in players.get_children():
+		guard.update_visibility(viewer_is_dead)
 
 
 ## Every computer, when the night report appears: leave the desk and stop moving.
@@ -379,6 +504,12 @@ func on_report() -> void:
 ## Every computer, when the host starts the next night: back to the gate, lights on, desks empty.
 func on_next_night() -> void:
 	school.clock_machine.prompt = "Clock in"
+	# Everyone starts the new night alive.
+	for guard: Guard in players.get_children():
+		guard.set_dead(false)
+	director.remove_all_corpses()
+	hud.set_ghost(false)
+	_refresh_guard_visibility()
 	if _local_guard:
 		guard_room.leave_desk()
 		_local_guard.input_blocked = false
