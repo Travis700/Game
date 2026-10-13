@@ -23,6 +23,7 @@ var _focus := -1
 var _next := 0
 var _blink := 0.0
 var _rec_labels: Array[Label] = []
+var _time_labels: Array[Label] = []
 
 
 ## Creates one camera per spot. Each spot is {"name", "position", "target"}.
@@ -57,6 +58,12 @@ func title(camera: int) -> String:
 	return "CAM %02d · %s" % [camera + 1, names[camera]]
 
 
+## The time stamp in the corner of every feed.
+func set_time(text: String) -> void:
+	for label in _time_labels:
+		label.text = text
+
+
 ## Shows one feed full screen (-1 for none). That feed then refreshes every frame.
 func set_focus(camera: int) -> void:
 	if _focus >= 0 and _focus != camera:
@@ -71,7 +78,7 @@ func _process(delta: float) -> void:
 	for label in _rec_labels:
 		label.visible = _blink < 0.7
 
-	if shown.is_empty() or viewer == null or not GUARD_ROOM.has_point(viewer.global_position):
+	if shown.is_empty() or viewer == null or not viewer.is_inside_tree() or not GUARD_ROOM.has_point(viewer.global_position):
 		return
 	_next = (_next + 1) % shown.size()
 	var camera := shown[_next]
@@ -96,6 +103,14 @@ func _add_overlay(viewport: SubViewport, index: int, camera_name: String) -> voi
 	rec.add_theme_color_override("font_color", Color(1, 0.25, 0.2))
 	viewport.add_child(rec)
 	_rec_labels.append(rec)
+
+	var time := Label.new()
+	time.position = Vector2(16, FEED_SIZE.y - 44)
+	time.add_theme_font_size_override("font_size", 24)
+	time.add_theme_constant_override("outline_size", 6)
+	time.add_theme_color_override("font_outline_color", Color.BLACK)
+	viewport.add_child(time)
+	_time_labels.append(time)
 
 
 ## Security cameras see in infrared, so the feeds stay readable after the lights go down.

@@ -336,14 +336,11 @@ func _build_walls() -> void:
 
 
 func _build_lobby() -> void:
-	for side: float in [-1.0, 1.0]:
-		_box(Vector3(side * 4.0, 0.22, 18.8), Vector3(2.4, 0.44, 0.6), "wood")
+	# The east bench and the plant belong to Anomalies, since they can move or go missing.
+	_box(Vector3(-4.0, 0.22, 18.8), Vector3(2.4, 0.44, 0.6), "wood")
 	# Trophy case.
 	_box(Vector3(-5.55, 0.5, 12.5), Vector3(0.6, 1.0, 2.4), "wood")
 	_box(Vector3(-5.55, 1.5, 12.5), Vector3(0.58, 1.0, 2.38), "glass")
-	# Lobby plant (one day it'll need watering).
-	_box(Vector3(5.3, 0.3, 11.0), Vector3(0.6, 0.6, 0.6), "red")
-	_box(Vector3(5.3, 1.0, 11.0), Vector3(0.8, 0.9, 0.8), "plant", false)
 	# Doormat.
 	_box(Vector3(0, 0.01, 19.0), Vector3(3.5, 0.02, 1.5), "dark", false)
 
@@ -428,8 +425,8 @@ func _build_cafeteria() -> void:
 	# Serving counter in front of the kitchen door.
 	_box(Vector3(-7.5, 0.5, -26.0), Vector3(0.8, 1.0, 6.0), "metal")
 	_box(Vector3(-7.5, 0.5, -16.5), Vector3(0.8, 1.0, 5.0), "metal")
-	for z: float in [-27.5, -4.0]:
-		_box(Vector3(-38.8, 0.45, z), Vector3(0.6, 0.9, 0.6), "dark")
+	# The other trash can (by the hallway) belongs to Anomalies.
+	_box(Vector3(-38.8, 0.45, -27.5), Vector3(0.6, 0.9, 0.6), "dark")
 
 
 func _build_kitchen_and_closet() -> void:
@@ -437,9 +434,8 @@ func _build_kitchen_and_closet() -> void:
 	_box(Vector3(0, 0.45, -29.3), Vector3(9.4, 0.9, 1.0), "metal")
 	_box(Vector3(4.2, 1.0, -20.0), Vector3(1.0, 2.0, 1.4), "metal")
 	_box(Vector3(0, 0.45, -18.0), Vector3(3.0, 0.9, 1.2), "dark")
-	# Custodian's closet: shelves and the cleaner's mop bucket.
+	# Custodian's closet shelves. The mop bucket belongs to Anomalies.
 	_box(Vector3(-4.5, 1.0, -6.0), Vector3(0.6, 2.0, 6.0), "metal")
-	_box(Vector3(2.5, 0.25, -2.0), Vector3(0.5, 0.5, 0.5), "red")
 
 
 func _build_gym() -> void:
@@ -454,10 +450,8 @@ func _build_gym() -> void:
 		_box(Vector3(22.5, 1.5, z), Vector3(0.15, 3.0, 0.15), "metal")
 		_box(Vector3(22.5, 2.95, z + facing * 0.3), Vector3(1.8, 1.05, 0.05), "glass", false)
 		_box(Vector3(22.5, 2.6, z + facing * 0.6), Vector3(0.45, 0.03, 0.45), "red", false)
-	# The mascot costume on its stand, by the gym doors. Keep an eye on it.
+	# The mascot's stand by the gym doors. The costume itself belongs to Anomalies.
 	_box(Vector3(9.0, 0.15, 1.5), Vector3(1.2, 0.3, 1.2), "wood")
-	_box(Vector3(9.0, 1.15, 1.5), Vector3(0.7, 1.7, 0.5), "costume", false)
-	_box(Vector3(9.0, 2.15, 1.5), Vector3(0.6, 0.5, 0.55), "costume", false)
 
 
 func _desk(pos: Vector3, width: float, depth: float) -> void:

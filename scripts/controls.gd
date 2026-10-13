@@ -12,6 +12,7 @@ const BINDINGS := {
 	"pause": [KEY_ESCAPE],
 	"toggle_fullscreen": [KEY_F11],
 	"zoom": [KEY_SPACE],
+	"clipboard": [KEY_TAB],
 }
 const MOUSE_BINDINGS := {
 	"zoom": [MOUSE_BUTTON_LEFT],

@@ -9,6 +9,8 @@ extends Node3D
 const PlayerScene := preload("res://scenes/player.tscn")
 const HUD := preload("res://scripts/hud.gd")
 const Menu := preload("res://scripts/menu.gd")
+const Clipboard := preload("res://scripts/clipboard.gd")
+const Report := preload("res://scripts/report.gd")
 
 const PORT := 7777
 const MAX_GUARDS := 4
@@ -25,6 +27,10 @@ var menu: CanvasLayer
 var players: Node3D
 var cameras: SecurityCameras
 var guard_room: GuardRoom
+var anomalies: Anomalies
+var night: Night
+var clipboard: CanvasLayer
+var school: SchoolBuilder
 var spawner: MultiplayerSpawner
 var _local_guard: Guard
 var _mode := ""
@@ -34,7 +40,7 @@ func _ready() -> void:
 	add_to_group("game")
 	var environment := _make_environment()
 
-	var school := SchoolBuilder.new()
+	school = SchoolBuilder.new()
 	school.name = "School"
 	add_child(school)
 
@@ -50,6 +56,7 @@ func _ready() -> void:
 	lighting.apply_pre_shift()
 	shift.started.connect(lighting.go_dark)
 	shift.started.connect(func() -> void: school.clock_machine.prompt = "Check time clock")
+	shift.morning_started.connect(func() -> void: school.clock_machine.prompt = "Clock out")
 	school.clock_machine.used.connect(_on_clock_machine_used)
 
 	players = Node3D.new()
@@ -83,6 +90,36 @@ func _ready() -> void:
 	guard_room.name = "GuardRoom"
 	add_child(guard_room)
 	guard_room.build(school, cameras, hud)
+
+	anomalies = Anomalies.new()
+	anomalies.name = "Anomalies"
+	anomalies.players = players
+	add_child(anomalies)
+	anomalies.build(school)
+
+	clipboard = Clipboard.new()
+	clipboard.name = "Clipboard"
+	add_child(clipboard)
+	clipboard.set_areas(anomalies.areas())
+	clipboard.closed.connect(func() -> void:
+		if _local_guard:
+			_local_guard.input_blocked = false)
+
+	var report := Report.new()
+	report.name = "Report"
+	add_child(report)
+
+	night = Night.new()
+	night.name = "Night"
+	night.shift = shift
+	night.lighting = lighting
+	night.anomalies = anomalies
+	night.cameras = cameras
+	night.hud = hud
+	night.clipboard = clipboard
+	night.report = report
+	night.players = players
+	add_child(night)
 
 	menu = Menu.new()
 	menu.name = "Menu"
@@ -130,6 +167,9 @@ func _start_from_command_line() -> void:
 		elif arg.begins_with("--join"):
 			_use_test_window(1)
 			_join(arg.get_slice("=", 1) if "=" in arg else "127.0.0.1")
+		elif arg == "--fast-night":
+			# For testing: a whole night in about a minute.
+			night.seconds_per_minute = 0.2
 
 
 ## When testing several copies on one screen, put each in its own half instead of fullscreen.
@@ -185,7 +225,7 @@ func _on_connected_to_server() -> void:
 
 
 func _on_connection_failed() -> void:
-	multiplayer.multiplayer_peer = null
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	menu.set_busy(false)
 	menu.show_status("Couldn't reach the host. Check the address, and that the host is in a game.")
 
@@ -201,7 +241,7 @@ func _enter_school() -> void:
 
 func _back_to_menu(message: String) -> void:
 	_menu_message = message
-	multiplayer.multiplayer_peer = null
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	get_tree().reload_current_scene()
 
 
@@ -215,6 +255,7 @@ func _on_peer_connected(peer_id: int) -> void:
 		return
 	print("[net] Guard joined (peer %d)" % peer_id)
 	guard_room.send_state_to(peer_id)
+	anomalies.send_state_to(peer_id)
 	_spawn_guard(peer_id)
 	_update_guards_required()
 
@@ -273,6 +314,7 @@ func on_local_guard_ready(guard: Guard) -> void:
 	guard.prompt_changed.connect(hud.set_prompt)
 	guard.message_shown.connect(hud.show_message)
 	guard.desk_action.connect(guard_room.on_desk_action)
+	guard.clipboard_requested.connect(_open_clipboard)
 	guard_room.local_guard = guard
 	cameras.viewer = guard
 
@@ -293,7 +335,11 @@ func _request_clock_in() -> void:
 
 
 func _handle_clock_in(peer_id: int) -> void:
-	var message := shift.clock_in(peer_id)
+	var message := ""
+	if shift.state == Shift.State.PRE_SHIFT:
+		message = shift.clock_in(peer_id)
+	else:
+		message = night.use_time_clock(peer_id)
 	if peer_id == multiplayer.get_unique_id():
 		_show_local_message(message)
 	else:
@@ -311,6 +357,35 @@ func _start_night() -> void:
 @rpc("authority", "call_remote", "reliable")
 func _receive_message(message: String) -> void:
 	_show_local_message(message)
+
+
+func _open_clipboard() -> void:
+	if shift.state == Shift.State.PRE_SHIFT:
+		_show_local_message("Your clipboard is for logging anything odd once the shift has started.")
+		return
+	if shift.state == Shift.State.REPORT:
+		return
+	_local_guard.input_blocked = true
+	clipboard.open(guard_room.current_area())
+
+
+## Every computer, when the night report appears: leave the desk and stop moving.
+func on_report() -> void:
+	if _local_guard:
+		guard_room.leave_desk()
+		_local_guard.input_blocked = true
+
+
+## Every computer, when the host starts the next night: back to the gate, lights on, desks empty.
+func on_next_night() -> void:
+	school.clock_machine.prompt = "Clock in"
+	if _local_guard:
+		guard_room.leave_desk()
+		_local_guard.input_blocked = false
+		_local_guard.flashlight.visible = false
+		_local_guard.global_position = SPAWN_POINT + Vector3((_local_guard.slot - 2.5) * 1.4, 0, 0)
+		_local_guard.rotation.y = 0.0
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 func _show_local_message(message: String) -> void:

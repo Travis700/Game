@@ -80,5 +80,27 @@ func _start_flickering() -> void:
 			(light as FlickerLight).start_flickering()
 
 
+## 6 AM: everything comes back on, ready for the next evening.
+func go_bright() -> void:
+	for flood: SpotLight3D in get_tree().get_nodes_in_group(FLOODLIGHTS):
+		flood.visible = true
+		var lens: MeshInstance3D = flood.get_meta("lens")
+		lens.material_override = school.get_material("flood_glow")
+	var brighten := create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE)
+	for light: Light3D in _school_lights():
+		if light is FlickerLight:
+			(light as FlickerLight).stop_flickering()
+		if not light.visible:
+			light.visible = true
+			light.light_energy = 0.0
+			if light.has_meta("panel"):
+				var panel: MeshInstance3D = light.get_meta("panel")
+				panel.material_override = school.get_material("light_panel")
+		brighten.tween_property(light, "light_energy", light.get_meta("day_energy"), DIM_SECONDS)
+	for property: String in PRE_SHIFT:
+		brighten.tween_property(environment, property, PRE_SHIFT[property], DIM_SECONDS)
+	brighten.tween_property(school.get_material("light_panel"), "emission_energy_multiplier", 2.0, DIM_SECONDS)
+
+
 func _school_lights() -> Array[Node]:
 	return get_tree().get_nodes_in_group(SCHOOL_LIGHTS)

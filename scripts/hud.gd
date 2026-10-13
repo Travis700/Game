@@ -13,6 +13,7 @@ var _message: Label
 var _hint: Label
 var _status: Label
 var _controls: Label
+var _clock: Label
 var _feed_view: Control
 var _feed_picture: TextureRect
 var _feed_title: Label
@@ -42,7 +43,7 @@ func _ready() -> void:
 	_hint = _make_label(18, HORIZONTAL_ALIGNMENT_LEFT, VERTICAL_ALIGNMENT_TOP)
 	_hint.offset_left = 20
 	_hint.offset_top = 16
-	_hint.text = "WASD  move\nShift  run\nF  flashlight\nE  use\nEsc  free the mouse"
+	_hint.text = "WASD  move\nShift  run\nF  flashlight\nE  use\nTab  clipboard\nEsc  free the mouse"
 
 	_status = _make_label(18, HORIZONTAL_ALIGNMENT_RIGHT, VERTICAL_ALIGNMENT_TOP)
 	_status.offset_right = -20
@@ -52,6 +53,9 @@ func _ready() -> void:
 	_controls = _make_label(20, HORIZONTAL_ALIGNMENT_CENTER, VERTICAL_ALIGNMENT_BOTTOM)
 	_controls.offset_bottom = -24
 	_controls.modulate.a = 0.85
+
+	_clock = _make_label(22, HORIZONTAL_ALIGNMENT_CENTER, VERTICAL_ALIGNMENT_TOP)
+	_clock.offset_top = 14
 
 	_build_feed_view()
 
@@ -69,6 +73,11 @@ func _process(delta: float) -> void:
 
 func set_prompt(text: String) -> void:
 	_prompt.text = text
+
+
+## The night clock at the top of the screen, e.g. "NIGHT 1 · 2:05 AM". Empty hides it.
+func set_clock(text: String) -> void:
+	_clock.text = text
 
 
 ## Controls for what you're doing right now, e.g. while seated at the monitors.
@@ -120,8 +129,9 @@ func _build_feed_view() -> void:
 	_feed_title = Label.new()
 	_feed_title.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_feed_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_feed_title.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	_feed_title.offset_top = 16
+	# At the bottom, above the controls, clear of the labels inside the feed.
+	_feed_title.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	_feed_title.offset_bottom = -60
 	_feed_title.add_theme_font_size_override("font_size", 22)
 	_feed_title.add_theme_constant_override("outline_size", 6)
 	_feed_title.add_theme_color_override("font_outline_color", Color.BLACK)

@@ -10,6 +10,7 @@ signal prompt_changed(text: String)
 signal message_shown(text: String)
 ## Keys pressed while sitting at a guard room desk: "prev", "next", "zoom", "stand" or "back".
 signal desk_action(action: String)
+signal clipboard_requested
 
 const WALK_SPEED := 3.2
 const SPRINT_SPEED := 5.6
@@ -37,6 +38,8 @@ var slot := 1
 var seated_desk := -1
 ## Mouse look is paused while a camera feed fills the screen.
 var look_locked := false
+## True while a menu like the clipboard has the mouse: the guard stands still and ignores keys.
+var input_blocked := false
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _bob_time := 0.0
@@ -105,7 +108,11 @@ func stand(at: Vector3) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	if input_blocked:
+		return
+	if event.is_action_pressed("clipboard"):
+		clipboard_requested.emit()
+	elif event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if not look_locked:
 			_look((event as InputEventMouseMotion).relative)
 	elif event is InputEventMouseButton and event.is_pressed() and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
@@ -158,9 +165,11 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
 
-	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var input := Vector2.ZERO
+	if not input_blocked:
+		input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (transform.basis * Vector3(input.x, 0, input.y)).normalized()
-	is_running = Input.is_action_pressed("sprint") and input.y < 0.0
+	is_running = not input_blocked and Input.is_action_pressed("sprint") and input.y < 0.0
 	var speed := SPRINT_SPEED if is_running else WALK_SPEED
 
 	var blend := 1.0 - exp(-ACCELERATION * delta)

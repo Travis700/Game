@@ -114,6 +114,21 @@ func on_desk_action(action: String) -> void:
 				_stand_up()
 
 
+## The camera you're looking at (full screen, or the monitor in front of you), or "" if none.
+func current_area() -> String:
+	var monitor := _zoomed if _zoomed >= 0 else _focused
+	return cameras.names[assignments[monitor]] if monitor >= 0 else ""
+
+
+## Leaves the full-screen view and stands up, e.g. when the next night begins.
+func leave_desk() -> void:
+	if local_guard == null or local_guard.seated_desk < 0:
+		return
+	if _zoomed >= 0:
+		_toggle_zoom(_zoomed)
+	_stand_up()
+
+
 func _toggle_zoom(monitor: int) -> void:
 	if _zoomed == monitor:
 		_zoomed = -1

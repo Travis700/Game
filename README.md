@@ -13,6 +13,18 @@ The first time you open it, Godot spends a few seconds importing. That's normal.
 
 The game opens on a menu: **Play solo**, **Host a game**, or **Join**.
 
+## How a night works
+
+1. Walk from the gate to the guard room and clock in at the time clock (everyone in the session has to).
+2. The lights go down and the clock starts at 12:00 AM. A night lasts 12 minutes.
+3. Things change around the school: objects move, go missing or appear, and from night 2, figures.
+   Watch the cameras, and when you spot something, press Tab and log where it is and what it is.
+4. At 6:00 AM the lights come back on. Clock out at the time clock within about 90 seconds.
+5. The report shows everyone's pay: 100 for clocking out, +25 per correct log, -10 per false report.
+
+To test a whole night quickly, add `--fast-night` to the launch arguments (with `--solo` or `--host`):
+the night then lasts about a minute.
+
 ## Testing multiplayer on one computer
 
 You don't need a second person. Godot can open several copies of the game at once.
@@ -38,6 +50,7 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 | F | Flashlight |
 | E | Use. Press E on the time clock in the guard room to clock in and start the night. |
 | Esc | Free the mouse (click to look around again) |
+| Tab | Clipboard: log anything odd you spot (after clocking in) |
 | F11 | Switch between fullscreen and a window |
 
 **At a guard room desk** (press E on a chair to sit):
@@ -60,5 +73,9 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 - `scripts/shift_lighting.gd` — the bright before-shift lighting and the lights-out sequence.
 - `scripts/security_cameras.gd` — the CCTV cameras and their feeds.
 - `scripts/guard_room.gd` — the 16 monitors, sitting at desks, and the full-screen camera view.
+- `scripts/night.gd` — the night clock, when anomalies appear, checking logs, clocking out and pay.
+- `scripts/anomalies.gd` — every anomaly and the props they move, hide or add.
+- `scripts/clipboard.gd` — the clipboard (incident log).
+- `scripts/report.gd` — the end-of-night report.
 - `scripts/hud.gd` — crosshair, prompts and messages.
 - `scripts/controls.gd` — key bindings.
