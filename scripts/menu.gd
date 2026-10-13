@@ -15,6 +15,7 @@ const DIFFICULTIES := [
 
 var _status: Label
 var _address: LineEdit
+var _password: LineEdit
 var _buttons: Array[Button] = []
 var _difficulty: OptionButton
 var _difficulty_about: Label
@@ -63,12 +64,18 @@ func _ready() -> void:
 	column.add_child(_button("Play solo", func() -> void: solo_requested.emit()))
 	column.add_child(_button("Host a game", func() -> void: host_requested.emit()))
 
+	_password = LineEdit.new()
+	_password.placeholder_text = "Room password (optional, for hosting or joining)"
+	_password.secret = true
+	_password.custom_minimum_size = Vector2(0, 40)
+	column.add_child(_password)
+
 	column.add_child(_spacer(6))
 	var join_row := HBoxContainer.new()
 	join_row.add_theme_constant_override("separation", 8)
 	_address = LineEdit.new()
 	_address.text = "127.0.0.1"
-	_address.placeholder_text = "Host's address"
+	_address.placeholder_text = "Room code or host's address"
 	_address.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_address.custom_minimum_size = Vector2(0, 44)
 	_address.text_submitted.connect(func(text: String) -> void: join_requested.emit(text.strip_edges()))
@@ -79,7 +86,7 @@ func _ready() -> void:
 	column.add_child(join_row)
 
 	var hint := Label.new()
-	hint.text = "To test on one computer, host in one window and join 127.0.0.1 in another."
+	hint.text = "The host's room code shows in the top right once they're in. Codes work on the same network, or over the internet if the host forwards port 7777. To test on one computer, host in one window and join 127.0.0.1 in another."
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.modulate = Color(1, 1, 1, 0.5)
 	hint.add_theme_font_size_override("font_size", 15)
@@ -103,6 +110,7 @@ func options() -> Dictionary:
 		"difficulty": _difficulty.selected,
 		"keep_gear": _keep_gear.button_pressed,
 		"continue": _continue.visible and _continue.button_pressed,
+		"password": _password.text,
 	}
 
 
@@ -159,6 +167,7 @@ func set_busy(busy: bool) -> void:
 	for button in _buttons:
 		button.disabled = busy
 	_address.editable = not busy
+	_password.editable = not busy
 
 
 func _button(text: String, on_press: Callable) -> Button:

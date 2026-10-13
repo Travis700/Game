@@ -13,6 +13,13 @@ The first time you open it, Godot spends a few seconds importing. That's normal.
 
 The game opens on a menu: **Play solo**, **Host a game**, or **Join**.
 
+### Playing together
+
+The host clicks **Host a game**. Their **room code** (like `DALS-AJW`) shows in the top-right corner.
+Everyone else types that code (or the host's address) next to **Join**. If the host typed a room
+password before hosting, joiners type the same password. Room codes work on the same network, or over
+the internet if the host forwards port 7777 on their router. Steam lobbies will make this easier later.
+
 ### The menu
 
 - **Your employee badge** is a number this computer picked for you the first time you played. You type it

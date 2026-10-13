@@ -22,6 +22,11 @@ const SPAWN_POINT := Vector3(0, 0.1, 54)
 ## Shown on the menu after returning to it, e.g. "The host ended the session."
 static var _menu_message := ""
 
+## Host: the password joiners must give ("" for none). Joiner: the password to send.
+var _password := ""
+## Host: the room code for this computer's address.
+var _room_code := ""
+
 var shift: Shift
 var lighting: ShiftLighting
 var hud: CanvasLayer
@@ -229,6 +234,8 @@ func _process(_delta: float) -> void:
 		return
 	var guards := players.get_child_count()
 	var status := "Solo" if _mode == "solo" else "%s · %d guard%s" % [_mode, guards, "" if guards == 1 else "s"]
+	if _room_code != "":
+		status = "Room %s%s · %s" % [_room_code, " (password)" if _password != "" else "", status]
 	if _local_guard:
 		status += " · Badge #%04d" % _local_guard.employee_number
 	if night.difficulty > 0:
@@ -287,6 +294,7 @@ func _host() -> void:
 		return
 	multiplayer.multiplayer_peer = peer
 	_mode = "Hosting"
+	_room_code = RoomCode.from_address(RoomCode.local_address())
 	director.bake_navigation()
 	_start_run()
 	_enter_school()
@@ -294,10 +302,12 @@ func _host() -> void:
 	print("[net] Hosting on port %d" % PORT)
 
 
-func _join(address: String) -> void:
-	if address == "":
-		menu.show_status("Type the host's address first.")
+func _join(typed: String) -> void:
+	if typed == "":
+		menu.show_status("Type the host's room code or address first.")
 		return
+	var address := RoomCode.resolve(typed)
+	_password = menu.options()["password"]
 	var peer := ENetMultiplayerPeer.new()
 	var error := peer.create_client(address, PORT)
 	if error != OK:
@@ -313,6 +323,7 @@ func _start_run() -> void:
 	var options: Dictionary = menu.options()
 	night.difficulty_choice = options["difficulty"]
 	night.keep_gear = options["keep_gear"]
+	_password = options["password"]
 	if not options["continue"]:
 		return
 	var saved := RunSave.read()
@@ -334,7 +345,7 @@ func _start_run() -> void:
 func _on_connected_to_server() -> void:
 	_mode = "Connected"
 	_enter_school()
-	_register_employee.rpc_id(1, Profile.employee_number)
+	_register_employee.rpc_id(1, Profile.employee_number, _password)
 	print("[net] Joined as peer %d" % multiplayer.get_unique_id())
 
 
@@ -375,9 +386,12 @@ func _on_peer_connected(peer_id: int) -> void:
 
 ## Host: a player who just joined shows their badge. Their guard spawns with it.
 @rpc("any_peer", "call_remote", "reliable")
-func _register_employee(badge: int) -> void:
+func _register_employee(badge: int, password: String) -> void:
 	var peer_id := multiplayer.get_remote_sender_id()
 	if not multiplayer.is_server() or players.has_node(str(peer_id)):
+		return
+	if password != _password:
+		_turn_away.rpc_id(peer_id, "Wrong room password." if password != "" else "That room needs a password.")
 		return
 	if shift.state != Shift.State.PRE_SHIFT:
 		_turn_away.rpc_id(peer_id, "That team's shift has already started.")
