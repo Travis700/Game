@@ -5,7 +5,7 @@ The full plan is in [DESIGN.md](DESIGN.md).
 
 ## Running it
 
-1. Open Godot 4 (4.5 or newer).
+1. Open Godot 4.7 or newer.
 2. In the Project Manager, click **Import**, choose this folder's `project.godot`, then **Import & Edit**.
 3. Press **F5** (or the ▶ button at the top right) to play.
 
