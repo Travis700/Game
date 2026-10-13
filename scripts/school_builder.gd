@@ -85,6 +85,8 @@ var desk_chair_positions: Array[Vector3] = []
 var camera_spots: Array[Dictionary] = []
 ## Things a wing monster uses, e.g. the Self-Portrait's easel. Set while building.
 var self_portrait_easel: Interactable
+## The school bell's control panel in the front office. Shuts off the Bell.
+var bell_panel: Interactable
 var specimen_jar: Node3D
 
 var _wing_doors: Array[Node3D] = []
@@ -437,6 +439,9 @@ func _build_front_office() -> void:
 		_desk(desk_pos, 1.6, 0.8)
 	for i in 4:
 		_box(Vector3(-19.2 + i * 0.6, 0.65, 10.45), Vector3(0.55, 1.3, 0.6), "metal")
+	# The bell's control panel, by the filing cabinets.
+	bell_panel = _interactable(Vector3(-19.82, 1.5, 18.5), Vector3(0.1, 0.5, 0.4), "metal", "School bell panel", "")
+	_box(Vector3(-19.76, 1.62, 18.5), Vector3(0.02, 0.1, 0.1), "led", false)
 	# The PA microphone the Principal will use.
 	_box(Vector3(-18.0, 0.82, 14.8), Vector3(0.1, 0.12, 0.1), "dark", false)
 

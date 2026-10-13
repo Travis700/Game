@@ -145,6 +145,14 @@ func _ready() -> void:
 	director.message_for.connect(_tell)
 	director.announcement.connect(func(text: String, sound: String) -> void: _announce.rpc(text, sound))
 	director.camera_signal_changed.connect(func(index: int, working: bool) -> void: _camera_signal.rpc(index, working))
+	director.bell_changed.connect(func(ringing: bool) -> void: _set_bell.rpc(ringing))
+	school.bell_panel.used.connect(func(by: Node) -> void:
+		if by != _local_guard or _local_guard.is_dead:
+			return
+		if multiplayer.is_server():
+			_request_bell_off()
+		else:
+			_request_bell_off.rpc_id(1))
 
 	totems = Totems.new()
 	totems.name = "Totems"
@@ -673,6 +681,44 @@ func _announce(text: String, sound := "") -> void:
 		Sfx.play_flat(self, Sfx.notes([660.0, 523.0, 0.0], 0.35, 0.3, "sine"))
 	elif sound == "sensor":
 		Sfx.play_flat(self, Sfx.notes([1320.0, 0.0, 1320.0], 0.1, 0.2, "square"))
+
+
+var _bell_sound: AudioStreamPlayer3D
+
+
+## Every computer: the bell starts or stops. It rings from the hallway ceiling.
+@rpc("authority", "call_local", "reliable")
+func _set_bell(ringing: bool) -> void:
+	director.bell_ringing = ringing
+	school.bell_panel.prompt = "Shut off the school bell" if ringing else "School bell panel"
+	if _bell_sound:
+		_bell_sound.queue_free()
+		_bell_sound = null
+	if ringing:
+		var ring: Array = []
+		for i in 24:
+			ring.append(1100.0 if i % 2 == 0 else 1180.0)
+		ring.append_array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+		_bell_sound = Sfx.play_at(school, Sfx.notes(ring, 0.04, 0.25, "square", true), -4.0, 200.0)
+		_bell_sound.position = Vector3(0, 3.0, 7.0)
+		_bell_sound.attenuation_model = AudioStreamPlayer3D.ATTENUATION_DISABLED
+	elif multiplayer.is_server() and shift.state == Shift.State.ON_SHIFT:
+		_announce.rpc("The bell goes quiet.")
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_bell_off() -> void:
+	if not multiplayer.is_server():
+		return
+	if director.bell_ringing:
+		director.stop_bell()
+	else:
+		_tell(_sender_id(), "Switches for the school bell. It's quiet.")
+
+
+func _sender_id() -> int:
+	var id := multiplayer.get_remote_sender_id()
+	return id if id != 0 else multiplayer.get_unique_id()
 
 
 @rpc("authority", "call_local", "reliable")

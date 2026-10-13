@@ -15,6 +15,8 @@ signal announcement(text: String, sound: String)
 signal student_helped(peer_id: int)
 ## A camera lost or got back its signal (the Ghost passing by).
 signal camera_signal_changed(camera_index: int, working: bool)
+## The school bell started or stopped ringing.
+signal bell_changed(ringing: bool)
 
 ## How many monsters each night (1-9) can bring.
 const MONSTERS_PER_NIGHT: Array[int] = [1, 1, 2, 2, 3, 3, 4, 4, 5]
@@ -46,6 +48,11 @@ const BLACKOUT_MINUTES := 20.0
 const FRONT_OFFICE := Vector3(-13, 0, 13)
 const GUARD_ROOM := AABB(Vector3(6, -1, 10), Vector3(14, 5, 10))
 const MASCOT_STAND := Vector3(9.0, 0.3, 1.5)
+## The Bell: from this night it can ring at the wrong time, speeding every monster up until
+## someone shuts it off at the panel in the front office (or it stops by itself).
+const BELL_FROM_NIGHT := 4
+const BELL_SPEED := 1.35
+const BELL_MAX_SECONDS := 60.0
 
 var players: Node3D
 var guard_room: GuardRoom
@@ -79,6 +86,10 @@ var _summoned := 0
 var _summon_left := 0.0
 var _principal_out := false
 var _blackouts: Dictionary = {}
+## True while the school bell is ringing. Shown on every computer.
+var bell_ringing := false
+var _bell_times: Array[float] = []
+var _bell_left := 0.0
 
 
 func build() -> void:
@@ -136,6 +147,12 @@ func plan_night(number: int) -> void:
 		tonight.append({"kind": pool[i], "at": randf_range(25.0, 150.0)})
 		if pool[i] == "mascot":
 			anomalies.reserved_props.append("mascot")
+	# The Bell rings once or twice a night from night 4.
+	_bell_times.clear()
+	if number >= BELL_FROM_NIGHT:
+		for i in (1 if number < 7 else 2):
+			_bell_times.append(randf_range(60.0, 300.0))
+		_bell_times.sort()
 	# The real night cleaner works every night.
 	tonight.append({"kind": "cleaner", "at": 10.0})
 	print("[night] Monsters tonight: ", tonight.map(func(m: Dictionary) -> String: return "%s at %s" % [m["kind"], Night.format_time(m["at"])]))
@@ -152,6 +169,7 @@ func update(minutes: float, delta: float) -> void:
 		_start(plan["kind"], minutes)
 	lockers.update(minutes)
 	portrait.update(minutes)
+	_update_bell(minutes, delta)
 	_update_principal(minutes, delta)
 	for camera_index: int in _blackouts.keys():
 		if minutes >= _blackouts[camera_index]:
@@ -219,6 +237,9 @@ func end_night() -> void:
 	for monster in _container.get_children():
 		monster.queue_free()
 	tonight.clear()
+	_bell_times.clear()
+	if bell_ringing:
+		stop_bell()
 	ghost_active = false
 	_principal_on = false
 	_principal_out = false
@@ -383,6 +404,30 @@ func active_monsters() -> Array[Monster]:
 				and not monster.is_queued_for_deletion():
 			result.append(monster)
 	return result
+
+
+## How much faster monsters move right now (the Bell).
+func speed_multiplier() -> float:
+	return BELL_SPEED if bell_ringing else 1.0
+
+
+func _update_bell(minutes: float, delta: float) -> void:
+	if bell_ringing:
+		_bell_left -= delta
+		if _bell_left <= 0.0:
+			stop_bell()
+		return
+	if not _bell_times.is_empty() and minutes >= _bell_times[0]:
+		_bell_times.pop_front()
+		_bell_left = BELL_MAX_SECONDS
+		bell_changed.emit(true)
+		announcement.emit("The school bell is ringing, and everything out there just got faster. The bell panel is in the front office.", "")
+
+
+## Host: someone shut the bell off at the panel (or it stopped by itself).
+func stop_bell() -> void:
+	if bell_ringing:
+		bell_changed.emit(false)
 
 
 ## Tonight's clock, in in-game minutes. Host only.

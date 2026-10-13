@@ -99,7 +99,7 @@ Each player has their **own clipboard and their own points.**
 
 Monsters per night: 1, 1, 2, 2, 3, 3, 4, 4, 5, plus one for each open wing. The real night cleaner works every night.
 
-**Not built yet:** the Bell hazard (the school bell rings and monsters speed up).
+**Hazard: the Bell.** From night 4 the school bell rings at the wrong time (twice a night from night 7) and every monster moves 35% faster until someone shuts it off at the panel in the front office, or a minute passes.
 
 ## 10. Night progression
 

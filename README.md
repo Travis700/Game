@@ -62,6 +62,12 @@ Sensors and traps are cleared away each morning.
 Upgrades and points last for the whole run, and are lost if the whole team is caught (unless the host
 ticked "Keep gear", which keeps upgrades and items).
 
+## The Bell
+
+From night 4 the school bell sometimes rings in the middle of the night (twice a night from night 7).
+While it rings, every monster moves faster. Shut it off at the bell panel in the front office (press E),
+or wait about a minute for it to stop.
+
 ## Monsters
 
 Each night brings more monsters (1, 1, 2, 2, 3, 3, 4, 4, 5 over the nine nights, plus one per open wing),

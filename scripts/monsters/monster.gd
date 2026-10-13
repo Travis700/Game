@@ -105,6 +105,8 @@ func move_to(target: Vector3, speed: float) -> bool:
 		return false
 	var direction := next - global_position
 	direction.y = 0.0
+	# Everything moves faster while the school bell rings.
+	speed *= director.speed_multiplier()
 	if direction.length() > 0.05:
 		direction = direction.normalized()
 		face(direction)
