@@ -23,6 +23,8 @@ var lighting: ShiftLighting
 var hud: CanvasLayer
 var menu: CanvasLayer
 var players: Node3D
+var cameras: SecurityCameras
+var guard_room: GuardRoom
 var spawner: MultiplayerSpawner
 var _local_guard: Guard
 var _mode := ""
@@ -72,6 +74,16 @@ func _ready() -> void:
 	add_child(hud)
 	hud.visible = false
 
+	cameras = SecurityCameras.new()
+	cameras.name = "Cameras"
+	add_child(cameras)
+	cameras.build(school.camera_spots)
+
+	guard_room = GuardRoom.new()
+	guard_room.name = "GuardRoom"
+	add_child(guard_room)
+	guard_room.build(school, cameras, hud)
+
 	menu = Menu.new()
 	menu.name = "Menu"
 	add_child(menu)
@@ -88,6 +100,12 @@ func _ready() -> void:
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 
 	_start_from_command_line()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("toggle_fullscreen"):
+		var fullscreen := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fullscreen else DisplayServer.WINDOW_MODE_FULLSCREEN)
 
 
 func _process(_delta: float) -> void:
@@ -107,9 +125,23 @@ func _start_from_command_line() -> void:
 		if arg == "--solo":
 			_play_solo()
 		elif arg == "--host":
+			_use_test_window(0)
 			_host()
 		elif arg.begins_with("--join"):
+			_use_test_window(1)
 			_join(arg.get_slice("=", 1) if "=" in arg else "127.0.0.1")
+
+
+## When testing several copies on one screen, put each in its own half instead of fullscreen.
+## The host goes on the left, players who join go on the right.
+func _use_test_window(side: int) -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	var screen := DisplayServer.screen_get_usable_rect()
+	var size := Vector2i(screen.size.x / 2, screen.size.x * 9 / 32)
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	DisplayServer.window_set_size(size)
+	DisplayServer.window_set_position(screen.position + Vector2i(side * size.x, (screen.size.y - size.y) / 2))
 
 
 func _play_solo() -> void:
@@ -182,6 +214,7 @@ func _on_peer_connected(peer_id: int) -> void:
 		_turn_away.rpc_id(peer_id, "That team's shift has already started.")
 		return
 	print("[net] Guard joined (peer %d)" % peer_id)
+	guard_room.send_state_to(peer_id)
 	_spawn_guard(peer_id)
 	_update_guards_required()
 
@@ -194,6 +227,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	if guard:
 		guard.queue_free()
 	shift.remove_guard(peer_id)
+	guard_room.on_peer_left(peer_id)
 	# Count the guards once the leaver's node is gone.
 	_update_guards_required.call_deferred()
 
@@ -238,6 +272,9 @@ func on_local_guard_ready(guard: Guard) -> void:
 	_local_guard = guard
 	guard.prompt_changed.connect(hud.set_prompt)
 	guard.message_shown.connect(hud.show_message)
+	guard.desk_action.connect(guard_room.on_desk_action)
+	guard_room.local_guard = guard
+	cameras.viewer = guard
 
 
 # --- Clocking in ---------------------------------------------------------------

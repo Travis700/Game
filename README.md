@@ -22,8 +22,7 @@ You don't need a second person. Godot can open several copies of the game at onc
 3. In the list below, type `--host` in the first instance's **Launch Arguments** box, and `--join` in the second's.
 4. Click **OK**, then press **F5**.
 
-Two game windows open (they may be stacked on top of each other, so drag one aside). The first hosts and the
-second joins it automatically. Click into a window to control that guard. Each guard has to clock in at the
+Two game windows open side by side: the host on the left, the player who joins on the right. Click into a window to control that guard. Each guard has to clock in at the
 time clock before the night starts.
 
 Without launch arguments, each window shows the menu: choose **Host a game** in one and **Join** (address
@@ -39,6 +38,16 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 | F | Flashlight |
 | E | Use. Press E on the time clock in the guard room to clock in and start the night. |
 | Esc | Free the mouse (click to look around again) |
+| F11 | Switch between fullscreen and a window |
+
+**At a guard room desk** (press E on a chair to sit):
+
+| Key | Action |
+|---|---|
+| Mouse | Look at a monitor |
+| A / D | Change which camera that monitor shows |
+| Space, left click or E | Show that camera full screen (press again to go back) |
+| S | Stand up |
 
 ## Project layout
 
@@ -49,5 +58,7 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 - `scripts/menu.gd` — the start menu.
 - `scripts/shift.gd` — clocking in and starting the night.
 - `scripts/shift_lighting.gd` — the bright before-shift lighting and the lights-out sequence.
+- `scripts/security_cameras.gd` — the CCTV cameras and their feeds.
+- `scripts/guard_room.gd` — the 16 monitors, sitting at desks, and the full-screen camera view.
 - `scripts/hud.gd` — crosshair, prompts and messages.
 - `scripts/controls.gd` — key bindings.

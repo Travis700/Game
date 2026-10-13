@@ -1,13 +1,21 @@
 extends CanvasLayer
-## On-screen overlay: crosshair, "[E] ..." prompts, short messages and a controls reminder.
+## On-screen overlay: crosshair, "[E] ..." prompts, short messages, a controls reminder,
+## and the full-screen camera view.
+
+const CCTV_CANVAS_SHADER := preload("res://shaders/cctv_canvas.gdshader")
 
 const MESSAGE_SECONDS := 4.0
 const HINT_SECONDS := 12.0
 
 var _prompt: Label
+var _crosshair: Control
 var _message: Label
 var _hint: Label
 var _status: Label
+var _controls: Label
+var _feed_view: Control
+var _feed_picture: TextureRect
+var _feed_title: Label
 var _message_time := 0.0
 var _hint_time := HINT_SECONDS
 
@@ -17,6 +25,7 @@ func _ready() -> void:
 	crosshair_holder.set_anchors_preset(Control.PRESET_FULL_RECT)
 	crosshair_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(crosshair_holder)
+	_crosshair = crosshair_holder
 	var crosshair := ColorRect.new()
 	crosshair.color = Color(1, 1, 1, 0.7)
 	crosshair.custom_minimum_size = Vector2(4, 4)
@@ -40,6 +49,12 @@ func _ready() -> void:
 	_status.offset_top = 16
 	_status.modulate.a = 0.75
 
+	_controls = _make_label(20, HORIZONTAL_ALIGNMENT_CENTER, VERTICAL_ALIGNMENT_BOTTOM)
+	_controls.offset_bottom = -24
+	_controls.modulate.a = 0.85
+
+	_build_feed_view()
+
 
 func _process(delta: float) -> void:
 	if not visible:
@@ -54,6 +69,64 @@ func _process(delta: float) -> void:
 
 func set_prompt(text: String) -> void:
 	_prompt.text = text
+
+
+## Controls for what you're doing right now, e.g. while seated at the monitors.
+func set_controls(text: String) -> void:
+	_controls.text = text
+
+
+## Fills the screen with one camera feed.
+func show_feed(feed: Texture2D, title: String) -> void:
+	_feed_picture.texture = feed
+	_feed_title.text = title
+	_feed_view.visible = true
+	_prompt.visible = false
+	_crosshair.visible = false
+
+
+func hide_feed() -> void:
+	_feed_view.visible = false
+	_feed_picture.texture = null
+	_prompt.visible = true
+	_crosshair.visible = true
+
+
+func _build_feed_view() -> void:
+	_feed_view = Control.new()
+	_feed_view.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_feed_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_feed_view.visible = false
+	add_child(_feed_view)
+	# Draw it underneath the prompt, message and controls labels.
+	move_child(_feed_view, 0)
+
+	var backdrop := ColorRect.new()
+	backdrop.color = Color.BLACK
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_feed_view.add_child(backdrop)
+
+	var material := ShaderMaterial.new()
+	material.shader = CCTV_CANVAS_SHADER
+	_feed_picture = TextureRect.new()
+	_feed_picture.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_feed_picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_feed_picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_feed_picture.material = material
+	_feed_picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_feed_view.add_child(_feed_picture)
+
+	_feed_title = Label.new()
+	_feed_title.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_feed_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_feed_title.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	_feed_title.offset_top = 16
+	_feed_title.add_theme_font_size_override("font_size", 22)
+	_feed_title.add_theme_constant_override("outline_size", 6)
+	_feed_title.add_theme_color_override("font_outline_color", Color.BLACK)
+	_feed_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_feed_view.add_child(_feed_title)
 
 
 ## Session info in the top-right corner, e.g. "Hosting · 2 guards".

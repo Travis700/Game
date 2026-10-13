@@ -10,6 +10,11 @@ const BINDINGS := {
 	"interact": [KEY_E],
 	"flashlight": [KEY_F],
 	"pause": [KEY_ESCAPE],
+	"toggle_fullscreen": [KEY_F11],
+	"zoom": [KEY_SPACE],
+}
+const MOUSE_BINDINGS := {
+	"zoom": [MOUSE_BUTTON_LEFT],
 }
 
 
@@ -22,3 +27,10 @@ func _enter_tree() -> void:
 			var event := InputEventKey.new()
 			event.physical_keycode = key
 			InputMap.action_add_event(action, event)
+	for action: String in MOUSE_BINDINGS:
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+		for button: int in MOUSE_BINDINGS[action]:
+			var click := InputEventMouseButton.new()
+			click.button_index = button
+			InputMap.action_add_event(action, click)

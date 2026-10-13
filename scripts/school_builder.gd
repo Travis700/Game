@@ -24,6 +24,13 @@ const SCHOOL_NAME := "WESTFIELD HIGH SCHOOL"
 
 ## The time clock in the guard room. Main connects it to the shift.
 var clock_machine: Interactable
+## Where the 16 guard room monitor screens go: [{"desk", "position"}], in monitor order.
+var monitor_spots: Array[Dictionary] = []
+## The chair at each guard room desk, and where a seated guard goes.
+var desk_chairs: Array[Interactable] = []
+var desk_chair_positions: Array[Vector3] = []
+## The CCTV cameras: [{"name", "position", "target"}].
+var camera_spots: Array[Dictionary] = []
 
 var _mats: Dictionary = {}
 
@@ -41,6 +48,7 @@ func _ready() -> void:
 	_build_gym()
 	_build_signs()
 	_build_lights()
+	_build_cameras()
 
 
 # --- Materials ---------------------------------------------------------------
@@ -63,13 +71,13 @@ func _make_materials() -> void:
 	_add_mat("plant", Color(0.12, 0.3, 0.14))
 	_add_mat("costume", Color(0.45, 0.32, 0.2))
 	_add_mat("cork", Color(0.55, 0.4, 0.25))
-	_add_mat("screen", Color(0.02, 0.05, 0.07), 0.3, Color(0.1, 0.25, 0.35), 0.8)
 	_add_mat("clock_screen", Color(0.02, 0.06, 0.02), 0.3, Color(0.2, 0.9, 0.3), 1.2)
 	_add_mat("vending_glow", Color(0.1, 0.1, 0.12), 0.3, Color(0.7, 0.85, 1.0), 1.0)
 	_add_mat("light_panel", Color(1, 1, 1), 0.5, Color(1.0, 0.95, 0.85), 2.0)
 	_add_mat("light_panel_off", Color(0.55, 0.55, 0.52), 0.5)
 	_add_mat("flood_glow", Color(1, 1, 1), 0.3, Color(1.0, 0.97, 0.9), 4.0)
 	_add_mat("flood_off", Color(0.15, 0.15, 0.16), 0.3)
+	_add_mat("led", Color(1, 0.1, 0.1), 0.5, Color(1, 0.1, 0.05), 3.0)
 	_add_mat("lamp_glow", Color(1, 0.8, 0.5), 0.5, Color(1.0, 0.7, 0.4), 3.0)
 	_add_mat("glass", Color(0.6, 0.75, 0.8), 0.1, Color.BLACK, 0.0, 0.25)
 	_add_mat("fence", Color(0.35, 0.37, 0.38), 0.5, Color.BLACK, 0.0, 0.35)
@@ -237,6 +245,16 @@ func get_material(mat_name: String) -> StandardMaterial3D:
 	return _mats[mat_name]
 
 
+## A wall-mounted CCTV camera: a small housing with a red light, plus a spot for SecurityCameras.
+func _camera(camera_name: String, pos: Vector3, target: Vector3) -> void:
+	var housing := _box(pos, Vector3(0.18, 0.14, 0.3), "dark", false)
+	housing.look_at(target)
+	var led := _box_mesh(Vector3(0.03, 0.03, 0.01), "led")
+	led.position = Vector3(0.05, 0.04, -0.155)
+	housing.add_child(led)
+	camera_spots.append({"name": camera_name, "position": pos + (target - pos).normalized() * 0.2, "target": target})
+
+
 # --- Areas -------------------------------------------------------------------
 
 func _build_grounds() -> void:
@@ -347,13 +365,14 @@ func _build_guard_room() -> void:
 	for i in 4:
 		var x := 7.9 + i * 3.4
 		_desk(Vector3(x, 0, 19.0), 2.8, 1.0)
-		for row in 2:
-			for col in 2:
+		# Top row first, left to right as seen from the chair (the chair faces +Z, so its left is +X).
+		for row in [1, 0]:
+			for col in [1, 0]:
 				var screen_pos := Vector3(x - 0.34 + col * 0.68, 1.05 + row * 0.5, 19.3)
 				_box(screen_pos, Vector3(0.66, 0.48, 0.06), "dark", false)
-				_box(screen_pos + Vector3(0, 0, -0.035), Vector3(0.6, 0.42, 0.01), "screen", false)
+				monitor_spots.append({"desk": i, "position": screen_pos + Vector3(0, 0, -0.035)})
 		_box(Vector3(x, 0.92, 19.35), Vector3(0.08, 0.35, 0.08), "metal", false)
-		_chair(Vector3(x, 0, 18.0))
+		_chair(Vector3(x, 0, 18.0), i)
 
 	# Clock machine on the east wall.
 	clock_machine = _interactable(Vector3(19.72, 1.4, 13.0), Vector3(0.3, 0.6, 0.5), "metal", "Clock in", "")
@@ -447,10 +466,26 @@ func _desk(pos: Vector3, width: float, depth: float) -> void:
 		_box(pos + Vector3(side * (width * 0.5 - 0.04), 0.36, 0), Vector3(0.05, 0.72, depth - 0.05), "desk")
 
 
-func _chair(pos: Vector3) -> void:
+## A desk chair. Guard room chairs (desk >= 0) can be sat in.
+func _chair(pos: Vector3, desk := -1) -> void:
 	_box(pos + Vector3(0, 0.25, 0), Vector3(0.1, 0.5, 0.1), "metal", false)
-	_box(pos + Vector3(0, 0.5, 0), Vector3(0.55, 0.08, 0.55), "dark")
+	_box(pos + Vector3(0, 0.5, 0), Vector3(0.55, 0.08, 0.55), "dark", false)
 	_box(pos + Vector3(0, 0.85, -0.25), Vector3(0.55, 0.6, 0.06), "dark", false)
+	var size := Vector3(0.6, 1.15, 0.6)
+	if desk < 0:
+		_box(pos + Vector3(0, size.y * 0.5, 0), size, "dark").visible = false
+		return
+	var seat := Interactable.new()
+	seat.prompt = "Sit at desk %d" % (desk + 1)
+	var shape := BoxShape3D.new()
+	shape.size = size
+	var collider := CollisionShape3D.new()
+	collider.shape = shape
+	seat.add_child(collider)
+	seat.position = pos + Vector3(0, size.y * 0.5, 0)
+	add_child(seat)
+	desk_chairs.append(seat)
+	desk_chair_positions.append(pos)
 
 
 func _build_signs() -> void:
@@ -499,3 +534,14 @@ func _build_lights() -> void:
 	_light(Vector3(30, CEILING, -5), 0.0, 13.0)
 	_light(Vector3(15, CEILING, -21), 0.0, 13.0)
 	_light(Vector3(30, CEILING, -21), 0.35, 13.0)
+
+
+func _build_cameras() -> void:
+	_camera("Front Gate", Vector3(7.0, 3.2, 20.4), Vector3(0, 0, 44))
+	_camera("Lobby", Vector3(5.6, 3.2, 19.6), Vector3(-2, 0.5, 11))
+	_camera("Main Hall West", Vector3(-39.5, 3.2, 9.6), Vector3(0, 0.3, 6.5))
+	_camera("Main Hall East", Vector3(39.5, 3.2, 4.4), Vector3(0, 0.3, 7.5))
+	_camera("Front Office", Vector3(-6.4, 3.2, 10.4), Vector3(-16, 0.3, 17))
+	_camera("Cafeteria", Vector3(-39.4, 3.2, 3.4), Vector3(-15, 0, -20))
+	_camera("Kitchen", Vector3(4.4, 3.2, -12.6), Vector3(-2, 0.3, -27))
+	_camera("Gym", Vector3(39.4, 3.2, -29.4), Vector3(12, 0.5, 0))
