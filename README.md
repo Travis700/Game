@@ -40,6 +40,15 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 | Esc | Free the mouse (click to look around again) |
 | F11 | Switch between fullscreen and a window |
 
+**At a guard room desk** (press E on a chair to sit):
+
+| Key | Action |
+|---|---|
+| Mouse | Look at a monitor |
+| A / D | Change which camera that monitor shows |
+| Space, left click or E | Show that camera full screen (press again to go back) |
+| S | Stand up |
+
 ## Project layout
 
 - `scenes/` — the main scene and the player.
@@ -49,5 +58,7 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 - `scripts/menu.gd` — the start menu.
 - `scripts/shift.gd` — clocking in and starting the night.
 - `scripts/shift_lighting.gd` — the bright before-shift lighting and the lights-out sequence.
+- `scripts/security_cameras.gd` — the CCTV cameras and their feeds.
+- `scripts/guard_room.gd` — the 16 monitors, sitting at desks, and the full-screen camera view.
 - `scripts/hud.gd` — crosshair, prompts and messages.
 - `scripts/controls.gd` — key bindings.

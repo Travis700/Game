@@ -23,6 +23,8 @@ var lighting: ShiftLighting
 var hud: CanvasLayer
 var menu: CanvasLayer
 var players: Node3D
+var cameras: SecurityCameras
+var guard_room: GuardRoom
 var spawner: MultiplayerSpawner
 var _local_guard: Guard
 var _mode := ""
@@ -71,6 +73,16 @@ func _ready() -> void:
 	hud.name = "HUD"
 	add_child(hud)
 	hud.visible = false
+
+	cameras = SecurityCameras.new()
+	cameras.name = "Cameras"
+	add_child(cameras)
+	cameras.build(school.camera_spots)
+
+	guard_room = GuardRoom.new()
+	guard_room.name = "GuardRoom"
+	add_child(guard_room)
+	guard_room.build(school, cameras, hud)
 
 	menu = Menu.new()
 	menu.name = "Menu"
@@ -202,6 +214,7 @@ func _on_peer_connected(peer_id: int) -> void:
 		_turn_away.rpc_id(peer_id, "That team's shift has already started.")
 		return
 	print("[net] Guard joined (peer %d)" % peer_id)
+	guard_room.send_state_to(peer_id)
 	_spawn_guard(peer_id)
 	_update_guards_required()
 
@@ -214,6 +227,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	if guard:
 		guard.queue_free()
 	shift.remove_guard(peer_id)
+	guard_room.on_peer_left(peer_id)
 	# Count the guards once the leaver's node is gone.
 	_update_guards_required.call_deferred()
 
@@ -258,6 +272,9 @@ func on_local_guard_ready(guard: Guard) -> void:
 	_local_guard = guard
 	guard.prompt_changed.connect(hud.set_prompt)
 	guard.message_shown.connect(hud.show_message)
+	guard.desk_action.connect(guard_room.on_desk_action)
+	guard_room.local_guard = guard
+	cameras.viewer = guard
 
 
 # --- Clocking in ---------------------------------------------------------------

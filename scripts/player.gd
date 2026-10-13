@@ -8,12 +8,21 @@ extends CharacterBody3D
 
 signal prompt_changed(text: String)
 signal message_shown(text: String)
+## Keys pressed while sitting at a guard room desk: "prev", "next", "zoom", "stand" or "back".
+signal desk_action(action: String)
 
 const WALK_SPEED := 3.2
 const SPRINT_SPEED := 5.6
 const ACCELERATION := 10.0
 const LOOK_LIMIT := deg_to_rad(85)
 const BOB_AMOUNT := 0.04
+const STANDING_EYE_HEIGHT := 1.6
+const SEATED_EYE_HEIGHT := 1.22
+const SEATED_YAW_LIMIT := deg_to_rad(60)
+const SEATED_PITCH_UP := deg_to_rad(30)
+const SEATED_PITCH_DOWN := deg_to_rad(35)
+## Your own body is drawn on this layer: hidden from your eyes, but visible on the security cameras.
+const SELF_LAYER := 1 << 10
 const UNIFORM_COLORS: Array[Color] = [
 	Color(0.2, 0.3, 0.55), Color(0.55, 0.25, 0.2), Color(0.25, 0.45, 0.25), Color(0.5, 0.42, 0.18),
 ]
@@ -24,6 +33,10 @@ const UNIFORM_COLORS: Array[Color] = [
 var is_running := false
 ## Which of the four guard slots this is (1-4). Chosen by the host when the guard spawns.
 var slot := 1
+## The guard room desk this guard is sitting at, or -1 when standing.
+var seated_desk := -1
+## Mouse look is paused while a camera feed fills the screen.
+var look_locked := false
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _bob_time := 0.0
@@ -49,9 +62,11 @@ func _ready() -> void:
 	name_tag.text = "Guard %d" % slot
 
 	var local := is_local()
-	# You never see your own body or name tag; everyone else does.
-	body_mesh.visible = not local
-	visor.visible = not local
+	# Your own body is hidden from your own eyes but still shows up on the cameras.
+	if local:
+		body_mesh.layers = SELF_LAYER
+		visor.layers = SELF_LAYER
+		camera.cull_mask &= ~SELF_LAYER
 	name_tag.visible = not local
 	set_physics_process(local)
 	set_process_unhandled_input(local)
@@ -68,13 +83,35 @@ func is_local() -> bool:
 	return is_multiplayer_authority()
 
 
+## Sits down at a guard room desk, facing its monitors (+Z).
+func sit(desk: int, chair_position: Vector3) -> void:
+	seated_desk = desk
+	velocity = Vector3.ZERO
+	is_running = false
+	global_position = chair_position
+	rotation.y = PI
+	head.rotation.x = 0.0
+	head.position.y = SEATED_EYE_HEIGHT
+	camera.position = Vector3.ZERO
+	interact_ray.collision_mask = GuardRoom.MONITOR_LAYER
+
+
+func stand(at: Vector3) -> void:
+	seated_desk = -1
+	look_locked = false
+	head.position.y = STANDING_EYE_HEIGHT
+	global_position = at
+	interact_ray.collision_mask = 1
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		var motion := event as InputEventMouseMotion
-		rotate_y(-motion.relative.x * mouse_sensitivity)
-		head.rotation.x = clampf(head.rotation.x - motion.relative.y * mouse_sensitivity, -LOOK_LIMIT, LOOK_LIMIT)
+		if not look_locked:
+			_look((event as InputEventMouseMotion).relative)
 	elif event is InputEventMouseButton and event.is_pressed() and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	elif seated_desk >= 0 and _handle_desk_input(event):
+		pass
 	elif event.is_action_pressed("pause"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif event.is_action_pressed("flashlight"):
@@ -83,7 +120,41 @@ func _unhandled_input(event: InputEvent) -> void:
 		_interact()
 
 
+func _look(relative: Vector2) -> void:
+	rotate_y(-relative.x * mouse_sensitivity)
+	var pitch := head.rotation.x - relative.y * mouse_sensitivity
+	if seated_desk >= 0:
+		# Seated, you can look around your desk but not turn your back on it.
+		var yaw := clampf(wrapf(rotation.y - PI, -PI, PI), -SEATED_YAW_LIMIT, SEATED_YAW_LIMIT)
+		rotation.y = PI + yaw
+		head.rotation.x = clampf(pitch, -SEATED_PITCH_DOWN, SEATED_PITCH_UP)
+	else:
+		head.rotation.x = clampf(pitch, -LOOK_LIMIT, LOOK_LIMIT)
+
+
+## Returns true if the event was a desk control.
+func _handle_desk_input(event: InputEvent) -> bool:
+	var action := ""
+	if event.is_action_pressed("move_left"):
+		action = "prev"
+	elif event.is_action_pressed("move_right"):
+		action = "next"
+	elif event.is_action_pressed("zoom"):
+		action = "zoom"
+	elif event.is_action_pressed("move_back"):
+		action = "stand"
+	elif event.is_action_pressed("pause") and look_locked:
+		action = "back"
+	if action == "":
+		return false
+	desk_action.emit(action)
+	return true
+
+
 func _physics_process(delta: float) -> void:
+	if seated_desk >= 0:
+		_update_prompt()
+		return
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
 
@@ -115,12 +186,12 @@ func _update_head_bob(delta: float, moving: bool) -> void:
 		camera.position = camera.position.lerp(Vector3.ZERO, 1.0 - exp(-8.0 * delta))
 
 
-func _focused_interactable() -> Interactable:
+func focused_interactable() -> Interactable:
 	return interact_ray.get_collider() as Interactable
 
 
 func _update_prompt() -> void:
-	var target := _focused_interactable()
+	var target := focused_interactable()
 	var text := "[E] " + target.prompt if target else ""
 	if text != _prompt:
 		_prompt = text
@@ -128,6 +199,6 @@ func _update_prompt() -> void:
 
 
 func _interact() -> void:
-	var target := _focused_interactable()
+	var target := focused_interactable()
 	if target:
 		target.interact(self)
