@@ -47,7 +47,7 @@ func _ready() -> void:
 	_hint = _make_label(18, HORIZONTAL_ALIGNMENT_LEFT, VERTICAL_ALIGNMENT_TOP)
 	_hint.offset_left = 20
 	_hint.offset_top = 16
-	_hint.text = "WASD  move\nShift  run\nF  flashlight\nE  use\nTab  clipboard\nG  use item\nEsc  free the mouse"
+	_hint.text = "WASD  move\nShift  run\nF  flashlight\nE  use\nTab  clipboard\nG  use item\nEsc  menu"
 
 	_status = _make_label(18, HORIZONTAL_ALIGNMENT_RIGHT, VERTICAL_ALIGNMENT_TOP)
 	_status.offset_right = -20

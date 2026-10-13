@@ -124,7 +124,7 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 | Mouse | Look |
 | F | Flashlight |
 | E | Use. Press E on the time clock in the guard room to clock in and start the night. |
-| Esc | Free the mouse (click to look around again) |
+| Esc | Menu: mouse sensitivity, volume, fullscreen, leave the game (the night keeps going) |
 | Tab | Clipboard: log anything odd you spot (after clocking in) |
 | G | Use or put down what you're carrying (sensors, traps, energy drink, flashlight) |
 | F11 | Switch between fullscreen and a window |

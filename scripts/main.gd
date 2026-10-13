@@ -13,6 +13,7 @@ const Clipboard := preload("res://scripts/clipboard.gd")
 const Report := preload("res://scripts/report.gd")
 const VendingUI := preload("res://scripts/vending_ui.gd")
 const KeypadUI := preload("res://scripts/keypad_ui.gd")
+const PauseMenu := preload("res://scripts/pause_menu.gd")
 
 const PORT := 7777
 const MAX_GUARDS := 4
@@ -45,6 +46,7 @@ var shop: Shop
 var doors: GuardRoomDoors
 var vending: CanvasLayer
 var keypad: CanvasLayer
+var pause_menu: CanvasLayer
 var spawner: MultiplayerSpawner
 var _local_guard: Guard
 var _mode := ""
@@ -180,6 +182,15 @@ func _ready() -> void:
 	keypad.closed.connect(func() -> void:
 		if _local_guard:
 			_local_guard.input_blocked = false)
+
+	pause_menu = PauseMenu.new()
+	pause_menu.name = "PauseMenu"
+	add_child(pause_menu)
+	pause_menu.closed.connect(func() -> void:
+		if _local_guard and shift.state != Shift.State.REPORT:
+			_local_guard.input_blocked = false)
+	pause_menu.leave_requested.connect(func() -> void:
+		_back_to_menu("You ended the session." if multiplayer.is_server() and _mode != "solo" else ""))
 
 	var report := Report.new()
 	report.name = "Report"
@@ -366,6 +377,7 @@ func _enter_school() -> void:
 
 func _back_to_menu(message: String) -> void:
 	_menu_message = message
+	get_tree().paused = false
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	get_tree().reload_current_scene()
 
@@ -481,6 +493,9 @@ func on_local_guard_ready(guard: Guard) -> void:
 	guard.desk_action.connect(guard_room.on_desk_action)
 	guard.clipboard_requested.connect(_open_clipboard)
 	guard.item_use_requested.connect(shop.request_use)
+	guard.pause_requested.connect(func() -> void:
+		guard.input_blocked = true
+		pause_menu.open(_mode == "solo", _mode == "Hosting"))
 	doors.local_guard = guard
 	guard_room.local_guard = guard
 	cameras.viewer = guard

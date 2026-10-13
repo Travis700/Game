@@ -11,6 +11,8 @@ signal message_shown(text: String)
 ## Keys pressed while sitting at a guard room desk: "prev", "next", "zoom", "stand" or "back".
 signal desk_action(action: String)
 signal clipboard_requested
+## Esc: open the pause menu.
+signal pause_requested
 ## G: use or place whatever the guard is carrying.
 signal item_use_requested
 
@@ -181,7 +183,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif seated_desk >= 0 and _handle_desk_input(event):
 		pass
 	elif event.is_action_pressed("pause"):
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		pause_requested.emit()
 	elif event.is_action_pressed("flashlight") and not is_dead:
 		flashlight.visible = not flashlight.visible
 	elif event.is_action_pressed("interact"):
@@ -191,8 +193,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _look(relative: Vector2) -> void:
-	rotate_y(-relative.x * mouse_sensitivity)
-	var pitch := head.rotation.x - relative.y * mouse_sensitivity
+	var sensitivity := mouse_sensitivity * Profile.mouse_sensitivity
+	rotate_y(-relative.x * sensitivity)
+	var pitch := head.rotation.x - relative.y * sensitivity
 	if seated_desk >= 0:
 		# Seated, you can look around your desk but not turn your back on it.
 		var yaw := clampf(wrapf(rotation.y - PI, -PI, PI), -SEATED_YAW_LIMIT, SEATED_YAW_LIMIT)
