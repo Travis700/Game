@@ -259,7 +259,19 @@ func _process(_delta: float) -> void:
 ## Lets Godot's "Customize Run Instances" start copies of the game straight into a session.
 ## Launch arguments: --solo, --host, or --join (optionally --join=ADDRESS).
 func _start_from_command_line() -> void:
-	for arg in OS.get_cmdline_args() + OS.get_cmdline_user_args():
+	var args := OS.get_cmdline_args() + OS.get_cmdline_user_args()
+	# Settings first, so they're in place before a session starts.
+	var night_number := 0
+	for arg in args:
+		if arg.begins_with("--difficulty="):
+			# For testing the wings: --difficulty=3 opens both.
+			menu._difficulty.select(clampi(arg.get_slice("=", 1).to_int(), 0, Night.MAX_DIFFICULTY))
+			menu._continue.button_pressed = false
+		elif arg.begins_with("--night="):
+			# For testing later nights, e.g. --night=7 when monsters can enter the guard room.
+			night_number = clampi(arg.get_slice("=", 1).to_int(), 1, Night.LAST_NIGHT)
+			menu._continue.button_pressed = false
+	for arg in args:
 		if arg == "--solo":
 			_play_solo()
 		elif arg == "--host":
@@ -274,6 +286,8 @@ func _start_from_command_line() -> void:
 		elif arg == "--rich":
 			# For testing the vending machine: everyone starts with 1000 points.
 			night.give_everyone.call_deferred(1000)
+	if night_number > 0 and multiplayer.is_server():
+		night.number = night_number
 
 
 ## When testing several copies on one screen, put each in its own half instead of fullscreen.

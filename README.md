@@ -96,6 +96,8 @@ the run starts over from night 1.
 use one for a dead teammate: 4 in 6 brings them back, 2 in 6 lets a shade out that hunts whoever rolled.
 
 To try the vending machine straight away, add `--rich` (everyone starts with 1000 points).
+To open the wings, add `--difficulty=2` or `--difficulty=3`. To start on a later night, add e.g. `--night=7`.
+For example: `--solo --rich --fast-night --difficulty=3 --night=5`.
 
 To test a whole night quickly, add `--fast-night` to the launch arguments (with `--solo` or `--host`):
 the night then lasts about a minute.
@@ -124,7 +126,7 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 | Mouse | Look |
 | F | Flashlight |
 | E | Use. Press E on the time clock in the guard room to clock in and start the night. |
-| Esc | Menu: mouse sensitivity, volume, fullscreen, leave the game (the night keeps going) |
+| Esc | Menu: mouse sensitivity, volume, fullscreen, leave the game (pauses solo; in a group the night keeps going) |
 | Tab | Clipboard: log anything odd you spot (after clocking in) |
 | G | Use or put down what you're carrying (sensors, traps, energy drink, flashlight) |
 | F11 | Switch between fullscreen and a window |
@@ -142,7 +144,7 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 ## Project layout
 
 - `scenes/` — the main scene and the player.
-- `scripts/school_builder.gd` — builds the placeholder school from boxes. The floor plan is drawn at the top of the file.
+- `scripts/school_builder.gd` — builds the placeholder school from boxes, wings included. The floor plan is drawn at the top of the file.
 - `scripts/player.gd` — the first-person guard.
 - `scripts/main.gd` — the menu choices, hosting and joining, spawning a guard for each player.
 - `scripts/menu.gd` — the start menu.
@@ -162,3 +164,8 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 - `scripts/sfx.gd` — simple generated sounds (whistle, humming, lockers).
 - `scripts/hud.gd` — crosshair, prompts and messages.
 - `scripts/controls.gd` — key bindings.
+- `scripts/guard_room_doors.gd` — the guard room's two fittable doors.
+- `scripts/self_portrait.gd` — the art room canvas that paints a guard.
+- `scripts/profile.gd` — your badge number and settings. `scripts/run_save.gd` — the saved run.
+- `scripts/keypad_ui.gd` — the time clock keypad. `scripts/pause_menu.gd` — the Esc menu.
+- `scripts/room_code.gd` — turning addresses into room codes.

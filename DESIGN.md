@@ -1,6 +1,6 @@
 # Night Shift — Design Document
 
-*Working title. Status: agreed baseline, before any building starts. Numbers marked (tunable) are starting points to adjust during playtesting.*
+*Working title. Status: all core features built in greybox (blocky placeholder art); next are playtesting, Steam and the art pass. Numbers marked (tunable) are starting points to adjust during playtesting.*
 
 ## 1. Overview
 
@@ -23,22 +23,24 @@ A first-person co-op light-horror game for 1–4 players. The players are night 
 
 ## 3. Lobby and sessions
 
-- **Joining.** The host creates a Steam lobby. The game shows a **room code** and a **password** that every player in the session can see (in the guard room and the pause menu). Friends can also join through Steam invites.
-- **Difficulty.** Set automatically to the number of players (1–4). The host can raise or lower it. Each option shows a short explanation, e.g. "Difficulty 3: 3 wings, ~20 cameras, built for 3 guards."
-- **Lobby option "Keep gear on restart."** When on, items survive a run reset and points reset. When off, everything resets.
+- **Joining (now).** The host's address is shown as a short **room code** (top right), and the host can set a **room password**. Joiners type the code (or an address) and the password. Codes work on a LAN, or over the internet with port 7777 forwarded.
+- **Joining (Steam, later).** Steam lobbies and invites, using the same code and password screen, with Steam's relay so nobody needs to forward ports.
+- **Employee badge.** Each computer gets a badge number the first time it plays. Guards type it into the time clock to clock in, and saved points are linked to it.
+- **Difficulty.** Auto picks one level per guard (capped at 3). The host can pick 1–3 instead; each option has an explanation on the menu.
+- **Keep gear on restart.** When on, upgrades and carried items survive a team wipe and points reset. When off, everything resets.
+- **Saving.** The host's computer saves after every night report (next night, difficulty, upgrades, doors, and each badge's points, item and flashlight). The menu offers to continue it.
 
 ## 4. The school and difficulty
 
-The map is one high school. Each difficulty level adds areas and cameras.
+The map is one high school. Each difficulty opens another wing, through red doors at the ends of the main hallway. There are three levels (a fourth, outdoor level was dropped: three is plenty of school).
 
-| Difficulty | Areas | Cameras (approx.) |
+| Difficulty | Areas | Cameras |
 |---|---|---|
-| D1 | Front gate, front office, guard room, main hallway, cafeteria and kitchen, gym | 8 |
-| D2 | + classroom wing, library, nurse's office | 14 |
-| D3 | + second floor, science labs, art room, locker rooms | 20 |
-| D4 | + auditorium, boiler room, parking lot, football field | 28 |
+| D1 | Front gate, lobby, front office, guard room, main hallway, cafeteria and kitchen, gym | 8 |
+| D2 | + classroom wing: West Hall, Rooms 101–103, library, nurse's office | 13 |
+| D3 | + science wing: East Hall, science lab, art room, locker rooms | 17 |
 
-Areas not used at a difficulty are locked off (shutters, locked doors, "closed for renovation").
+Closed wings stay behind locked doors; their cameras, clipboard areas, anomalies and monsters are left out.
 
 ## 5. The guard room
 
@@ -75,29 +77,29 @@ Each player has their **own clipboard and their own points.**
 
 ## 9. Monsters
 
-**Home rule:** every monster has a home area and can only appear if that area is in the map. Roaming monsters can appear at any difficulty. Every counter is reachable within the monster's home area or the core building.
+**Home rule:** every monster has a home area and can only appear if that area is open at tonight's difficulty.
 
-| # | Monster | Home | Min. difficulty | Warning sign | How to deal with it |
+| # | Monster | Home | Difficulty | From night | How it works |
 |---|---|---|---|---|---|
-| 1 | Hall Monitor | Main hallway | D1 | Tall figure with a sash and clipboard | Walk, don't run. It hunts anyone running. |
-| 2 | The Mascot | Gym | D1 | Bulldog costume missing from its stand | Keep it on a monitor. It only moves when nobody is watching it. |
-| 3 | Lunch Lady | Cafeteria | D1 | Humming, trays moved | Stay quiet. Throw items to draw her away. |
-| 4 | Locker Thing | Main hallway | D1 | Locker doors open on camera | Close the lockers, or set traps. |
-| 5 | The Principal | Front office | D1 | Names one guard over the loudspeakers | That guard must reach the office within 60 seconds, or it comes to them. |
-| 6 | The Other Cleaner | Roams | D1 | Two cleaners on camera at once | Spot the fake. The real cleaner is harmless. |
-| 7 | The Student | Roams | D1 | A kid asking for help | Check the cameras before following. Rarely, the kid is real. |
-| 8 | The Ghost | Roams | D1 (late game) | An extra clock-in under an unknown employee number | Only visible on upgraded monitors. Stay out of its path. |
-| 9 | The Substitute | Classroom wing | D2 | Teacher at the front of a class, with something subtly wrong | Log it fast, or it takes attendance and hunts. |
-| 10 | The Librarian | Library | D2 | Library lights switched off | Turn the lights back on. A flashlight stuns it. |
-| 11 | The Nurse | Nurse's office | D2 | Medicine cabinet open | Drags injured guards to her office. Teammates must rescue them. |
-| 12 | The Specimen | Science labs | D3 | Empty jar, a camera covered over | Small, fast, uses vents. Use traps. |
-| 13 | The Self-Portrait | Art room | D3 | A painting of a guard, more finished each check | Log it and cover the canvas before it's finished. |
-| 14 | The Understudy | Auditorium | D4 | Stage lights on, curtain moving | Copies teammates' voices on the radio. Use a code word. |
-| 15 | The Crossing Guard | Parking lot | D4 | Stop sign raised | When it shows STOP, everyone outside must freeze. |
+| 1 | Hall Monitor | Main hallway | D1 | 1 | Walks the hall; chases anyone it sees running. |
+| 2 | The Mascot | Gym | D1 | 1 | Only moves while nobody watches it, in person or on a monitor. |
+| 3 | Lunch Lady | Cafeteria | D1 | 2 | Blind, humming; hears running from far away. |
+| 4 | Locker Thing | Main hallway | D1 | 3 | Lockers swing open; walk past one and you're pulled in. Shut them with E. |
+| 5 | The Principal | Front office | D1 | 3 | Calls a guard to the office over the intercom; 45 seconds to get there. |
+| 6 | The Other Cleaner | Roams | D1 | 5 | A fake night cleaner with no cart. Log it and it leaves. |
+| 7 | The Student | Main hallway | D1 | 5 | A kid asking you to follow. Usually a trap; sometimes real. |
+| 8 | The Ghost | Roams | D1 | 5 | Only on spectral monitors; knocks out cameras; an extra name on the time clock. |
+| 9 | The Substitute | Classroom wing | D2 | 1 | Takes the register: answer "Here!" with E, or get detention. |
+| 10 | The Librarian | Library | D2 | 2 | Hates light and noise: shushes, then hunts until it's dark and quiet. |
+| 11 | The Nurse | Nurse's office | D2 | 3 | Slowly follows any guard who's on their own. Stick together. |
+| 12 | The Crossing Guard | Science wing | D3 | 1 | Holds up a STOP sign; anyone it sees moving gets run down. |
+| 13 | The Self-Portrait | Art room | D3 | 2 | Paints one guard stage by stage; finished, it catches them. Turn it to the wall. |
+| 14 | The Specimen | Science lab | D3 | 3 | Crawls after you in the dark; flees from flashlight beams into the ceiling. |
+| 15 | The Understudy | Locker rooms | D3 | 4 | Dressed as a guard, follows one; stand still in its sight and it steps in. |
 
-**Hazard: The Bell.** The school bell rings at the wrong time and every monster speeds up for 30 seconds. It's reset in the front office.
+Monsters per night: 1, 1, 2, 2, 3, 3, 4, 4, 5, plus one for each open wing. The real night cleaner works every night.
 
-**Monsters available per difficulty:** D1: 8, D2: 11, D3: 13, D4: 15.
+**Not built yet:** the Bell hazard (the school bell rings and monsters speed up).
 
 ## 10. Night progression
 
@@ -117,18 +119,19 @@ Each night picks its monsters at random from the pool available at that difficul
 
 Which monsters are unlocked on which night is still to be set (section 14).
 
-## 11. Vending machine (first item list)
+## 11. Vending machine
 
-- Flashlight upgrades and spare batteries
-- Coffee
-- Radio (talk to teammates anywhere in the school)
-- Door locks and motion sensors
-- Traps
-- Extra cameras
-- Monitor system upgrade (needed to see the Ghost)
-- Guard room door reinforcement (matters from night 7)
+| Item | Price | Effect |
+|---|---|---|
+| Spectral camera kit | 150 | Installed at a desk (10 s): that desk's monitors show the Ghost. |
+| Lucky rabbit's foot | 60 | Revive totems succeed on 5 in 6. |
+| Guard room door kit | 120 | A door for one of the two doorways; holds monsters about 15 s of banging. |
+| Motion sensor | 40 | Put down with G; announces which area a monster passed. |
+| Industrial glue trap | 60 | Put down with G; holds the first monster for 20 s. |
+| Energy drink | 25 | Faster running for 30 s. |
+| Heavy-duty flashlight | 80 | Longer, wider beam for the rest of the run. |
 
-Prices and exact effects are to be set during building.
+**Ideas not built yet:** radio, extra cameras, coffee.
 
 ## 12. Technical plan
 
@@ -139,15 +142,15 @@ Prices and exact effects are to be set during building.
 
 ## 13. Build order
 
-1. **Project setup:** Godot project, folder structure, repo.
-2. **Walking around:** first-person controller, greybox D1 school, gate to guard room.
-3. **Multiplayer foundation:** hosting and joining, synced players. Built early so nothing has to be rewritten later.
-4. **Guard room:** sitting at desks, 4 live monitors per desk, cycling views, clock machine.
-5. **Night loop:** timer, anomalies, clipboard, scoring, clock-out.
-6. **First monster:** Hall Monitor, plus death, ghosts and revive totems.
-7. **Vending machine and items:** purchases, traps, monitor upgrade install.
-8. **Content:** remaining monsters, D2–D4 areas, nights 1–9.
-9. **Steam:** lobbies, room code and password, store page, release build.
+1. ~~Project setup~~
+2. ~~Walking around: first-person controller, greybox school, gate to guard room~~
+3. ~~Multiplayer foundation~~
+4. ~~Guard room: desks, 16 live monitors, clock machine~~
+5. ~~Night loop: timer, anomalies, clipboard, scoring, clock-out~~
+6. ~~Monsters, death, ghosts and revive totems~~
+7. ~~Vending machine and items~~
+8. ~~Content: all 15 monsters, D2 and D3 wings, nights 1–9, saving, badges, room codes, Esc menu~~
+9. **Next:** playtesting and balance; Steam (GodotSteam lobbies and relay, store page); art pass (textures, models, sounds) before the store page.
 
 ## 14. Open questions
 
