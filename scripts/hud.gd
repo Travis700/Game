@@ -14,6 +14,7 @@ var _hint: Label
 var _status: Label
 var _controls: Label
 var _clock: Label
+var _inventory: Label
 var _ghost_tint: ColorRect
 var _ghost_note: Label
 var _flash: ColorRect
@@ -60,6 +61,11 @@ func _ready() -> void:
 	_clock = _make_label(22, HORIZONTAL_ALIGNMENT_CENTER, VERTICAL_ALIGNMENT_TOP)
 	_clock.offset_top = 14
 
+	_inventory = _make_label(18, HORIZONTAL_ALIGNMENT_RIGHT, VERTICAL_ALIGNMENT_BOTTOM)
+	_inventory.offset_right = -20
+	_inventory.offset_bottom = -20
+	_inventory.modulate.a = 0.8
+
 	_build_feed_view()
 
 	_ghost_tint = ColorRect.new()
@@ -99,6 +105,11 @@ func set_prompt(text: String) -> void:
 ## The night clock at the top of the screen, e.g. "NIGHT 1 · 2:05 AM". Empty hides it.
 func set_clock(text: String) -> void:
 	_clock.text = text
+
+
+## Your points and what you're carrying, in the bottom-right corner.
+func set_inventory(points: int, item_name: String) -> void:
+	_inventory.text = "%d points%s" % [points, ("   ·   Carrying: " + item_name) if item_name != "" else ""]
 
 
 ## The faint blue look and reminder while you're a ghost.

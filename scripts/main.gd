@@ -11,6 +11,7 @@ const HUD := preload("res://scripts/hud.gd")
 const Menu := preload("res://scripts/menu.gd")
 const Clipboard := preload("res://scripts/clipboard.gd")
 const Report := preload("res://scripts/report.gd")
+const VendingUI := preload("res://scripts/vending_ui.gd")
 
 const PORT := 7777
 const MAX_GUARDS := 4
@@ -34,6 +35,8 @@ var school: SchoolBuilder
 var director: MonsterDirector
 var lockers: Lockers
 var totems: Totems
+var shop: Shop
+var vending: CanvasLayer
 var spawner: MultiplayerSpawner
 var _local_guard: Guard
 var _mode := ""
@@ -125,6 +128,8 @@ func _ready() -> void:
 	lockers.director = director
 	director.guard_caught.connect(_on_guard_caught)
 	director.message_for.connect(_tell)
+	director.announcement.connect(func(text: String, sound: String) -> void: _announce.rpc(text, sound))
+	director.camera_signal_changed.connect(func(index: int, working: bool) -> void: _camera_signal.rpc(index, working))
 
 	totems = Totems.new()
 	totems.name = "Totems"
@@ -132,6 +137,22 @@ func _ready() -> void:
 	add_child(totems)
 	totems.revive_rolled.connect(_on_revive_rolled)
 	totems.bad_roll.connect(_on_bad_roll)
+
+	shop = Shop.new()
+	shop.name = "Shop"
+	add_child(shop)
+	totems.shop = shop
+	guard_room.shop = shop
+	vending = VendingUI.new()
+	vending.name = "Vending"
+	add_child(vending)
+	vending.buy_requested.connect(shop.request_buy)
+	vending.closed.connect(func() -> void:
+		if _local_guard:
+			_local_guard.input_blocked = false)
+	shop.wallet_changed.connect(func(_points: int) -> void: _refresh_inventory())
+	shop.holding_changed.connect(func(_item: String) -> void: _refresh_inventory())
+	school.vending_machine.used.connect(_on_vending_used)
 
 	var report := Report.new()
 	report.name = "Report"
@@ -149,7 +170,12 @@ func _ready() -> void:
 	night.players = players
 	night.director = director
 	night.totems = totems
+	night.shop = shop
+	night.guard_room = guard_room
 	add_child(night)
+	shop.night = night
+	director.student_helped.connect(func(peer_id: int) -> void: night.add_bonus(peer_id))
+	_refresh_inventory()
 
 	menu = Menu.new()
 	menu.name = "Menu"
@@ -200,6 +226,9 @@ func _start_from_command_line() -> void:
 		elif arg == "--fast-night":
 			# For testing: a whole night in about a minute.
 			night.seconds_per_minute = 0.2
+		elif arg == "--rich":
+			# For testing the vending machine: everyone starts with 1000 points.
+			night.give_everyone.call_deferred(1000)
 
 
 ## When testing several copies on one screen, put each in its own half instead of fullscreen.
@@ -476,8 +505,28 @@ func _guard_revived(peer_id: int, at: Vector3) -> void:
 
 
 @rpc("authority", "call_local", "reliable")
-func _announce(text: String) -> void:
+func _announce(text: String, sound := "") -> void:
 	hud.show_message(text)
+	if sound == "intercom":
+		Sfx.play_flat(self, Sfx.notes([660.0, 523.0, 0.0], 0.35, 0.3, "sine"))
+
+
+@rpc("authority", "call_local", "reliable")
+func _camera_signal(camera_index: int, working: bool) -> void:
+	cameras.set_signal(camera_index, working)
+
+
+func _on_vending_used(by: Node) -> void:
+	if by != _local_guard or _local_guard.is_dead:
+		return
+	_local_guard.input_blocked = true
+	vending.open(shop.local_points, shop.local_item)
+
+
+func _refresh_inventory() -> void:
+	hud.set_inventory(shop.local_points, Shop.item_name(shop.local_item))
+	if vending.is_open:
+		vending.refresh(shop.local_points, shop.local_item)
 
 
 ## Host: sends a message to one player's screen.

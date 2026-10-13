@@ -73,6 +73,8 @@ func _ready() -> void:
 		body_mesh.layers = SELF_LAYER
 		visor.layers = SELF_LAYER
 		camera.cull_mask &= ~SELF_LAYER
+		# The living can't see the Ghost with their own eyes.
+		camera.cull_mask &= ~SecurityCameras.SPECTRAL_LAYER
 	name_tag.visible = not local
 	set_physics_process(local)
 	set_process_unhandled_input(local)
@@ -95,6 +97,12 @@ func set_dead(dead: bool) -> void:
 		flashlight.visible = false
 		is_running = false
 	interact_ray.enabled = is_local() and not dead
+	if is_local():
+		# Once you're a ghost yourself, you can see the other one.
+		if dead:
+			camera.cull_mask |= SecurityCameras.SPECTRAL_LAYER
+		else:
+			camera.cull_mask &= ~SecurityCameras.SPECTRAL_LAYER
 
 
 ## Shows or hides this guard for the player on this computer. Ghosts are only visible to

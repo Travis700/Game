@@ -16,6 +16,7 @@ const SPOTS: Array[Vector3] = [
 ]
 
 var director: MonsterDirector
+var shop: Shop
 var _stones: Dictionary = {}
 var _stone_material: StandardMaterial3D
 var _rune_material: StandardMaterial3D
@@ -117,7 +118,9 @@ func _request_use(index: int) -> void:
 	var at: Vector3 = SPOTS[index]
 	_remove.rpc(index)
 	var roll := randi_range(1, 6)
-	if roll <= REVIVE_ON_OR_BELOW:
+	# A lucky rabbit's foot from the vending machine turns a 5 into a revive too.
+	var revive_on := REVIVE_ON_OR_BELOW + (1 if shop and shop.take(user, "lucky_charm") else 0)
+	if roll <= revive_on:
 		revive_rolled.emit(user, roll, dead[0].name.to_int(), at)
 	else:
 		bad_roll.emit(user, roll, at)

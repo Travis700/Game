@@ -23,6 +23,11 @@ var state := "":
 		if is_inside_tree():
 			_on_state_changed(value)
 
+## Render layers for the monster's body, e.g. the Ghost only shows on spectral camera feeds.
+var visual_layers := 1
+## Harmless characters (the real night cleaner, a real student) can't be logged as monsters.
+var harmless := false
+
 var _agent: NavigationAgent3D
 
 
@@ -144,6 +149,7 @@ func part(mesh: Mesh, color: Color, offset: Vector3, glow := 0.0, alpha := 1.0) 
 	instance.mesh = mesh
 	instance.material_override = material
 	instance.position = offset
+	instance.layers = visual_layers
 	add_child(instance)
 	return instance
 

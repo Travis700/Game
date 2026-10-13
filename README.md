@@ -22,6 +22,17 @@ The game opens on a menu: **Play solo**, **Host a game**, or **Join**.
 4. At 6:00 AM the lights come back on. Clock out at the time clock within about 90 seconds.
 5. The report shows everyone's pay: 100 for clocking out, +25 per correct log, -10 per false report.
 
+## The vending machine
+
+Press E on the vending machine in the guard room to spend points. Purchases drop into the tray; press E
+to pick them up. You can carry one thing at a time (shown in the bottom-right corner).
+
+- **Spectral camera kit (150):** stand at a desk's chair with it and press E, then stay there for 10
+  seconds. That desk's monitors switch to spectral feeds, which show the Ghost.
+- **Lucky rabbit's foot (60):** carry it to a revive totem. Your roll revives on 5 in 6 instead of 4 in 6.
+
+Upgrades and points last for the whole run, and are lost if the whole team is caught.
+
 ## Monsters
 
 Each night brings more monsters (1, 1, 2, 2, 3, 3, 4, 4, 5 over the nine nights), picked from the ones
@@ -34,6 +45,12 @@ on your clipboard as "Monster" in that area for points.
 | The Mascot | 1 | Gym | Steps off its stand. Only moves while nobody is looking at it, in person or on a monitor. |
 | Lunch Lady | 2 | Cafeteria, kitchen | Blind and humming. Hears running from far away, walking only up close. |
 | Locker Thing | 3 | Main hallway | Locker doors swing open. Walk past an open one and you're pulled in. Press E to shut them. |
+| The Principal | 3 | Front office | Calls one guard to the office over the intercom. Get there within 45 seconds, or it comes to find you. |
+| The Other Cleaner | 5 | Anywhere | A copy of the night cleaner, with no cart and its head at a wrong angle. Gets close, then attacks. Log it and it leaves. |
+| The Student | 5 | Main hallway | A kid who asks you to follow them. Usually a trap, and the fake never shows on the cameras. Sometimes they're real (+25). |
+| The Ghost | 5 | Anywhere | Invisible to your eyes. Drifts through walls toward the living and knocks out cameras it passes. Only spectral monitors show it, and the time clock lists one name too many. |
+
+The real **night cleaner** works every night pushing a mop cart. They're harmless, and logging them is a false report.
 
 **Getting caught:** you become a ghost. You can walk around and watch, but can't use anything, and
 only other ghosts can see you. Each death costs every guard 50 points. If the whole team is caught,
@@ -41,6 +58,8 @@ the run starts over from night 1.
 
 **Revive totems:** three glowing stones are hidden around the school each night. A living guard can
 use one for a dead teammate: 4 in 6 brings them back, 2 in 6 lets a shade out that hunts whoever rolled.
+
+To try the vending machine straight away, add `--rich` (everyone starts with 1000 points).
 
 To test a whole night quickly, add `--fast-night` to the launch arguments (with `--solo` or `--host`):
 the night then lasts about a minute.
@@ -101,6 +120,7 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 - `scripts/monster_director.gd` — which monsters come out each night, navigation, catching guards.
 - `scripts/monsters/` — one script per monster.
 - `scripts/lockers.gd` — the hallway locker doors and the Locker Thing.
+- `scripts/shop.gd`, `scripts/vending_ui.gd` — the vending machine and carrying items.
 - `scripts/totems.gd` — revive totems.
 - `scripts/sfx.gd` — simple generated sounds (whistle, humming, lockers).
 - `scripts/hud.gd` — crosshair, prompts and messages.

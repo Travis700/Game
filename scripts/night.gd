@@ -27,6 +27,8 @@ var report: CanvasLayer
 var players: Node3D
 var director: MonsterDirector
 var totems: Totems
+var shop: Shop
+var guard_room: GuardRoom
 
 var number := 1
 var minutes := 0.0
@@ -78,7 +80,10 @@ func time_text() -> String:
 func use_time_clock(peer_id: int) -> String:
 	match shift.state:
 		Shift.State.ON_SHIFT:
-			return "It's %s. You can clock out at 6 AM." % time_text()
+			var message := "It's %s. You can clock out at 6 AM." % time_text()
+			if director.ghost_active:
+				message += "\nTonight's clock-ins show one name too many: employee #0451, R. Hale. Nobody by that name works here."
+			return message
 		Shift.State.MORNING:
 			var message := shift.clock_out(peer_id)
 			if shift.everyone_clocked_out():
@@ -154,6 +159,29 @@ func _receive_log(area: String, type: String) -> void:
 		stats["false"] += 1
 
 
+## Host: a guard's banked points.
+func points_of(peer_id: int) -> int:
+	return _totals.get(peer_id, 0)
+
+
+## Host: spends a guard's points at the vending machine.
+func spend(peer_id: int, amount: int) -> void:
+	_totals[peer_id] = points_of(peer_id) - amount
+
+
+## Host, for testing: gives everyone points to spend.
+func give_everyone(amount: int) -> void:
+	for guard: Guard in players.get_children():
+		_totals[guard.name.to_int()] = points_of(guard.name.to_int()) + amount
+	shop.push_wallets()
+
+
+## Host: a guard did something worth a correct log's pay (e.g. walking a real student out).
+func add_bonus(peer_id: int) -> void:
+	var stats: Dictionary = _stats.get_or_add(peer_id, {"correct": 0, "false": 0})
+	stats["correct"] += 1
+
+
 ## Host: a guard was caught tonight.
 func record_death() -> void:
 	_deaths += 1
@@ -169,6 +197,8 @@ func fail_night() -> void:
 	var rows := _build_rows(false)
 	var summary := "The whole team was caught at %s.\nThe school keeps its secrets. The run starts over from night 1." % time_text()
 	_show_report.rpc(number, rows, summary, true)
+	shop.reset_all()
+	guard_room.reset_upgrades()
 
 
 func _end_night() -> void:
@@ -182,6 +212,7 @@ func _end_night() -> void:
 	summary += "\nPay: %d for clocking out, +%d per correct log, -%d per false report, -%d for each guard lost." % [
 		SURVIVAL_PAY, CORRECT_LOG_POINTS, FALSE_REPORT_POINTS, DEATH_PENALTY]
 	_show_report.rpc(number, rows, summary, false)
+	shop.push_wallets()
 
 
 ## One row per guard for the report. `keep_pay` is false when the run is starting over.

@@ -9,6 +9,12 @@ extends Node3D
 
 signal guard_caught(peer_id: int, by: String)
 signal message_for(peer_id: int, text: String)
+## Something everyone hears, e.g. the Principal on the intercom. `sound` is "" or "intercom".
+signal announcement(text: String, sound: String)
+## A guard walked a real lost student to safety.
+signal student_helped(peer_id: int)
+## A camera lost or got back its signal (the Ghost passing by).
+signal camera_signal_changed(camera_index: int, working: bool)
 
 ## How many monsters each night (1-9) can bring.
 const MONSTERS_PER_NIGHT: Array[int] = [1, 1, 2, 2, 3, 3, 4, 4, 5]
@@ -20,7 +26,17 @@ const ROSTER := {
 	"mascot": {"name": "The Mascot", "home": "Gym", "night": 1},
 	"lunch_lady": {"name": "Lunch Lady", "home": "Cafeteria", "night": 2},
 	"locker_thing": {"name": "Locker Thing", "home": "Main Hall West", "night": 3},
+	"principal": {"name": "The Principal", "home": "Front Office", "night": 3},
+	"other_cleaner": {"name": "The Other Cleaner", "home": "Lobby", "night": 5},
+	"student": {"name": "The Student", "home": "Main Hall West", "night": 5},
+	"ghost": {"name": "The Ghost", "home": "Lobby", "night": 5},
 }
+## The intercom: in-game minutes between the Principal's summonses, and real seconds to answer.
+const SUMMON_EVERY := Vector2(60.0, 100.0)
+const SUMMON_SECONDS := 45.0
+## How long a camera stays dark after the Ghost passes (in-game minutes).
+const BLACKOUT_MINUTES := 20.0
+const FRONT_OFFICE := Vector3(-13, 0, 13)
 const GUARD_ROOM := AABB(Vector3(6, -1, 10), Vector3(14, 5, 10))
 const MASCOT_STAND := Vector3(9.0, 0.3, 1.5)
 
@@ -43,6 +59,15 @@ var _credited: Dictionary = {}
 var _last_positions: Dictionary = {}
 var _speeds: Dictionary = {}
 var _corpses: Dictionary = {}
+## True while the Ghost is out tonight (it shows up on the time clock). Host only.
+var ghost_active := false
+var _minutes := 0.0
+var _principal_on := false
+var _next_summon := 0.0
+var _summoned := 0
+var _summon_left := 0.0
+var _principal_out := false
+var _blackouts: Dictionary = {}
 
 
 func build() -> void:
@@ -92,11 +117,14 @@ func plan_night(number: int) -> void:
 		tonight.append({"kind": pool[i], "at": randf_range(25.0, 150.0)})
 		if pool[i] == "mascot":
 			anomalies.reserved_props.append("mascot")
+	# The real night cleaner works every night.
+	tonight.append({"kind": "cleaner", "at": 10.0})
 	print("[night] Monsters tonight: ", tonight.map(func(m: Dictionary) -> String: return "%s at %s" % [m["kind"], Night.format_time(m["at"])]))
 
 
 ## Host, every frame during the shift.
 func update(minutes: float, delta: float) -> void:
+	_minutes = minutes
 	_track_guard_speeds(delta)
 	for plan in tonight:
 		if plan.get("started", false) or minutes < plan["at"]:
@@ -104,6 +132,11 @@ func update(minutes: float, delta: float) -> void:
 		plan["started"] = true
 		_start(plan["kind"], minutes)
 	lockers.update(minutes)
+	_update_principal(minutes, delta)
+	for camera_index: int in _blackouts.keys():
+		if minutes >= _blackouts[camera_index]:
+			_blackouts.erase(camera_index)
+			camera_signal_changed.emit(camera_index, true)
 
 
 func _start(kind: String, minutes: float) -> void:
@@ -117,6 +150,18 @@ func _start(kind: String, minutes: float) -> void:
 			spawn("lunch_lady", Vector3(0, 0, -25))
 		"locker_thing":
 			lockers.activate(minutes)
+		"principal":
+			_principal_on = true
+			_next_summon = minutes + randf_range(5.0, 30.0)
+		"cleaner":
+			spawn("cleaner", Vector3(0, 0, -5))
+		"other_cleaner":
+			spawn("other_cleaner", NightCleaner.ROUTE.pick_random())
+		"student":
+			spawn("student", Vector3(randf_range(-30.0, 30.0), 0, 7), {"real": randf() < 0.2})
+		"ghost":
+			ghost_active = true
+			spawn("ghost", Vector3(-35, 0, -25))
 
 
 func spawn(kind: String, at: Vector3, extra := {}) -> void:
@@ -140,6 +185,13 @@ func end_night() -> void:
 	for monster in _container.get_children():
 		monster.queue_free()
 	tonight.clear()
+	ghost_active = false
+	_principal_on = false
+	_principal_out = false
+	_summoned = 0
+	for camera_index: int in _blackouts.keys():
+		camera_signal_changed.emit(camera_index, true)
+	_blackouts.clear()
 	lockers.reset_all()
 	anomalies.reserved_props.erase("mascot")
 	anomalies.set_prop_shown.rpc("mascot", true)
@@ -154,6 +206,20 @@ func _create_monster(data: Dictionary) -> Node:
 			monster = Mascot.new()
 		"lunch_lady":
 			monster = LunchLady.new()
+		"cleaner":
+			monster = NightCleaner.new()
+		"other_cleaner":
+			monster = OtherCleaner.new()
+		"principal":
+			var principal := Principal.new()
+			principal.target_peer = data.get("target", 0)
+			monster = principal
+		"student":
+			var student := Student.new()
+			student.real = data.get("real", false)
+			monster = student
+		"ghost":
+			monster = SchoolGhost.new()
 		_:
 			var shade := Shade.new()
 			shade.target_peer = data.get("target", 0)
@@ -231,7 +297,10 @@ func is_watched(monster: Monster) -> bool:
 			return true
 	if not _anyone_in_guard_room():
 		return false
-	for camera_index in cameras.shown:
+	for feed_key in cameras.shown:
+		var camera_index := feed_key / 2
+		if not cameras.is_working(camera_index):
+			continue
 		var camera := cameras.camera(camera_index)
 		var to_monster := target - camera.global_position
 		if to_monster.length() < 45.0 and (-camera.global_basis.z).angle_to(to_monster) < deg_to_rad(42) \
@@ -253,17 +322,71 @@ func tell(peer_id: int, text: String) -> void:
 ## Host: checks a clipboard "Monster" entry. True if a monster this guard hasn't logged yet is
 ## in that area right now.
 func check_log(peer_id: int, area: String) -> bool:
-	for monster: Node in _container.get_children():
-		if not monster is Monster or monster is Shade:
+	for node: Node in _container.get_children():
+		var monster := node as Monster
+		if monster == null or monster is Shade or monster.harmless or monster.is_queued_for_deletion():
 			continue
 		var credited: Array = _credited.get_or_add(monster.name, [])
-		if peer_id not in credited and SchoolBuilder.area_at((monster as Monster).global_position) == area:
+		if peer_id not in credited and SchoolBuilder.area_at(monster.global_position) == area:
 			credited.append(peer_id)
+			if monster is OtherCleaner:
+				# Found out, it slips away.
+				get_tree().create_timer(2.0).timeout.connect(func() -> void:
+					if is_instance_valid(monster):
+						remove_monster(monster))
 			return true
 	if lockers.active and peer_id not in lockers.credited and lockers.has_open_in(area):
 		lockers.credited.append(peer_id)
 		return true
 	return false
+
+
+# --- The Principal and the Ghost (host) ---------------------------------------------------
+
+func _update_principal(minutes: float, delta: float) -> void:
+	if not _principal_on or _principal_out:
+		return
+	if _summoned == 0:
+		if minutes < _next_summon:
+			return
+		var guard: Guard = living_guards().pick_random() if not living_guards().is_empty() else null
+		if guard == null:
+			return
+		_summoned = guard.name.to_int()
+		_summon_left = SUMMON_SECONDS
+		announcement.emit("The intercom crackles: \"Guard %d. My office. Now.\"" % guard.slot, "intercom")
+		return
+	var summoned := guard_by_peer(_summoned)
+	if summoned == null or summoned.is_dead:
+		_summoned = 0
+		_next_summon = minutes + randf_range(SUMMON_EVERY.x, SUMMON_EVERY.y)
+		return
+	if SchoolBuilder.area_at(summoned.global_position) == "Front Office":
+		announcement.emit("The intercom crackles: \"...Good. Back to work.\"", "intercom")
+		_summoned = 0
+		_next_summon = minutes + randf_range(SUMMON_EVERY.x, SUMMON_EVERY.y)
+		return
+	_summon_left -= delta
+	if _summon_left <= 0.0:
+		announcement.emit("The intercom crackles: \"Then I'll come to you, Guard %d.\"" % summoned.slot, "intercom")
+		_principal_out = true
+		spawn("principal", FRONT_OFFICE, {"target": _summoned})
+		_summoned = 0
+
+
+## Called by the Principal when it gives up and goes back to its office.
+func principal_done(principal: Monster) -> void:
+	remove_monster(principal)
+	_principal_out = false
+	_next_summon = _minutes + randf_range(SUMMON_EVERY.x, SUMMON_EVERY.y)
+
+
+## Called by the Ghost every frame: cameras near it lose their signal for a while.
+func ghost_passing(at: Vector3, distance: float) -> void:
+	for i in cameras.count():
+		if cameras.camera(i).global_position.distance_to(at) < distance and not _blackouts.has(i):
+			_blackouts[i] = _minutes + BLACKOUT_MINUTES
+			camera_signal_changed.emit(i, false)
 
 
 # --- Bodies (every computer) -------------------------------------------------------------

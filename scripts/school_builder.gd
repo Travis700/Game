@@ -39,6 +39,8 @@ const MONITOR_SIZE := Vector2(0.96, 0.54)
 
 ## The time clock in the guard room. Main connects it to the shift.
 var clock_machine: Interactable
+## The vending machine in the guard room. Main opens the shop when it's used.
+var vending_machine: Interactable
 ## Where the 16 guard room monitor screens go: [{"desk", "position"}], in monitor order.
 var monitor_spots: Array[Dictionary] = []
 ## The chair at each guard room desk, and where a seated guard goes.
@@ -404,8 +406,7 @@ func _build_guard_room() -> void:
 	_box(Vector3(19.56, 1.52, 13.0), Vector3(0.02, 0.15, 0.35), "clock_screen", false)
 
 	# Vending machine on the east wall.
-	_interactable(Vector3(19.4, 1.0, 16.6), Vector3(0.9, 2.0, 1.1), "red", "Use vending machine",
-			"OUT OF ORDER. The vending machine opens in a later build.")
+	vending_machine = _interactable(Vector3(19.4, 1.0, 16.6), Vector3(0.9, 2.0, 1.1), "red", "Use the vending machine", "")
 	_box(Vector3(18.94, 1.2, 16.45), Vector3(0.02, 1.3, 0.7), "vending_glow", false)
 
 	# Notice board on the back wall.
