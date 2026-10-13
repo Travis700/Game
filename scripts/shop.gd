@@ -61,6 +61,18 @@ func take(peer_id: int, item: String) -> bool:
 	return true
 
 
+## Host: hands a guard an item without buying it, e.g. one they were carrying in a saved run.
+func give(peer_id: int, item: String) -> void:
+	if ITEMS.has(item):
+		_held[peer_id] = item
+		_send_holding(peer_id)
+
+
+## Host: what a guard is carrying ("" for nothing).
+func held_by(peer_id: int) -> String:
+	return _held.get(peer_id, "")
+
+
 ## Host: tells every player their current points, e.g. after the night report.
 func push_wallets() -> void:
 	for peer_id: int in _all_peers():
@@ -134,6 +146,11 @@ func _remove_drop(drop_id: int) -> void:
 	if _drops.has(drop_id):
 		(_drops[drop_id]["node"] as Node).queue_free()
 		_drops.erase(drop_id)
+
+
+## Host: sends one guard their points.
+func send_wallet(peer_id: int) -> void:
+	_send_wallet(peer_id)
 
 
 func _send_wallet(peer_id: int) -> void:

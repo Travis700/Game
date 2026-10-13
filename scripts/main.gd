@@ -12,6 +12,7 @@ const Menu := preload("res://scripts/menu.gd")
 const Clipboard := preload("res://scripts/clipboard.gd")
 const Report := preload("res://scripts/report.gd")
 const VendingUI := preload("res://scripts/vending_ui.gd")
+const KeypadUI := preload("res://scripts/keypad_ui.gd")
 
 const PORT := 7777
 const MAX_GUARDS := 4
@@ -37,6 +38,7 @@ var lockers: Lockers
 var totems: Totems
 var shop: Shop
 var vending: CanvasLayer
+var keypad: CanvasLayer
 var spawner: MultiplayerSpawner
 var _local_guard: Guard
 var _mode := ""
@@ -154,6 +156,14 @@ func _ready() -> void:
 	shop.holding_changed.connect(func(_item: String) -> void: _refresh_inventory())
 	school.vending_machine.used.connect(_on_vending_used)
 
+	keypad = KeypadUI.new()
+	keypad.name = "Keypad"
+	add_child(keypad)
+	keypad.submitted.connect(_on_keypad_submitted)
+	keypad.closed.connect(func() -> void:
+		if _local_guard:
+			_local_guard.input_blocked = false)
+
 	var report := Report.new()
 	report.name = "Report"
 	add_child(report)
@@ -206,6 +216,10 @@ func _process(_delta: float) -> void:
 		return
 	var guards := players.get_child_count()
 	var status := "Solo" if _mode == "solo" else "%s · %d guard%s" % [_mode, guards, "" if guards == 1 else "s"]
+	if _local_guard:
+		status += " · Badge #%04d" % _local_guard.employee_number
+	if night.difficulty > 0:
+		status += " · Difficulty %d" % night.difficulty
 	hud.set_status(status)
 
 
@@ -247,8 +261,9 @@ func _play_solo() -> void:
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	_mode = "solo"
 	director.bake_navigation()
+	_start_run()
 	_enter_school()
-	_spawn_guard(1)
+	_spawn_guard(1, Profile.employee_number)
 
 
 func _host() -> void:
@@ -260,8 +275,9 @@ func _host() -> void:
 	multiplayer.multiplayer_peer = peer
 	_mode = "Hosting"
 	director.bake_navigation()
+	_start_run()
 	_enter_school()
-	_spawn_guard(1)
+	_spawn_guard(1, Profile.employee_number)
 	print("[net] Hosting on port %d" % PORT)
 
 
@@ -279,9 +295,28 @@ func _join(address: String) -> void:
 	menu.show_status("Connecting to %s..." % address)
 
 
+## Host: applies the menu's run options, and loads the saved run if the host chose to continue it.
+func _start_run() -> void:
+	var options: Dictionary = menu.options()
+	night.difficulty_choice = options["difficulty"]
+	night.keep_gear = options["keep_gear"]
+	if not options["continue"]:
+		return
+	var saved := RunSave.read()
+	night.number = clampi(int(saved.get("night", 1)), 1, Night.LAST_NIGHT)
+	night.saved_points = saved.get("points", {})
+	night.saved_items = saved.get("items", {})
+	var upgrades: Array = saved.get("upgrades", [])
+	for desk in mini(upgrades.size(), GuardRoom.DESKS):
+		if upgrades[desk]:
+			guard_room._set_upgraded(desk, true)
+	print("[run] Continuing the saved run: ", RunSave.describe(saved))
+
+
 func _on_connected_to_server() -> void:
 	_mode = "Connected"
 	_enter_school()
+	_register_employee.rpc_id(1, Profile.employee_number)
 	print("[net] Joined as peer %d" % multiplayer.get_unique_id())
 
 
@@ -317,8 +352,33 @@ func _on_peer_connected(peer_id: int) -> void:
 	print("[net] Guard joined (peer %d)" % peer_id)
 	guard_room.send_state_to(peer_id)
 	anomalies.send_state_to(peer_id)
-	_spawn_guard(peer_id)
+	# Their guard spawns once their computer tells us their badge number (_register_employee).
+
+
+## Host: a player who just joined shows their badge. Their guard spawns with it.
+@rpc("any_peer", "call_remote", "reliable")
+func _register_employee(badge: int) -> void:
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not multiplayer.is_server() or players.has_node(str(peer_id)):
+		return
+	if shift.state != Shift.State.PRE_SHIFT:
+		_turn_away.rpc_id(peer_id, "That team's shift has already started.")
+		return
+	if players.get_child_count() >= MAX_GUARDS:
+		_turn_away.rpc_id(peer_id, "That team is full.")
+		return
+	# Two copies of the game on one computer share a badge. Lend the second one a spare.
+	while badge < 1000 or _badge_in_use(badge):
+		badge = randi_range(1000, 9999)
+	_spawn_guard(peer_id, badge)
 	_update_guards_required()
+
+
+func _badge_in_use(badge: int) -> bool:
+	for guard: Guard in players.get_children():
+		if guard.employee_number == badge:
+			return true
+	return false
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
@@ -336,14 +396,16 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 ## Host only. The spawner runs _create_guard with the same data on every computer,
 ## including players who join later.
-func _spawn_guard(peer_id: int) -> void:
-	spawner.spawn({"peer_id": peer_id, "slot": _free_slot()})
+func _spawn_guard(peer_id: int, badge: int) -> void:
+	spawner.spawn({"peer_id": peer_id, "slot": _free_slot(), "badge": badge})
+	night.restore_guard(peer_id, badge)
 
 
 func _create_guard(data: Dictionary) -> Node:
 	var guard := PlayerScene.instantiate() as Guard
 	guard.name = str(data["peer_id"])
 	guard.slot = data["slot"]
+	guard.employee_number = data.get("badge", 0)
 	guard.position = SPAWN_POINT + Vector3((guard.slot - 2.5) * 1.4, 0, 0)
 	return guard
 
@@ -369,7 +431,7 @@ func _update_guards_required() -> void:
 		return
 	shift.guards_required = players.get_child_count()
 	if shift.state == Shift.State.PRE_SHIFT and shift.clocked_in_count() > 0 and shift.everyone_clocked_in():
-		_start_night.rpc()
+		_start_night.rpc(night.number, night.pick_difficulty())
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -390,7 +452,28 @@ func on_local_guard_ready(guard: Guard) -> void:
 
 # --- Clocking in ---------------------------------------------------------------
 
-func _on_clock_machine_used(_guard: Node) -> void:
+func _on_clock_machine_used(by: Node) -> void:
+	if by != _local_guard or _local_guard.is_dead:
+		return
+	if shift.state == Shift.State.PRE_SHIFT:
+		# Clocking in takes your badge number.
+		_local_guard.input_blocked = true
+		keypad.open("#%04d" % _local_guard.employee_number)
+		return
+	_request_time_clock()
+
+
+func _on_keypad_submitted(number: int) -> void:
+	if _local_guard == null or number != _local_guard.employee_number:
+		keypad.flash_display("UNKNOWN")
+		Sfx.play_flat(self, Sfx.notes([220.0, 180.0], 0.15, 0.25, "square"))
+		return
+	keypad.close()
+	Sfx.play_flat(self, Sfx.notes([880.0, 1320.0], 0.08, 0.25, "square"))
+	_request_time_clock()
+
+
+func _request_time_clock() -> void:
 	if multiplayer.is_server():
 		_handle_clock_in(multiplayer.get_unique_id())
 	else:
@@ -414,12 +497,14 @@ func _handle_clock_in(peer_id: int) -> void:
 	else:
 		_receive_message.rpc_id(peer_id, message)
 	if shift.state == Shift.State.PRE_SHIFT and shift.everyone_clocked_in():
-		_start_night.rpc()
+		_start_night.rpc(night.number, night.pick_difficulty())
 
 
 @rpc("authority", "call_local", "reliable")
-func _start_night() -> void:
-	print("[net] Night started")
+func _start_night(number: int, difficulty: int) -> void:
+	print("[net] Night %d started at difficulty %d" % [number, difficulty])
+	night.number = number
+	night.difficulty = difficulty
 	shift.begin()
 
 

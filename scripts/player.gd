@@ -34,6 +34,8 @@ const UNIFORM_COLORS: Array[Color] = [
 var is_running := false
 ## Which of the four guard slots this is (1-4). Chosen by the host when the guard spawns.
 var slot := 1
+## The number on this guard's badge, typed into the time clock. Set by the host when it spawns.
+var employee_number := 0
 ## The guard room desk this guard is sitting at, or -1 when standing.
 var seated_desk := -1
 ## Mouse look is paused while a camera feed fills the screen.
@@ -65,7 +67,7 @@ func _ready() -> void:
 	var uniform := StandardMaterial3D.new()
 	uniform.albedo_color = uniform_color()
 	body_mesh.material_override = uniform
-	name_tag.text = "Guard %d" % slot
+	name_tag.text = "Guard %d  #%04d" % [slot, employee_number]
 
 	var local := is_local()
 	# Your own body is hidden from your own eyes but still shows up on the cameras.

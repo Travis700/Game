@@ -13,9 +13,21 @@ The first time you open it, Godot spends a few seconds importing. That's normal.
 
 The game opens on a menu: **Play solo**, **Host a game**, or **Join**.
 
+### The menu
+
+- **Your employee badge** is a number this computer picked for you the first time you played. You type it
+  into the time clock to clock in, and your saved points are linked to it.
+- **Difficulty** sets how much of the school is open. *Auto* picks one level per guard.
+  1 is the main building, 2 adds the classroom wing, 3 adds the science wing too. Each wing has its own monsters.
+- **Keep gear if the whole team is caught:** upgrades and carried items survive a restart (points don't).
+- **Continue saved run** appears once you've finished a night. The host's computer saves after every night
+  report: the next night, the difficulty, upgrades, and each guard's points and item (by badge number).
+  Survive night 9 and the run is won.
+
 ## How a night works
 
-1. Walk from the gate to the guard room and clock in at the time clock (everyone in the session has to).
+1. Walk from the gate to the guard room and clock in at the time clock: press E, type your badge number
+   and press Enter (everyone in the session has to).
 2. The lights go down and the clock starts at 12:00 AM. A night lasts 12 minutes.
 3. Things change around the school: objects move, go missing or appear, and from night 2, figures.
    Watch the cameras, and when you spot something, press Tab and log where it is and what it is.

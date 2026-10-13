@@ -16,6 +16,10 @@ const SURVIVAL_PAY := 100
 const CORRECT_LOG_POINTS := 25
 const FALSE_REPORT_POINTS := 10
 const DEATH_PENALTY := 50
+## Survive this night and the run is won.
+const LAST_NIGHT := 9
+## The highest difficulty: the main building plus both wings.
+const MAX_DIFFICULTY := 3
 
 var shift: Shift
 var lighting: ShiftLighting
@@ -31,6 +35,15 @@ var shop: Shop
 var guard_room: GuardRoom
 
 var number := 1
+## Tonight's map size (1-3), sent by the host when the night starts. 0 before the first night.
+var difficulty := 0
+## Host: the difficulty picked on the menu (0 = auto, one level per guard).
+var difficulty_choice := 0
+## Host: upgrades and carried items survive the whole team being caught.
+var keep_gear := false
+## Host: points and carried items from the saved run, by badge number (as text).
+var saved_points: Dictionary = {}
+var saved_items: Dictionary = {}
 var minutes := 0.0
 var seconds_per_minute := SECONDS_PER_MINUTE
 
@@ -40,6 +53,7 @@ var _stats: Dictionary = {}
 var _totals: Dictionary = {}
 var _deaths := 0
 var _restart_run := false
+var _won := false
 var _clock_out_left := 0.0
 var _sync_timer := 0.0
 
@@ -159,6 +173,40 @@ func _receive_log(area: String, type: String) -> void:
 		stats["false"] += 1
 
 
+## Host: tonight's difficulty, from the menu choice or the number of guards.
+func pick_difficulty() -> int:
+	if difficulty_choice > 0:
+		return clampi(difficulty_choice, 1, MAX_DIFFICULTY)
+	return clampi(players.get_child_count(), 1, MAX_DIFFICULTY)
+
+
+## Host: a guard just spawned. Gives back what they had in the saved run.
+func restore_guard(peer_id: int, badge: int) -> void:
+	var key := str(badge)
+	if saved_points.has(key):
+		_totals[peer_id] = int(saved_points[key])
+		shop.send_wallet(peer_id)
+	if saved_items.has(key):
+		shop.give(peer_id, str(saved_items[key]))
+
+
+## Host: writes the run to disk so it can be continued, with `next_night` up next.
+func save_run(next_night: int) -> void:
+	for guard: Guard in players.get_children():
+		var key := str(guard.employee_number)
+		var peer := guard.name.to_int()
+		saved_points[key] = points_of(peer)
+		var item := shop.held_by(peer)
+		if item != "":
+			saved_items[key] = item
+		else:
+			saved_items.erase(key)
+	RunSave.write({
+		"night": next_night, "difficulty": difficulty_choice, "keep_gear": keep_gear,
+		"points": saved_points, "items": saved_items, "upgrades": guard_room.upgraded.duplicate(),
+	})
+
+
 ## Host: a guard's banked points.
 func points_of(peer_id: int) -> int:
 	return _totals.get(peer_id, 0)
@@ -196,9 +244,16 @@ func fail_night() -> void:
 	_restart_run = true
 	var rows := _build_rows(false)
 	var summary := "The whole team was caught at %s.\nThe school keeps its secrets. The run starts over from night 1." % time_text()
-	_show_report.rpc(number, rows, summary, true)
-	shop.reset_all()
-	guard_room.reset_upgrades()
+	if keep_gear:
+		summary += "\nYou keep your upgrades and whatever you're carrying. Points start again from zero."
+	else:
+		shop.reset_all()
+		guard_room.reset_upgrades()
+		saved_items.clear()
+	# Everyone's points are gone, including guards who aren't here tonight.
+	saved_points.clear()
+	_show_report.rpc(number, rows, summary, "caught")
+	save_run(1)
 
 
 func _end_night() -> void:
@@ -211,8 +266,21 @@ func _end_night() -> void:
 		appeared, "y" if appeared == 1 else "ies", missed, _deaths]
 	summary += "\nPay: %d for clocking out, +%d per correct log, -%d per false report, -%d for each guard lost." % [
 		SURVIVAL_PAY, CORRECT_LOG_POINTS, FALSE_REPORT_POINTS, DEATH_PENALTY]
-	_show_report.rpc(number, rows, summary, false)
+	if number >= LAST_NIGHT:
+		_won = true
+		_restart_run = true
+		summary = "You kept Westfield High safe for all %d nights. Whatever lives here will wait for the next crew.\n" % LAST_NIGHT + summary
+		_show_report.rpc(number, rows, summary, "won")
+		# The next run starts fresh.
+		shop.reset_all()
+		guard_room.reset_upgrades()
+		RunSave.clear()
+		saved_points.clear()
+		saved_items.clear()
+		return
+	_show_report.rpc(number, rows, summary, "night")
 	shop.push_wallets()
+	save_run(number + 1)
 
 
 ## One row per guard for the report. `keep_pay` is false when the run is starting over.
@@ -230,7 +298,7 @@ func _build_rows(keep_pay: bool) -> Array:
 		else:
 			_totals[peer] = 0
 		rows.append({
-			"name": "Guard %d" % guard.slot, "clocked_out": clocked_out, "died": guard.is_dead,
+			"name": "Guard %d  #%04d" % [guard.slot, guard.employee_number], "clocked_out": clocked_out, "died": guard.is_dead,
 			"correct": stats["correct"], "correct_points": correct_points,
 			"false": stats["false"], "false_points": false_points,
 			"pay": pay, "total": _totals[peer],
@@ -242,7 +310,12 @@ func _on_next_night_requested() -> void:
 	if multiplayer.is_server():
 		anomalies.reset_all()
 		var next := 1 if _restart_run else number + 1
+		if _won:
+			for guard: Guard in players.get_children():
+				_totals[guard.name.to_int()] = 0
+			shop.push_wallets()
 		_restart_run = false
+		_won = false
 		_begin_next_night.rpc(next)
 
 
@@ -265,12 +338,12 @@ func _start_morning() -> void:
 
 
 @rpc("authority", "call_local", "reliable")
-func _show_report(night: int, rows: Array, summary: String, restart: bool) -> void:
+func _show_report(night: int, rows: Array, summary: String, outcome: String) -> void:
 	shift.state = Shift.State.REPORT
 	clipboard.close()
 	get_tree().call_group("game", "on_report")
 	hud.set_clock("")
-	report.show_report(night, rows, summary, multiplayer.is_server(), restart)
+	report.show_report(night, rows, summary, multiplayer.is_server(), outcome)
 
 
 @rpc("authority", "call_local", "reliable")

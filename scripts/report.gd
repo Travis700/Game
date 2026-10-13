@@ -59,8 +59,15 @@ func _ready() -> void:
 
 
 ## `rows` is one dictionary per guard; see Night._build_report.
-func show_report(night: int, rows: Array, summary: String, is_host: bool, restart := false) -> void:
-	_title.text = ("NIGHT %d: EVERYONE WAS CAUGHT" if restart else "NIGHT %d REPORT") % night
+## `outcome` is "night" (an ordinary night), "caught" (everyone was caught) or "won" (the last night).
+func show_report(night: int, rows: Array, summary: String, is_host: bool, outcome := "night") -> void:
+	match outcome:
+		"caught":
+			_title.text = "NIGHT %d: EVERYONE WAS CAUGHT" % night
+		"won":
+			_title.text = "NIGHT %d: YOU MADE IT. THE RUN IS WON" % night
+		_:
+			_title.text = "NIGHT %d REPORT" % night
 	for child in _table.get_children():
 		child.queue_free()
 	for heading in COLUMNS:
@@ -73,7 +80,7 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, restar
 		_table.add_child(_cell("%+d" % row["pay"], 22))
 		_table.add_child(_cell(str(row["total"]), 22))
 	_summary.text = summary
-	_next_button.text = "Start over from night 1" if restart else "Start night %d" % (night + 1)
+	_next_button.text = {"caught": "Start over from night 1", "won": "Start a new run"}.get(outcome, "Start night %d" % (night + 1))
 	_next_button.visible = is_host
 	_waiting.visible = not is_host
 	visible = true
