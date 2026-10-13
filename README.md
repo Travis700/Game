@@ -60,6 +60,7 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 | Mouse | Look at a monitor |
 | A / D | Change which camera that monitor shows |
 | Space, left click or E | Show that camera full screen (press again to go back) |
+| 1 / 2 / 3 / 4 | Show that monitor full screen (numbers are on each monitor's frame) |
 | S | Stand up |
 
 ## Project layout

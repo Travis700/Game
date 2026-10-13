@@ -152,6 +152,10 @@ func _handle_desk_input(event: InputEvent) -> bool:
 		action = "stand"
 	elif event.is_action_pressed("pause") and look_locked:
 		action = "back"
+	else:
+		for number in range(1, 5):
+			if event.is_action_pressed("monitor_%d" % number):
+				action = "monitor_%d" % number
 	if action == "":
 		return false
 	desk_action.emit(action)

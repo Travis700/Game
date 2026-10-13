@@ -51,7 +51,7 @@ func _add_screen(pos: Vector3, monitor: int) -> void:
 	_materials.append(material)
 
 	var quad := QuadMesh.new()
-	quad.size = Vector2(0.6, 0.42)
+	quad.size = SchoolBuilder.MONITOR_SIZE
 	var mesh := MeshInstance3D.new()
 	mesh.mesh = quad
 	mesh.material_override = material
@@ -61,7 +61,7 @@ func _add_screen(pos: Vector3, monitor: int) -> void:
 	screen.collision_layer = MONITOR_LAYER
 	screen.collision_mask = 0
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(0.6, 0.42, 0.02)
+	shape.size = Vector3(SchoolBuilder.MONITOR_SIZE.x, SchoolBuilder.MONITOR_SIZE.y, 0.02)
 	var collider := CollisionShape3D.new()
 	collider.shape = shape
 	screen.add_child(collider)
@@ -92,9 +92,16 @@ func _process(_delta: float) -> void:
 
 # --- Seated controls (local only) ---------------------------------------------------
 
-## Keys pressed by the local guard while seated: "prev", "next", "zoom", "stand", "back".
+## Keys pressed by the local guard while seated: "prev", "next", "zoom", "stand", "back",
+## or "monitor_1" to "monitor_4" to show one of your desk's monitors full screen.
 func on_desk_action(action: String) -> void:
 	var monitor := _zoomed if _zoomed >= 0 else _focused
+	if action.begins_with("monitor_"):
+		var chosen := local_guard.seated_desk * 4 + action.to_int() - 1
+		if _zoomed >= 0 and _zoomed != chosen:
+			_toggle_zoom(_zoomed)
+		_toggle_zoom(chosen)
+		return
 	match action:
 		"prev", "next":
 			if monitor >= 0:
@@ -151,11 +158,11 @@ func _update_controls_hint() -> void:
 	if local_guard.seated_desk < 0:
 		hud.set_controls("")
 	elif _zoomed >= 0:
-		hud.set_controls("A / D  change camera     Space  back to the monitors")
+		hud.set_controls("A / D  change camera     1-4  other monitors     Space  back to the desk")
 	elif _focused >= 0:
-		hud.set_controls("A / D  change camera     Space  full screen     S  stand up")
+		hud.set_controls("A / D  change camera     Space  full screen     1-4  monitor full screen     S  stand up")
 	else:
-		hud.set_controls("Look at a monitor     S  stand up")
+		hud.set_controls("Look at a monitor     1-4  monitor full screen     S  stand up")
 
 
 func _on_chair_used(by: Node, desk: int) -> void:

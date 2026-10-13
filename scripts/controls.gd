@@ -13,6 +13,10 @@ const BINDINGS := {
 	"toggle_fullscreen": [KEY_F11],
 	"zoom": [KEY_SPACE],
 	"clipboard": [KEY_TAB],
+	"monitor_1": [KEY_1],
+	"monitor_2": [KEY_2],
+	"monitor_3": [KEY_3],
+	"monitor_4": [KEY_4],
 }
 const MOUSE_BINDINGS := {
 	"zoom": [MOUSE_BUTTON_LEFT],

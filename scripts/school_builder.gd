@@ -21,6 +21,8 @@ const WALL_H := 3.5
 const WALL_T := 0.25
 const DOOR_H := 2.4
 const SCHOOL_NAME := "WESTFIELD HIGH SCHOOL"
+## Size of each guard room monitor's picture, in metres (16:9 like the camera feeds).
+const MONITOR_SIZE := Vector2(0.96, 0.54)
 
 ## The time clock in the guard room. Main connects it to the shift.
 var clock_machine: Interactable
@@ -363,12 +365,16 @@ func _build_guard_room() -> void:
 		var x := 7.9 + i * 3.4
 		_desk(Vector3(x, 0, 19.0), 2.8, 1.0)
 		# Top row first, left to right as seen from the chair (the chair faces +Z, so its left is +X).
+		var number := 1
 		for row in [1, 0]:
 			for col in [1, 0]:
-				var screen_pos := Vector3(x - 0.34 + col * 0.68, 1.05 + row * 0.5, 19.3)
-				_box(screen_pos, Vector3(0.66, 0.48, 0.06), "dark", false)
+				var screen_pos := Vector3(x + (col - 0.5) * (MONITOR_SIZE.x + 0.06), 1.06 + row * 0.6, 19.15)
+				_box(screen_pos, Vector3(MONITOR_SIZE.x + 0.05, MONITOR_SIZE.y + 0.05, 0.06), "dark", false)
 				monitor_spots.append({"desk": i, "position": screen_pos + Vector3(0, 0, -0.035)})
-		_box(Vector3(x, 0.92, 19.35), Vector3(0.08, 0.35, 0.08), "metal", false)
+				_sign(str(number), screen_pos + Vector3(MONITOR_SIZE.x * 0.5 - 0.03, -MONITOR_SIZE.y * 0.5 - 0.0, -0.04),
+						Vector3.FORWARD, 22, Color(0.7, 0.75, 0.7))
+				number += 1
+		_box(Vector3(x, 1.05, 19.24), Vector3(0.1, 0.6, 0.06), "metal", false)
 		_chair(Vector3(x, 0, 18.0), i)
 
 	# Clock machine on the east wall.
