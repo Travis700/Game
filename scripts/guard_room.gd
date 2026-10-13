@@ -36,6 +36,8 @@ var _focused := -1
 var _installing := -1
 var _install_left := 0.0
 var _upgrade_signs: Array[Label3D] = []
+## Host: the difficulty the monitors were last spread over the open cameras for.
+var _fitted_difficulty := 1
 
 
 func build(school: SchoolBuilder, security: SecurityCameras, hud_layer: CanvasLayer) -> void:
@@ -302,6 +304,10 @@ func request_stand() -> void:
 ## one, and when a wing opens, the monitors spread out over every open camera.
 func fit_to_open_cameras() -> void:
 	var open := cameras.open_cameras()
+	if cameras.difficulty == _fitted_difficulty:
+		# Same wings as last night: keep the cameras guards picked.
+		return
+	_fitted_difficulty = cameras.difficulty
 	for monitor in assignments.size():
 		var camera := open[monitor % open.size()]
 		if assignments[monitor] != camera:
