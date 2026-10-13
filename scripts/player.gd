@@ -1,6 +1,10 @@
 class_name Guard
 extends CharacterBody3D
 ## First-person security guard: walking, running, mouse look, flashlight and using things.
+##
+## Every guard in a session exists on every computer. The node is named after the
+## network ID of the player who controls it; only that player's computer moves it,
+## and the Sync node copies its position, look direction and flashlight to everyone else.
 
 signal prompt_changed(text: String)
 signal message_shown(text: String)
@@ -10,11 +14,16 @@ const SPRINT_SPEED := 5.6
 const ACCELERATION := 10.0
 const LOOK_LIMIT := deg_to_rad(85)
 const BOB_AMOUNT := 0.04
+const UNIFORM_COLORS: Array[Color] = [
+	Color(0.2, 0.3, 0.55), Color(0.55, 0.25, 0.2), Color(0.25, 0.45, 0.25), Color(0.5, 0.42, 0.18),
+]
 
 @export var mouse_sensitivity := 0.0025
 
 ## True while the guard is running. Monsters like the Hall Monitor will react to this.
 var is_running := false
+## Which of the four guard slots this is (1-4). Chosen by the host when the guard spawns.
+var slot := 1
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _bob_time := 0.0
@@ -24,12 +33,39 @@ var _prompt := ""
 @onready var camera: Camera3D = $Head/Camera3D
 @onready var flashlight: SpotLight3D = $Head/Camera3D/Flashlight
 @onready var interact_ray: RayCast3D = $Head/Camera3D/InteractRay
+@onready var body_mesh: MeshInstance3D = $Body
+@onready var visor: MeshInstance3D = $Head/Visor
+@onready var name_tag: Label3D = $NameTag
+
+
+func _enter_tree() -> void:
+	set_multiplayer_authority(name.to_int())
 
 
 func _ready() -> void:
-	interact_ray.add_exception(self)
-	flashlight.visible = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	var uniform := StandardMaterial3D.new()
+	uniform.albedo_color = UNIFORM_COLORS[(slot - 1) % UNIFORM_COLORS.size()]
+	body_mesh.material_override = uniform
+	name_tag.text = "Guard %d" % slot
+
+	var local := is_local()
+	# You never see your own body or name tag; everyone else does.
+	body_mesh.visible = not local
+	visor.visible = not local
+	name_tag.visible = not local
+	set_physics_process(local)
+	set_process_unhandled_input(local)
+	interact_ray.enabled = local
+	if local:
+		interact_ray.add_exception(self)
+		camera.current = true
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		get_tree().call_group("game", "on_local_guard_ready", self)
+
+
+## True on the computer of the player controlling this guard.
+func is_local() -> bool:
+	return is_multiplayer_authority()
 
 
 func _unhandled_input(event: InputEvent) -> void:

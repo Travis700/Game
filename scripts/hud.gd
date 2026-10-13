@@ -7,6 +7,7 @@ const HINT_SECONDS := 12.0
 var _prompt: Label
 var _message: Label
 var _hint: Label
+var _status: Label
 var _message_time := 0.0
 var _hint_time := HINT_SECONDS
 
@@ -34,8 +35,15 @@ func _ready() -> void:
 	_hint.offset_top = 16
 	_hint.text = "WASD  move\nShift  run\nF  flashlight\nE  use\nEsc  free the mouse"
 
+	_status = _make_label(18, HORIZONTAL_ALIGNMENT_RIGHT, VERTICAL_ALIGNMENT_TOP)
+	_status.offset_right = -20
+	_status.offset_top = 16
+	_status.modulate.a = 0.75
+
 
 func _process(delta: float) -> void:
+	if not visible:
+		return
 	if _message_time > 0.0:
 		_message_time -= delta
 		_message.modulate.a = clampf(_message_time, 0.0, 1.0)
@@ -46,6 +54,11 @@ func _process(delta: float) -> void:
 
 func set_prompt(text: String) -> void:
 	_prompt.text = text
+
+
+## Session info in the top-right corner, e.g. "Hosting · 2 guards".
+func set_status(text: String) -> void:
+	_status.text = text
 
 
 func show_message(text: String) -> void:
