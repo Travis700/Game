@@ -45,6 +45,15 @@ func _ready() -> void:
 	column.add_child(_holding)
 	column.add_child(HSeparator.new())
 
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 520)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	column.add_child(scroll)
+	var rows := VBoxContainer.new()
+	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rows.add_theme_constant_override("separation", 14)
+	scroll.add_child(rows)
+
 	for item: String in Shop.ITEMS:
 		var info: Dictionary = Shop.ITEMS[item]
 		var row := HBoxContainer.new()
@@ -68,10 +77,10 @@ func _ready() -> void:
 		buy.custom_minimum_size = Vector2(90, 44)
 		buy.pressed.connect(func() -> void: buy_requested.emit(item))
 		row.add_child(buy)
-		column.add_child(row)
+		rows.add_child(row)
 
 	var hint := Label.new()
-	hint.text = "More stock arriving soon.   Tab, Esc or E to close."
+	hint.text = "Tab, Esc or E to close."
 	hint.modulate.a = 0.55
 	hint.add_theme_font_size_override("font_size", 15)
 	column.add_child(hint)

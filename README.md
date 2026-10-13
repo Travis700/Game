@@ -42,6 +42,15 @@ to pick them up. You can carry one thing at a time (shown in the bottom-right co
 - **Spectral camera kit (150):** stand at a desk's chair with it and press E, then stay there for 10
   seconds. That desk's monitors switch to spectral feeds, which show the Ghost.
 - **Lucky rabbit's foot (60):** carry it to a revive totem. Your roll revives on 5 in 6 instead of 4 in 6.
+- **Guard room door kit (120):** stand in one of the guard room's two doorways and press E to fit a door,
+  then E to open and shut it. From night 7 monsters can come into the guard room: a shut door holds
+  them for about 15 seconds of banging, then gives way and hangs open for a minute.
+- **Motion sensor (40):** press G to put it down. When a monster walks past, everyone hears which area.
+- **Industrial glue trap (60):** press G to put it down. The first monster to step on it is stuck for 20 seconds.
+- **Energy drink (25):** press G to drink it and run faster for 30 seconds.
+- **Heavy-duty flashlight (80):** press G to fit it. A longer, wider beam for the rest of the run.
+
+Sensors and traps are cleared away each morning.
 
 Upgrades and points last for the whole run, and are lost if the whole team is caught (unless the host
 ticked "Keep gear", which keeps upgrades and items).
@@ -110,6 +119,7 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 | E | Use. Press E on the time clock in the guard room to clock in and start the night. |
 | Esc | Free the mouse (click to look around again) |
 | Tab | Clipboard: log anything odd you spot (after clocking in) |
+| G | Use or put down what you're carrying (sensors, traps, energy drink, flashlight) |
 | F11 | Switch between fullscreen and a window |
 
 **At a guard room desk** (press E on a chair to sit):

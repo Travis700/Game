@@ -33,6 +33,8 @@ var leaves_when_logged := false
 var _agent: NavigationAgent3D
 ## Real seconds it has been trying to move without getting anywhere.
 var _stuck_for := 0.0
+## Real seconds left stuck fast in a glue trap. Host only.
+var stuck_in_trap := 0.0
 
 
 func _ready() -> void:
@@ -66,6 +68,10 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= GRAVITY * delta
 	else:
 		velocity.y = 0.0
+	if stuck_in_trap > 0.0:
+		stuck_in_trap -= delta
+		halt()
+		return
 	think(delta)
 
 

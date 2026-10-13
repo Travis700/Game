@@ -37,6 +37,7 @@ var director: MonsterDirector
 var lockers: Lockers
 var totems: Totems
 var shop: Shop
+var doors: GuardRoomDoors
 var vending: CanvasLayer
 var keypad: CanvasLayer
 var spawner: MultiplayerSpawner
@@ -147,7 +148,13 @@ func _ready() -> void:
 
 	shop = Shop.new()
 	shop.name = "Shop"
+	shop.director = director
 	add_child(shop)
+	doors = GuardRoomDoors.new()
+	doors.name = "GuardRoomDoors"
+	doors.shop = shop
+	doors.director = director
+	add_child(doors)
 	totems.shop = shop
 	guard_room.shop = shop
 	vending = VendingUI.new()
@@ -187,6 +194,7 @@ func _ready() -> void:
 	night.totems = totems
 	night.shop = shop
 	night.guard_room = guard_room
+	night.doors = doors
 	add_child(night)
 	shop.night = night
 	director.student_helped.connect(func(peer_id: int) -> void: night.add_bonus(peer_id))
@@ -315,6 +323,11 @@ func _start_run() -> void:
 	for desk in mini(upgrades.size(), GuardRoom.DESKS):
 		if upgrades[desk]:
 			guard_room._set_upgraded(desk, true)
+	var fitted: Array = saved.get("doors", [])
+	for doorway in mini(fitted.size(), GuardRoomDoors.DOORWAYS.size()):
+		if fitted[doorway]:
+			doors.install(doorway)
+	night.saved_bright.assign(saved.get("bright", []))
 	print("[run] Continuing the saved run: ", RunSave.describe(saved))
 
 
@@ -376,6 +389,8 @@ func _register_employee(badge: int) -> void:
 	while badge < 1000 or _badge_in_use(badge):
 		badge = randi_range(1000, 9999)
 	_spawn_guard(peer_id, badge)
+	shop.send_state_to(peer_id)
+	doors.send_state_to(peer_id)
 	_update_guards_required()
 
 
@@ -451,6 +466,8 @@ func on_local_guard_ready(guard: Guard) -> void:
 	guard.message_shown.connect(hud.show_message)
 	guard.desk_action.connect(guard_room.on_desk_action)
 	guard.clipboard_requested.connect(_open_clipboard)
+	guard.item_use_requested.connect(shop.request_use)
+	doors.local_guard = guard
 	guard_room.local_guard = guard
 	cameras.viewer = guard
 
@@ -611,6 +628,8 @@ func _announce(text: String, sound := "") -> void:
 	hud.show_message(text)
 	if sound == "intercom":
 		Sfx.play_flat(self, Sfx.notes([660.0, 523.0, 0.0], 0.35, 0.3, "sine"))
+	elif sound == "sensor":
+		Sfx.play_flat(self, Sfx.notes([1320.0, 0.0, 1320.0], 0.1, 0.2, "square"))
 
 
 @rpc("authority", "call_local", "reliable")
@@ -626,7 +645,10 @@ func _on_vending_used(by: Node) -> void:
 
 
 func _refresh_inventory() -> void:
-	hud.set_inventory(shop.local_points, Shop.item_name(shop.local_item))
+	var carrying := Shop.item_name(shop.local_item)
+	if shop.local_item in Shop.USED_WITH_G:
+		carrying += "  (G to use)"
+	hud.set_inventory(shop.local_points, carrying)
 	if vending.is_open:
 		vending.refresh(shop.local_points, shop.local_item)
 

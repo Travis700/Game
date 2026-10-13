@@ -11,9 +11,13 @@ signal message_shown(text: String)
 ## Keys pressed while sitting at a guard room desk: "prev", "next", "zoom", "stand" or "back".
 signal desk_action(action: String)
 signal clipboard_requested
+## G: use or place whatever the guard is carrying.
+signal item_use_requested
 
 const WALK_SPEED := 3.2
 const SPRINT_SPEED := 5.6
+## Running speed while an energy drink lasts.
+const BOOSTED_SPRINT_SPEED := 7.2
 const ACCELERATION := 10.0
 const LOOK_LIMIT := deg_to_rad(85)
 const BOB_AMOUNT := 0.04
@@ -45,6 +49,10 @@ var look_locked := false
 var is_dead := false
 ## True while a menu like the clipboard has the mouse: the guard stands still and ignores keys.
 var input_blocked := false
+## Real seconds of energy drink left (faster running). Only used by the guard's own computer.
+var boost_left := 0.0
+## True once this guard has fitted the heavy-duty flashlight: a longer, wider beam.
+var bright_flashlight := false
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _bob_time := 0.0
@@ -69,6 +77,7 @@ func _ready() -> void:
 	body_mesh.material_override = uniform
 	name_tag.text = "Guard %d  #%04d" % [slot, employee_number]
 
+	flashlight.set_meta("base_energy", flashlight.light_energy)
 	var local := is_local()
 	# Your own body is hidden from your own eyes but still shows up on the cameras.
 	if local:
@@ -87,6 +96,14 @@ func _ready() -> void:
 		camera.current = true
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		get_tree().call_group("game", "on_local_guard_ready", self)
+
+
+## Fits (or removes) the heavy-duty flashlight. Called on every computer, so everyone sees the beam.
+func set_bright_flashlight(on: bool) -> void:
+	bright_flashlight = on
+	flashlight.spot_range = 32.0 if on else 22.0
+	flashlight.spot_angle = 34.0 if on else 26.0
+	flashlight.light_energy = flashlight.get_meta("base_energy", flashlight.light_energy) * (1.5 if on else 1.0)
 
 
 func uniform_color() -> Color:
@@ -169,6 +186,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		flashlight.visible = not flashlight.visible
 	elif event.is_action_pressed("interact"):
 		_interact()
+	elif event.is_action_pressed("use_item") and not is_dead:
+		item_use_requested.emit()
 
 
 func _look(relative: Vector2) -> void:
@@ -218,7 +237,10 @@ func _physics_process(delta: float) -> void:
 		input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (transform.basis * Vector3(input.x, 0, input.y)).normalized()
 	is_running = not input_blocked and Input.is_action_pressed("sprint") and input.y < 0.0
-	var speed := SPRINT_SPEED if is_running else WALK_SPEED
+	boost_left = maxf(boost_left - delta, 0.0)
+	var speed := WALK_SPEED
+	if is_running:
+		speed = BOOSTED_SPRINT_SPEED if boost_left > 0.0 else SPRINT_SPEED
 
 	var blend := 1.0 - exp(-ACCELERATION * delta)
 	velocity.x = lerpf(velocity.x, direction.x * speed, blend)

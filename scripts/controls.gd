@@ -13,6 +13,7 @@ const BINDINGS := {
 	"toggle_fullscreen": [KEY_F11],
 	"zoom": [KEY_SPACE],
 	"clipboard": [KEY_TAB],
+	"use_item": [KEY_G],
 	"monitor_1": [KEY_1],
 	"monitor_2": [KEY_2],
 	"monitor_3": [KEY_3],

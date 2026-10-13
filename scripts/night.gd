@@ -33,6 +33,7 @@ var director: MonsterDirector
 var totems: Totems
 var shop: Shop
 var guard_room: GuardRoom
+var doors: GuardRoomDoors
 
 var number := 1
 ## Tonight's map size (1-3), sent by the host when the night starts. 0 before the first night.
@@ -44,6 +45,8 @@ var keep_gear := false
 ## Host: points and carried items from the saved run, by badge number (as text).
 var saved_points: Dictionary = {}
 var saved_items: Dictionary = {}
+## Host: badges of guards who fitted the heavy-duty flashlight in the saved run.
+var saved_bright: Array = []
 var minutes := 0.0
 var seconds_per_minute := SECONDS_PER_MINUTE
 
@@ -135,6 +138,8 @@ func _run_shift(delta: float) -> void:
 			break
 	anomalies.update(minutes)
 	director.update(minutes, delta)
+	shop.update(delta)
+	doors.update(delta)
 
 	_sync_timer -= delta
 	if _sync_timer <= 0.0:
@@ -145,6 +150,7 @@ func _run_shift(delta: float) -> void:
 		# Morning: the monsters are gone, and only the living have to clock out.
 		director.end_night()
 		totems.clear_all()
+		shop.clear_placed()
 		shift.guards_required = director.living_guards().size()
 		_start_morning.rpc()
 
@@ -188,6 +194,8 @@ func restore_guard(peer_id: int, badge: int) -> void:
 		shop.send_wallet(peer_id)
 	if saved_items.has(key):
 		shop.give(peer_id, str(saved_items[key]))
+	if key in saved_bright:
+		shop.set_bright(peer_id, true)
 
 
 ## Host: writes the run to disk so it can be continued, with `next_night` up next.
@@ -201,9 +209,12 @@ func save_run(next_night: int) -> void:
 			saved_items[key] = item
 		else:
 			saved_items.erase(key)
+		if shop.has_bright(peer) and key not in saved_bright:
+			saved_bright.append(key)
 	RunSave.write({
 		"night": next_night, "difficulty": difficulty_choice, "keep_gear": keep_gear,
 		"points": saved_points, "items": saved_items, "upgrades": guard_room.upgraded.duplicate(),
+		"doors": doors.installed.duplicate(), "bright": saved_bright,
 	})
 
 
@@ -241,6 +252,7 @@ func fail_night() -> void:
 		return
 	director.end_night()
 	totems.clear_all()
+	shop.clear_placed()
 	_restart_run = true
 	var rows := _build_rows(false)
 	var summary := "The whole team was caught at %s.\nThe school keeps its secrets. The run starts over from night 1." % time_text()
@@ -249,7 +261,9 @@ func fail_night() -> void:
 	else:
 		shop.reset_all()
 		guard_room.reset_upgrades()
+		doors.reset_all()
 		saved_items.clear()
+		saved_bright.clear()
 	# Everyone's points are gone, including guards who aren't here tonight.
 	saved_points.clear()
 	_show_report.rpc(number, rows, summary, "caught")
@@ -274,9 +288,11 @@ func _end_night() -> void:
 		# The next run starts fresh.
 		shop.reset_all()
 		guard_room.reset_upgrades()
+		doors.reset_all()
 		RunSave.clear()
 		saved_points.clear()
 		saved_items.clear()
+		saved_bright.clear()
 		return
 	_show_report.rpc(number, rows, summary, "night")
 	shop.push_wallets()
@@ -309,6 +325,7 @@ func _build_rows(keep_pay: bool) -> Array:
 func _on_next_night_requested() -> void:
 	if multiplayer.is_server():
 		anomalies.reset_all()
+		doors.reset_for_night()
 		var next := 1 if _restart_run else number + 1
 		if _won:
 			for guard: Guard in players.get_children():

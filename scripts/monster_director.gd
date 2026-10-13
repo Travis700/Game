@@ -341,9 +341,11 @@ func lit_by_flashlight(point: Vector3, max_distance: float, only: Guard = null) 
 			continue
 		var from := guard.camera.global_position
 		var to_point := point - from
-		if to_point.length() > max_distance:
+		# The heavy-duty flashlight reaches further and wider.
+		if to_point.length() > max_distance * (1.4 if guard.bright_flashlight else 1.0):
 			continue
-		if (-guard.camera.global_basis.z).angle_to(to_point) < deg_to_rad(24) and _clear_line(from, point, null):
+		var cone := deg_to_rad(30 if guard.bright_flashlight else 24)
+		if (-guard.camera.global_basis.z).angle_to(to_point) < cone and _clear_line(from, point, null):
 			return true
 	return false
 
@@ -370,6 +372,17 @@ func is_watched(monster: Monster) -> bool:
 				and _clear_line(camera.global_position, target, null):
 			return true
 	return false
+
+
+## Monsters out right now that sensors and traps react to (not the Ghost, which floats).
+func active_monsters() -> Array[Monster]:
+	var result: Array[Monster] = []
+	for node in _container.get_children():
+		var monster := node as Monster
+		if monster and not monster.harmless and not monster is SchoolGhost and monster.loggable() \
+				and not monster.is_queued_for_deletion():
+			result.append(monster)
+	return result
 
 
 ## Tonight's clock, in in-game minutes. Host only.
