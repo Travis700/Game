@@ -22,8 +22,7 @@ You don't need a second person. Godot can open several copies of the game at onc
 3. In the list below, type `--host` in the first instance's **Launch Arguments** box, and `--join` in the second's.
 4. Click **OK**, then press **F5**.
 
-Two game windows open (they may be stacked on top of each other, so drag one aside). The first hosts and the
-second joins it automatically. Click into a window to control that guard. Each guard has to clock in at the
+Two game windows open side by side: the host on the left, the player who joins on the right. Click into a window to control that guard. Each guard has to clock in at the
 time clock before the night starts.
 
 Without launch arguments, each window shows the menu: choose **Host a game** in one and **Join** (address
@@ -39,6 +38,7 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 | F | Flashlight |
 | E | Use. Press E on the time clock in the guard room to clock in and start the night. |
 | Esc | Free the mouse (click to look around again) |
+| F11 | Switch between fullscreen and a window |
 
 ## Project layout
 

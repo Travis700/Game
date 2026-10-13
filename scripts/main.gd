@@ -90,6 +90,12 @@ func _ready() -> void:
 	_start_from_command_line()
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("toggle_fullscreen"):
+		var fullscreen := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fullscreen else DisplayServer.WINDOW_MODE_FULLSCREEN)
+
+
 func _process(_delta: float) -> void:
 	if _mode == "":
 		return
@@ -107,9 +113,23 @@ func _start_from_command_line() -> void:
 		if arg == "--solo":
 			_play_solo()
 		elif arg == "--host":
+			_use_test_window(0)
 			_host()
 		elif arg.begins_with("--join"):
+			_use_test_window(1)
 			_join(arg.get_slice("=", 1) if "=" in arg else "127.0.0.1")
+
+
+## When testing several copies on one screen, put each in its own half instead of fullscreen.
+## The host goes on the left, players who join go on the right.
+func _use_test_window(side: int) -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	var screen := DisplayServer.screen_get_usable_rect()
+	var size := Vector2i(screen.size.x / 2, screen.size.x * 9 / 32)
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	DisplayServer.window_set_size(size)
+	DisplayServer.window_set_position(screen.position + Vector2i(side * size.x, (screen.size.y - size.y) / 2))
 
 
 func _play_solo() -> void:

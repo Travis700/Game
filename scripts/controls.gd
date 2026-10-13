@@ -10,6 +10,7 @@ const BINDINGS := {
 	"interact": [KEY_E],
 	"flashlight": [KEY_F],
 	"pause": [KEY_ESCAPE],
+	"toggle_fullscreen": [KEY_F11],
 }
 
 
