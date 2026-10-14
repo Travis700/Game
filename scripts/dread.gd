@@ -3,6 +3,10 @@ extends Node
 ## Makes monsters felt, on each computer: a heartbeat that quickens as something gets close,
 ## a low drone while something nearby is hunting, flashlights that flicker when a monster is
 ## near (everyone's, as seen on this computer), and the jumpscare when you're caught.
+##
+## And on a player's first night, once: the first time they walk the main hallway after a few
+## minutes, a tall figure is standing at the far end, the lights stutter, and it's gone. It
+## can't hurt anyone; it's there so the first night has its moment.
 
 ## Monster states that mean "it's coming for someone".
 const CHASE_STATES: Array[String] = ["chase", "hunt", "detention", "reveal", "charge", "moving", "follow",
@@ -16,11 +20,17 @@ var players: Node3D
 ## The local guard. Set by Main.
 var local_guard: Guard
 var hud: CanvasLayer
+var night: Night
+var shift: Shift
+var school: SchoolBuilder
 
 var _heart: AudioStreamPlayer
 var _drone: AudioStreamPlayer
 var _beat_left := 0.0
 var _scaring := false
+## The first-night glimpse: done for this night, and the figure while it's showing.
+var _glimpsed := false
+var _figure: Node3D
 
 
 func _ready() -> void:
@@ -35,6 +45,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_flicker_flashlights()
+	_first_night_glimpse()
 	if local_guard == null or not is_instance_valid(local_guard) or local_guard.is_dead or director == null:
 		_fade_out(delta)
 		return
@@ -96,6 +107,84 @@ func _flicker_flashlights() -> void:
 
 
 ## The local guard was caught: the camera snaps to whatever caught them, with a scream.
+## Night 1, a few minutes in, the first time this player looks down the main hallway.
+func _first_night_glimpse() -> void:
+	if night == null or shift == null:
+		return
+	if shift.state != Shift.State.ON_SHIFT:
+		_glimpsed = false
+		return
+	if _glimpsed or night.number != 1 or night.minutes < 15.0 or night.daily != "":
+		return
+	if local_guard == null or not is_instance_valid(local_guard) or local_guard.is_dead or local_guard.seated_desk >= 0:
+		return
+	var at := local_guard.global_position
+	if at.z < 4.5 or at.z > 9.5 or absf(at.x) > 36.0:
+		return
+	var facing := -local_guard.camera.global_basis.z
+	if absf(facing.x) < 0.85:
+		return
+	var end := clampf(at.x + signf(facing.x) * 22.0, -38.5, 38.5)
+	if absf(end - at.x) < 12.0:
+		return
+	_glimpsed = true
+	_show_figure(Vector3(end, 0.0, 7.0), at)
+
+
+func _show_figure(spot: Vector3, viewer: Vector3) -> void:
+	_figure = Node3D.new()
+	add_child(_figure)
+	_figure.global_position = spot
+	var dark := StandardMaterial3D.new()
+	dark.albedo_color = Color(0.02, 0.02, 0.025)
+	dark.roughness = 1.0
+	for part: Array in [[Vector3(0.5, 2.3, 0.3), Vector3(0, 1.15, 0)], [Vector3(0.3, 0.32, 0.3), Vector3(0, 2.46, 0)],
+			[Vector3(0.12, 1.3, 0.12), Vector3(-0.33, 1.4, 0)], [Vector3(0.12, 1.3, 0.12), Vector3(0.33, 1.4, 0)]]:
+		var mesh := MeshInstance3D.new()
+		mesh.mesh = Monster.box(part[0])
+		mesh.position = part[1]
+		mesh.material_override = dark
+		_figure.add_child(mesh)
+	for side: float in [-1.0, 1.0]:
+		var eye := MeshInstance3D.new()
+		eye.mesh = Monster.box(Vector3(0.05, 0.03, 0.02))
+		eye.position = Vector3(side * 0.07, 2.5, 0.16)
+		var glow := StandardMaterial3D.new()
+		glow.albedo_color = Color(1.0, 0.9, 0.8)
+		glow.emission_enabled = true
+		glow.emission = Color(1.0, 0.9, 0.8)
+		glow.emission_energy_multiplier = 4.0
+		eye.material_override = glow
+		_figure.add_child(eye)
+	_figure.look_at(Vector3(viewer.x, 0.0, viewer.z), Vector3.UP, true)
+	Sfx.play_flat(self, Sfx.notes([62.0, 58.0, 55.0], 0.45, 0.5, "saw"), -4.0)
+	# The lights near it stutter, and when they come back it's gone.
+	var lights: Array[Light3D] = []
+	for node in get_tree().get_nodes_in_group(ShiftLighting.SCHOOL_LIGHTS):
+		var light := node as Light3D
+		if light and light.visible and light.global_position.distance_to(spot) < 14.0:
+			lights.append(light)
+	var sequence := create_tween()
+	sequence.tween_interval(1.6)
+	for i in 3:
+		sequence.tween_callback(func() -> void:
+			for light in lights:
+				light.visible = false)
+		sequence.tween_interval(0.08)
+		sequence.tween_callback(func() -> void:
+			for light in lights:
+				light.visible = true)
+		sequence.tween_interval(0.12)
+	sequence.tween_callback(func() -> void:
+		for light in lights:
+			light.visible = false
+		_figure.queue_free())
+	sequence.tween_interval(0.5)
+	sequence.tween_callback(func() -> void:
+		for light in lights:
+			light.visible = true)
+
+
 func jumpscare(from: Vector3) -> void:
 	if local_guard == null or _scaring:
 		return

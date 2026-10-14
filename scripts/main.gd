@@ -179,6 +179,7 @@ func _ready() -> void:
 	dread.name = "Dread"
 	dread.director = director
 	dread.players = players
+	dread.shift = shift
 	add_child(dread)
 
 	career = Career.new()
@@ -289,6 +290,7 @@ func _ready() -> void:
 	phone.power = power
 	add_child(phone)
 	night.phone = phone
+	dread.night = night
 	add_child(night)
 	shop.night = night
 	director.student_helped.connect(func(peer_id: int) -> void:
