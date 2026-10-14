@@ -614,6 +614,8 @@ func _reset_run() -> void:
 
 
 func _on_next_night_requested() -> void:
+	if multiplayer.is_server():
+		hiding.release_all()
 	if multiplayer.is_server() and daily != "":
 		daily_finished.emit()
 		return

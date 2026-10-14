@@ -29,6 +29,7 @@ const SEEN_RANGE := 10.0
 const PULL_OUT_SECONDS := 1.4
 
 var director: MonsterDirector
+var shift: Shift
 var players: Node3D
 ## The local guard. Set by Main.
 var local_guard: Guard
@@ -62,6 +63,10 @@ func _request(spot: int) -> void:
 	if hidden.has(peer):
 		_set_hidden.rpc(peer, -1)
 		return
+	# Cupboards are for the night shift: hiding before it or after 6 AM would leave you stuck.
+	if shift and shift.state != Shift.State.ON_SHIFT:
+		director.tell(peer, "Nothing to hide from right now.")
+		return
 	if spot < 0 or spot >= SPOTS.size() or guard.global_position.distance_to(SPOTS[spot]["at"]) > 3.0:
 		return
 	if spot in hidden.values():
@@ -70,10 +75,13 @@ func _request(spot: int) -> void:
 	var seen_by := _watcher(guard)
 	_set_hidden.rpc(peer, spot)
 	if seen_by:
+		# Remembered now: the monster itself may be gone by the time it pulls them out.
+		var by := seen_by.display_name
+		var from := seen_by.global_position
 		get_tree().create_timer(PULL_OUT_SECONDS).timeout.connect(func() -> void:
 			if hidden.get(peer, -1) == spot and is_instance_valid(guard) and not guard.is_dead:
 				_set_hidden.rpc(peer, -1)
-				director.kill(guard, seen_by.display_name, seen_by.global_position))
+				director.kill(guard, by, from))
 
 
 ## A monster that saw this guard climb in, or null.

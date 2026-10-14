@@ -309,6 +309,7 @@ func _ready() -> void:
 	hiding = Hiding.new()
 	hiding.name = "Hiding"
 	hiding.director = director
+	hiding.shift = shift
 	hiding.players = players
 	hiding.hud = hud
 	add_child(hiding)

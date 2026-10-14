@@ -38,7 +38,7 @@ func _init() -> void:
 
 
 func think(delta: float) -> void:
-	if not is_instance_valid(_target) or _target.is_dead or not director.may_enter(_target.global_position):
+	if not is_instance_valid(_target) or _target.is_dead or _target.hiding or not director.may_enter(_target.global_position):
 		_target = _pick_target()
 		_still_for = 0.0
 		_warned = false

@@ -181,18 +181,20 @@ func _figure_at_the_edge() -> void:
 	body.position = Vector3(0, 1.05, 0)
 	body.material_override = dark
 	figure.add_child(body)
-	var shown := 0.0
-	var watcher := func(step: float) -> bool:
-		shown += step
-		var to_figure := figure.global_position + Vector3(0, 1.2, 0) - camera.global_position
-		var looked := (-camera.global_basis.z).angle_to(to_figure) < deg_to_rad(18)
-		return looked or shown > 3.0
+	# Gone the moment you look at it, or after a few seconds anyway.
 	var timer := Timer.new()
 	timer.wait_time = 0.05
 	timer.autostart = true
 	figure.add_child(timer)
 	timer.timeout.connect(func() -> void:
-		if watcher.call(0.05):
+		if not is_instance_valid(camera):
+			figure.queue_free()
+			return
+		var to_figure := figure.global_position + Vector3(0, 1.2, 0) - camera.global_position
+		if (-camera.global_basis.z).angle_to(to_figure) < deg_to_rad(18):
+			figure.queue_free())
+	get_tree().create_timer(3.0).timeout.connect(func() -> void:
+		if is_instance_valid(figure):
 			figure.queue_free())
 
 

@@ -174,7 +174,9 @@ func _request_use() -> void:
 				cameras.place_portable.rpc(slot, at, target)
 				_tell(peer, "Portable camera %d is up. Find it on the guard room monitors." % (slot + 1))
 		"coffee":
-			if take(peer, item):
+			if night.shift.state != Shift.State.ON_SHIFT:
+				_tell(peer, "Save it for the night. You'll need it then.")
+			elif take(peer, item):
 				night.nerve.add(peer, 40.0)
 				_tell(peer, "Hot, bitter, and exactly what you needed. Your hands stop shaking.")
 		"air_horn":

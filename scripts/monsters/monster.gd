@@ -41,6 +41,8 @@ var footstep_volume := -2.0
 var silent := false
 ## Joins in when the lockdown alarm goes (the Ghost and the Shade have their own ways).
 var hunts_in_lockdown := true
+## What it was doing before a lockdown, to go back to afterwards. Host only.
+var _pre_lockdown_state := ""
 ## Pushes an EMF reader to its top level (EMF 5) up close. Evidence for the field guide.
 var emf5 := false
 
@@ -94,8 +96,13 @@ func _physics_process(delta: float) -> void:
 		halt()
 		return
 	if director.lockdown_left > 0.0 and hunts_in_lockdown and not harmless:
+		if _pre_lockdown_state == "":
+			_pre_lockdown_state = state
 		_lockdown_hunt()
 		return
+	if _pre_lockdown_state != "":
+		state = _pre_lockdown_state
+		_pre_lockdown_state = ""
 	think(delta)
 
 
