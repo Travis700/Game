@@ -1,5 +1,5 @@
 extends CanvasLayer
-## The menu's "Records" page: career stats, best run scores and achievements.
+## The menu's "Records" page: career stats, best run scores, achievements and the field guide.
 
 signal closed
 
@@ -62,7 +62,7 @@ func _fill() -> void:
 	_heading("Career")
 	for stat: String in Career.STATS:
 		_line("%s: %d" % [Career.STATS[stat], Career.stat(stat)])
-	_line("Kinds of monster logged: %d of %d" % [Career.monsters_seen().size(), Career.MONSTER_KINDS.size()])
+	_line("Monsters in your field guide: %d of %d" % [FieldGuide.discovered().size(), FieldGuide.ENTRIES.size()])
 
 	_heading("Best scores (runs won)")
 	var scores := Career.best_scores()
@@ -80,6 +80,9 @@ func _fill() -> void:
 		var info: Array = Career.ACHIEVEMENTS[key]
 		var got := unlocked.has(key)
 		_line("%s  %s  —  %s" % ["✓" if got else "·", info[0], info[1]], 1.0 if got else 0.5)
+
+	_heading("Field guide")
+	_body.add_child(FieldGuide.build_page(Color(0.92, 0.92, 0.95), 720))
 
 
 func _heading(text: String) -> void:

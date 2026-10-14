@@ -14,6 +14,8 @@ const CLOCK_OUT_SECONDS := 90.0
 
 const SURVIVAL_PAY := 100
 const CORRECT_LOG_POINTS := 25
+## Extra pay for naming the monster in a correct Monster log.
+const NAME_POINTS := 25
 const FALSE_REPORT_POINTS := 10
 const DEATH_PENALTY := 50
 ## Survive this night and the run is won.
@@ -173,17 +175,17 @@ func _run_shift(delta: float) -> void:
 		_start_morning.rpc()
 
 
-func _on_log_submitted(area: String, type: String) -> void:
-	clipboard.add_entry(time_text(), area, type)
+func _on_log_submitted(area: String, type: String, named := "") -> void:
+	clipboard.add_entry(time_text(), area, type if named == "" else FieldGuide.display_name(named).capitalize())
 	hud.show_message("Logged: %s, %s." % [area, type.to_lower()])
 	if multiplayer.is_server():
-		_receive_log(area, type)
+		_receive_log(area, type, named)
 	else:
-		_receive_log.rpc_id(1, area, type)
+		_receive_log.rpc_id(1, area, type, named)
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _receive_log(area: String, type: String) -> void:
+func _receive_log(area: String, type: String, named := "") -> void:
 	if not multiplayer.is_server():
 		return
 	if shift.state != Shift.State.ON_SHIFT and shift.state != Shift.State.MORNING:
@@ -192,11 +194,28 @@ func _receive_log(area: String, type: String) -> void:
 	var stats: Dictionary = _stats.get_or_add(peer, {"correct": 0, "false": 0})
 	var entry := "%s|%s" % [area, type]
 	var logged: Array = _logged.get_or_add(peer, [])
-	var correct := director.check_log(peer, area) if type == "Monster" else anomalies.check_log(peer, area, type, minutes)
+	var found := ""
+	var correct := false
+	if type == "Monster":
+		found = director.check_log(peer, area, named)
+		correct = found != ""
+	else:
+		correct = anomalies.check_log(peer, area, type, minutes)
 	if not correct and type == "Missing object":
 		# The Mascot's empty stand really is a missing object.
 		correct = director.check_mascot_missing(peer, area)
-	if correct:
+	if correct and named != "" and named == found:
+		stats["correct"] += 1
+		stats["named"] = stats.get("named", 0) + 1
+		logged.append(entry)
+		_log_result(peer, true, "Confirmed: %s in %s, named right.  +%d" % [
+				FieldGuide.display_name(found), area, CORRECT_LOG_POINTS + NAME_POINTS])
+	elif correct and named != "":
+		stats["correct"] += 1
+		logged.append(entry)
+		_log_result(peer, true, "Confirmed: a monster in %s, but it wasn't %s.  +%d" % [
+				area, FieldGuide.display_name(named), CORRECT_LOG_POINTS])
+	elif correct:
 		stats["correct"] += 1
 		logged.append(entry)
 		_log_result(peer, true, "Confirmed: %s, %s.  +%d" % [area, type.to_lower(), CORRECT_LOG_POINTS])
@@ -424,7 +443,7 @@ func _build_rows(keep_pay: bool) -> Array:
 		var peer := guard.name.to_int()
 		var stats: Dictionary = _stats.get(peer, {"correct": 0, "false": 0})
 		var clocked_out := shift.has_clocked_out(peer)
-		var correct_points: int = stats["correct"] * CORRECT_LOG_POINTS
+		var correct_points: int = stats["correct"] * CORRECT_LOG_POINTS + stats.get("named", 0) * NAME_POINTS
 		var false_points: int = stats["false"] * FALSE_REPORT_POINTS
 		var round_points := rounds.pay_for(peer, clocked_out)
 		var pay: int = (SURVIVAL_PAY if clocked_out else 0) + correct_points - false_points + round_points \

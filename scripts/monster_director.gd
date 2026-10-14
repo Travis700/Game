@@ -522,35 +522,44 @@ func tell(peer_id: int, text: String) -> void:
 	message_for.emit(peer_id, text)
 
 
-## Host: checks a clipboard "Monster" entry. True if a monster this guard hasn't logged yet is
-## in that area right now.
-func check_log(peer_id: int, area: String) -> bool:
+## Host: checks a clipboard "Monster" entry. Returns the kind of monster (e.g. "LunchLady") this
+## guard hasn't logged yet that's in that area right now, or "" if there isn't one. If several
+## are there, the one the guard `named` counts first.
+func check_log(peer_id: int, area: String, named := "") -> String:
+	var found: Array[Monster] = []
 	for node: Node in _container.get_children():
 		var monster := node as Monster
 		if monster == null or monster.harmless or monster.is_queued_for_deletion() or not monster.loggable():
 			continue
 		var credited: Array = _credited.get_or_add(monster.name, [])
 		if peer_id not in credited and SchoolBuilder.area_at(monster.global_position) == area:
-			credited.append(peer_id)
-			if career:
-				career.logged_monster(peer_id, monster.get_script().get_global_name())
-			if monster.leaves_when_logged:
-				# Found out, it slips away.
-				get_tree().create_timer(2.0).timeout.connect(func() -> void:
-					if is_instance_valid(monster):
-						remove_monster(monster))
-			return true
+			found.append(monster)
+	if not found.is_empty():
+		var monster: Monster = found[0]
+		for each in found:
+			if each.get_script().get_global_name() == named:
+				monster = each
+		var kind: String = monster.get_script().get_global_name()
+		_credited[monster.name].append(peer_id)
+		if career:
+			career.logged_monster(peer_id, kind)
+		if monster.leaves_when_logged:
+			# Found out, it slips away.
+			get_tree().create_timer(2.0).timeout.connect(func() -> void:
+				if is_instance_valid(monster):
+					remove_monster(monster))
+		return kind
 	if portrait.active and portrait.stage > 0 and area == "Art Room" and peer_id not in portrait.credited:
 		portrait.credited.append(peer_id)
 		if career:
 			career.logged_monster(peer_id, "SelfPortrait")
-		return true
+		return "SelfPortrait"
 	if lockers.active and peer_id not in lockers.credited and lockers.has_open_in(area):
 		lockers.credited.append(peer_id)
 		if career:
 			career.logged_monster(peer_id, "Lockers")
-		return true
-	return false
+		return "Lockers"
+	return ""
 
 
 # --- The Principal and the Ghost (host) ---------------------------------------------------

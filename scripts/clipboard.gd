@@ -3,7 +3,8 @@ extends CanvasLayer
 ## Open it with Tab, pick where and what, and log it. The time is filled in for you.
 ## You only find out how accurate your log was in the morning report.
 
-signal log_submitted(area: String, type: String)
+## `named` is the monster kind picked for a Monster log, or "" for "not sure".
+signal log_submitted(area: String, type: String, named: String)
 signal closed
 
 const PAPER := Color(0.93, 0.9, 0.8)
@@ -18,7 +19,12 @@ var _empty_note: Label
 var _area: OptionButton
 var _type: OptionButton
 var _type_about: Label
+var _name: OptionButton
 var _log_button: Button
+var _title: Label
+var _guide_button: Button
+var _log_page: VBoxContainer
+var _guide_scroll: ScrollContainer
 ## What each kind of entry means, shown under the drop-downs.
 const TYPE_HELP := {
 	"Moved object": "Something is somewhere other than where it belongs.",
@@ -48,11 +54,31 @@ func _ready() -> void:
 	column.add_theme_constant_override("separation", 10)
 	paper.add_child(column)
 
-	column.add_child(_label("INCIDENT LOG", 30))
+	var title_row := HBoxContainer.new()
+	_title = _label("INCIDENT LOG", 30)
+	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_row.add_child(_title)
+	_guide_button = Button.new()
+	_guide_button.text = "Field guide"
+	_guide_button.custom_minimum_size = Vector2(130, 36)
+	_guide_button.pressed.connect(_toggle_guide)
+	title_row.add_child(_guide_button)
+	column.add_child(title_row)
 	_header = _label("", 17)
 	_header.modulate.a = 0.75
 	column.add_child(_header)
 	column.add_child(HSeparator.new())
+
+	_guide_scroll = ScrollContainer.new()
+	_guide_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_guide_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_guide_scroll.visible = false
+	column.add_child(_guide_scroll)
+	_log_page = VBoxContainer.new()
+	_log_page.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_log_page.add_theme_constant_override("separation", 10)
+	column.add_child(_log_page)
+	column = _log_page
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -82,6 +108,9 @@ func _ready() -> void:
 		_type.add_item(type)
 	row.add_child(_type)
 	column.add_child(row)
+	_name = OptionButton.new()
+	_name.custom_minimum_size = Vector2(0, 40)
+	column.add_child(_name)
 	_type_about = _label("", 15)
 	_type_about.modulate.a = 0.7
 	_type_about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -120,6 +149,8 @@ func open(area := "") -> void:
 	visible = true
 	is_open = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_fill_names()
+	_show_guide(false)
 	if not Input.get_connected_joypads().is_empty():
 		_area.grab_focus.call_deferred()
 
@@ -156,14 +187,49 @@ func _input(event: InputEvent) -> void:
 func _on_log_pressed() -> void:
 	if _area.selected < 0:
 		return
-	log_submitted.emit(_area.get_item_text(_area.selected), _type.get_item_text(_type.selected))
+	var type := _type.get_item_text(_type.selected)
+	var named: String = _name.get_item_metadata(_name.selected) if type == "Monster" and _name.selected >= 0 else ""
+	log_submitted.emit(_area.get_item_text(_area.selected), type, named)
 	# A short pause so a double-click doesn't log the same thing twice.
 	_log_button.disabled = true
 	get_tree().create_timer(0.8).timeout.connect(func() -> void: _log_button.disabled = false)
 
 
 func _explain_type() -> void:
-	_type_about.text = TYPE_HELP.get(_type.get_item_text(_type.selected), "")
+	var type := _type.get_item_text(_type.selected)
+	_type_about.text = TYPE_HELP.get(type, "")
+	_name.visible = type == "Monster"
+	if type == "Monster" and _name.item_count <= 1:
+		_type_about.text += " Log one correctly and it goes in your field guide; after that you can name it here for +%d." % Night.NAME_POINTS
+
+
+## The "which monster?" list: not sure, then every monster in this player's field guide.
+func _fill_names() -> void:
+	var previous: String = _name.get_item_metadata(_name.selected) if _name.selected >= 0 else ""
+	_name.clear()
+	_name.add_item("Which monster? Not sure")
+	_name.set_item_metadata(0, "")
+	for kind in FieldGuide.discovered():
+		_name.add_item("It's " + FieldGuide.display_name(kind))
+		_name.set_item_metadata(_name.item_count - 1, kind)
+		if kind == previous:
+			_name.select(_name.item_count - 1)
+	_explain_type()
+
+
+func _toggle_guide() -> void:
+	_show_guide(not _guide_scroll.visible)
+
+
+func _show_guide(on: bool) -> void:
+	if on:
+		for child in _guide_scroll.get_children():
+			child.queue_free()
+		_guide_scroll.add_child(FieldGuide.build_page(INK, 470))
+	_guide_scroll.visible = on
+	_log_page.visible = not on
+	_title.text = "FIELD GUIDE" if on else "INCIDENT LOG"
+	_guide_button.text = "Incident log" if on else "Field guide"
 
 
 func _label(text: String, size: int) -> Label:
