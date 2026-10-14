@@ -214,8 +214,6 @@ func _build_feed_view() -> void:
 	_feed_view.add_child(_feed_title)
 
 
-## Session info in the top-right corner, e.g. "Hosting · 2 guards".
-## What you should be doing right now, under the clock, e.g. "Clock in at the guard room".
 ## The key list in the top left, using the player's own keys.
 func refresh_key_hint() -> void:
 	var move := "%s%s%s%s" % [Controls.key_name("move_forward"), Controls.key_name("move_left"),
@@ -226,6 +224,7 @@ func refresh_key_hint() -> void:
 		Controls.key_name("push_to_talk"), Controls.key_name("radio_talk")]
 
 
+## What you should be doing right now, under the clock, e.g. "Clock in at the guard room".
 func set_objective(text: String) -> void:
 	_objective.text = text
 
@@ -239,6 +238,7 @@ func set_voice(transmitting: bool, level: float, on_radio := false) -> void:
 	_voice_label.text = ("ON RADIO" if on_radio else "TALKING") + (" (LOUD)" if level > 0.6 else "")
 
 
+## Session info in the top-right corner, e.g. "Hosting · 2 guards".
 func set_status(text: String) -> void:
 	_status.text = text
 

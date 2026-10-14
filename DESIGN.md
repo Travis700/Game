@@ -15,7 +15,7 @@ A first-person co-op light-horror game for 1–4 players. The players are night 
 
 1. **Before the shift.** Players spawn at the school's front gate, walk into the building and go to the guard room. They can buy items from the vending machine. The school is brightly lit (street lights, floodlights on the building, every light on inside) so arriving feels ordinary and safe.
 2. **Clock in.** Each player enters their employee number on the clock machine in the guard room. The night starts once the players have clocked in: the floodlights cut out one by one, some ceiling lights click off, the rest dim, the fog closes in and the faulty lights start to flicker.
-3. **During the shift (midnight to 6am).** Players watch the cameras from the desks, patrol the school, handle monsters and hazards, and log anomalies on their own clipboards.
+3. **During the shift (midnight to 6am).** Players watch the cameras from the desks, go out on the night's round (punch stations around the school), reset the breaker when the power goes, handle monsters and hazards, and log anomalies on their own clipboards. The split between "watch the screens" and "go out there" is the core co-op tension: the guard at the desk guides the ones in the dark.
 4. **Clock out at 6am.** A player only gets paid if they make it back to the clock machine and clock out.
 5. **End of night.** Scores are tallied, and players spend points on items before the next night.
 
@@ -63,7 +63,9 @@ Closed wings stay behind locked doors; their cameras, clipboard areas, anomalies
 
 Each player has their **own clipboard and their own points.**
 
-- **Logging.** Choose the area or camera and the type of anomaly. The time is recorded automatically.
+- **Logging.** Choose the area or camera and the type of anomaly. The time is recorded automatically. The result (✓ or ✗) is shown straight away, so players learn what counts.
+- **Naming monsters.** A monster logged correctly goes into that player's **field guide** (kept across runs): its signs and how to survive it; undiscovered monsters show a rumour. Once it's in the guide, a Monster log can name it for +25 more.
+- **Rounds.** Each night has a work order of punch stations (3 on night 1, up to 7) in open areas. Hold E to punch: +20 to the puncher, +50 each if the whole round is done, -10 each per missed station. The station's bell is as loud as a shout, so monsters that listen come for it.
 - **End-of-night score for each player:**
   - Survival points, if they clock out
   - Plus points for each correct anomaly logged
@@ -101,6 +103,12 @@ Each player has their **own clipboard and their own points.**
 
 Monsters per night: 1, 1, 2, 2, 3, 3, 4, 4, 5, plus one for each open wing. The real night cleaner works every night.
 
+**Hazard: power cuts.** From night 2 (1 a night; 2 from night 5; 3 from night 8) the power fails: lights and cameras die, red emergency lights come on, the vending machine stops. Someone must hold E on the breaker in the custodian's closet; it pays like a correct log.
+
+**Fear feedback.** A heartbeat that speeds up as the nearest monster gets closer, a low drone while something nearby is chasing, flashlights that flicker near monsters, and a jumpscare (the camera snaps to whatever caught you) before the ghost view.
+
+**Voice mimicry.** The host keeps each guard's last few spoken lines in memory; the Understudy replays them in that guard's voice from where it stands. Opt out in the Esc menu.
+
 **Hazard: the Bell.** From night 4 the school bell rings at the wrong time (twice a night from night 7) and every monster moves 35% faster until someone shuts it off at the panel in the front office, or a minute passes.
 
 ## 10. Night progression
@@ -134,6 +142,13 @@ Which monsters are unlocked on which night is still to be set (section 14).
 | Walkie-talkie | 90 | Personal, for the run. Hold B to talk to every radio; receiving radios are loud enough for monsters to hear. |
 | Energy drink | 25 | Faster running for 30 s. |
 | Heavy-duty flashlight | 80 | Longer, wider beam for the rest of the run. |
+| Air horn | 70 | Freezes monsters within 15 m for 6 s; everything hears it. |
+
+**Rank locks:** spectral camera kit and glue trap need rank 2, portable camera and heavy-duty flashlight rank 3, air horn rank 4.
+
+## 11b. Ranks
+
+XP per night: 100 + 10 × night number for clocking out (25 if caught), +20 per correct log, +20 per named monster, +10 per punched station. Ranks at 0, 400, 1200, 2500, 4500, 7500, 12000 and 20000 XP: Trainee, Night Watch, Patrol Officer, Senior Guard, Shift Supervisor, Head of Security, Night Warden, Legend of Westfield. Promotions show on the night report with what they unlock.
 
 **Ideas not built yet:** coffee.
 

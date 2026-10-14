@@ -8,8 +8,9 @@ The full plan is in [DESIGN.md](DESIGN.md).
 Version 1.0.0. The game is complete apart from the art and audio pass: every model is a
 placeholder made of boxes, and every sound is generated in code. Everything else is in:
 nine nights, three difficulties (main building, classroom wing, science wing), 15 monsters,
-the guard room and its 16 cameras, the vending machine, saving, achievements and records,
-proximity voice chat and walkie-talkies, controller support, settings, and Steam lobbies and
+the guard room and its 16 cameras, watchman rounds, power cuts, the field guide, ranks, the
+vending machine, saving, achievements and records, proximity voice chat and walkie-talkies
+(and a monster that copies your voice), controller support, settings, and Steam lobbies and
 invites (see [STEAM.md](STEAM.md) for the Steamworks steps that need your account).
 
 ## Running it
@@ -50,9 +51,32 @@ the internet if the host forwards port 7777 on their router. Steam lobbies will 
 2. The lights go down and the clock starts at 12:00 AM. A night lasts 12 minutes.
 3. Things change around the school: objects move, go missing or appear, and from night 2, figures.
    Watch the cameras, and when you spot something, press Tab and log where it is and what it is.
-4. At 6:00 AM the lights come back on. Clock out at the time clock within about 90 seconds.
-5. The report shows everyone's pay: 100 for clocking out, +25 per correct log, -10 per false report,
-   and -50 for every guard caught that night (everyone pays; a revive at a totem refunds it).
+   You hear straight away whether you were right (✓ or ✗).
+4. Someone has to go out on **tonight's round** (top of the screen): punch stations with amber lamps
+   around the school. Hold E at one to punch it. The station's bell rings, and monsters nearby hear it.
+5. At 6:00 AM the lights come back on. Clock out at the time clock within about 90 seconds.
+6. The report shows everyone's pay: 100 for clocking out, +25 per correct log (+25 more for naming
+   the monster), -10 per false report, +20 per station you punched, +50 each if the whole round was
+   punched, -10 each per station missed, and -50 for every guard caught that night (everyone pays;
+   a revive at a totem refunds it). It also shows the XP everyone earned.
+
+**Power cuts:** from night 2 the power goes out now and then (more often later in the run). The lights
+die, every camera shows NO POWER and the vending machine stops; only red emergency lights are left.
+Reset the breaker in the custodian's closet (across the main hallway from the lobby) by holding E on it.
+Whoever resets it is paid like a correct log.
+
+**The field guide:** log a monster correctly and it goes in your field guide (the button at the top of
+your clipboard, and on the Records screen): what it looks like and how to survive it. Monsters you
+haven't found yet show only a rumour. Once a monster is in your guide, you can name it in a Monster log
+for +25 more. The guide is kept on your computer across runs.
+
+**Ranks:** every night earns XP (even one where you're caught), kept across runs. There are eight ranks,
+from Trainee to Legend of Westfield. Your rank is on your name tag and the menu, and some vending
+machine items need a rank.
+
+**Being scared:** when a monster is close, you hear your heartbeat speed up; a low drone comes in when
+something is chasing nearby, and flashlights flicker near monsters. Getting caught turns you to face
+whatever got you.
 
 Logging the same thing twice isn't counted as a false report. Anomalies nobody logs fade after a while
 (and can come back later). Points never drop below zero.
@@ -60,24 +84,27 @@ Logging the same thing twice isn't counted as a false report. Anomalies nobody l
 ## The vending machine
 
 Press E on the vending machine in the guard room to spend points. Purchases drop into the tray; press E
-to pick them up. You can carry one thing at a time (shown in the bottom-right corner).
+to pick them up. You can carry one thing at a time (shown in the bottom-right corner). Some items need
+a rank (in brackets); the machine shows which.
 
-- **Spectral camera kit (150):** stand by a desk's chair with it and press G, then stay there for 10
+- **Spectral camera kit (150, rank 2):** stand by a desk's chair with it and press G, then stay there for 10
   seconds. That desk's monitors switch to spectral feeds, which show the Ghost.
 - **Lucky rabbit's foot (60):** carry it to a revive totem. Your roll revives on 5 in 6 instead of 4 in 6.
 - **Guard room door kit (120):** stand in one of the guard room's two doorways and press E to fit a door,
   then E to open and shut it. From night 7 monsters can come into the guard room: a shut door holds
   them for about 15 seconds of banging, then gives way and hangs open for a minute.
 - **Motion sensor (40):** press G to put it down. When a monster walks past, everyone hears which area.
-- **Industrial glue trap (60):** press G to put it down. The first monster to step on it is stuck for 20 seconds.
-- **Portable camera (100):** press G to set it up where you stand, facing the way you look. It appears on
+- **Industrial glue trap (60, rank 2):** press G to put it down. The first monster to step on it is stuck for 20 seconds.
+- **Portable camera (100, rank 3):** press G to set it up where you stand, facing the way you look. It appears on
   the guard room monitors (A / D to find it) until morning. Two at most per night.
 - **Walkie-talkie (90):** press G to clip it on; it's yours for the run. Hold **B** to talk to everyone
   else with a radio, wherever they are (it sounds like a radio, with a click when a call comes in).
   But a radio blares when a call comes in: monsters near the guard *receiving* the call hear it as
   if that guard were talking. Think before you call someone who's hiding.
 - **Energy drink (25):** press G to drink it and run faster for 30 seconds.
-- **Heavy-duty flashlight (80):** press G to fit it. A longer, wider beam for the rest of the run.
+- **Heavy-duty flashlight (80, rank 3):** press G to fit it. A longer, wider beam for the rest of the run.
+- **Air horn (70, rank 4):** press G to blast it. Every monster within 15 metres freezes for 6 seconds,
+  but everything in the school hears it.
 
 Sensors and traps are cleared away each morning.
 
@@ -101,6 +128,9 @@ up you can't hear each other. Ghosts hear the living, but only other ghosts hear
   Sometimes the only way to stay alive is to keep quiet.
 - **Walkie-talkies** (vending machine) let split-up guards talk at any distance, but every radio that
   receives a call is loud enough for monsters near it to hear.
+- **The Understudy copies voices.** The host's game keeps the last few things each guard said (in
+  memory only, never saved), and the Understudy plays one back now and then, in that guard's voice,
+  from where it's standing. Untick **May copy my voice** in the Esc menu to opt out.
 
 ## Sound
 
@@ -136,7 +166,7 @@ on your clipboard as "Monster" in that area for points.
 | The Crossing Guard | 1 | Science wing, east main hall (difficulty 3) | Blows its whistle and holds up a STOP sign at a "crossing". Don't move while the sign is up, or it runs you down. |
 | The Self-Portrait | 2 | Art room (difficulty 3) | A canvas painting one of the guards, a stage at a time (watch the Art Room camera). Finished, it catches them. Turn it to the wall (E) to wipe it. |
 | The Specimen | 3 | Science lab (difficulty 3) | Crawls after you in the dark. Catch it in your flashlight and it hides in the ceiling for a while. |
-| The Understudy | 4 | Locker rooms (difficulty 3) | Dressed as one of you, following at a distance. Stand still where it can see you and it steps in. Log it and it takes a bow. |
+| The Understudy | 4 | Locker rooms (difficulty 3) | Dressed as one of you, following at a distance. Stand still where it can see you and it steps in. It says things your teammates said, in their voices. Log it and it takes a bow. |
 
 The real **night cleaner** works every night pushing a mop cart. They're harmless, and logging them is a false report.
 
@@ -197,7 +227,7 @@ it runs; that's normal for games that aren't signed (Steam builds don't show it)
 | Shift | Run |
 | Mouse | Look |
 | F | Flashlight |
-| E | Use. Press E on the time clock in the guard room to clock in and start the night. |
+| E | Use. Press E on the time clock in the guard room to clock in and start the night. Hold E on punch stations and the breaker. |
 | Esc | Menu: mouse sensitivity, volume, change keys, graphics (resolution, anti-aliasing, shadows, V-sync), fullscreen, leave the game (pauses solo; in a group the night keeps going) |
 | Tab | Clipboard: log anything odd you spot (after clocking in) |
 | G | Use or put down what you're carrying (sensors, traps, energy drink, flashlight) |
@@ -247,3 +277,6 @@ LB push to talk, RT walkie-talkie, Start menu. In menus, the D-pad moves and A s
 - `scripts/profile.gd` — your badge number and settings. `scripts/run_save.gd` — the saved run.
 - `scripts/keypad_ui.gd` — the time clock keypad. `scripts/pause_menu.gd` — the Esc menu.
 - `scripts/room_code.gd` — turning addresses into room codes.
+- `scripts/rounds.gd` — the watchman rounds' punch stations. `scripts/power.gd` — power cuts and the breaker.
+- `scripts/dread.gd` — heartbeat, chase drone, flashlight flicker and the jumpscare.
+- `scripts/field_guide.gd` — the field guide's entries and page. `scripts/career.gd` — achievements, stats, XP and ranks.
