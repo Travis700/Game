@@ -16,6 +16,8 @@ signal lobby_ready(peer: MultiplayerPeer, is_host: bool)
 signal lobby_failed(reason: String)
 ## A friend invited us (or the game was launched from an invite): join this lobby.
 signal invite_accepted(lobby_id: int)
+## Friends' scores on a leaderboard arrived: [{"name", "score", "rank"}], best first.
+signal leaderboard_loaded(board: String, entries: Array)
 
 ## Steam's test app ("Spacewar"), used until the game has its own app ID (set it in
 ## Project Settings under night_shift/steam/app_id, or in steam_appid.txt next to the game).
@@ -44,6 +46,11 @@ var _steam: Object
 var _hosting := false
 var _wanted_code := ""
 var _max_members := 4
+## Leaderboards: name -> Steam handle once found, and what's waiting for each board's handle.
+var _boards: Dictionary = {}
+var _waiting_uploads: Dictionary = {}
+var _waiting_downloads: Array[String] = []
+var _finding: Array[String] = []
 
 
 ## Tests only: uses `fake` as if it were GodotSteam's Steam singleton.
@@ -56,6 +63,8 @@ func use_fake_steam(fake: Object) -> void:
 	_connect("lobby_joined", _on_lobby_joined)
 	_connect("lobby_match_list", _on_lobby_match_list)
 	_connect("join_requested", _on_join_requested)
+	_connect("leaderboard_find_result", _on_leaderboard_found)
+	_connect("leaderboard_scores_downloaded", _on_leaderboard_downloaded)
 
 
 func _ready() -> void:
@@ -76,6 +85,8 @@ func _ready() -> void:
 	_connect("lobby_joined", _on_lobby_joined)
 	_connect("lobby_match_list", _on_lobby_match_list)
 	_connect("join_requested", _on_join_requested)
+	_connect("leaderboard_find_result", _on_leaderboard_found)
+	_connect("leaderboard_scores_downloaded", _on_leaderboard_downloaded)
 	# Launched from a friend's invite: "+connect_lobby <id>".
 	var args := OS.get_cmdline_args()
 	var at := args.find("+connect_lobby")
@@ -296,6 +307,93 @@ func add_stat(api_name: String, amount: int) -> void:
 	else:
 		_call("setStat", [api_name, total])
 	_call("storeStats")
+
+
+# --- Leaderboards -----------------------------------------------------------------------------
+
+## Posts a score (Steam keeps each player's best). Boards are made the first time they're used:
+## "daily_20261014" for a day's daily shift, "furthest_night" for Overtime.
+func submit_score(board: String, score: int) -> void:
+	if not available:
+		return
+	if _boards.has(board):
+		_call("uploadLeaderboardScore", [score, true, PackedInt32Array(), _boards[board]])
+	else:
+		_waiting_uploads[board] = maxi(score, int(_waiting_uploads.get(board, score)))
+		_find_board(board)
+
+
+## Asks for the player's friends' scores on a board. Answers with leaderboard_loaded.
+func request_friends_scores(board: String) -> void:
+	if not available:
+		return
+	if _boards.has(board):
+		# 2: the player's friends (and the player).
+		_call("downloadLeaderboardEntries", [1, 100, 2, _boards[board]])
+	else:
+		if board not in _waiting_downloads:
+			_waiting_downloads.append(board)
+		_find_board(board)
+
+
+func _find_board(board: String) -> void:
+	if board in _finding:
+		return
+	_finding.append(board)
+	# 2: higher is better. 1: shown as a plain number.
+	_call("findOrCreateLeaderboard", [board, 2, 1])
+
+
+## GodotSteam: (handle, found). Which board it was is asked of Steam, as finds can overlap.
+func _on_leaderboard_found(handle: Variant, found: Variant = 1) -> void:
+	var board_handle := _int(handle)
+	if board_handle == 0 or _int(found) == 0:
+		return
+	var board := str(_call("getLeaderboardName", [board_handle]))
+	if board == "" or board == "<null>":
+		if _finding.size() != 1:
+			return
+		board = _finding[0]
+	_finding.erase(board)
+	_boards[board] = board_handle
+	if _waiting_uploads.has(board):
+		_call("uploadLeaderboardScore", [int(_waiting_uploads[board]), true, PackedInt32Array(), board_handle])
+		_waiting_uploads.erase(board)
+	if board in _waiting_downloads:
+		_waiting_downloads.erase(board)
+		_call("downloadLeaderboardEntries", [1, 100, 2, board_handle])
+
+
+## GodotSteam: (message, handle, entries). Older versions leave out the handle.
+func _on_leaderboard_downloaded(a: Variant = null, b: Variant = null, c: Variant = null) -> void:
+	var handle := 0
+	var rows: Array = []
+	for value: Variant in [a, b, c]:
+		if value is Array:
+			rows = value
+		elif value is int:
+			handle = value
+	var board := ""
+	for name: String in _boards:
+		if _boards[name] == handle:
+			board = name
+	if board == "" and _boards.size() == 1:
+		board = _boards.keys()[0]
+	var entries: Array = []
+	for row: Variant in rows:
+		if not row is Dictionary:
+			continue
+		var id := _int((row as Dictionary).get("steam_id", 0))
+		var who := user_name if id == steam_id else str(_call("getFriendPersonaName", [id]))
+		entries.append({"name": who, "score": _int(row.get("score", 0)), "rank": _int(row.get("global_rank", 0)),
+				"me": id == steam_id})
+	entries.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return x["score"] > y["score"])
+	leaderboard_loaded.emit(board, entries)
+
+
+## A day's daily shift board, e.g. "daily_20261014".
+static func daily_board(date: String) -> String:
+	return "daily_" + date.replace("-", "")
 
 
 # --- Talking to GodotSteam ------------------------------------------------------------------

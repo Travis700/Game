@@ -566,6 +566,9 @@ func _finish_daily(rows: Array, score: int, summary: String) -> void:
 	elif not new_best:
 		headline += " Today's best is still %d." % best_before
 	headline += "  Days in a row: %d." % Career.daily_streak()
+	var steam := get_node_or_null("/root/SteamService")
+	if steam:
+		steam.submit_score(steam.daily_board(daily), score)
 	_show_report.rpc(number, rows, headline + "\n" + summary, "daily")
 
 

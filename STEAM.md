@@ -73,6 +73,16 @@ Stats (type INT, set by client): `nights_survived`, `runs_won`, `correct_logs`, 
 
 Achievement icons are part of the art pass (64×64 locked and unlocked versions each).
 
+## 3b. Leaderboards
+
+The game creates its leaderboards itself the first time they're used (`findOrCreateLeaderboard`),
+so there's nothing to set up beyond leaving client-side leaderboard writes allowed (the default,
+not "trusted"):
+
+- `daily_YYYYMMDD`: one per day, the daily shift's score (higher is better). The menu shows the
+  player's friends' scores for today.
+- `furthest_night`: the furthest Overtime night a player has clocked out of.
+
 ## 4. Rich presence
 
 Upload `steam/rich_presence_english.vdf` under **Steamworks → Community → Rich Presence

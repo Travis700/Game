@@ -165,6 +165,9 @@ func _record_night(night: int) -> void:
 	if night > int(config.get_value("career", "best_night", 0)):
 		config.set_value("career", "best_night", night)
 		config.save(PATH)
+		var steam := get_node_or_null("/root/SteamService")
+		if steam and night > 9:
+			steam.submit_score("furthest_night", night)
 
 
 @rpc("authority", "call_remote", "reliable")
