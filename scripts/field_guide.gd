@@ -92,6 +92,12 @@ const ENTRIES := {
 		"rule": "It hates light. Catch it in your flashlight beam and it flees into the ceiling.",
 		"rumour": "Something in the science lab's big jar has been moving.",
 	},
+	"Coach": {
+		"name": "the Coach", "where": "Locker rooms and East Hall",
+		"signs": "A tracksuit, a red cap and a whistle. Paces the locker rooms.",
+		"rule": "When it whistles at you, RUN, and keep running until you're out of its sight. Walking or standing where it can see you is what gets you.",
+		"rumour": "Somebody is still running practice in the locker rooms.",
+	},
 	"Twin": {
 		"name": "the Twins", "where": "Classroom wing",
 		"signs": "Two girls in matching dresses, one in Room 101 and one in Room 102. A giggle when they move.",

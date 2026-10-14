@@ -34,7 +34,7 @@ const ACHIEVEMENTS := {
 ## Every kind of monster, for the Field guide achievement.
 const MONSTER_KINDS: Array[String] = [
 	"HallMonitor", "Mascot", "LunchLady", "Lockers", "Principal", "OtherCleaner", "Student", "SchoolGhost",
-	"Substitute", "Librarian", "Nurse", "CrossingGuard", "SelfPortrait", "Specimen", "Understudy", "Photographer", "Twin",
+	"Substitute", "Librarian", "Nurse", "CrossingGuard", "SelfPortrait", "Specimen", "Understudy", "Photographer", "Twin", "Coach",
 ]
 ## Career stats shown on the Records screen (and sent to Steam under the same names).
 const STATS := {

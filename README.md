@@ -7,7 +7,7 @@ The full plan is in [DESIGN.md](DESIGN.md).
 
 Version 1.0.0. The game is complete apart from the art and audio pass: every model is a
 placeholder made of boxes, and every sound is generated in code. Everything else is in:
-nine nights, three difficulties (main building, classroom wing, science wing), 17 monsters,
+nine nights, three difficulties (main building, classroom wing, science wing), 18 monsters,
 the guard room and its 16 cameras, watchman rounds, power cuts, the field guide, ranks, the
 vending machine, saving, achievements and records, proximity voice chat and walkie-talkies
 (and a monster that copies your voice), controller support, settings, and Steam lobbies and
@@ -202,6 +202,7 @@ on your clipboard as "Monster" in that area for points.
 | The Librarian | 2 | Library, West Hall (difficulty 2+) | Hates light and noise. Shine your flashlight on it or run nearby and it shushes you, then hunts you until it's dark and quiet. |
 | The Nurse | 3 | Classroom wing (difficulty 2+) | Follows any guard who's on their own, slowly and steadily, with a heart monitor's beep. Stick together and she leaves you be. |
 | The Crossing Guard | 1 | Science wing, east main hall (difficulty 3) | Blows its whistle and holds up a STOP sign at a "crossing". Don't move while the sign is up, or it runs you down. |
+| The Coach | 2 | Locker rooms, East Hall (difficulty 3) | Whistles when it sees you: then run, and keep running until you're out of its sight. Walking or standing where it can see you gets you chased. |
 | The Self-Portrait | 2 | Art room (difficulty 3) | A canvas painting one of the guards, a stage at a time (watch the Art Room camera). Finished, it catches them. Turn it to the wall (E) to wipe it. |
 | The Specimen | 3 | Science lab (difficulty 3) | Crawls after you in the dark. Catch it in your flashlight and it hides in the ceiling for a while. |
 | The Understudy | 4 | Locker rooms (difficulty 3) | Dressed as one of you, following at a distance. Stand still where it can see you and it steps in. It says things your teammates said, in their voices. Log it and it takes a bow. |

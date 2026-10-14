@@ -45,6 +45,7 @@ const ROSTER := {
 	"understudy": {"name": "The Understudy", "home": "Locker Rooms", "night": 4},
 	"photographer": {"name": "The Photographer", "home": "Lobby", "night": 3},
 	"twins": {"name": "The Twins", "home": "Room 101", "night": 2},
+	"coach": {"name": "The Coach", "home": "Locker Rooms", "night": 2},
 }
 ## Lockdown: from this night the alarm can go, and for LOCKDOWN_SECONDS (real) every monster
 ## hunts the nearest guard it can reach, wherever they are. Hide, or get to the guard room.
@@ -252,6 +253,8 @@ func _start(kind: String, minutes: float) -> void:
 			spawn("specimen", Vector3(58, 0, -6))
 		"photographer":
 			spawn("photographer", Vector3(0, 0, 15))
+		"coach":
+			spawn("coach", Vector3(66, 0, 15))
 		"twins":
 			spawn("twin", Vector3(-47, 0, 15))
 			spawn("twin", Vector3(-61, 0, 15))
@@ -338,6 +341,8 @@ func _create_monster(data: Dictionary) -> Node:
 			monster = Photographer.new()
 		"twin":
 			monster = Twin.new()
+		"coach":
+			monster = Coach.new()
 		"crossing_guard":
 			monster = CrossingGuard.new()
 		"specimen":
