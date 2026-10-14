@@ -24,6 +24,10 @@ var _flee_to := Vector3.ZERO
 
 func _init() -> void:
 	display_name = "the Specimen"
+	# Lots of small, quick, scratchy steps.
+	footstep_pitch = 2.6
+	footstep_stride = 0.3
+	footstep_volume = -8.0
 	state = "crawl"
 
 

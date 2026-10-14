@@ -11,6 +11,8 @@ const BLACKOUT_DISTANCE := 9.0
 
 func _init() -> void:
 	display_name = "something you couldn't see"
+	# It floats: no footsteps.
+	silent = true
 	visual_layers = SecurityCameras.SPECTRAL_LAYER
 	state = "drift"
 

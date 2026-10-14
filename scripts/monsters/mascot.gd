@@ -9,6 +9,9 @@ const SPEED := 3.8
 
 func _init() -> void:
 	display_name = "the Mascot"
+	# Big padded feet.
+	footstep_pitch = 0.6
+	footstep_volume = 2.0
 	state = "frozen"
 
 

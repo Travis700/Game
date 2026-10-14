@@ -58,6 +58,7 @@ var bright_flashlight := false
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _bob_time := 0.0
+var _footsteps: Footsteps
 var _prompt := ""
 
 @onready var head: Node3D = $Head
@@ -79,6 +80,9 @@ func _ready() -> void:
 	body_mesh.material_override = uniform
 	name_tag.text = "Guard %d  #%04d" % [slot, employee_number]
 
+	_footsteps = Footsteps.new()
+	_footsteps.name = "Footsteps"
+	add_child(_footsteps)
 	flashlight.set_meta("base_energy", flashlight.light_energy)
 	if bright_flashlight:
 		set_bright_flashlight(true)
@@ -91,6 +95,9 @@ func _ready() -> void:
 		# The living can't see the Ghost with their own eyes.
 		camera.cull_mask &= ~SecurityCameras.SPECTRAL_LAYER
 	name_tag.visible = not local
+	if local:
+		# Your own steps, quieter: you mostly hear everyone else's.
+		_footsteps.volume_db = -14.0
 	set_physics_process(local)
 	set_process_unhandled_input(local)
 	interact_ray.enabled = local
@@ -117,6 +124,8 @@ func uniform_color() -> Color:
 ## Called on every computer when this guard is caught or revived.
 func set_dead(dead: bool) -> void:
 	is_dead = dead
+	# Ghosts make no sound.
+	_footsteps.enabled = not dead
 	if dead:
 		flashlight.visible = false
 		is_running = false

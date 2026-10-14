@@ -32,6 +32,11 @@ var visual_layers := 1
 var harmless := false
 ## Some monsters slip away once a guard logs them on the clipboard (e.g. the Other Cleaner).
 var leaves_when_logged := false
+## Footstep sound: lower pitch for heavy things, higher for small ones. Silent ones float.
+var footstep_pitch := 1.0
+var footstep_stride := 0.8
+var footstep_volume := -2.0
+var silent := false
 
 var _agent: NavigationAgent3D
 ## Real seconds it has been trying to move without getting anywhere.
@@ -61,6 +66,13 @@ func _ready() -> void:
 	add_child(_agent)
 
 	_build_body()
+	if not silent:
+		var steps := Footsteps.new()
+		steps.pitch = footstep_pitch
+		steps.stride = footstep_stride
+		steps.volume_db = footstep_volume
+		steps.reach = 28.0
+		add_child(steps)
 	_add_sync()
 	set_physics_process(multiplayer.is_server())
 	_on_state_changed(state)

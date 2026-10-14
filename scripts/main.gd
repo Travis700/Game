@@ -46,6 +46,7 @@ var shop: Shop
 var doors: GuardRoomDoors
 var vending: CanvasLayer
 var keypad: CanvasLayer
+var ambience: Ambience
 var pause_menu: CanvasLayer
 var spawner: MultiplayerSpawner
 var _local_guard: Guard
@@ -77,6 +78,11 @@ func _ready() -> void:
 	add_child(lighting)
 	lighting.apply_pre_shift()
 	shift.started.connect(lighting.go_dark)
+	ambience = Ambience.new()
+	ambience.name = "Ambience"
+	add_child(ambience)
+	shift.started.connect(ambience.start)
+	shift.morning_started.connect(ambience.stop)
 	shift.started.connect(func() -> void: school.clock_machine.prompt = "Check time clock")
 	shift.morning_started.connect(func() -> void: school.clock_machine.prompt = "Clock out")
 	school.clock_machine.used.connect(_on_clock_machine_used)
@@ -574,6 +580,7 @@ func on_local_guard_ready(guard: Guard) -> void:
 	doors.local_guard = guard
 	guard_room.local_guard = guard
 	cameras.viewer = guard
+	ambience.listener = guard
 
 
 # --- Clocking in ---------------------------------------------------------------
@@ -879,6 +886,7 @@ func on_next_night() -> void:
 	_close_all_ui()
 	# After a team wipe the lights are still down; bring them back for the evening.
 	lighting.go_bright()
+	ambience.stop()
 	# The wings stay locked until the night starts.
 	school.open_wings(1)
 	# Everyone starts the new night alive.

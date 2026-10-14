@@ -3,6 +3,9 @@ class_name Sfx
 
 const RATE := 22050
 
+## Sounds that get played a lot (footsteps), built once.
+static var _cache: Dictionary = {}
+
 
 ## Builds a sound from a list of note frequencies (0 = silence), each `note_seconds` long.
 ## `wave` is "sine", "square", "saw" or "noise".
@@ -62,3 +65,69 @@ static func play_flat(parent: Node, stream: AudioStream, volume_db := 0.0) -> vo
 	parent.add_child(player)
 	player.play()
 	player.finished.connect(player.queue_free)
+
+
+## A short thud: a falling low tone with a scuff of noise, e.g. a footstep.
+## `pitch` around 1.0; heavier things go lower, small scuttling things higher.
+static func thud(pitch := 1.0, seconds := 0.09, volume := 0.5) -> AudioStreamWAV:
+	var key := "thud_%.2f_%.2f_%.2f" % [pitch, seconds, volume]
+	if _cache.has(key):
+		return _cache[key]
+	var count := int(seconds * RATE)
+	var data := PackedByteArray()
+	data.resize(count * 2)
+	var phase := 0.0
+	for n in count:
+		var t := float(n) / count
+		var envelope := (1.0 - t) * (1.0 - t)
+		phase += TAU * lerpf(140.0, 55.0, t) * pitch / RATE
+		var value := sin(phase) * 0.7 + randf_range(-1.0, 1.0) * 0.3 * (1.0 - t)
+		data.encode_s16(n * 2, int(clampf(value * envelope * volume, -1.0, 1.0) * 32767.0))
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = RATE
+	wav.data = data
+	_cache[key] = wav
+	return wav
+
+
+## A long, quiet, looping hum with a slow wobble, for the building at night.
+static func hum(seconds := 4.0, volume := 0.12) -> AudioStreamWAV:
+	var count := int(seconds * RATE)
+	var data := PackedByteArray()
+	data.resize(count * 2)
+	for n in count:
+		var t := float(n) / RATE
+		var wobble := 0.75 + 0.25 * sin(TAU * t / seconds)
+		var value := (sin(TAU * 60.0 * t) * 0.6 + sin(TAU * 120.0 * t) * 0.25 + randf_range(-1.0, 1.0) * 0.08) * wobble
+		data.encode_s16(n * 2, int(clampf(value * volume, -1.0, 1.0) * 32767.0))
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = RATE
+	wav.data = data
+	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wav.loop_end = count
+	return wav
+
+
+## A creak: a slowly bending, scratchy tone, like an old door or a floor settling.
+static func creak(seconds := 0.9, volume := 0.25) -> AudioStreamWAV:
+	var count := int(seconds * RATE)
+	var data := PackedByteArray()
+	data.resize(count * 2)
+	var phase := 0.0
+	var start := randf_range(180.0, 320.0)
+	var finish := start * randf_range(0.6, 1.4)
+	for n in count:
+		var t := float(n) / count
+		var envelope := minf(t * 8.0, 1.0) * (1.0 - t)
+		phase += TAU * lerpf(start, finish, t) / RATE
+		# Scratchy: a sawtooth that stutters.
+		var saw := fmod(phase / TAU, 1.0) * 2.0 - 1.0
+		var stutter := 1.0 if fmod(t * 37.0, 1.0) > 0.3 else 0.4
+		data.encode_s16(n * 2, int(clampf(saw * stutter * envelope * volume, -1.0, 1.0) * 32767.0))
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = RATE
+	wav.data = data
+	return wav

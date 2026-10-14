@@ -31,6 +31,9 @@ var _beep: AudioStream
 
 func _init() -> void:
 	display_name = "the Nurse"
+	# Hard shoes, in no hurry.
+	footstep_pitch = 1.5
+	footstep_volume = 1.0
 	state = "rounds"
 
 

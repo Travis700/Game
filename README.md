@@ -66,6 +66,12 @@ Sensors and traps are cleared away each morning.
 Upgrades and points last for the whole run, and are lost if the whole team is caught (unless the host
 ticked "Keep gear", which keeps upgrades and items).
 
+## Sound
+
+Everything is generated in code for now (no audio files): footsteps for every guard and monster
+(you hear your teammates', and the monsters' too; running is louder), a low hum in the building at
+night with the odd creak or thump, plus each monster's own noises. Real recordings come with the art pass.
+
 ## The Bell
 
 From night 4 the school bell sometimes rings in the middle of the night (twice a night from night 7).

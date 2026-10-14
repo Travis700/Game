@@ -24,6 +24,8 @@ var _waiting_for := 0.0
 
 func _init() -> void:
 	display_name = "the student"
+	footstep_pitch = 1.4
+	footstep_stride = 0.55
 	state = "wait"
 
 
