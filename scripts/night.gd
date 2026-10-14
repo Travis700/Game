@@ -51,6 +51,10 @@ var rounds: Rounds
 var power: Power
 var conditions: Conditions
 var bonus: Bonus
+## The date of the daily shift being played (see Daily), or "" for an ordinary run.
+var daily := ""
+## Emitted on the host when a daily shift's report is closed: back to the menu.
+signal daily_finished
 
 var number := 1
 ## Tonight's map size (1-3), sent by the host when the night starts. 0 before the first night.
@@ -144,6 +148,11 @@ func _on_shift_started() -> void:
 	_logged.clear()
 	_deaths = 0
 	save_run(number, true)
+	if daily != "":
+		# Everything planned from here on (monsters, conditions, round, bonus) is the same for
+		# everyone playing today's shift.
+		seed(Daily.seed_of(daily))
+		conditions.forced = Daily.conditions_of(daily)
 	conditions.pick(number)
 	director.plan_night(number)
 	rounds.plan(number, difficulty)
@@ -264,6 +273,8 @@ func _show_log_result(correct: bool, text: String) -> void:
 
 ## Host: tonight's difficulty, from the menu choice or the number of guards.
 func pick_difficulty() -> int:
+	if daily != "":
+		return Daily.DIFFICULTY
 	if difficulty_choice > 0:
 		return clampi(difficulty_choice, 1, MAX_DIFFICULTY)
 	return clampi(players.get_child_count(), 1, MAX_DIFFICULTY)
@@ -305,6 +316,8 @@ func remember_guard(guard: Guard) -> void:
 ## Host: writes the run to disk so it can be continued, with `next_night` up next.
 ## `in_progress` marks a save made as a night starts (the night isn't finished yet).
 func save_run(next_night: int, in_progress := false) -> void:
+	if daily != "":
+		return  # The daily shift is one night on its own; it never touches the saved run.
 	for guard: Guard in players.get_children():
 		var key := str(guard.employee_number)
 		var peer := guard.name.to_int()
@@ -369,6 +382,9 @@ func fail_night() -> void:
 	rounds.clear()
 	bonus.clear()
 	conditions.clear()
+	if daily != "":
+		_finish_daily(rows, 0, "Caught at %s. Score: 0." % time_text())
+		return
 	var summary := "The whole team was caught at %s.\nThe school keeps its secrets. The run starts over from night 1." % time_text()
 	if keep_gear:
 		summary += "\nYou keep your upgrades and whatever you're carrying. Points start again from zero."
@@ -411,6 +427,10 @@ func _end_night() -> void:
 		summary += "\n" + awards
 	summary += "\nPay: %d for clocking out, +%d per correct log, -%d per false report, -%d for each guard lost." % [
 		SURVIVAL_PAY, CORRECT_LOG_POINTS, FALSE_REPORT_POINTS, DEATH_PENALTY]
+	if daily != "":
+		var row: Dictionary = rows[0] if not rows.is_empty() else {}
+		_finish_daily(rows, int(row.get("pay", 0)), summary)
+		return
 	if number == LAST_NIGHT:
 		_won = true
 		_restart_run = true
@@ -450,7 +470,8 @@ func _award_night() -> void:
 			career.award(peer, "NIGHT_FIVE")
 		if doors.battered_tonight:
 			career.award(peer, "HOLD_THE_DOOR")
-		career.record_night(peer, number)
+		if daily == "":
+			career.record_night(peer, number)
 		if number > LAST_NIGHT:
 			career.award(peer, "OVERTIME")
 		if number >= OVERTIME_GOAL:
@@ -533,6 +554,21 @@ func _build_rows(keep_pay: bool) -> Array:
 	return rows
 
 
+## Host: the daily shift is over. Its score is tonight's pay (0 if caught).
+func _finish_daily(rows: Array, score: int, summary: String) -> void:
+	score = maxi(score, 0)
+	randomize()
+	var best_before := Career.daily_best(daily)
+	var new_best := career.record_daily(daily, score) if career else false
+	var headline := "Daily shift for %s: you scored %d." % [daily, score]
+	if new_best and best_before >= 0:
+		headline += " A new best for today (was %d)." % best_before
+	elif not new_best:
+		headline += " Today's best is still %d." % best_before
+	headline += "  Days in a row: %d." % Career.daily_streak()
+	_show_report.rpc(number, rows, headline + "\n" + summary, "daily")
+
+
 ## Host, after the ninth night: the team stays on. Points, gear and upgrades carry on.
 func _on_overtime_requested() -> void:
 	if not multiplayer.is_server() or not _won:
@@ -561,6 +597,9 @@ func _reset_run() -> void:
 
 
 func _on_next_night_requested() -> void:
+	if multiplayer.is_server() and daily != "":
+		daily_finished.emit()
+		return
 	if multiplayer.is_server():
 		anomalies.reset_all()
 		doors.reset_for_night()

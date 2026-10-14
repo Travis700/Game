@@ -3,6 +3,7 @@ extends CanvasLayer
 
 signal solo_requested
 signal host_requested
+signal daily_requested
 signal join_requested(address: String)
 
 ## What each difficulty adds to the map. Auto picks one level per guard (up to 3).
@@ -24,6 +25,7 @@ var _steam_label: Label
 var _rank_label: Label
 var _rank_bar: ProgressBar
 var _hat: OptionButton
+var _daily_label: Label
 var _status: Label
 var _address: LineEdit
 var _password: LineEdit
@@ -111,7 +113,21 @@ func _ready() -> void:
 	column.add_child(_spacer(10))
 	_add_run_options(column)
 	column.add_child(_spacer(6))
-	column.add_child(_button("Play solo", func() -> void: solo_requested.emit()))
+	var play_row := HBoxContainer.new()
+	play_row.add_theme_constant_override("separation", 8)
+	var solo := _button("Play solo", func() -> void: solo_requested.emit())
+	solo.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	play_row.add_child(solo)
+	var daily := _button("Daily shift", func() -> void: daily_requested.emit())
+	daily.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	play_row.add_child(daily)
+	column.add_child(play_row)
+	_daily_label = Label.new()
+	_daily_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_daily_label.add_theme_font_size_override("font_size", 14)
+	_daily_label.modulate.a = 0.7
+	column.add_child(_daily_label)
+	_show_rank()
 	column.add_child(_button("Host a game", func() -> void: host_requested.emit()))
 
 	_password = LineEdit.new()
@@ -290,6 +306,13 @@ func _spacer(height: float) -> Control:
 ## "Rank 3 · Patrol Officer · 1,450 / 2,500 XP", with a bar to the next rank, and the hats.
 func _show_rank() -> void:
 	_fill_hats()
+	if _daily_label == null:
+		return
+	var today := Daily.today()
+	var best := Career.daily_best(today)
+	_daily_label.text = "Today's daily shift (solo, the same for everyone): %s%s%s" % [Daily.describe(today),
+			"   ·   your best: %d" % best if best >= 0 else "",
+			"   ·   %d days in a row" % Career.daily_streak() if Career.daily_streak() > 1 else ""]
 	var xp := Career.xp()
 	var rank := Career.rank()
 	var floor_xp: int = Career.RANKS[rank - 1][0]

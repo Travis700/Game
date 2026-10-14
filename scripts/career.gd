@@ -26,6 +26,8 @@ const ACHIEVEMENTS := {
 	"HOLD_THE_DOOR": ["Hold the door", "Clock out of a night where a monster battered a guard room door."],
 	"FULL_ROUND": ["Full round", "Punch every station on a night's round."],
 	"LIGHTS_ON": ["Who turned out the lights?", "Reset the breaker after a power cut."],
+	"DAILY": ["Clocking on", "Finish a daily shift."],
+	"DAILY_STREAK": ["Regular", "Play the daily shift five days in a row."],
 	"OVERTIME": ["Overtime", "Survive a night of Overtime, after the ninth."],
 	"WORKAHOLIC": ["Workaholic", "Survive night 15."],
 }
@@ -83,6 +85,20 @@ func record_night(peer_id: int, night: int) -> void:
 		_record_night(night)
 	elif peer_id in multiplayer.get_peers():
 		_record_night.rpc_id(peer_id, night)
+
+
+## This player's daily shift score for `date`. Keeps the best one. True if it's a new best.
+func record_daily(date: String, score: int) -> bool:
+	var config := _load()
+	var best := int(config.get_value("daily", date, -1))
+	if score <= best:
+		return false
+	config.set_value("daily", date, score)
+	config.save(PATH)
+	_unlock("DAILY")
+	if daily_streak() >= 5:
+		_unlock("DAILY_STREAK")
+	return true
 
 
 ## Host: XP for a guard's night.
@@ -191,6 +207,25 @@ static func stat(name: String) -> int:
 
 static func best_scores() -> Array:
 	return _load().get_value("career", "scores", [])
+
+
+## Best daily shift score for a date, or -1 if it hasn't been played.
+static func daily_best(date: String) -> int:
+	return int(_load().get_value("daily", date, -1))
+
+
+## Days in a row the daily shift has been played, up to today (or yesterday, if today's
+## hasn't been played yet).
+static func daily_streak() -> int:
+	var config := _load()
+	var day := Time.get_unix_time_from_datetime_string(Time.get_date_string_from_system(true))
+	if not config.has_section_key("daily", Time.get_date_string_from_unix_time(day)):
+		day -= 86400
+	var streak := 0
+	while config.has_section_key("daily", Time.get_date_string_from_unix_time(day)):
+		streak += 1
+		day -= 86400
+	return streak
 
 
 ## The furthest night this player has clocked out of (Overtime counts).

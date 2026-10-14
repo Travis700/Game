@@ -300,6 +300,8 @@ func _ready() -> void:
 		if menu.confirm_new_run():
 			_host())
 	menu.join_requested.connect(_join)
+	menu.daily_requested.connect(_play_daily)
+	night.daily_finished.connect(func() -> void: _back_to_menu(""))
 	SteamService.lobby_ready.connect(_on_steam_lobby_ready)
 	SteamService.lobby_failed.connect(_on_steam_lobby_failed)
 	SteamService.invite_accepted.connect(_on_steam_invite)
@@ -429,6 +431,16 @@ func _play_solo() -> void:
 	_spawn_guard(1, Profile.employee_number, _player_name(), Career.rank(), _hat())
 
 
+## Today's daily shift: one solo night, the same for everyone today. Never touches the saved run.
+func _play_daily() -> void:
+	menu._continue.button_pressed = false
+	night.daily = Daily.today()
+	night.keep_gear = false
+	_play_solo()
+	night.number = Daily.night_of(night.daily)
+	night.give_everyone(Daily.STARTING_POINTS)
+
+
 func _host() -> void:
 	# On Steam, host through a Steam lobby (friends can join with its code or an invite).
 	if SteamService.available and not _direct_only:
@@ -515,12 +527,12 @@ func _start_run() -> void:
 	print("[run] Continuing the saved run: ", RunSave.describe(saved))
 
 
-## The name shown over your guard: your Steam name, or nothing (it then shows "Guard 2").
 ## The hat this player picked, if they've still got it unlocked.
 func _hat() -> String:
 	return Profile.hat if Hats.is_unlocked(Profile.hat) else "cap"
 
 
+## The name shown over your guard: your Steam name, or nothing (it then shows "Guard 2").
 func _player_name() -> String:
 	return SteamService.user_name if SteamService.available else ""
 

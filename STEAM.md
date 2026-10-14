@@ -62,6 +62,8 @@ Create these with exactly these API names. Mark them as set by the client.
 | `BIG_SPENDER` | Big spender | Spend 1000 points at the vending machine in one run. |
 | `HOLD_THE_DOOR` | Hold the door | Clock out of a night where a monster battered a guard room door. |
 | `FULL_ROUND` | Full round | Punch every station on a night's round. |
+| `DAILY` | Clocking on | Finish a daily shift. |
+| `DAILY_STREAK` | Regular | Play the daily shift five days in a row. |
 | `OVERTIME` | Overtime | Survive a night of Overtime, after the ninth. |
 | `WORKAHOLIC` | Workaholic | Survive night 15. |
 | `LIGHTS_ON` | Who turned out the lights? | Reset the breaker after a power cut. |
