@@ -15,6 +15,13 @@ func start_flickering() -> void:
 	flickering = true
 
 
+## Back to a steady light at its normal brightness.
+func stop_flickering() -> void:
+	if flickering:
+		light_energy = _base_energy
+	flickering = false
+
+
 func _process(delta: float) -> void:
 	if not flickering:
 		return

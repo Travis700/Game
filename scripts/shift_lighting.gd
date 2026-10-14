@@ -29,6 +29,8 @@ const NIGHT := {
 
 var environment: Environment
 var school: SchoolBuilder
+## The lights-out sequence and the dimming, so going bright can cut them short.
+var _tweens: Array[Tween] = []
 
 
 func apply_pre_shift() -> void:
@@ -38,6 +40,7 @@ func apply_pre_shift() -> void:
 
 func go_dark() -> void:
 	var sequence := create_tween()
+	_tweens.append(sequence)
 	for flood: SpotLight3D in get_tree().get_nodes_in_group(FLOODLIGHTS):
 		sequence.tween_callback(_cut_floodlight.bind(flood))
 		sequence.tween_interval(FLOOD_GAP)
@@ -65,6 +68,7 @@ func _switch_off(light: Light3D) -> void:
 
 func _dim_everything() -> void:
 	var dim := create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE)
+	_tweens.append(dim)
 	for light: Light3D in _school_lights():
 		if light.visible:
 			dim.tween_property(light, "light_energy", light.get_meta("night_energy"), DIM_SECONDS)
@@ -78,6 +82,33 @@ func _start_flickering() -> void:
 	for light: Light3D in _school_lights():
 		if light is FlickerLight and light.visible:
 			(light as FlickerLight).start_flickering()
+
+
+## 6 AM (or the team being caught): everything comes back on, ready for the next evening.
+## Safe to call when the lights are already on.
+func go_bright() -> void:
+	for tween in _tweens:
+		if tween.is_valid():
+			tween.kill()
+	_tweens.clear()
+	for flood: SpotLight3D in get_tree().get_nodes_in_group(FLOODLIGHTS):
+		flood.visible = true
+		var lens: MeshInstance3D = flood.get_meta("lens")
+		lens.material_override = school.get_material("flood_glow")
+	var brighten := create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE)
+	for light: Light3D in _school_lights():
+		if light is FlickerLight:
+			(light as FlickerLight).stop_flickering()
+		if not light.visible:
+			light.visible = true
+			light.light_energy = 0.0
+			if light.has_meta("panel"):
+				var panel: MeshInstance3D = light.get_meta("panel")
+				panel.material_override = school.get_material("light_panel")
+		brighten.tween_property(light, "light_energy", light.get_meta("day_energy"), DIM_SECONDS)
+	for property: String in PRE_SHIFT:
+		brighten.tween_property(environment, property, PRE_SHIFT[property], DIM_SECONDS)
+	brighten.tween_property(school.get_material("light_panel"), "emission_energy_multiplier", 2.0, DIM_SECONDS)
 
 
 func _school_lights() -> Array[Node]:

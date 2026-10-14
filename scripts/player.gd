@@ -10,9 +10,16 @@ signal prompt_changed(text: String)
 signal message_shown(text: String)
 ## Keys pressed while sitting at a guard room desk: "prev", "next", "zoom", "stand" or "back".
 signal desk_action(action: String)
+signal clipboard_requested
+## Esc: open the pause menu.
+signal pause_requested
+## G: use or place whatever the guard is carrying.
+signal item_use_requested
 
 const WALK_SPEED := 3.2
 const SPRINT_SPEED := 5.6
+## Running speed while an energy drink lasts.
+const BOOSTED_SPRINT_SPEED := 7.2
 const ACCELERATION := 10.0
 const LOOK_LIMIT := deg_to_rad(85)
 const BOB_AMOUNT := 0.04
@@ -33,13 +40,27 @@ const UNIFORM_COLORS: Array[Color] = [
 var is_running := false
 ## Which of the four guard slots this is (1-4). Chosen by the host when the guard spawns.
 var slot := 1
+## The number on this guard's badge, typed into the time clock. Set by the host when it spawns.
+var employee_number := 0
 ## The guard room desk this guard is sitting at, or -1 when standing.
 var seated_desk := -1
 ## Mouse look is paused while a camera feed fills the screen.
 var look_locked := false
+## True once a monster has caught this guard. Ghosts can walk and watch, but can't use anything,
+## and only other ghosts can see them.
+var is_dead := false
+## True while a menu like the clipboard has the mouse: the guard stands still and ignores keys.
+var input_blocked := false
+## Real seconds of energy drink left (faster running). Only used by the guard's own computer.
+var boost_left := 0.0
+## True once this guard has fitted the heavy-duty flashlight: a longer, wider beam.
+var bright_flashlight := false
+## True once this guard has clipped on a walkie-talkie: they can talk on it (B) and hear it.
+var has_radio := false
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _bob_time := 0.0
+var _footsteps: Footsteps
 var _prompt := ""
 
 @onready var head: Node3D = $Head
@@ -57,25 +78,103 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	var uniform := StandardMaterial3D.new()
-	uniform.albedo_color = UNIFORM_COLORS[(slot - 1) % UNIFORM_COLORS.size()]
+	uniform.albedo_color = uniform_color()
 	body_mesh.material_override = uniform
-	name_tag.text = "Guard %d" % slot
+	name_tag.text = "Guard %d  #%04d" % [slot, employee_number]
 
+	_footsteps = Footsteps.new()
+	_footsteps.name = "Footsteps"
+	add_child(_footsteps)
+	flashlight.set_meta("base_energy", flashlight.light_energy)
+	# The Shadows setting (Profile is an autoload; looked up by path, see _look).
+	flashlight.add_to_group("shadow_lights")
+	var profile := get_node_or_null("/root/Profile")
+	if profile:
+		flashlight.shadow_enabled = bool(profile.get("shadows"))
+	if bright_flashlight:
+		set_bright_flashlight(true)
 	var local := is_local()
 	# Your own body is hidden from your own eyes but still shows up on the cameras.
 	if local:
 		body_mesh.layers = SELF_LAYER
 		visor.layers = SELF_LAYER
 		camera.cull_mask &= ~SELF_LAYER
+		# The living can't see the Ghost with their own eyes.
+		camera.cull_mask &= ~SecurityCameras.SPECTRAL_LAYER
 	name_tag.visible = not local
+	if local:
+		# Your own steps, quieter: you mostly hear everyone else's.
+		_footsteps.volume_db = -14.0
 	set_physics_process(local)
 	set_process_unhandled_input(local)
 	interact_ray.enabled = local
+	interact_ray.collision_mask = 1 | Interactable.TALK_LAYER
 	if local:
 		interact_ray.add_exception(self)
 		camera.current = true
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		get_tree().call_group("game", "on_local_guard_ready", self)
+
+
+## Fits or removes a personal upgrade ("flashlight" or "radio"). Called on every computer.
+func apply_personal(upgrade: String, on: bool) -> void:
+	match upgrade:
+		"flashlight":
+			set_bright_flashlight(on)
+		"radio":
+			has_radio = on
+
+
+## Fits (or removes) the heavy-duty flashlight. Called on every computer, so everyone sees the beam.
+func set_bright_flashlight(on: bool) -> void:
+	bright_flashlight = on
+	flashlight.spot_range = 32.0 if on else 22.0
+	flashlight.spot_angle = 34.0 if on else 26.0
+	flashlight.light_energy = flashlight.get_meta("base_energy", flashlight.light_energy) * (1.5 if on else 1.0)
+
+
+## Shows a "talking" marker on the name tag while this guard's voice is coming through.
+func show_talking(talking: bool) -> void:
+	var base := "Guard %d  #%04d" % [slot, employee_number]
+	name_tag.text = base + ("\n((( talking )))" if talking else "")
+
+
+func uniform_color() -> Color:
+	return UNIFORM_COLORS[(slot - 1) % UNIFORM_COLORS.size()]
+
+
+## Called on every computer when this guard is caught or revived.
+func set_dead(dead: bool) -> void:
+	is_dead = dead
+	# Ghosts make no sound.
+	_footsteps.enabled = not dead
+	if dead:
+		flashlight.visible = false
+		is_running = false
+	interact_ray.enabled = is_local() and not dead
+	if is_local():
+		# Once you're a ghost yourself, you can see the other one.
+		if dead:
+			camera.cull_mask |= SecurityCameras.SPECTRAL_LAYER
+		else:
+			camera.cull_mask &= ~SecurityCameras.SPECTRAL_LAYER
+
+
+## Shows or hides this guard for the player on this computer. Ghosts are only visible to
+## other ghosts, and look faint.
+func update_visibility(viewer_is_dead: bool) -> void:
+	var material := body_mesh.material_override as StandardMaterial3D
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA if is_dead else BaseMaterial3D.TRANSPARENCY_DISABLED
+	material.albedo_color.a = 0.3 if is_dead else 1.0
+	if is_local():
+		# Your own body only shows on the security cameras, and not at all once you're a ghost.
+		body_mesh.visible = not is_dead
+		visor.visible = not is_dead
+		return
+	var shown := not is_dead or viewer_is_dead
+	body_mesh.visible = shown
+	visor.visible = shown
+	name_tag.visible = shown
 
 
 ## True on the computer of the player controlling this guard.
@@ -101,11 +200,15 @@ func stand(at: Vector3) -> void:
 	look_locked = false
 	head.position.y = STANDING_EYE_HEIGHT
 	global_position = at
-	interact_ray.collision_mask = 1
+	interact_ray.collision_mask = 1 | Interactable.TALK_LAYER
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	if input_blocked:
+		return
+	if event.is_action_pressed("clipboard"):
+		clipboard_requested.emit()
+	elif event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if not look_locked:
 			_look((event as InputEventMouseMotion).relative)
 	elif event is InputEventMouseButton and event.is_pressed() and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
@@ -113,16 +216,22 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif seated_desk >= 0 and _handle_desk_input(event):
 		pass
 	elif event.is_action_pressed("pause"):
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	elif event.is_action_pressed("flashlight"):
+		pause_requested.emit()
+	elif event.is_action_pressed("flashlight") and not is_dead:
 		flashlight.visible = not flashlight.visible
 	elif event.is_action_pressed("interact"):
 		_interact()
+	elif event.is_action_pressed("use_item") and not is_dead:
+		item_use_requested.emit()
 
 
 func _look(relative: Vector2) -> void:
-	rotate_y(-relative.x * mouse_sensitivity)
-	var pitch := head.rotation.x - relative.y * mouse_sensitivity
+	# The player's setting from the Esc menu (Profile is an autoload, looked up by path so this
+	# script also compiles where autoloads aren't loaded yet).
+	var profile := get_node_or_null("/root/Profile")
+	var sensitivity := mouse_sensitivity * (float(profile.get("mouse_sensitivity")) if profile else 1.0)
+	rotate_y(-relative.x * sensitivity)
+	var pitch := head.rotation.x - relative.y * sensitivity
 	if seated_desk >= 0:
 		# Seated, you can look around your desk but not turn your back on it.
 		var yaw := clampf(wrapf(rotation.y - PI, -PI, PI), -SEATED_YAW_LIMIT, SEATED_YAW_LIMIT)
@@ -145,6 +254,10 @@ func _handle_desk_input(event: InputEvent) -> bool:
 		action = "stand"
 	elif event.is_action_pressed("pause") and look_locked:
 		action = "back"
+	else:
+		for number in range(1, 5):
+			if event.is_action_pressed("monitor_%d" % number):
+				action = "monitor_%d" % number
 	if action == "":
 		return false
 	desk_action.emit(action)
@@ -158,10 +271,15 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
 
-	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var input := Vector2.ZERO
+	if not input_blocked:
+		input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (transform.basis * Vector3(input.x, 0, input.y)).normalized()
-	is_running = Input.is_action_pressed("sprint") and input.y < 0.0
-	var speed := SPRINT_SPEED if is_running else WALK_SPEED
+	is_running = not input_blocked and Input.is_action_pressed("sprint") and input.y < 0.0
+	boost_left = maxf(boost_left - delta, 0.0)
+	var speed := WALK_SPEED
+	if is_running:
+		speed = BOOSTED_SPRINT_SPEED if boost_left > 0.0 else SPRINT_SPEED
 
 	var blend := 1.0 - exp(-ACCELERATION * delta)
 	velocity.x = lerpf(velocity.x, direction.x * speed, blend)
@@ -191,7 +309,7 @@ func focused_interactable() -> Interactable:
 
 
 func _update_prompt() -> void:
-	var target := focused_interactable()
+	var target := focused_interactable() if not is_dead else null
 	var text := "[E] " + target.prompt if target else ""
 	if text != _prompt:
 		_prompt = text
@@ -199,6 +317,8 @@ func _update_prompt() -> void:
 
 
 func _interact() -> void:
+	if is_dead:
+		return
 	var target := focused_interactable()
 	if target:
 		target.interact(self)

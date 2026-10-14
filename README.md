@@ -13,6 +13,135 @@ The first time you open it, Godot spends a few seconds importing. That's normal.
 
 The game opens on a menu: **Play solo**, **Host a game**, or **Join**.
 
+### Playing together
+
+The host clicks **Host a game**. Their **room code** (like `DALS-AJW`) shows in the top-right corner.
+Everyone else types that code (or the host's address) next to **Join**. If the host typed a room
+password before hosting, joiners type the same password. Room codes work on the same network, or over
+the internet if the host forwards port 7777 on their router. Steam lobbies will make this easier later.
+
+### The menu
+
+- **Your employee badge** is a number this computer picked for you the first time you played. You type it
+  into the time clock to clock in, and your saved points are linked to it.
+- **Difficulty** sets how much of the school is open. *Auto* picks one level per guard.
+  1 is the main building, 2 adds the classroom wing, 3 adds the science wing too. Each wing has its own monsters.
+- **Keep gear if the whole team is caught:** upgrades and carried items survive a restart (points don't).
+- **Continue saved run** appears once you've finished a night. The host's computer saves after every night
+  report: the next night, the difficulty, upgrades, and each guard's points and item (by badge number).
+  Survive night 9 and the run is won.
+
+## How a night works
+
+1. Walk from the gate to the guard room and clock in at the time clock: press E, type your badge number
+   and press Enter (everyone in the session has to).
+2. The lights go down and the clock starts at 12:00 AM. A night lasts 12 minutes.
+3. Things change around the school: objects move, go missing or appear, and from night 2, figures.
+   Watch the cameras, and when you spot something, press Tab and log where it is and what it is.
+4. At 6:00 AM the lights come back on. Clock out at the time clock within about 90 seconds.
+5. The report shows everyone's pay: 100 for clocking out, +25 per correct log, -10 per false report,
+   and -50 for every guard caught that night (everyone pays; a revive at a totem refunds it).
+
+Logging the same thing twice isn't counted as a false report. Anomalies nobody logs fade after a while
+(and can come back later). Points never drop below zero.
+
+## The vending machine
+
+Press E on the vending machine in the guard room to spend points. Purchases drop into the tray; press E
+to pick them up. You can carry one thing at a time (shown in the bottom-right corner).
+
+- **Spectral camera kit (150):** stand by a desk's chair with it and press G, then stay there for 10
+  seconds. That desk's monitors switch to spectral feeds, which show the Ghost.
+- **Lucky rabbit's foot (60):** carry it to a revive totem. Your roll revives on 5 in 6 instead of 4 in 6.
+- **Guard room door kit (120):** stand in one of the guard room's two doorways and press E to fit a door,
+  then E to open and shut it. From night 7 monsters can come into the guard room: a shut door holds
+  them for about 15 seconds of banging, then gives way and hangs open for a minute.
+- **Motion sensor (40):** press G to put it down. When a monster walks past, everyone hears which area.
+- **Industrial glue trap (60):** press G to put it down. The first monster to step on it is stuck for 20 seconds.
+- **Portable camera (100):** press G to set it up where you stand, facing the way you look. It appears on
+  the guard room monitors (A / D to find it) until morning. Two at most per night.
+- **Walkie-talkie (90):** press G to clip it on; it's yours for the run. Hold **B** to talk to everyone
+  else with a radio, wherever they are (it sounds like a radio, with a click when a call comes in).
+  But a radio blares when a call comes in: monsters near the guard *receiving* the call hear it as
+  if that guard were talking. Think before you call someone who's hiding.
+- **Energy drink (25):** press G to drink it and run faster for 30 seconds.
+- **Heavy-duty flashlight (80):** press G to fit it. A longer, wider beam for the rest of the run.
+
+Sensors and traps are cleared away each morning.
+
+Upgrades and points last for the whole run, and are lost if the whole team is caught (unless the host
+ticked "Keep gear", which keeps upgrades and items).
+
+## Voice chat
+
+Talk to your team in the game. Voices come from each guard and fade with distance, so if you split
+up you can't hear each other. Ghosts hear the living, but only other ghosts hear a ghost.
+
+- **Hold V to talk** (push to talk). In the Esc menu you can switch to **Open mic** (it sends whenever
+  you're loud enough; set how loud with the slider and watch the level meter), pick your microphone,
+  or turn voice chat off.
+- While you're being heard, **TALKING** shows in the bottom left with how loud you are. Teammates who
+  are talking get a marker over their name.
+- **Monsters can hear you.** The louder you talk, the further it carries:
+  - the **Lunch Lady** hears even a whisper close by, and a normal voice from across the cafeteria;
+  - the **Librarian** treats talking near the stacks like noise: she shushes, then hunts;
+  - the **Hall Monitor** chases anyone talking loudly in the halls.
+  Sometimes the only way to stay alive is to keep quiet.
+- **Walkie-talkies** (vending machine) let split-up guards talk at any distance, but every radio that
+  receives a call is loud enough for monsters near it to hear.
+
+## Sound
+
+Everything is generated in code for now (no audio files): footsteps for every guard and monster
+(you hear your teammates', and the monsters' too; running is louder), a low hum in the building at
+night with the odd creak or thump, plus each monster's own noises. Real recordings come with the art pass.
+
+## The Bell
+
+From night 4 the school bell sometimes rings in the middle of the night (twice a night from night 7).
+While it rings, every monster moves faster. Shut it off at the bell panel in the front office (press E),
+or wait about a minute for it to stop.
+
+## Monsters
+
+Each night brings more monsters (1, 1, 2, 2, 3, 3, 4, 4, 5 over the nine nights, plus one per open wing),
+picked from the ones that have unlocked and whose home is open at tonight's difficulty. They can't come into the guard room until night 7. Spot one on camera and log it
+on your clipboard as "Monster" in that area for points.
+
+| Monster | From night | Where | How it works |
+|---|---|---|---|
+| Hall Monitor | 1 | Main hallway | Walks the hallway. Leaves walkers alone, but chases anyone it sees running. |
+| The Mascot | 1 | Gym | Steps off its stand. Only moves while nobody is looking at it, in person or on a monitor. |
+| Lunch Lady | 2 | Cafeteria, kitchen | Blind and humming. Hears running from far away, walking only up close. |
+| Locker Thing | 3 | Main hallway | Locker doors swing open. Walk past an open one and you're pulled in. Press E to shut them. |
+| The Principal | 3 | Front office | Calls one guard to the office over the intercom. Get there within 45 seconds, or it comes to find you. |
+| The Other Cleaner | 5 | Anywhere | A copy of the night cleaner, with no cart and its head at a wrong angle. Gets close, then attacks. Log it and it leaves. |
+| The Student | 5 | Main hallway | A kid who asks you to follow them. Usually a trap, and the fake never shows on the cameras. Sometimes they're real (+25). |
+| The Ghost | 5 | Anywhere | Invisible to your eyes. Drifts through walls toward the living and knocks out cameras it passes. Only spectral monitors show it, and the time clock lists one name too many. |
+| The Substitute | 1 | Classroom wing (difficulty 2+) | Takes the register when you come near: "Guard 2?" Look at it and press E to answer, or get detention. |
+| The Librarian | 2 | Library, West Hall (difficulty 2+) | Hates light and noise. Shine your flashlight on it or run nearby and it shushes you, then hunts you until it's dark and quiet. |
+| The Nurse | 3 | Classroom wing (difficulty 2+) | Follows any guard who's on their own, slowly and steadily, with a heart monitor's beep. Stick together and she leaves you be. |
+| The Crossing Guard | 1 | Science wing, east main hall (difficulty 3) | Blows its whistle and holds up a STOP sign at a "crossing". Don't move while the sign is up, or it runs you down. |
+| The Self-Portrait | 2 | Art room (difficulty 3) | A canvas painting one of the guards, a stage at a time (watch the Art Room camera). Finished, it catches them. Turn it to the wall (E) to wipe it. |
+| The Specimen | 3 | Science lab (difficulty 3) | Crawls after you in the dark. Catch it in your flashlight and it hides in the ceiling for a while. |
+| The Understudy | 4 | Locker rooms (difficulty 3) | Dressed as one of you, following at a distance. Stand still where it can see you and it steps in. Log it and it takes a bow. |
+
+The real **night cleaner** works every night pushing a mop cart. They're harmless, and logging them is a false report.
+
+**Getting caught:** you become a ghost. You can walk around and watch, but can't use anything, and
+only other ghosts can see you. Each death costs every guard 50 points. If the whole team is caught,
+the run starts over from night 1.
+
+**Revive totems:** three glowing stones are hidden around the school each night. A living guard can
+use one for a dead teammate: 4 in 6 brings them back, 2 in 6 lets a shade out that hunts whoever rolled.
+
+To try the vending machine straight away, add `--rich` (everyone starts with 1000 points).
+To open the wings, add `--difficulty=2` or `--difficulty=3`. To start on a later night, add e.g. `--night=7`.
+For example: `--solo --rich --fast-night --difficulty=3 --night=5`.
+
+To test a whole night quickly, add `--fast-night` to the launch arguments (with `--solo` or `--host`):
+the night then lasts about a minute.
+
 ## Testing multiplayer on one computer
 
 You don't need a second person. Godot can open several copies of the game at once.
@@ -28,6 +157,20 @@ time clock before the night starts.
 Without launch arguments, each window shows the menu: choose **Host a game** in one and **Join** (address
 `127.0.0.1`) in the other.
 
+## Making a .exe to share
+
+The project comes with a Windows export preset, so you can make a stand-alone game that friends can
+run without Godot.
+
+1. The first time only: in Godot, open **Editor → Manage Export Templates...** and click **Download and
+   Install**. (It's a few hundred MB, and it has to match your Godot version.)
+2. Open **Project → Export...**, pick **Windows Desktop**, and click **Export Project**.
+3. Keep the suggested path, `builds/windows/NightShift.exe`, untick **Export With Debug**, and save.
+
+That gives you a single `NightShift.exe`. Zip it and send it. The `builds` folder is ignored by git,
+so builds never end up in the repository. Windows may warn about an unknown publisher the first time
+it runs; that's normal for games that aren't signed (Steam builds don't show it).
+
 ## Controls
 
 | Key | Action |
@@ -37,7 +180,11 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 | Mouse | Look |
 | F | Flashlight |
 | E | Use. Press E on the time clock in the guard room to clock in and start the night. |
-| Esc | Free the mouse (click to look around again) |
+| Esc | Menu: mouse sensitivity, volume, change keys, graphics (resolution, anti-aliasing, shadows, V-sync), fullscreen, leave the game (pauses solo; in a group the night keeps going) |
+| Tab | Clipboard: log anything odd you spot (after clocking in) |
+| G | Use or put down what you're carrying (sensors, traps, energy drink, flashlight) |
+| V | Push to talk (voice chat) |
+| B | Talk on the walkie-talkie (once you have one) |
 | F11 | Switch between fullscreen and a window |
 
 **At a guard room desk** (press E on a chair to sit):
@@ -47,12 +194,13 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 | Mouse | Look at a monitor |
 | A / D | Change which camera that monitor shows |
 | Space, left click or E | Show that camera full screen (press again to go back) |
+| 1 / 2 / 3 / 4 | Show that monitor full screen (numbers are on each monitor's frame) |
 | S | Stand up |
 
 ## Project layout
 
 - `scenes/` — the main scene and the player.
-- `scripts/school_builder.gd` — builds the placeholder school from boxes. The floor plan is drawn at the top of the file.
+- `scripts/school_builder.gd` — builds the placeholder school from boxes, wings included. The floor plan is drawn at the top of the file.
 - `scripts/player.gd` — the first-person guard.
 - `scripts/main.gd` — the menu choices, hosting and joining, spawning a guard for each player.
 - `scripts/menu.gd` — the start menu.
@@ -60,5 +208,20 @@ Without launch arguments, each window shows the menu: choose **Host a game** in 
 - `scripts/shift_lighting.gd` — the bright before-shift lighting and the lights-out sequence.
 - `scripts/security_cameras.gd` — the CCTV cameras and their feeds.
 - `scripts/guard_room.gd` — the 16 monitors, sitting at desks, and the full-screen camera view.
+- `scripts/night.gd` — the night clock, when anomalies appear, checking logs, clocking out and pay.
+- `scripts/anomalies.gd` — every anomaly and the props they move, hide or add.
+- `scripts/clipboard.gd` — the clipboard (incident log).
+- `scripts/report.gd` — the end-of-night report.
+- `scripts/monster_director.gd` — which monsters come out each night, navigation, catching guards.
+- `scripts/monsters/` — one script per monster.
+- `scripts/lockers.gd` — the hallway locker doors and the Locker Thing.
+- `scripts/shop.gd`, `scripts/vending_ui.gd` — the vending machine and carrying items.
+- `scripts/totems.gd` — revive totems.
+- `scripts/sfx.gd` — simple generated sounds (whistle, humming, lockers).
 - `scripts/hud.gd` — crosshair, prompts and messages.
 - `scripts/controls.gd` — key bindings.
+- `scripts/guard_room_doors.gd` — the guard room's two fittable doors.
+- `scripts/self_portrait.gd` — the art room canvas that paints a guard.
+- `scripts/profile.gd` — your badge number and settings. `scripts/run_save.gd` — the saved run.
+- `scripts/keypad_ui.gd` — the time clock keypad. `scripts/pause_menu.gd` — the Esc menu.
+- `scripts/room_code.gd` — turning addresses into room codes.

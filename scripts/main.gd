@@ -9,6 +9,11 @@ extends Node3D
 const PlayerScene := preload("res://scenes/player.tscn")
 const HUD := preload("res://scripts/hud.gd")
 const Menu := preload("res://scripts/menu.gd")
+const Clipboard := preload("res://scripts/clipboard.gd")
+const Report := preload("res://scripts/report.gd")
+const VendingUI := preload("res://scripts/vending_ui.gd")
+const KeypadUI := preload("res://scripts/keypad_ui.gd")
+const PauseMenu := preload("res://scripts/pause_menu.gd")
 
 const PORT := 7777
 const MAX_GUARDS := 4
@@ -18,6 +23,11 @@ const SPAWN_POINT := Vector3(0, 0.1, 54)
 ## Shown on the menu after returning to it, e.g. "The host ended the session."
 static var _menu_message := ""
 
+## Host: the password joiners must give ("" for none). Joiner: the password to send.
+var _password := ""
+## Host: the room code for this computer's address.
+var _room_code := ""
+
 var shift: Shift
 var lighting: ShiftLighting
 var hud: CanvasLayer
@@ -25,18 +35,38 @@ var menu: CanvasLayer
 var players: Node3D
 var cameras: SecurityCameras
 var guard_room: GuardRoom
+var anomalies: Anomalies
+var night: Night
+var clipboard: CanvasLayer
+var school: SchoolBuilder
+var director: MonsterDirector
+var lockers: Lockers
+var totems: Totems
+var shop: Shop
+var doors: GuardRoomDoors
+var vending: CanvasLayer
+var keypad: CanvasLayer
+var ambience: Ambience
+var voice: VoiceChat
+var pause_menu: CanvasLayer
 var spawner: MultiplayerSpawner
 var _local_guard: Guard
 var _mode := ""
+## True once this player has clocked in for the coming night (before it starts).
+var _clocked_in := false
 
 
 func _ready() -> void:
 	add_to_group("game")
 	var environment := _make_environment()
 
-	var school := SchoolBuilder.new()
+	school = SchoolBuilder.new()
 	school.name = "School"
 	add_child(school)
+	var wing_doors := Node3D.new()
+	wing_doors.name = "WingDoors"
+	add_child(wing_doors)
+	school.build_wing_doors(wing_doors)
 
 	shift = Shift.new()
 	shift.name = "Shift"
@@ -49,7 +79,13 @@ func _ready() -> void:
 	add_child(lighting)
 	lighting.apply_pre_shift()
 	shift.started.connect(lighting.go_dark)
+	ambience = Ambience.new()
+	ambience.name = "Ambience"
+	add_child(ambience)
+	shift.started.connect(ambience.start)
+	shift.morning_started.connect(ambience.stop)
 	shift.started.connect(func() -> void: school.clock_machine.prompt = "Check time clock")
+	shift.morning_started.connect(func() -> void: school.clock_machine.prompt = "Clock out")
 	school.clock_machine.used.connect(_on_clock_machine_used)
 
 	players = Node3D.new()
@@ -84,11 +120,130 @@ func _ready() -> void:
 	add_child(guard_room)
 	guard_room.build(school, cameras, hud)
 
+	anomalies = Anomalies.new()
+	anomalies.name = "Anomalies"
+	anomalies.players = players
+	add_child(anomalies)
+	anomalies.build(school)
+
+	clipboard = Clipboard.new()
+	clipboard.name = "Clipboard"
+	add_child(clipboard)
+	clipboard.set_areas(anomalies.areas(1))
+	clipboard.closed.connect(_on_ui_closed)
+
+	lockers = Lockers.new()
+	lockers.name = "Lockers"
+	add_child(lockers)
+	lockers.build(school.get_material("locker"), school.get_material("dark"))
+
+	director = MonsterDirector.new()
+	director.name = "Monsters"
+	director.players = players
+	director.guard_room = guard_room
+	director.cameras = cameras
+	director.anomalies = anomalies
+	director.lockers = lockers
+	director.school = school
+	add_child(director)
+	director.build()
+	lockers.director = director
+	director.guard_caught.connect(_on_guard_caught)
+	director.message_for.connect(_tell)
+	director.announcement.connect(func(text: String, sound: String) -> void: _announce.rpc(text, sound))
+	director.camera_signal_changed.connect(func(index: int, working: bool) -> void: _camera_signal.rpc(index, working))
+	director.bell_changed.connect(func(ringing: bool) -> void: _set_bell.rpc(ringing))
+	school.bell_panel.used.connect(func(by: Node) -> void:
+		if by != _local_guard or _local_guard.is_dead:
+			return
+		if multiplayer.is_server():
+			_request_bell_off()
+		else:
+			_request_bell_off.rpc_id(1))
+
+	voice = VoiceChat.new()
+	voice.name = "Voice"
+	voice.director = director
+	add_child(voice)
+
+	totems = Totems.new()
+	totems.name = "Totems"
+	totems.director = director
+	add_child(totems)
+	totems.revive_rolled.connect(_on_revive_rolled)
+	totems.bad_roll.connect(_on_bad_roll)
+
+	shop = Shop.new()
+	shop.name = "Shop"
+	shop.director = director
+	shop.cameras = cameras
+	shop.guard_room = guard_room
+	add_child(shop)
+	doors = GuardRoomDoors.new()
+	doors.name = "GuardRoomDoors"
+	doors.shop = shop
+	doors.director = director
+	add_child(doors)
+	totems.shop = shop
+	guard_room.shop = shop
+	vending = VendingUI.new()
+	vending.name = "Vending"
+	add_child(vending)
+	vending.buy_requested.connect(shop.request_buy)
+	vending.closed.connect(_on_ui_closed)
+	shop.wallet_changed.connect(func(_points: int) -> void: _refresh_inventory())
+	shop.holding_changed.connect(func(_item: String) -> void: _refresh_inventory())
+	school.vending_machine.used.connect(_on_vending_used)
+
+	keypad = KeypadUI.new()
+	keypad.name = "Keypad"
+	add_child(keypad)
+	keypad.submitted.connect(_on_keypad_submitted)
+	keypad.closed.connect(_on_ui_closed)
+
+	pause_menu = PauseMenu.new()
+	pause_menu.name = "PauseMenu"
+	add_child(pause_menu)
+	pause_menu.closed.connect(_on_ui_closed)
+	pause_menu.closed.connect(hud.refresh_key_hint)
+	pause_menu.voice = voice
+	pause_menu.leave_requested.connect(func() -> void:
+		_back_to_menu("You ended the session." if multiplayer.is_server() and _mode != "solo" else ""))
+
+	var report := Report.new()
+	report.name = "Report"
+	add_child(report)
+
+	night = Night.new()
+	night.name = "Night"
+	night.shift = shift
+	night.lighting = lighting
+	night.anomalies = anomalies
+	night.cameras = cameras
+	night.hud = hud
+	night.clipboard = clipboard
+	night.report = report
+	night.players = players
+	night.director = director
+	night.totems = totems
+	night.shop = shop
+	night.guard_room = guard_room
+	night.doors = doors
+	add_child(night)
+	shop.night = night
+	director.student_helped.connect(func(peer_id: int) -> void: night.add_bonus(peer_id))
+	_refresh_inventory()
+
 	menu = Menu.new()
 	menu.name = "Menu"
 	add_child(menu)
-	menu.solo_requested.connect(_play_solo)
-	menu.host_requested.connect(_host)
+	# From the menu buttons, check first that a new run won't silently replace the saved one.
+	menu.solo_requested.connect(func() -> void:
+		if menu.confirm_new_run():
+			_play_solo())
+	menu.host_requested.connect(func() -> void:
+		if menu.confirm_new_run():
+			_host())
 	menu.join_requested.connect(_join)
 	menu.show_status(_menu_message)
 	_menu_message = ""
@@ -102,6 +257,24 @@ func _ready() -> void:
 	_start_from_command_line()
 
 
+## A menu (clipboard, keypad, vending machine, Esc menu) closed: the guard can move again,
+## unless another menu is still open or the night report is up.
+func _on_ui_closed() -> void:
+	if _local_guard == null or shift.state == Shift.State.REPORT:
+		return
+	if clipboard.is_open or keypad.is_open or vending.is_open or pause_menu.is_open:
+		return
+	_local_guard.input_blocked = false
+
+
+## Closes every menu, e.g. when your guard is caught or the night report comes up.
+func _close_all_ui() -> void:
+	clipboard.close()
+	keypad.close()
+	vending.close()
+	pause_menu.close()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_fullscreen"):
 		var fullscreen := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
@@ -113,6 +286,22 @@ func _process(_delta: float) -> void:
 		return
 	var guards := players.get_child_count()
 	var status := "Solo" if _mode == "solo" else "%s · %d guard%s" % [_mode, guards, "" if guards == 1 else "s"]
+	if _room_code != "":
+		status = "Room %s%s · %s" % [_room_code, " (password)" if _password != "" else "", status]
+	if _local_guard:
+		status += " · Badge #%04d" % _local_guard.employee_number
+	if night.difficulty > 0:
+		status += " · Difficulty %d" % night.difficulty
+	hud.set_objective(_objective())
+	hud.set_voice(voice.transmitting, voice.level, voice.on_radio)
+	for guard: Guard in players.get_children():
+		if guard != _local_guard:
+			guard.show_talking(voice.is_talking(guard.name.to_int()))
+	if _local_guard and _local_guard.boost_left > 0.0:
+		hud.set_inventory(shop.local_points, "Energy drink: %ds" % ceili(_local_guard.boost_left))
+	elif _local_guard and _boost_was_on:
+		_refresh_inventory()
+	_boost_was_on = _local_guard != null and _local_guard.boost_left > 0.0
 	hud.set_status(status)
 
 
@@ -121,7 +310,19 @@ func _process(_delta: float) -> void:
 ## Lets Godot's "Customize Run Instances" start copies of the game straight into a session.
 ## Launch arguments: --solo, --host, or --join (optionally --join=ADDRESS).
 func _start_from_command_line() -> void:
-	for arg in OS.get_cmdline_args() + OS.get_cmdline_user_args():
+	var args := OS.get_cmdline_args() + OS.get_cmdline_user_args()
+	# Settings first, so they're in place before a session starts.
+	var night_number := 0
+	for arg in args:
+		if arg.begins_with("--difficulty="):
+			# For testing the wings: --difficulty=3 opens both.
+			menu._difficulty.select(clampi(arg.get_slice("=", 1).to_int(), 0, Night.MAX_DIFFICULTY))
+			menu._continue.button_pressed = false
+		elif arg.begins_with("--night="):
+			# For testing later nights, e.g. --night=7 when monsters can enter the guard room.
+			night_number = clampi(arg.get_slice("=", 1).to_int(), 1, Night.LAST_NIGHT)
+			menu._continue.button_pressed = false
+	for arg in args:
 		if arg == "--solo":
 			_play_solo()
 		elif arg == "--host":
@@ -130,6 +331,14 @@ func _start_from_command_line() -> void:
 		elif arg.begins_with("--join"):
 			_use_test_window(1)
 			_join(arg.get_slice("=", 1) if "=" in arg else "127.0.0.1")
+		elif arg == "--fast-night":
+			# For testing: a whole night in about a minute.
+			night.seconds_per_minute = 0.2
+		elif arg == "--rich":
+			# For testing the vending machine: everyone starts with 1000 points.
+			night.give_everyone.call_deferred(1000)
+	if night_number > 0 and multiplayer.is_server():
+		night.number = night_number
 
 
 ## When testing several copies on one screen, put each in its own half instead of fullscreen.
@@ -147,8 +356,10 @@ func _use_test_window(side: int) -> void:
 func _play_solo() -> void:
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	_mode = "solo"
+	director.bake_navigation()
+	_start_run()
 	_enter_school()
-	_spawn_guard(1)
+	_spawn_guard(1, Profile.employee_number)
 
 
 func _host() -> void:
@@ -159,15 +370,20 @@ func _host() -> void:
 		return
 	multiplayer.multiplayer_peer = peer
 	_mode = "Hosting"
+	_room_code = RoomCode.from_address(RoomCode.local_address())
+	director.bake_navigation()
+	_start_run()
 	_enter_school()
-	_spawn_guard(1)
+	_spawn_guard(1, Profile.employee_number)
 	print("[net] Hosting on port %d" % PORT)
 
 
-func _join(address: String) -> void:
-	if address == "":
-		menu.show_status("Type the host's address first.")
+func _join(typed: String) -> void:
+	if typed == "":
+		menu.show_status("Type the host's room code or address first.")
 		return
+	var address := RoomCode.resolve(typed)
+	_password = menu.options()["password"]
 	var peer := ENetMultiplayerPeer.new()
 	var error := peer.create_client(address, PORT)
 	if error != OK:
@@ -178,14 +394,50 @@ func _join(address: String) -> void:
 	menu.show_status("Connecting to %s..." % address)
 
 
+## Host: applies the menu's run options, and loads the saved run if the host chose to continue it.
+func _start_run() -> void:
+	var options: Dictionary = menu.options()
+	night.difficulty_choice = options["difficulty"]
+	night.keep_gear = options["keep_gear"]
+	_password = options["password"]
+	if not options["continue"]:
+		return
+	var saved := RunSave.read()
+	night.number = clampi(int(saved.get("night", 1)), 1, Night.LAST_NIGHT)
+	night.saved_points = saved.get("points", {})
+	night.saved_items = saved.get("items", {})
+	if saved.get("in_progress", false):
+		# The last session quit in the middle of a night. Replaying it costs that night's
+		# survival pay, so quitting isn't a way out of a bad night.
+		for key: String in night.saved_points:
+			night.saved_points[key] = maxi(int(night.saved_points[key]) - Night.SURVIVAL_PAY, 0)
+		menu.show_status("Last time, the run was left mid-shift. Everyone loses %d points." % Night.SURVIVAL_PAY)
+	var upgrades: Array = saved.get("upgrades", [])
+	for desk in mini(upgrades.size(), GuardRoom.DESKS):
+		if upgrades[desk]:
+			guard_room._set_upgraded(desk, true)
+	var fitted: Array = saved.get("doors", [])
+	for doorway in mini(fitted.size(), GuardRoomDoors.DOORWAYS.size()):
+		if fitted[doorway]:
+			doors.install(doorway)
+	night.saved_personal = saved.get("personal", {})
+	# Saves from before the walkie-talkie listed flashlights on their own.
+	for badge: String in saved.get("bright", []):
+		var list: Array = night.saved_personal.get_or_add(badge, [])
+		if "flashlight" not in list:
+			list.append("flashlight")
+	print("[run] Continuing the saved run: ", RunSave.describe(saved))
+
+
 func _on_connected_to_server() -> void:
 	_mode = "Connected"
 	_enter_school()
+	_register_employee.rpc_id(1, Profile.employee_number, _password)
 	print("[net] Joined as peer %d" % multiplayer.get_unique_id())
 
 
 func _on_connection_failed() -> void:
-	multiplayer.multiplayer_peer = null
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	menu.set_busy(false)
 	menu.show_status("Couldn't reach the host. Check the address, and that the host is in a game.")
 
@@ -201,7 +453,8 @@ func _enter_school() -> void:
 
 func _back_to_menu(message: String) -> void:
 	_menu_message = message
-	multiplayer.multiplayer_peer = null
+	get_tree().paused = false
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	get_tree().reload_current_scene()
 
 
@@ -211,37 +464,76 @@ func _on_peer_connected(peer_id: int) -> void:
 	if not multiplayer.is_server():
 		return
 	if shift.state == Shift.State.ON_SHIFT:
-		_turn_away.rpc_id(peer_id, "That team's shift has already started.")
+		_reject(peer_id, "That team's shift has already started.")
 		return
 	print("[net] Guard joined (peer %d)" % peer_id)
 	guard_room.send_state_to(peer_id)
-	_spawn_guard(peer_id)
+	anomalies.send_state_to(peer_id)
+	# Their guard spawns once their computer tells us their badge number (_register_employee).
+
+
+## Host: a player who just joined shows their badge. Their guard spawns with it.
+@rpc("any_peer", "call_remote", "reliable")
+func _register_employee(badge: int, password: String) -> void:
+	var peer_id := multiplayer.get_remote_sender_id()
+	if not multiplayer.is_server() or players.has_node(str(peer_id)):
+		return
+	if password != _password:
+		_reject(peer_id, "Wrong room password." if password != "" else "That room needs a password.")
+		return
+	if shift.state != Shift.State.PRE_SHIFT:
+		_reject(peer_id, "That team's shift has already started.")
+		return
+	if players.get_child_count() >= MAX_GUARDS:
+		_reject(peer_id, "That team is full.")
+		return
+	# Two copies of the game on one computer share a badge. Lend the second one a spare.
+	while badge < 1000 or _badge_in_use(badge):
+		badge = randi_range(1000, 9999)
+	_spawn_guard(peer_id, badge)
+	shop.send_state_to(peer_id)
+	doors.send_state_to(peer_id)
+	_sync_session.rpc_id(peer_id, night.number, night.difficulty)
 	_update_guards_required()
+
+
+func _badge_in_use(badge: int) -> bool:
+	for guard: Guard in players.get_children():
+		if guard.employee_number == badge:
+			return true
+	return false
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
 	if not multiplayer.is_server():
 		return
 	print("[net] Guard left (peer %d)" % peer_id)
-	var guard := players.get_node_or_null(str(peer_id))
+	var guard := players.get_node_or_null(str(peer_id)) as Guard
 	if guard:
+		# Keep what they had, by badge, so they get exactly that back if they rejoin.
+		night.remember_guard(guard)
 		guard.queue_free()
 	shift.remove_guard(peer_id)
 	guard_room.on_peer_left(peer_id)
-	# Count the guards once the leaver's node is gone.
-	_update_guards_required.call_deferred()
+	_update_guards_required()
 
 
 ## Host only. The spawner runs _create_guard with the same data on every computer,
 ## including players who join later.
-func _spawn_guard(peer_id: int) -> void:
-	spawner.spawn({"peer_id": peer_id, "slot": _free_slot()})
+func _spawn_guard(peer_id: int, badge: int) -> void:
+	# Personal upgrades go in the spawn data so every computer builds the guard with them.
+	var personal: Array = night.saved_personal.get(str(badge), [])
+	spawner.spawn({"peer_id": peer_id, "slot": _free_slot(), "badge": badge, "personal": personal})
+	night.restore_guard(peer_id, badge)
 
 
 func _create_guard(data: Dictionary) -> Node:
 	var guard := PlayerScene.instantiate() as Guard
 	guard.name = str(data["peer_id"])
 	guard.slot = data["slot"]
+	guard.employee_number = data.get("badge", 0)
+	guard.bright_flashlight = "flashlight" in data.get("personal", [])
+	guard.has_radio = "radio" in data.get("personal", [])
 	guard.position = SPAWN_POINT + Vector3((guard.slot - 2.5) * 1.4, 0, 0)
 	return guard
 
@@ -256,10 +548,35 @@ func _free_slot() -> int:
 	return MAX_GUARDS
 
 
+## Guards in the session, not counting one whose player has just left.
+func _guard_count() -> int:
+	var count := 0
+	for guard in players.get_children():
+		if not guard.is_queued_for_deletion():
+			count += 1
+	return count
+
+
 func _update_guards_required() -> void:
-	shift.guards_required = players.get_child_count()
+	if shift.state == Shift.State.ON_SHIFT and _guard_count() > 0 and director.living_guards().is_empty():
+		night.fail_night()
+		return
+	if shift.state == Shift.State.MORNING:
+		shift.guards_required = director.living_guards().size()
+		if shift.everyone_clocked_out():
+			night._end_night()
+		return
+	shift.guards_required = _guard_count()
 	if shift.state == Shift.State.PRE_SHIFT and shift.clocked_in_count() > 0 and shift.everyone_clocked_in():
-		_start_night.rpc()
+		_start_night.rpc(night.number, night.pick_difficulty())
+
+
+## Host: tells a player why they can't join, then disconnects them once the message is through.
+func _reject(peer_id: int, reason: String) -> void:
+	_turn_away.rpc_id(peer_id, reason)
+	get_tree().create_timer(1.0).timeout.connect(func() -> void:
+		if multiplayer.multiplayer_peer is ENetMultiplayerPeer and peer_id in multiplayer.get_peers():
+			(multiplayer.multiplayer_peer as ENetMultiplayerPeer).disconnect_peer(peer_id))
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -273,13 +590,67 @@ func on_local_guard_ready(guard: Guard) -> void:
 	guard.prompt_changed.connect(hud.set_prompt)
 	guard.message_shown.connect(hud.show_message)
 	guard.desk_action.connect(guard_room.on_desk_action)
+	guard.clipboard_requested.connect(_open_clipboard)
+	guard.item_use_requested.connect(func() -> void:
+		if not guard_room.try_install():
+			shop.request_use())
+	guard.pause_requested.connect(func() -> void:
+		guard.input_blocked = true
+		pause_menu.open(_mode == "solo", _mode == "Hosting"))
+	doors.local_guard = guard
 	guard_room.local_guard = guard
 	cameras.viewer = guard
+	ambience.listener = guard
+	voice.local_guard = guard
+	voice.set_active(true)
 
 
 # --- Clocking in ---------------------------------------------------------------
 
-func _on_clock_machine_used(_guard: Node) -> void:
+func _on_clock_machine_used(by: Node) -> void:
+	if by != _local_guard or _local_guard.is_dead:
+		return
+	if shift.state == Shift.State.PRE_SHIFT:
+		# Clocking in takes your badge number.
+		_local_guard.input_blocked = true
+		keypad.open("#%04d" % _local_guard.employee_number)
+		return
+	_request_time_clock()
+
+
+var _boost_was_on := false
+
+
+## The line under the clock telling you what to do next.
+func _objective() -> String:
+	if _local_guard == null:
+		return ""
+	if _local_guard.is_dead:
+		return ""
+	match shift.state:
+		Shift.State.PRE_SHIFT:
+			if _clocked_in:
+				return "Waiting for the rest of the team to clock in."
+			return "Head through the front doors. The guard room is the door on the right of the lobby: clock in at the time clock."
+		Shift.State.ON_SHIFT:
+			return "Survive until 6 AM. Watch the cameras and log anything odd (%s)." % Controls.key_name("clipboard")
+		Shift.State.MORNING:
+			return "It's 6 AM. Clock out at the time clock in the guard room to get paid."
+	return ""
+
+
+func _on_keypad_submitted(number: int) -> void:
+	if _local_guard == null or number != _local_guard.employee_number:
+		keypad.flash_display("UNKNOWN")
+		Sfx.play_flat(self, Sfx.notes([220.0, 180.0], 0.15, 0.25, "square"))
+		return
+	keypad.close()
+	_clocked_in = true
+	Sfx.play_flat(self, Sfx.notes([880.0, 1320.0], 0.08, 0.25, "square"))
+	_request_time_clock()
+
+
+func _request_time_clock() -> void:
 	if multiplayer.is_server():
 		_handle_clock_in(multiplayer.get_unique_id())
 	else:
@@ -293,24 +664,266 @@ func _request_clock_in() -> void:
 
 
 func _handle_clock_in(peer_id: int) -> void:
-	var message := shift.clock_in(peer_id)
+	var message := ""
+	if shift.state == Shift.State.PRE_SHIFT:
+		message = shift.clock_in(peer_id)
+	else:
+		message = night.use_time_clock(peer_id)
 	if peer_id == multiplayer.get_unique_id():
 		_show_local_message(message)
 	else:
 		_receive_message.rpc_id(peer_id, message)
 	if shift.state == Shift.State.PRE_SHIFT and shift.everyone_clocked_in():
-		_start_night.rpc()
+		_start_night.rpc(night.number, night.pick_difficulty())
 
 
 @rpc("authority", "call_local", "reliable")
-func _start_night() -> void:
-	print("[net] Night started")
+func _start_night(number: int, difficulty: int) -> void:
+	print("[net] Night %d started at difficulty %d" % [number, difficulty])
+	night.number = number
+	night.difficulty = difficulty
+	_apply_difficulty(difficulty)
 	shift.begin()
+	_clocked_in = false
+	if number == 1:
+		_show_first_night_tips()
+
+
+## A few pointers on the first night, a few seconds apart.
+func _show_first_night_tips() -> void:
+	var tips: Array[String] = [
+		"Tip: sit at a desk (E on a chair) to watch the cameras. A / D changes a monitor's camera.",
+		"Tip: something moved, missing, or there that shouldn't be? Press Tab and log where and what. Wrong guesses cost points.",
+		"Tip: the real night cleaner moves things too. Learn what's normal.",
+		"Tip: at 6 AM, clock out at the time clock or you don't get paid.",
+	]
+	for i in tips.size():
+		get_tree().create_timer(8.0 + i * 14.0).timeout.connect(func() -> void:
+			if shift.state == Shift.State.ON_SHIFT and night.number == 1:
+				hud.show_message(tips[i]))
+
+
+## A player who just joined: which night it is and last night's difficulty, so their cameras
+## and clipboard match everyone else's until the night starts.
+@rpc("authority", "call_remote", "reliable")
+func _sync_session(number: int, difficulty: int) -> void:
+	night.number = number
+	night.difficulty = difficulty
+	if difficulty > 0:
+		_apply_difficulty(difficulty, false)
+
+
+## Every computer, as the night starts: opens tonight's wings and their cameras and areas.
+func _apply_difficulty(difficulty: int, open_doors := true) -> void:
+	if open_doors:
+		school.open_wings(difficulty)
+	cameras.difficulty = difficulty
+	anomalies.difficulty = difficulty
+	director.difficulty = difficulty
+	clipboard.set_areas(anomalies.areas(difficulty))
+	if multiplayer.is_server():
+		guard_room.fit_to_open_cameras()
 
 
 @rpc("authority", "call_remote", "reliable")
 func _receive_message(message: String) -> void:
 	_show_local_message(message)
+
+
+func _open_clipboard() -> void:
+	if _local_guard.is_dead:
+		return
+	if shift.state == Shift.State.PRE_SHIFT:
+		_show_local_message("Your clipboard is for logging anything odd once the shift has started.")
+		return
+	if shift.state == Shift.State.REPORT:
+		return
+	_local_guard.input_blocked = true
+	# The camera you're looking at, or else the area you're standing in.
+	var area := guard_room.current_area()
+	if area == "":
+		area = SchoolBuilder.area_at(_local_guard.global_position)
+	clipboard.open(area)
+
+
+# --- Caught, ghosts and totems ---------------------------------------------------------------
+
+## Host: a monster caught a guard.
+func _on_guard_caught(peer_id: int, by: String) -> void:
+	var guard := players.get_node_or_null(str(peer_id)) as Guard
+	if guard == null or guard.is_dead:
+		return
+	night.record_death()
+	_guard_died.rpc(peer_id, by, guard.global_position)
+	if director.living_guards().is_empty():
+		night.fail_night()
+
+
+@rpc("authority", "call_local", "reliable")
+func _guard_died(peer_id: int, by: String, at: Vector3) -> void:
+	var guard := players.get_node_or_null(str(peer_id)) as Guard
+	if guard == null:
+		return
+	guard.set_dead(true)
+	director.place_corpse(peer_id, at, guard.uniform_color())
+	if guard == _local_guard:
+		guard_room.leave_desk()
+		_close_all_ui()
+		guard.input_blocked = false
+		hud.flash(Color(0.6, 0.0, 0.0, 0.85), 2.0)
+		hud.set_ghost(true)
+		hud.show_message("You were caught by %s." % by)
+		Sfx.play_flat(self, Sfx.notes([110.0, 104.0, 98.0, 92.0], 0.35, 0.4, "saw"))
+	else:
+		hud.show_message("Guard %d was caught by %s." % [guard.slot, by])
+	_refresh_guard_visibility()
+
+
+## Host: a good roll at a revive totem.
+func _on_revive_rolled(user_peer: int, roll: int, revived_peer: int, at: Vector3) -> void:
+	var user := director.guard_by_peer(user_peer)
+	var revived := director.guard_by_peer(revived_peer)
+	if user == null or revived == null:
+		return
+	_announce.rpc("Guard %d rolled a %d at a totem. Guard %d is back!" % [user.slot, roll, revived.slot])
+	night.record_revive()
+	_guard_revived.rpc(revived_peer, at + Vector3(0.8, 0.1, 0))
+
+
+## Host: a bad roll lets something out of the totem.
+func _on_bad_roll(user_peer: int, roll: int, at: Vector3) -> void:
+	var user := director.guard_by_peer(user_peer)
+	_announce.rpc("Guard %d rolled a %d at a totem. Something climbs out..." % [user.slot if user else 0, roll])
+	director.summon_shade(at + Vector3(0, 0.1, 1.0), user_peer)
+
+
+@rpc("authority", "call_local", "reliable")
+func _guard_revived(peer_id: int, at: Vector3) -> void:
+	var guard := players.get_node_or_null(str(peer_id)) as Guard
+	if guard == null:
+		return
+	guard.set_dead(false)
+	director.remove_corpse(peer_id)
+	if guard == _local_guard:
+		guard.global_position = at
+		hud.set_ghost(false)
+		hud.flash(Color(0.3, 0.9, 0.8, 0.6), 1.5)
+	_refresh_guard_visibility()
+
+
+@rpc("authority", "call_local", "reliable")
+func _announce(text: String, sound := "") -> void:
+	hud.show_message(text)
+	if sound == "intercom":
+		Sfx.play_flat(self, Sfx.notes([660.0, 523.0, 0.0], 0.35, 0.3, "sine"))
+	elif sound == "sensor":
+		Sfx.play_flat(self, Sfx.notes([1320.0, 0.0, 1320.0], 0.1, 0.2, "square"))
+
+
+var _bell_sound: AudioStreamPlayer3D
+
+
+## Every computer: the bell starts or stops. It rings from the hallway ceiling.
+@rpc("authority", "call_local", "reliable")
+func _set_bell(ringing: bool) -> void:
+	director.bell_ringing = ringing
+	school.bell_panel.prompt = "Shut off the school bell" if ringing else "School bell panel"
+	if _bell_sound:
+		_bell_sound.queue_free()
+		_bell_sound = null
+	if ringing:
+		var ring: Array = []
+		for i in 24:
+			ring.append(1100.0 if i % 2 == 0 else 1180.0)
+		ring.append_array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+		_bell_sound = Sfx.play_at(school, Sfx.notes(ring, 0.04, 0.25, "square", true), -4.0, 200.0)
+		_bell_sound.position = Vector3(0, 3.0, 7.0)
+		_bell_sound.attenuation_model = AudioStreamPlayer3D.ATTENUATION_DISABLED
+	elif multiplayer.is_server() and shift.state == Shift.State.ON_SHIFT:
+		_announce.rpc("The bell goes quiet.")
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_bell_off() -> void:
+	if not multiplayer.is_server():
+		return
+	if director.bell_ringing:
+		director.stop_bell()
+	else:
+		_tell(_sender_id(), "Switches for the school bell. It's quiet.")
+
+
+func _sender_id() -> int:
+	var id := multiplayer.get_remote_sender_id()
+	return id if id != 0 else multiplayer.get_unique_id()
+
+
+@rpc("authority", "call_local", "reliable")
+func _camera_signal(camera_index: int, working: bool) -> void:
+	cameras.set_signal(camera_index, working)
+
+
+func _on_vending_used(by: Node) -> void:
+	if by != _local_guard or _local_guard.is_dead:
+		return
+	_local_guard.input_blocked = true
+	vending.open(shop.local_points, shop.local_item, _mode == "solo")
+
+
+func _refresh_inventory() -> void:
+	var carrying := Shop.item_name(shop.local_item)
+	if shop.local_item in Shop.USED_WITH_G:
+		carrying += "  (G to use)"
+	hud.set_inventory(shop.local_points, carrying)
+	if vending.is_open:
+		vending.refresh(shop.local_points, shop.local_item)
+
+
+## Host: sends a message to one player's screen.
+func _tell(peer_id: int, text: String) -> void:
+	if peer_id == multiplayer.get_unique_id():
+		_show_local_message(text)
+	else:
+		_receive_message.rpc_id(peer_id, text)
+
+
+func _refresh_guard_visibility() -> void:
+	var viewer_is_dead := _local_guard != null and _local_guard.is_dead
+	for guard: Guard in players.get_children():
+		guard.update_visibility(viewer_is_dead)
+
+
+## Every computer, when the night report appears: leave the desk and stop moving.
+func on_report() -> void:
+	_close_all_ui()
+	if _local_guard:
+		guard_room.leave_desk()
+		_local_guard.input_blocked = true
+
+
+## Every computer, when the host starts the next night: back to the gate, lights on, desks empty.
+func on_next_night() -> void:
+	school.clock_machine.prompt = "Clock in"
+	_clocked_in = false
+	_close_all_ui()
+	# After a team wipe the lights are still down; bring them back for the evening.
+	lighting.go_bright()
+	ambience.stop()
+	# The wings stay locked until the night starts.
+	school.open_wings(1)
+	# Everyone starts the new night alive.
+	for guard: Guard in players.get_children():
+		guard.set_dead(false)
+	director.remove_all_corpses()
+	hud.set_ghost(false)
+	_refresh_guard_visibility()
+	if _local_guard:
+		guard_room.leave_desk()
+		_local_guard.input_blocked = false
+		_local_guard.flashlight.visible = false
+		_local_guard.global_position = SPAWN_POINT + Vector3((_local_guard.slot - 2.5) * 1.4, 0, 0)
+		_local_guard.rotation.y = 0.0
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 func _show_local_message(message: String) -> void:
@@ -337,6 +950,8 @@ func _make_environment() -> Environment:
 	moon.light_color = Color(0.6, 0.7, 1.0)
 	moon.light_energy = 0.25
 	moon.shadow_enabled = true
+	moon.add_to_group(Profile.SHADOW_LIGHTS)
+	moon.shadow_enabled = Profile.shadows
 	moon.rotation_degrees = Vector3(-40, 35, 0)
 	add_child(moon)
 	return env
