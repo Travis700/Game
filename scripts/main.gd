@@ -414,6 +414,8 @@ func _process(_delta: float) -> void:
 	if night.difficulty > 0:
 		status += " · Difficulty %d" % night.difficulty
 	hud.set_objective(_objective())
+	if _local_guard and is_instance_valid(_local_guard):
+		hud.set_stamina(_local_guard.stamina, _local_guard.winded)
 	_board_timer -= _delta
 	if _board_timer <= 0.0:
 		_board_timer = 1.0

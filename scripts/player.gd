@@ -26,6 +26,12 @@ const WALK_SPEED := 3.2
 const SPRINT_SPEED := 5.6
 ## Right-stick look speed (in the same units as mouse movement, per second).
 const STICK_LOOK_SPEED := 1100.0
+## Stamina: seconds of running from full, how long before it starts coming back, how fast it
+## comes back (fraction a second), and how much has to come back before you can run again.
+const STAMINA_SECONDS := 6.0
+const STAMINA_DELAY := 1.0
+const STAMINA_REGEN := 0.2
+const WINDED_UNTIL := 0.3
 ## Running speed while an energy drink lasts.
 const BOOSTED_SPRINT_SPEED := 7.2
 const ACCELERATION := 10.0
@@ -72,6 +78,11 @@ var boost_left := 0.0
 var bright_flashlight := false
 ## How strong the flashlight's batteries are tonight (1 = fresh; less on an "Old batteries" night).
 var battery := 1.0
+## Stamina, 0 to 1 (the guard's own computer only). Running uses it up.
+var stamina := 1.0
+## Out of breath: can't run until stamina is back up to WINDED_UNTIL.
+var winded := false
+var _rest_for := 0.0
 ## True while hiding in a cupboard: can look around, can't move, and monsters can't find you.
 var hiding := false
 ## True once this guard has clipped on a walkie-talkie: they can talk on it (B) and hear it.
@@ -353,7 +364,9 @@ func _physics_process(delta: float) -> void:
 	if not input_blocked and not hiding:
 		input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (transform.basis * Vector3(input.x, 0, input.y)).normalized()
-	is_running = not input_blocked and not hiding and Input.is_action_pressed("sprint") and input.y < 0.0
+	var wants_to_run := not input_blocked and not hiding and Input.is_action_pressed("sprint") and input.y < 0.0
+	is_running = wants_to_run and not winded
+	_update_stamina(delta)
 	boost_left = maxf(boost_left - delta, 0.0)
 	var speed := WALK_SPEED
 	if is_running:
@@ -366,6 +379,20 @@ func _physics_process(delta: float) -> void:
 
 	_update_head_bob(delta, input.length() > 0.1)
 	_update_prompt()
+
+
+func _update_stamina(delta: float) -> void:
+	if is_running and boost_left <= 0.0:
+		stamina = maxf(stamina - delta / STAMINA_SECONDS, 0.0)
+		_rest_for = 0.0
+		if stamina <= 0.0:
+			winded = true
+	else:
+		_rest_for += delta
+		if _rest_for > STAMINA_DELAY:
+			stamina = minf(stamina + STAMINA_REGEN * delta, 1.0)
+	if winded and stamina >= WINDED_UNTIL:
+		winded = false
 
 
 func show_message(text: String) -> void:

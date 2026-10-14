@@ -73,6 +73,9 @@ teammate is caught, and recovers in the lit guard room, near teammates, or with 
 (vending machine, 30, +40). Low nerve: monsters notice you from up to 30% further away, and below 40 you
 get hallucinations (footsteps behind you, whispers, knocking, a figure at the edge of your vision).
 
+**Stamina:** running uses up stamina (about 6 seconds from full, shown at the bottom of the screen while it
+isn't full). Run out and you're winded until it comes back up; an energy drink means no tiring for 30 seconds.
+
 **Lockdown:** from night 6 (once a night; twice from night 9 and in Overtime) an alarm wails and for 30 seconds
 every monster hunts the nearest guard it can reach. Hide, get to the guard room (before night 7), or outrun them.
 

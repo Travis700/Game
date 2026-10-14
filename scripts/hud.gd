@@ -20,6 +20,7 @@ var _voice_bar: ProgressBar
 var _nerve_box: Control
 var _nerve_bar: ProgressBar
 var _emf: Label
+var _stamina: ProgressBar
 var _inventory: Label
 var _ghost_tint: ColorRect
 var _ghost_note: Label
@@ -123,6 +124,19 @@ func _ready() -> void:
 	nerve_box.add_child(_nerve_bar)
 	nerve_box.visible = false
 	_nerve_box = nerve_box
+
+	# Bottom centre: stamina, while it isn't full.
+	_stamina = ProgressBar.new()
+	_stamina.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_stamina.offset_left = -90
+	_stamina.offset_right = 90
+	_stamina.offset_top = -30
+	_stamina.offset_bottom = -22
+	_stamina.max_value = 1.0
+	_stamina.show_percentage = false
+	_stamina.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_stamina.visible = false
+	add_child(_stamina)
 
 	# Bottom left, above nerve: the EMF reader's lights, for guards who carry one.
 	_emf = Label.new()
@@ -273,6 +287,13 @@ func set_voice(transmitting: bool, level: float, on_radio := false) -> void:
 	box.visible = transmitting
 	_voice_bar.value = level
 	_voice_label.text = ("ON RADIO" if on_radio else "TALKING") + (" (LOUD)" if level > 0.6 else "")
+
+
+## Stamina 0-1; hidden when full. Red while winded.
+func set_stamina(value: float, winded: bool) -> void:
+	_stamina.visible = value < 0.999
+	_stamina.value = value
+	_stamina.modulate = Color(1.0, 0.35, 0.3) if winded else Color(1, 1, 1, 0.8)
 
 
 ## The EMF reader: level 0-5, or -1 to hide it.
