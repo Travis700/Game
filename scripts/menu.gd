@@ -45,7 +45,15 @@ func _ready() -> void:
 	var column := VBoxContainer.new()
 	column.custom_minimum_size = Vector2(420, 0)
 	column.add_theme_constant_override("separation", 12)
-	center.add_child(column)
+	# A dark panel behind the menu so it reads clearly over the school.
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.03, 0.04, 0.07, 0.82)
+	style.set_corner_radius_all(12)
+	style.set_content_margin_all(28)
+	panel.add_theme_stylebox_override("panel", style)
+	center.add_child(panel)
+	panel.add_child(column)
 
 	var title := Label.new()
 	title.text = "NIGHT SHIFT"
