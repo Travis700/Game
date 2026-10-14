@@ -343,6 +343,7 @@ func _ready() -> void:
 			_host())
 	menu.join_requested.connect(_join)
 	menu.daily_requested.connect(_play_daily)
+	menu.training_requested.connect(_play_training)
 	night.daily_finished.connect(func() -> void: _back_to_menu(""))
 	SteamService.lobby_ready.connect(_on_steam_lobby_ready)
 	SteamService.lobby_failed.connect(_on_steam_lobby_failed)
@@ -481,6 +482,21 @@ func _play_daily() -> void:
 	_play_solo()
 	night.number = Daily.night_of(night.daily)
 	night.give_everyone(Daily.STARTING_POINTS)
+
+
+## The training shift: a guided solo night. Never touches the saved run.
+func _play_training() -> void:
+	menu._continue.button_pressed = false
+	var training := Training.new()
+	training.name = "Training"
+	training.night = night
+	training.hud = hud
+	add_child(training)
+	night.training = training
+	night.keep_gear = false
+	_play_solo()
+	night.number = 1
+	training.guard = _local_guard
 
 
 func _host() -> void:
@@ -841,6 +857,8 @@ func _objective() -> String:
 				return "Waiting for the rest of the team to clock in."
 			return "Head through the front doors. The guard room is the door on the right of the lobby: clock in at the time clock."
 		Shift.State.ON_SHIFT:
+			if night.training:
+				return night.training.objective
 			var text := "Survive until 6 AM. Watch the cameras and log anything odd (%s)." % Controls.key_name("clipboard")
 			var round_text := rounds.objective_text()
 			if round_text != "":
@@ -908,7 +926,7 @@ func _start_night(number: int, difficulty: int) -> void:
 			cameras.capture_references(night.time_text()))
 	SteamService.set_presence("Overtime: night %d" % number if number > Night.LAST_NIGHT
 			else "Night %d of %d" % [number, Night.LAST_NIGHT])
-	if number == 1:
+	if number == 1 and night.training == null:
 		_show_first_night_tips()
 	elif number == 2:
 		hud.show_message("Tip: from tonight the power can go out. The breaker is in the custodian's closet, across the hall from the lobby.")

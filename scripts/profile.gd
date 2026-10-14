@@ -26,6 +26,8 @@ var voice_volume := 1.0
 var mic_device := ""
 ## Night length on the menu: 0 short, 1 normal, 2 long.
 var night_length := 1
+## True once this player has finished the training shift.
+var training_done := false
 ## The hat your guard wears (see Hats).
 var hat := "cap"
 ## Whether the Understudy may say back things you said (kept only in the host's memory).
@@ -52,6 +54,7 @@ func _enter_tree() -> void:
 		mic_device = config.get_value("voice", "device", "")
 		voice_mimic = config.get_value("voice", "mimic", true)
 		hat = config.get_value("look", "hat", "cap")
+		training_done = config.get_value("career", "training_done", false)
 		night_length = config.get_value("settings", "night_length", 1)
 	apply_volume()
 	if employee_number < 1000:
@@ -84,6 +87,7 @@ func save_settings() -> void:
 	config.set_value("voice", "device", mic_device)
 	config.set_value("voice", "mimic", voice_mimic)
 	config.set_value("look", "hat", hat)
+	config.set_value("career", "training_done", training_done)
 	config.set_value("settings", "night_length", night_length)
 	config.save(PATH)
 

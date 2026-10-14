@@ -260,6 +260,8 @@ func distance_to_guard(guard: Guard) -> float:
 
 ## Catches any living guard within reach. Returns true if it caught someone.
 func catch_nearby() -> bool:
+	if harmless:
+		return false
 	for guard in director.targetable_guards():
 		if distance_to_guard(guard) < KILL_DISTANCE:
 			director.kill(guard, display_name, global_position)

@@ -32,6 +32,9 @@ the internet if the host forwards port 7777 on their router. Steam lobbies will 
 
 ### The menu
 
+- **Training** walks a new guard through one guided shift: the cameras, logging, the round, the breaker and
+  hiding. It never touches the saved run.
+
 - **How to play**, **Records** (career stats, best scores, achievements) and **Credits** (with the
   software licences) are along the bottom.
 

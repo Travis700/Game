@@ -78,6 +78,8 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, outcom
 			_title.text = "NIGHT %d: YOU MADE IT. THE RUN IS WON" % night
 		"daily":
 			_title.text = "DAILY SHIFT: NIGHT %d" % night
+		"training":
+			_title.text = "TRAINING COMPLETE"
 		"overtime":
 			_title.text = "OVERTIME: NIGHT %d SURVIVED" % night
 		_:
@@ -99,7 +101,7 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, outcom
 	if promotion != "":
 		_summary.text += "\n\n★ " + promotion + " ★"
 		promotion = ""
-	_next_button.text = {"caught": "Start over from night 1", "won": "Start a new run", "daily": "Back to the menu"}.get(outcome, "Start night %d" % (night + 1))
+	_next_button.text = {"caught": "Start over from night 1", "won": "Start a new run", "daily": "Back to the menu", "training": "Back to the menu"}.get(outcome, "Start night %d" % (night + 1))
 	_next_button.visible = is_host
 	_overtime_button.visible = is_host and outcome == "won"
 	_overtime_button.text = "Keep going: Overtime (night %d)" % (night + 1)

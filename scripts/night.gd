@@ -56,6 +56,8 @@ var hiding: Hiding
 var nerve: Nerve
 ## The date of the daily shift being played (see Daily), or "" for an ordinary run.
 var daily := ""
+## The training shift, when that's what's being played (see Training), or null.
+var training: Training
 ## Emitted on the host when a daily shift's report is closed: back to the menu.
 signal daily_finished
 
@@ -151,6 +153,9 @@ func _on_shift_started() -> void:
 	_logged.clear()
 	_deaths = 0
 	save_run(number, true)
+	if training:
+		training.begin()
+		return
 	if daily != "":
 		# Everything planned from here on (monsters, conditions, round, bonus) is the same for
 		# everyone playing today's shift.
@@ -285,6 +290,8 @@ func _show_log_result(correct: bool, text: String) -> void:
 func pick_difficulty() -> int:
 	if daily != "":
 		return Daily.DIFFICULTY
+	if training:
+		return 1
 	if difficulty_choice > 0:
 		return clampi(difficulty_choice, 1, MAX_DIFFICULTY)
 	return clampi(players.get_child_count(), 1, MAX_DIFFICULTY)
@@ -326,8 +333,8 @@ func remember_guard(guard: Guard) -> void:
 ## Host: writes the run to disk so it can be continued, with `next_night` up next.
 ## `in_progress` marks a save made as a night starts (the night isn't finished yet).
 func save_run(next_night: int, in_progress := false) -> void:
-	if daily != "":
-		return  # The daily shift is one night on its own; it never touches the saved run.
+	if daily != "" or training:
+		return  # The daily shift and training are nights on their own; they never touch the saved run.
 	for guard: Guard in players.get_children():
 		var key := str(guard.employee_number)
 		var peer := guard.name.to_int()
@@ -616,7 +623,7 @@ func _reset_run() -> void:
 func _on_next_night_requested() -> void:
 	if multiplayer.is_server():
 		hiding.release_all()
-	if multiplayer.is_server() and daily != "":
+	if multiplayer.is_server() and (daily != "" or training):
 		daily_finished.emit()
 		return
 	if multiplayer.is_server():

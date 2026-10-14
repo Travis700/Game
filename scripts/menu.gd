@@ -4,6 +4,7 @@ extends CanvasLayer
 signal solo_requested
 signal host_requested
 signal daily_requested
+signal training_requested
 signal join_requested(address: String)
 
 ## Night length choices: the label and real seconds per in-game minute.
@@ -125,6 +126,9 @@ func _ready() -> void:
 	var daily := _button("Daily shift", func() -> void: daily_requested.emit())
 	daily.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	play_row.add_child(daily)
+	var training := _button("Training" if Profile.training_done else "Training (start here)", func() -> void: training_requested.emit())
+	training.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	play_row.add_child(training)
 	column.add_child(play_row)
 	_daily_label = Label.new()
 	_daily_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

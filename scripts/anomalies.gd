@@ -190,13 +190,17 @@ func spawn_random(night: int, minutes: float) -> bool:
 		candidates.append(i)
 	if candidates.is_empty():
 		return false
-	var chosen: int = candidates.pick_random()
-	if records.has(chosen) and records[chosen]["credited"].is_empty():
+	start(candidates.pick_random(), minutes)
+	return true
+
+
+## Host: starts one particular anomaly (by its place in DEFINITIONS), e.g. for training.
+func start(index: int, minutes: float) -> void:
+	if records.has(index) and records[index]["credited"].is_empty():
 		_missed_earlier += 1
 	_appeared += 1
-	records[chosen] = {"credited": [], "clear_at": -1.0, "ended_at": -1.0, "started_at": minutes}
-	_set_active.rpc(chosen, true)
-	return true
+	records[index] = {"credited": [], "clear_at": -1.0, "ended_at": -1.0, "started_at": minutes}
+	_set_active.rpc(index, true)
 
 
 ## Host, every frame: figures vanish when approached; reported anomalies get cleared up.
