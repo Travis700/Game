@@ -174,6 +174,16 @@ What keeps a player coming back after the first run:
 - **Ghost agency.** Caught guards can leave a cold spot (E) every 4 s: a blue glow and a chill the living see, with a message if they're near.
 - **More monsters.** The Photographer (D1, night 3: don't look when the flash fires) and the Twins (D2, night 2: move only when neither is watched).
 
+## 11e. Onboarding, accessibility and wrap-up
+
+- **Training shift.** A guided solo night with a frozen clock: sit at a desk, log the moved lobby bench, punch Main Hall East's station, reset the breaker, hide while a harmless Hall Monitor walks past. Offered first on the menu until done.
+- **Captions.** Monster state changes that make a telling sound are captioned with a direction (ahead / behind / left / right / right next to you), within 30 m. Toggle in the Esc menu.
+- **Spectating.** Ghosts press G to cycle through living teammates' views.
+- **End-of-run summary.** Logs, named monsters, stations and catches for each guard over the whole run, and a run MVP in co-op.
+- **More monsters.** The Coach (D3, night 2): once it whistles at you, run until you're out of its sight.
+- **XP by difficulty.** +25% XP per open wing.
+- **Performance.** Static school geometry is merged per material per 20 m cell (draw calls ~2000 → ~700).
+
 ## 12. Technical plan
 
 - **Godot 4**, scripts in GDScript.
