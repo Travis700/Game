@@ -764,6 +764,10 @@ func _start_night(number: int, difficulty: int) -> void:
 	_apply_difficulty(difficulty)
 	shift.begin()
 	_clocked_in = false
+	# A few minutes in, every camera takes a photo to compare against later.
+	get_tree().create_timer(night.seconds_per_minute * 5.0).timeout.connect(func() -> void:
+		if shift.state == Shift.State.ON_SHIFT:
+			cameras.capture_references(night.time_text()))
 	SteamService.set_presence("Night %d of %d" % [number, Night.LAST_NIGHT])
 	if number == 1:
 		_show_first_night_tips()

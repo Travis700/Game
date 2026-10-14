@@ -16,6 +16,7 @@ const BINDINGS := {
 	"use_item": [KEY_G],
 	"push_to_talk": [KEY_V],
 	"radio_talk": [KEY_B],
+	"compare": [KEY_R],
 	"monitor_1": [KEY_1],
 	"monitor_2": [KEY_2],
 	"monitor_3": [KEY_3],
@@ -26,6 +27,7 @@ const JOY_BUTTONS := {
 	"interact": [JOY_BUTTON_A],
 	"flashlight": [JOY_BUTTON_Y],
 	"zoom": [JOY_BUTTON_X],
+	"compare": [JOY_BUTTON_RIGHT_STICK],
 	"sprint": [JOY_BUTTON_LEFT_STICK],
 	"clipboard": [JOY_BUTTON_BACK],
 	"use_item": [JOY_BUTTON_RIGHT_SHOULDER],
@@ -53,7 +55,7 @@ const MOUSE_BINDINGS := {
 const REBINDABLE := [
 	["move_forward", "Walk forward"], ["move_back", "Walk back / stand up"], ["move_left", "Walk left"],
 	["move_right", "Walk right"], ["sprint", "Run"], ["interact", "Use"], ["flashlight", "Flashlight"],
-	["clipboard", "Clipboard"], ["use_item", "Use item"], ["zoom", "Full-screen camera"], ["push_to_talk", "Push to talk"], ["radio_talk", "Talk on the walkie-talkie"],
+	["clipboard", "Clipboard"], ["use_item", "Use item"], ["zoom", "Full-screen camera"], ["compare", "Compare camera with photo"], ["push_to_talk", "Push to talk"], ["radio_talk", "Talk on the walkie-talkie"],
 ]
 const SAVE_PATH := "user://controls.cfg"
 

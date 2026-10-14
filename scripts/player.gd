@@ -280,6 +280,8 @@ func _handle_desk_input(event: InputEvent) -> bool:
 		action = "next"
 	elif event.is_action_pressed("zoom"):
 		action = "zoom"
+	elif event.is_action_pressed("compare"):
+		action = "compare"
 	elif event.is_action_pressed("move_back"):
 		action = "stand"
 	elif event.is_action_pressed("pause") and look_locked:

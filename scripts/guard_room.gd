@@ -32,6 +32,8 @@ var _materials: Array[ShaderMaterial] = []
 var _chairs: Array[Interactable] = []
 var _chair_positions: Array[Vector3] = []
 var _zoomed := -1
+## True while the full-screen view shows the early-night photo instead of the live feed.
+var _comparing := false
 var _focused := -1
 var _installing := -1
 var _install_left := 0.0
@@ -139,6 +141,10 @@ func on_desk_action(action: String) -> void:
 		"zoom":
 			if monitor >= 0:
 				_toggle_zoom(monitor)
+		"compare":
+			if _zoomed < 0 and monitor >= 0:
+				_toggle_zoom(monitor)
+			_toggle_compare()
 		"back":
 			if _zoomed >= 0:
 				_toggle_zoom(_zoomed)
@@ -176,7 +182,25 @@ func _toggle_zoom(monitor: int) -> void:
 	local_guard.look_locked = true
 
 
+## Full screen, flips between the live picture and the photo taken early in the night.
+func _toggle_compare() -> void:
+	if _zoomed < 0:
+		return
+	var camera := assignments[_zoomed]
+	var photo := cameras.reference(camera)
+	if _comparing or photo == null:
+		_comparing = false
+		_show_zoomed_feed()
+		if photo == null:
+			local_guard.show_message("No photo from this camera yet tonight. They're taken a few minutes after midnight.")
+		return
+	_comparing = true
+	hud.show_feed(photo, "PHOTO FROM %s   ·   %s   ·   %s to go back to live" % [
+		cameras.reference_time, cameras.title(camera), _key("compare")])
+
+
 func _show_zoomed_feed() -> void:
+	_comparing = false
 	var camera := assignments[_zoomed]
 	var spectral := _is_spectral(_zoomed)
 	cameras.set_focus(SecurityCameras.key(camera, spectral))
@@ -191,11 +215,11 @@ func _update_controls_hint() -> void:
 	elif local_guard.seated_desk < 0:
 		hud.set_controls("")
 	elif _zoomed >= 0:
-		hud.set_controls("%s / %s  change camera     1-4  other monitors     %s  back to the desk     %s  log it" % [
-			_key("move_left"), _key("move_right"), _key("zoom"), _key("clipboard")])
+		hud.set_controls("%s / %s  change camera     %s  compare with tonight's photo     %s  back     %s  log it" % [
+			_key("move_left"), _key("move_right"), _key("compare"), _key("zoom"), _key("clipboard")])
 	elif _focused >= 0:
-		hud.set_controls("%s / %s  change camera     %s  full screen     1-4  monitor full screen     %s  log     %s  stand up" % [
-			_key("move_left"), _key("move_right"), _key("zoom"), _key("clipboard"), _key("move_back")])
+		hud.set_controls("%s / %s  change camera     %s  full screen     %s  compare with photo     %s  log     %s  stand up" % [
+			_key("move_left"), _key("move_right"), _key("zoom"), _key("compare"), _key("clipboard"), _key("move_back")])
 	else:
 		hud.set_controls("Look at a monitor     1-4  monitor full screen     %s  log     %s  stand up" % [
 			_key("clipboard"), _key("move_back")])

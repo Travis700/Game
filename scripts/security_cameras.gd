@@ -34,6 +34,11 @@ var shown: Array[int] = []
 ## Index of the first portable camera (they come after the school's own).
 var first_portable := 0
 var _portable_on: Array[bool] = []
+## A photo from each camera early in the night, to compare the live picture with
+## ("spot the difference"). Camera index -> ImageTexture, or missing before it's taken.
+var _references: Dictionary = {}
+## When the photos were taken, e.g. "12:05 AM".
+var reference_time := ""
 var _tripods: Array[Node3D] = []
 
 ## Feed key -> SubViewport. Key = camera * 2, plus 1 for the spectral feed.
@@ -83,6 +88,30 @@ func is_open(camera_index: int) -> bool:
 	if camera_index >= first_portable:
 		return _portable_on[camera_index - first_portable]
 	return difficulties[camera_index] <= difficulty
+
+
+## Every computer, early in the night: photographs every open camera's normal picture.
+func capture_references(time_text: String) -> void:
+	_references.clear()
+	reference_time = time_text
+	var wanted: Array[int] = []
+	for i in first_portable:
+		if is_open(i) and is_working(i):
+			wanted.append(i)
+			if key(i, false) != _focus:
+				_feeds[key(i, false)].render_target_update_mode = SubViewport.UPDATE_ONCE
+	# Let them all draw once, then copy the pictures.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	for i in wanted:
+		var image := _feeds[key(i, false)].get_texture().get_image()
+		if image:
+			_references[i] = ImageTexture.create_from_image(image)
+
+
+## The early-night photo for a camera, or null.
+func reference(camera_index: int) -> Texture2D:
+	return _references.get(camera_index)
 
 
 ## The first portable camera nobody has set up yet tonight, or -1.

@@ -192,11 +192,28 @@ func _receive_log(area: String, type: String) -> void:
 	if correct:
 		stats["correct"] += 1
 		logged.append(entry)
+		_log_result(peer, true, "Confirmed: %s, %s.  +%d" % [area, type.to_lower(), CORRECT_LOG_POINTS])
 	elif entry in logged:
 		# Already logged and paid for; a repeat isn't a false report.
 		director.tell(peer, "You've already logged that one.")
 	else:
 		stats["false"] += 1
+		_log_result(peer, false, "Nothing like that in %s.  -%d" % [area, FALSE_REPORT_POINTS])
+
+
+## Host: tells a guard straight away whether their log was right.
+func _log_result(peer: int, correct: bool, text: String) -> void:
+	if peer == multiplayer.get_unique_id():
+		_show_log_result(correct, text)
+	else:
+		_show_log_result.rpc_id(peer, correct, text)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _show_log_result(correct: bool, text: String) -> void:
+	hud.show_message(("✓ " if correct else "✗ ") + text)
+	var tune: Array = [880.0, 1320.0] if correct else [220.0, 165.0]
+	Sfx.play_flat(self, Sfx.notes(tune, 0.1, 0.25, "sine" if correct else "square"))
 
 
 ## Host: tonight's difficulty, from the menu choice or the number of guards.
