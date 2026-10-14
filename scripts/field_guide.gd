@@ -92,6 +92,12 @@ const ENTRIES := {
 		"rule": "It hates light. Catch it in your flashlight beam and it flees into the ceiling.",
 		"rumour": "Something in the science lab's big jar has been moving.",
 	},
+	"Photographer": {
+		"name": "the Photographer", "where": "Main building",
+		"signs": "An old flash camera where its face should be. A high whine as the flash charges.",
+		"rule": "Don't look at it when you hear the whine. Turn away or get out of sight, or it blinds you and comes.",
+		"rumour": "Someone is still taking yearbook pictures, long after the yearbook stopped.",
+	},
 	"Understudy": {
 		"name": "the Understudy", "where": "Science wing",
 		"signs": "An extra guard with no face behind the visor, following one of you around. It talks in your teammates' voices.",

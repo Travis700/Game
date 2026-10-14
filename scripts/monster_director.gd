@@ -7,6 +7,8 @@ extends Node3D
 ## classroom wing's monsters need difficulty 2, the science wing's need difficulty 3. The host runs all of this; monsters
 ## are spawned on every computer through the MonsterSpawner.
 
+## A guard's screen flashes (e.g. the Photographer's flash). Main shows it on their computer.
+signal screen_flashed(peer_id: int, color: Color, seconds: float)
 signal guard_caught(peer_id: int, by: String, from: Vector3)
 signal message_for(peer_id: int, text: String)
 ## Something everyone hears, e.g. the Principal on the intercom. `sound` is "" or "intercom".
@@ -39,6 +41,7 @@ const ROSTER := {
 	"self_portrait": {"name": "The Self-Portrait", "home": "Art Room", "night": 2},
 	"specimen": {"name": "The Specimen", "home": "Science Lab", "night": 3},
 	"understudy": {"name": "The Understudy", "home": "Locker Rooms", "night": 4},
+	"photographer": {"name": "The Photographer", "home": "Lobby", "night": 3},
 }
 ## The intercom: in-game minutes between the Principal's summonses, and real seconds to answer.
 const SUMMON_EVERY := Vector2(60.0, 100.0)
@@ -226,6 +229,8 @@ func _start(kind: String, minutes: float) -> void:
 			portrait.activate(minutes)
 		"specimen":
 			spawn("specimen", Vector3(58, 0, -6))
+		"photographer":
+			spawn("photographer", Vector3(0, 0, 15))
 		"understudy":
 			spawn("understudy", Vector3(50, 0, 15))
 
@@ -296,6 +301,8 @@ func _create_monster(data: Dictionary) -> Node:
 			monster = Librarian.new()
 		"nurse":
 			monster = Nurse.new()
+		"photographer":
+			monster = Photographer.new()
 		"crossing_guard":
 			monster = CrossingGuard.new()
 		"specimen":
@@ -529,6 +536,10 @@ func kill(guard: Guard, by: String, from := Vector3.INF) -> void:
 
 
 ## Sends a message to one player's screen.
+func flash_screen(peer_id: int, color: Color, seconds: float) -> void:
+	screen_flashed.emit(peer_id, color, seconds)
+
+
 func tell(peer_id: int, text: String) -> void:
 	message_for.emit(peer_id, text)
 

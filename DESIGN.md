@@ -93,6 +93,7 @@ Each player has their **own clipboard and their own points.**
 | 6 | The Other Cleaner | Roams | D1 | 5 | A fake night cleaner with no cart. Log it and it leaves. |
 | 7 | The Student | Main hallway | D1 | 5 | A kid asking you to follow. Usually a trap; sometimes real. |
 | 8 | The Ghost | Roams | D1 | 5 | Only on spectral monitors; knocks out cameras; an extra name on the time clock. |
+| 8b | The Photographer | Main building | D1 | 3 | Charges a flash when it sees you; looking at it when it fires blinds you and it rushes you. Don't watch it. |
 | 9 | The Substitute | Classroom wing | D2 | 1 | Takes the register: answer "Here!" with E, or get detention. |
 | 10 | The Librarian | Library | D2 | 2 | Hates light and noise: shushes, then hunts until it's dark and quiet. |
 | 11 | The Nurse | Nurse's office | D2 | 3 | Slowly follows any guard who's on their own. Stick together. |

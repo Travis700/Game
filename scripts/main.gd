@@ -160,6 +160,11 @@ func _ready() -> void:
 	lockers.director = director
 	director.guard_caught.connect(_on_guard_caught)
 	director.message_for.connect(_tell)
+	director.screen_flashed.connect(func(peer_id: int, color: Color, seconds: float) -> void:
+		if peer_id == multiplayer.get_unique_id():
+			_flash_screen(color, seconds)
+		elif peer_id in multiplayer.get_peers():
+			_flash_screen.rpc_id(peer_id, color, seconds))
 	director.announcement.connect(func(text: String, sound: String) -> void: _announce.rpc(text, sound))
 	director.camera_signal_changed.connect(func(index: int, working: bool) -> void: _camera_signal.rpc(index, working))
 	director.bell_changed.connect(func(ringing: bool) -> void: _set_bell.rpc(ringing))
@@ -902,6 +907,11 @@ func _apply_difficulty(difficulty: int, open_doors := true) -> void:
 	clipboard.set_areas(anomalies.areas(difficulty))
 	if multiplayer.is_server():
 		guard_room.fit_to_open_cameras()
+
+
+@rpc("authority", "call_remote", "reliable")
+func _flash_screen(color: Color, seconds: float) -> void:
+	hud.flash(color, seconds)
 
 
 @rpc("authority", "call_remote", "reliable")

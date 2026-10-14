@@ -10,7 +10,7 @@ extends Node
 
 ## Monster states that mean "it's coming for someone".
 const CHASE_STATES: Array[String] = ["chase", "hunt", "detention", "reveal", "charge", "moving", "follow",
-	"crawl", "step1", "step2", "step3", "step4"]
+	"crawl", "step1", "step2", "step3", "step4", "rush", "charging"]
 const HEARTBEAT_RANGE := 16.0
 const DRONE_RANGE := 22.0
 const FLICKER_RANGE := 9.0
