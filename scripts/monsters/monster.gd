@@ -231,7 +231,7 @@ func distance_to_guard(guard: Guard) -> float:
 func catch_nearby() -> bool:
 	for guard in director.targetable_guards():
 		if distance_to_guard(guard) < KILL_DISTANCE:
-			director.kill(guard, display_name)
+			director.kill(guard, display_name, global_position)
 			return true
 	return false
 

@@ -14,6 +14,8 @@ const Report := preload("res://scripts/report.gd")
 const VendingUI := preload("res://scripts/vending_ui.gd")
 const KeypadUI := preload("res://scripts/keypad_ui.gd")
 const PauseMenu := preload("res://scripts/pause_menu.gd")
+## Real seconds between the last guard being caught and the night's results.
+const SCARE_SECONDS := 2.0
 
 const PORT := 7777
 const MAX_GUARDS := 4
@@ -49,6 +51,7 @@ var keypad: CanvasLayer
 var ambience: Ambience
 var voice: VoiceChat
 var career: Career
+var dread: Dread
 var pause_menu: CanvasLayer
 var spawner: MultiplayerSpawner
 var _local_guard: Guard
@@ -168,6 +171,12 @@ func _ready() -> void:
 	voice.name = "Voice"
 	voice.director = director
 	add_child(voice)
+
+	dread = Dread.new()
+	dread.name = "Dread"
+	dread.director = director
+	dread.players = players
+	add_child(dread)
 
 	career = Career.new()
 	career.name = "Career"
@@ -680,6 +689,7 @@ func on_local_guard_ready(guard: Guard) -> void:
 	guard_room.local_guard = guard
 	cameras.viewer = guard
 	ambience.listener = guard
+	dread.local_guard = guard
 	voice.local_guard = guard
 	voice.set_active(true)
 
@@ -833,19 +843,22 @@ func _open_clipboard() -> void:
 # --- Caught, ghosts and totems ---------------------------------------------------------------
 
 ## Host: a monster caught a guard.
-func _on_guard_caught(peer_id: int, by: String) -> void:
+func _on_guard_caught(peer_id: int, by: String, from := Vector3.INF) -> void:
 	var guard := players.get_node_or_null(str(peer_id)) as Guard
 	if guard == null or guard.is_dead:
 		return
 	night.record_death()
 	career.add_stat(peer_id, "times_caught")
-	_guard_died.rpc(peer_id, by, guard.global_position)
+	_guard_died.rpc(peer_id, by, guard.global_position, from)
 	if director.living_guards().is_empty():
-		night.fail_night()
+		# Give the last guard's jumpscare time to play before the night's results cover it.
+		get_tree().create_timer(SCARE_SECONDS).timeout.connect(func() -> void:
+			if director.living_guards().is_empty():
+				night.fail_night())
 
 
 @rpc("authority", "call_local", "reliable")
-func _guard_died(peer_id: int, by: String, at: Vector3) -> void:
+func _guard_died(peer_id: int, by: String, at: Vector3, from := Vector3.INF) -> void:
 	var guard := players.get_node_or_null(str(peer_id)) as Guard
 	if guard == null:
 		return
@@ -855,7 +868,8 @@ func _guard_died(peer_id: int, by: String, at: Vector3) -> void:
 		guard_room.leave_desk()
 		_close_all_ui()
 		guard.input_blocked = false
-		hud.flash(Color(0.6, 0.0, 0.0, 0.85), 2.0)
+		dread.jumpscare(from)
+		hud.flash(Color(0.6, 0.0, 0.0, 0.4), 2.0)
 		hud.set_ghost(true)
 		hud.show_message("You were caught by %s." % by)
 		Sfx.play_flat(self, Sfx.notes([110.0, 104.0, 98.0, 92.0], 0.35, 0.4, "saw"))

@@ -94,6 +94,8 @@ func is_open(camera_index: int) -> bool:
 func capture_references(time_text: String) -> void:
 	_references.clear()
 	reference_time = time_text
+	if DisplayServer.get_name() == "headless":
+		return  # Nothing is drawn, so there's nothing to photograph.
 	var wanted: Array[int] = []
 	for i in first_portable:
 		if is_open(i) and is_working(i):

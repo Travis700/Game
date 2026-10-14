@@ -7,7 +7,7 @@ extends Node3D
 ## classroom wing's monsters need difficulty 2, the science wing's need difficulty 3. The host runs all of this; monsters
 ## are spawned on every computer through the MonsterSpawner.
 
-signal guard_caught(peer_id: int, by: String)
+signal guard_caught(peer_id: int, by: String, from: Vector3)
 signal message_for(peer_id: int, text: String)
 ## Something everyone hears, e.g. the Principal on the intercom. `sound` is "" or "intercom".
 signal announcement(text: String, sound: String)
@@ -511,9 +511,10 @@ func minutes() -> float:
 	return _minutes
 
 
-func kill(guard: Guard, by: String) -> void:
+## `from` is where the thing that caught them is (for the jumpscare), or Vector3.INF.
+func kill(guard: Guard, by: String, from := Vector3.INF) -> void:
 	if not guard.is_dead:
-		guard_caught.emit(guard.name.to_int(), by)
+		guard_caught.emit(guard.name.to_int(), by, from)
 
 
 ## Sends a message to one player's screen.
