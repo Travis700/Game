@@ -57,6 +57,7 @@ var career: Career
 var dread: Dread
 var rounds: Rounds
 var _siren: AudioStreamPlayer
+var captions: Captions
 var hiding: Hiding
 ## Host: when each ghost may next leave a cold spot.
 var _ghost_ping_at: Dictionary = {}
@@ -322,6 +323,9 @@ func _ready() -> void:
 	nerve.hud = hud
 	add_child(nerve)
 	night.nerve = nerve
+	captions = Captions.new()
+	captions.name = "Captions"
+	add_child(captions)
 	director.nerve = nerve
 	dread.night = night
 	add_child(night)
@@ -823,6 +827,7 @@ func on_local_guard_ready(guard: Guard) -> void:
 	guard_room.local_guard = guard
 	cameras.viewer = guard
 	ambience.listener = guard
+	captions.local_guard = guard
 	night.nerve.local_guard = guard
 	dread.local_guard = guard
 	voice.local_guard = guard

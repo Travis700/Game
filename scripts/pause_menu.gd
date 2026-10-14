@@ -138,6 +138,12 @@ func _ready() -> void:
 		if voice:
 			voice.send_mimic_consent())
 	voice_grid.add_child(mimic)
+	voice_grid.add_child(_small("Captions"))
+	var captions := CheckBox.new()
+	captions.text = "Show sound captions"
+	captions.button_pressed = Profile.captions
+	captions.toggled.connect(func(on: bool) -> void: Profile.captions = on)
+	voice_grid.add_child(captions)
 
 	column.add_child(_label("Graphics"))
 	var graphics := GridContainer.new()

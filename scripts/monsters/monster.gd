@@ -27,6 +27,7 @@ var state := "":
 		state = value
 		if is_inside_tree():
 			_on_state_changed(value)
+			get_tree().call_group("captions", "heard", get_script().get_global_name(), value, global_position)
 
 ## Render layers for the monster's body, e.g. the Ghost only shows on spectral camera feeds.
 var visual_layers := 1

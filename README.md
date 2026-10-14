@@ -171,6 +171,11 @@ up you can't hear each other. Ghosts hear the living, but only other ghosts hear
   memory only, never saved), and the Understudy plays one back now and then, in that guard's voice,
   from where it's standing. Untick **May copy my voice** in the Esc menu to opt out.
 
+## Captions
+
+Monsters' telling noises (a whistle, giggling, a flash charging, skittering...) are captioned at the bottom
+right with which way they came from, e.g. "[Whistle blast, behind you]". Turn them off in the Esc menu.
+
 ## Sound
 
 Everything is generated in code for now (no audio files): footsteps for every guard and monster
