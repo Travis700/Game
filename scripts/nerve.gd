@@ -15,6 +15,8 @@ const BASE_DRAIN := 0.04
 const ALONE_DRAIN := 0.12
 const DARK_DRAIN := 0.5
 const MONSTER_DRAIN := 0.7
+## Crouched in the dark in a cupboard, listening.
+const HIDING_DRAIN := 1.0
 const GUARD_ROOM_GAIN := 0.5
 const COMPANY_GAIN := 0.08
 const MONSTER_RANGE := 12.0
@@ -29,6 +31,7 @@ const SHAKEN_REACH := 1.3
 var director: MonsterDirector
 var players: Node3D
 var power: Power
+var hiding: Hiding
 var hud: CanvasLayer
 ## The local guard. Set by Main.
 var local_guard: Guard
@@ -73,11 +76,25 @@ func update(delta: float) -> void:
 			if monster.global_position.distance_to(at) < MONSTER_RANGE:
 				change -= MONSTER_DRAIN
 				break
+		if guard.hiding:
+			change -= HIDING_DRAIN
 		levels[peer] = clampf(nerve + change * delta, 0.0, MAX)
+		if guard.hiding and levels[peer] <= 0.0:
+			_panic(guard)
 	_send_timer -= delta
 	if _send_timer <= 0.0:
 		_send_timer = 1.0
 		_send_all()
+
+
+## Host: a guard's nerve gave out in a cupboard. Out they come, screaming, and everything hears.
+func _panic(guard: Guard) -> void:
+	var peer := guard.name.to_int()
+	if hiding:
+		hiding._set_hidden.rpc(peer, -1)
+	director.report_voice(peer, 1.0)
+	director.tell(peer, "You can't stand it any longer. You burst out of the cupboard, screaming.")
+	levels[peer] = 15.0
 
 
 ## Host: a guard's nerve goes up (coffee) or down (a scare).

@@ -174,9 +174,13 @@ func plan_night(number: int) -> void:
 	wanted += clampi(number - MONSTERS_PER_NIGHT.size(), 0, 5)
 	var count := mini(wanted, pool.size())
 	for i in count:
-		tonight.append({"kind": pool[i], "at": randf_range(25.0, 150.0)})
+		tonight.append({"kind": pool[i], "at": randf_range(25.0, 220.0)})
 		if pool[i] == "mascot":
 			anomalies.reserved_props.append("mascot")
+	# From night 2, one of them comes in late (around 4 AM), so the night builds to the end.
+	if number >= 2 and count >= 2:
+		tonight[count - 1]["at"] = randf_range(235.0, 255.0)
+		tonight[count - 1]["late"] = true
 	# The Bell rings once or twice a night from night 4.
 	_bell_times.clear()
 	if number >= BELL_FROM_NIGHT:
@@ -205,6 +209,8 @@ func update(minutes: float, delta: float) -> void:
 			continue
 		plan["started"] = true
 		_start(plan["kind"], minutes)
+		if plan.get("late", false):
+			announcement.emit("Something else just came into the building. It's not on anyone's rota.", "")
 	lockers.update(minutes)
 	portrait.update(minutes)
 	_update_bell(minutes, delta)
