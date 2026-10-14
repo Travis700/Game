@@ -54,6 +54,8 @@ var _local_guard: Guard
 var _mode := ""
 ## True once this player has clocked in for the coming night (before it starts).
 var _clocked_in := false
+## Command-line test sessions (--host/--join) always use direct connections, even with Steam.
+var _direct_only := false
 
 
 func _ready() -> void:
@@ -245,6 +247,13 @@ func _ready() -> void:
 		if menu.confirm_new_run():
 			_host())
 	menu.join_requested.connect(_join)
+	SteamService.lobby_ready.connect(_on_steam_lobby_ready)
+	SteamService.lobby_failed.connect(_on_steam_lobby_failed)
+	SteamService.invite_accepted.connect(_on_steam_invite)
+	SteamService.set_presence("In the main menu")
+	menu.set_steam_status(SteamService.available, SteamService.user_name)
+	if SteamService.pending_lobby != 0 and _mode == "":
+		_on_steam_invite.call_deferred(SteamService.pending_lobby)
 	menu.show_status(_menu_message)
 	_menu_message = ""
 
@@ -326,9 +335,11 @@ func _start_from_command_line() -> void:
 		if arg == "--solo":
 			_play_solo()
 		elif arg == "--host":
+			_direct_only = true
 			_use_test_window(0)
 			_host()
 		elif arg.begins_with("--join"):
+			_direct_only = true
 			_use_test_window(1)
 			_join(arg.get_slice("=", 1) if "=" in arg else "127.0.0.1")
 		elif arg == "--fast-night":
@@ -359,31 +370,48 @@ func _play_solo() -> void:
 	director.bake_navigation()
 	_start_run()
 	_enter_school()
-	_spawn_guard(1, Profile.employee_number)
+	_spawn_guard(1, Profile.employee_number, _player_name())
 
 
 func _host() -> void:
+	# On Steam, host through a Steam lobby (friends can join with its code or an invite).
+	if SteamService.available and not _direct_only:
+		menu.set_busy(true)
+		menu.show_status("Creating a Steam lobby...")
+		SteamService.host_lobby(MAX_GUARDS, true)
+		return
 	var peer := ENetMultiplayerPeer.new()
 	var error := peer.create_server(PORT, MAX_GUARDS - 1)
 	if error != OK:
 		menu.show_status("Couldn't host on port %d. Is another copy of the game already hosting?" % PORT)
 		return
 	multiplayer.multiplayer_peer = peer
-	_mode = "Hosting"
 	_room_code = RoomCode.from_address(RoomCode.local_address())
+	_begin_hosting()
+	print("[net] Hosting on port %d" % PORT)
+
+
+## Starts the session once the host's multiplayer peer is ready (direct or Steam).
+func _begin_hosting() -> void:
+	_mode = "Hosting"
+	menu.set_busy(false)
 	director.bake_navigation()
 	_start_run()
 	_enter_school()
-	_spawn_guard(1, Profile.employee_number)
-	print("[net] Hosting on port %d" % PORT)
+	_spawn_guard(1, Profile.employee_number, _player_name())
 
 
 func _join(typed: String) -> void:
 	if typed == "":
 		menu.show_status("Type the host's room code or address first.")
 		return
-	var address := RoomCode.resolve(typed)
 	_password = menu.options()["password"]
+	if SteamService.available and SteamService.is_lobby_code(typed):
+		menu.set_busy(true)
+		menu.show_status("Looking for Steam lobby %s..." % typed.strip_edges().to_upper())
+		SteamService.join_by_code(typed)
+		return
+	var address := RoomCode.resolve(typed)
 	var peer := ENetMultiplayerPeer.new()
 	var error := peer.create_client(address, PORT)
 	if error != OK:
@@ -429,10 +457,44 @@ func _start_run() -> void:
 	print("[run] Continuing the saved run: ", RunSave.describe(saved))
 
 
+## The name shown over your guard: your Steam name, or nothing (it then shows "Guard 2").
+func _player_name() -> String:
+	return SteamService.user_name if SteamService.available else ""
+
+
+## Steam: our lobby is ready, with its multiplayer peer.
+func _on_steam_lobby_ready(peer: MultiplayerPeer, is_host: bool) -> void:
+	multiplayer.multiplayer_peer = peer
+	_room_code = SteamService.lobby_code
+	if is_host:
+		_begin_hosting()
+		print("[net] Hosting Steam lobby %s" % _room_code)
+	else:
+		menu.show_status("Connecting to the host over Steam...")
+
+
+func _on_steam_lobby_failed(reason: String) -> void:
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
+	menu.set_busy(false)
+	menu.show_status(reason)
+
+
+## Steam: a friend's invite was accepted (or the game was started from one).
+func _on_steam_invite(lobby_id: int) -> void:
+	SteamService.pending_lobby = 0
+	if _mode != "":
+		_show_local_message("Leave this game first (Esc → Leave) to join your friend's.")
+		return
+	_password = menu.options()["password"]
+	menu.set_busy(true)
+	menu.show_status("Joining your friend's game...")
+	SteamService.join_lobby(lobby_id)
+
+
 func _on_connected_to_server() -> void:
 	_mode = "Connected"
 	_enter_school()
-	_register_employee.rpc_id(1, Profile.employee_number, _password)
+	_register_employee.rpc_id(1, Profile.employee_number, _password, _player_name())
 	print("[net] Joined as peer %d" % multiplayer.get_unique_id())
 
 
@@ -453,6 +515,7 @@ func _enter_school() -> void:
 
 func _back_to_menu(message: String) -> void:
 	_menu_message = message
+	SteamService.leave_lobby()
 	get_tree().paused = false
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	get_tree().reload_current_scene()
@@ -474,7 +537,7 @@ func _on_peer_connected(peer_id: int) -> void:
 
 ## Host: a player who just joined shows their badge. Their guard spawns with it.
 @rpc("any_peer", "call_remote", "reliable")
-func _register_employee(badge: int, password: String) -> void:
+func _register_employee(badge: int, password: String, player_name := "") -> void:
 	var peer_id := multiplayer.get_remote_sender_id()
 	if not multiplayer.is_server() or players.has_node(str(peer_id)):
 		return
@@ -490,7 +553,7 @@ func _register_employee(badge: int, password: String) -> void:
 	# Two copies of the game on one computer share a badge. Lend the second one a spare.
 	while badge < 1000 or _badge_in_use(badge):
 		badge = randi_range(1000, 9999)
-	_spawn_guard(peer_id, badge)
+	_spawn_guard(peer_id, badge, player_name)
 	shop.send_state_to(peer_id)
 	doors.send_state_to(peer_id)
 	_sync_session.rpc_id(peer_id, night.number, night.difficulty)
@@ -520,10 +583,11 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 ## Host only. The spawner runs _create_guard with the same data on every computer,
 ## including players who join later.
-func _spawn_guard(peer_id: int, badge: int) -> void:
+func _spawn_guard(peer_id: int, badge: int, player_name := "") -> void:
 	# Personal upgrades go in the spawn data so every computer builds the guard with them.
 	var personal: Array = night.saved_personal.get(str(badge), [])
-	spawner.spawn({"peer_id": peer_id, "slot": _free_slot(), "badge": badge, "personal": personal})
+	spawner.spawn({"peer_id": peer_id, "slot": _free_slot(), "badge": badge, "personal": personal,
+			"name": player_name.left(24)})
 	night.restore_guard(peer_id, badge)
 
 
@@ -532,6 +596,7 @@ func _create_guard(data: Dictionary) -> Node:
 	guard.name = str(data["peer_id"])
 	guard.slot = data["slot"]
 	guard.employee_number = data.get("badge", 0)
+	guard.player_name = data.get("name", "")
 	guard.bright_flashlight = "flashlight" in data.get("personal", [])
 	guard.has_radio = "radio" in data.get("personal", [])
 	guard.position = SPAWN_POINT + Vector3((guard.slot - 2.5) * 1.4, 0, 0)
@@ -685,6 +750,7 @@ func _start_night(number: int, difficulty: int) -> void:
 	_apply_difficulty(difficulty)
 	shift.begin()
 	_clocked_in = false
+	SteamService.set_presence("Night %d of %d" % [number, Night.LAST_NIGHT])
 	if number == 1:
 		_show_first_night_tips()
 

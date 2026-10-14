@@ -42,6 +42,8 @@ var is_running := false
 var slot := 1
 ## The number on this guard's badge, typed into the time clock. Set by the host when it spawns.
 var employee_number := 0
+## The player's name (their Steam name), or "" to show "Guard 2".
+var player_name := ""
 ## The guard room desk this guard is sitting at, or -1 when standing.
 var seated_desk := -1
 ## Mouse look is paused while a camera feed fills the screen.
@@ -80,7 +82,7 @@ func _ready() -> void:
 	var uniform := StandardMaterial3D.new()
 	uniform.albedo_color = uniform_color()
 	body_mesh.material_override = uniform
-	name_tag.text = "Guard %d  #%04d" % [slot, employee_number]
+	name_tag.text = _tag_text()
 
 	_footsteps = Footsteps.new()
 	_footsteps.name = "Footsteps"
@@ -135,8 +137,14 @@ func set_bright_flashlight(on: bool) -> void:
 
 ## Shows a "talking" marker on the name tag while this guard's voice is coming through.
 func show_talking(talking: bool) -> void:
-	var base := "Guard %d  #%04d" % [slot, employee_number]
-	name_tag.text = base + ("\n((( talking )))" if talking else "")
+	name_tag.text = _tag_text() + ("\n((( talking )))" if talking else "")
+
+
+## "Guard 2  #1637", or "Sam (Guard 2)" with a Steam name.
+func _tag_text() -> String:
+	if player_name != "":
+		return "%s  (Guard %d)" % [player_name, slot]
+	return "Guard %d  #%04d" % [slot, employee_number]
 
 
 func uniform_color() -> Color:

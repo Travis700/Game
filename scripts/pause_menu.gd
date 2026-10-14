@@ -17,6 +17,7 @@ var _sensitivity: HSlider
 var _volume: HSlider
 var _fullscreen: CheckBox
 var _leave: Button
+var _invite: Button
 ## Set by Main, for the microphone level meter and to apply the voice settings.
 var voice: VoiceChat
 var _mic_meter: ProgressBar
@@ -160,6 +161,8 @@ func _ready() -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED))
 	column.add_child(_fullscreen)
 
+	_invite = _button("Invite Steam friends", func() -> void: SteamService.invite_friends())
+	column.add_child(_invite)
 	column.add_child(_button("Change keys...", func() -> void:
 		column.visible = false
 		_keys.visible = true))
@@ -177,6 +180,7 @@ func open(solo: bool, hosting: bool) -> void:
 	_fullscreen.set_pressed_no_signal(DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN)
 	_leave.text = "End the session (everyone leaves)" if hosting else "Leave to the main menu"
 	_show_main()
+	_invite.visible = SteamService.available and SteamService.lobby_id != 0
 	visible = true
 	is_open = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE

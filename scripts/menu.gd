@@ -16,6 +16,7 @@ const DIFFICULTIES := [
 const HowToPlay := preload("res://scripts/how_to_play.gd")
 
 var _how_to_play: CanvasLayer
+var _steam_label: Label
 var _status: Label
 var _address: LineEdit
 var _password: LineEdit
@@ -61,6 +62,11 @@ func _ready() -> void:
 	badge.add_theme_font_size_override("font_size", 18)
 	badge.add_theme_color_override("font_color", Color(0.7, 0.9, 1.0))
 	column.add_child(badge)
+	_steam_label = Label.new()
+	_steam_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_steam_label.add_theme_font_size_override("font_size", 15)
+	_steam_label.modulate.a = 0.7
+	column.add_child(_steam_label)
 
 	column.add_child(_spacer(10))
 	_add_run_options(column)
@@ -180,6 +186,15 @@ func confirm_new_run() -> bool:
 	_warned_about_save = true
 	show_status("You have a saved run (%s). Starting a new one will replace it when the first night begins. Click again to start anyway, or tick \"Continue saved run\"." % RunSave.describe(RunSave.read()))
 	return false
+
+
+## Shows whether Steam is on, and changes the join hint to match.
+func set_steam_status(on: bool, user_name: String) -> void:
+	_steam_label.text = ("Steam: signed in as %s. Hosting makes a Steam lobby; friends join with its 6-letter code or an invite." % user_name) if on \
+			else "Steam isn't running: playing over direct connections."
+	if on:
+		_address.text = ""
+		_address.placeholder_text = "Lobby code (or a host's address)"
 
 
 func show_status(text: String) -> void:
