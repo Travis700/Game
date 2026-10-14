@@ -65,6 +65,8 @@ var _direct_only := false
 
 
 func _ready() -> void:
+	# A daily shift seeds the random numbers; leaving it early mustn't make the next run predictable.
+	randomize()
 	add_to_group("game")
 	var environment := _make_environment()
 
