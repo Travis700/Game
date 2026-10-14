@@ -191,7 +191,8 @@ on your clipboard as "Monster" in that area for points.
 The real **night cleaner** works every night pushing a mop cart. They're harmless, and logging them is a false report.
 
 **Getting caught:** you become a ghost. You can walk around and watch, but can't use anything, and
-only other ghosts can see you. Each death costs every guard 50 points. If the whole team is caught,
+only other ghosts can see you. Press E to leave a cold spot where you're looking: a blue glow and a
+chill the living can see, so you can still point things out to them. Each death costs every guard 50 points. If the whole team is caught,
 the run starts over from night 1.
 
 **Revive totems:** three glowing stones are hidden around the school each night. A living guard can

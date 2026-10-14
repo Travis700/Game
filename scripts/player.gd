@@ -15,6 +15,8 @@ signal clipboard_requested
 signal pause_requested
 ## G: use or place whatever the guard is carrying.
 signal item_use_requested
+## E as a ghost: leave a cold spot where you're looking, for the living to see.
+signal ghost_ping_requested(at: Vector3)
 
 const WALK_SPEED := 3.2
 const SPRINT_SPEED := 5.6
@@ -388,6 +390,7 @@ func _update_prompt() -> void:
 
 func _interact() -> void:
 	if is_dead:
+		_ghost_ping()
 		return
 	var target := focused_interactable()
 	if target and target.hold_seconds > 0.0:
@@ -395,6 +398,17 @@ func _interact() -> void:
 		_hold_time = 0.0
 	elif target:
 		target.interact(self)
+
+
+## Where a ghost is looking: the first thing within 25 metres, or 25 metres out.
+func _ghost_ping() -> void:
+	var from := camera.global_position
+	var to := from - camera.global_basis.z * 25.0
+	var query := PhysicsRayQueryParameters3D.create(from, to, 1)
+	query.exclude = [get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	var at: Vector3 = hit["position"] + (hit["normal"] as Vector3) * 0.3 if not hit.is_empty() else to
+	ghost_ping_requested.emit(at)
 
 
 ## Counts up while E stays held on the same thing, and uses it once it's been held long enough.

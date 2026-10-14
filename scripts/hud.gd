@@ -107,7 +107,7 @@ func _ready() -> void:
 	add_child(_ghost_tint)
 	_ghost_note = _make_label(20, HORIZONTAL_ALIGNMENT_CENTER, VERTICAL_ALIGNMENT_TOP)
 	_ghost_note.offset_top = 76
-	_ghost_note.text = "You're a ghost. A teammate can try to bring you back at a revive totem."
+	_ghost_note.text = "You're a ghost. A teammate can try to bring you back at a revive totem.\nPress E to leave a cold spot where you're looking: the living can see it."
 	_ghost_note.add_theme_color_override("font_color", Color(0.75, 0.85, 1.0))
 	_ghost_note.visible = false
 

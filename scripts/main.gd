@@ -14,6 +14,9 @@ const Report := preload("res://scripts/report.gd")
 const VendingUI := preload("res://scripts/vending_ui.gd")
 const KeypadUI := preload("res://scripts/keypad_ui.gd")
 const PauseMenu := preload("res://scripts/pause_menu.gd")
+## Ghosts' cold spots: how often each ghost can leave one, and how long one lasts.
+const GHOST_PING_EVERY := 4.0
+const GHOST_PING_SECONDS := 6.0
 ## Real seconds between the last guard being caught and the night's results.
 const SCARE_SECONDS := 2.0
 
@@ -53,6 +56,8 @@ var voice: VoiceChat
 var career: Career
 var dread: Dread
 var rounds: Rounds
+## Host: when each ghost may next leave a cold spot.
+var _ghost_ping_at: Dictionary = {}
 var power: Power
 var pause_menu: CanvasLayer
 var spawner: MultiplayerSpawner
@@ -758,6 +763,11 @@ func on_local_guard_ready(guard: Guard) -> void:
 	guard.message_shown.connect(hud.show_message)
 	guard.desk_action.connect(guard_room.on_desk_action)
 	guard.clipboard_requested.connect(_open_clipboard)
+	guard.ghost_ping_requested.connect(func(at: Vector3) -> void:
+		if multiplayer.is_server():
+			_request_ghost_ping(at)
+		else:
+			_request_ghost_ping.rpc_id(1, at))
 	guard.item_use_requested.connect(func() -> void:
 		if not guard_room.try_install():
 			shop.request_use())
@@ -909,6 +919,55 @@ func _apply_difficulty(difficulty: int, open_doors := true) -> void:
 	clipboard.set_areas(anomalies.areas(difficulty))
 	if multiplayer.is_server():
 		guard_room.fit_to_open_cameras()
+
+
+## Host: a ghost left a cold spot. One every few seconds each, so it can't be spammed.
+@rpc("any_peer", "call_remote", "reliable")
+func _request_ghost_ping(at: Vector3) -> void:
+	var peer := multiplayer.get_remote_sender_id()
+	if peer == 0:
+		peer = multiplayer.get_unique_id()
+	var guard := players.get_node_or_null(str(peer)) as Guard
+	var now := Time.get_ticks_msec() / 1000.0
+	if guard == null or not guard.is_dead or now < float(_ghost_ping_at.get(peer, 0.0)):
+		return
+	if shift.state != Shift.State.ON_SHIFT or at.distance_to(guard.global_position) > 30.0:
+		return
+	_ghost_ping_at[peer] = now + GHOST_PING_EVERY
+	_ghost_ping.rpc(at, guard.slot)
+
+
+## Every computer: a cold blue glow that fades, and a chill. The living see it too.
+@rpc("authority", "call_local", "reliable")
+func _ghost_ping(at: Vector3, slot: int) -> void:
+	var spot := Node3D.new()
+	add_child(spot)
+	spot.global_position = at
+	var light := OmniLight3D.new()
+	light.light_color = Color(0.45, 0.7, 1.0)
+	light.light_energy = 2.5
+	light.omni_range = 4.0
+	spot.add_child(light)
+	var orb := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.18
+	sphere.height = 0.36
+	orb.mesh = sphere
+	var glow := StandardMaterial3D.new()
+	glow.albedo_color = Color(0.6, 0.85, 1.0, 0.6)
+	glow.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glow.emission_enabled = true
+	glow.emission = Color(0.5, 0.8, 1.0)
+	glow.emission_energy_multiplier = 3.0
+	orb.material_override = glow
+	spot.add_child(orb)
+	Sfx.play_at(spot, Sfx.notes([1318.0, 1244.0, 1175.0], 0.25, 0.12, "sine"), -4.0, 25.0)
+	var fade := create_tween()
+	fade.tween_property(light, "light_energy", 0.0, GHOST_PING_SECONDS)
+	fade.parallel().tween_property(orb, "scale", Vector3.ONE * 0.2, GHOST_PING_SECONDS)
+	fade.tween_callback(spot.queue_free)
+	if _local_guard and not _local_guard.is_dead and _local_guard.global_position.distance_to(at) < 25.0:
+		hud.show_message("A cold spot. Guard %d is trying to tell you something." % slot)
 
 
 @rpc("authority", "call_remote", "reliable")
