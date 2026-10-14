@@ -191,24 +191,41 @@ func _update_controls_hint() -> void:
 	elif local_guard.seated_desk < 0:
 		hud.set_controls("")
 	elif _zoomed >= 0:
-		hud.set_controls("A / D  change camera     1-4  other monitors     Space  back to the desk")
+		hud.set_controls("A / D  change camera     1-4  other monitors     Space  back to the desk     Tab  log it")
 	elif _focused >= 0:
-		hud.set_controls("A / D  change camera     Space  full screen     1-4  monitor full screen     S  stand up")
+		hud.set_controls("A / D  change camera     Space  full screen     1-4  monitor full screen     Tab  log     S  stand up")
 	else:
-		hud.set_controls("Look at a monitor     1-4  monitor full screen     S  stand up")
+		hud.set_controls("Look at a monitor     1-4  monitor full screen     Tab  log     S  stand up")
 
 
 func _on_chair_used(by: Node, desk: int) -> void:
 	if by != local_guard or local_guard.seated_desk >= 0 or _installing >= 0:
 		return
-	if _can_install_at(desk):
-		_installing = desk
-		_install_left = INSTALL_SECONDS
-		return
 	if occupants[desk] != 0:
 		local_guard.show_message("Someone's already sitting there.")
 		return
 	request_sit(desk)
+
+
+## G while carrying the spectral camera kit: starts installing it at the nearest desk.
+## Returns false if you're not carrying the kit (so G does its usual thing).
+func try_install() -> bool:
+	if shop == null or shop.local_item != "camera_kit" or local_guard == null:
+		return false
+	if _installing >= 0 or local_guard.seated_desk >= 0:
+		return true
+	for desk in _chairs.size():
+		if local_guard.global_position.distance_to(_chair_positions[desk]) < INSTALL_REACH:
+			if upgraded[desk]:
+				local_guard.show_message("Desk %d already has the spectral kit." % (desk + 1))
+			elif occupants[desk] != 0:
+				local_guard.show_message("Someone's sitting at desk %d." % (desk + 1))
+			else:
+				_installing = desk
+				_install_left = INSTALL_SECONDS
+			return true
+	local_guard.show_message("Stand by one of the guard room desk chairs to install it.")
+	return true
 
 
 func _stand_up() -> void:
@@ -227,7 +244,7 @@ func _update_chair_prompts() -> void:
 		if occupants[desk] != 0:
 			prompt = "Desk %d (taken)" % (desk + 1)
 		elif _can_install_at(desk):
-			prompt = "Install the spectral camera kit at desk %d" % (desk + 1)
+			prompt = "Sit at desk %d     (G: install the spectral camera kit here)" % (desk + 1)
 		_chairs[desk].prompt = prompt
 
 

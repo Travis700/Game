@@ -21,6 +21,7 @@ var _difficulty: OptionButton
 var _difficulty_about: Label
 var _keep_gear: CheckBox
 var _continue: CheckBox
+var _warned_about_save := false
 
 
 func _ready() -> void:
@@ -117,7 +118,7 @@ func options() -> Dictionary:
 func _add_run_options(column: VBoxContainer) -> void:
 	var saved := RunSave.read()
 	var heading := Label.new()
-	heading.text = "Difficulty (when you play solo or host)"
+	heading.text = "Run settings (used when you play solo or host; joiners use the host's)"
 	heading.add_theme_font_size_override("font_size", 16)
 	heading.modulate.a = 0.7
 	column.add_child(heading)
@@ -156,6 +157,16 @@ func _add_run_options(column: VBoxContainer) -> void:
 
 func _explain_difficulty() -> void:
 	_difficulty_about.text = DIFFICULTIES[_difficulty.selected][1]
+
+
+## Starting a new run would replace the saved one. Returns true if that's fine (no save,
+## continuing it, or the player has already been warned once and clicked again).
+func confirm_new_run() -> bool:
+	if not _continue.visible or _continue.button_pressed or _warned_about_save:
+		return true
+	_warned_about_save = true
+	show_status("You have a saved run (%s). Starting a new one will replace it after the first night. Click again to start anyway, or tick \"Continue saved run\"." % RunSave.describe(RunSave.read()))
+	return false
 
 
 func show_status(text: String) -> void:

@@ -50,6 +50,8 @@ var pause_menu: CanvasLayer
 var spawner: MultiplayerSpawner
 var _local_guard: Guard
 var _mode := ""
+## True once this player has clocked in for the coming night (before it starts).
+var _clocked_in := false
 
 
 func _ready() -> void:
@@ -219,8 +221,13 @@ func _ready() -> void:
 	menu = Menu.new()
 	menu.name = "Menu"
 	add_child(menu)
-	menu.solo_requested.connect(_play_solo)
-	menu.host_requested.connect(_host)
+	# From the menu buttons, check first that a new run won't silently replace the saved one.
+	menu.solo_requested.connect(func() -> void:
+		if menu.confirm_new_run():
+			_play_solo())
+	menu.host_requested.connect(func() -> void:
+		if menu.confirm_new_run():
+			_host())
 	menu.join_requested.connect(_join)
 	menu.show_status(_menu_message)
 	_menu_message = ""
@@ -269,6 +276,12 @@ func _process(_delta: float) -> void:
 		status += " · Badge #%04d" % _local_guard.employee_number
 	if night.difficulty > 0:
 		status += " · Difficulty %d" % night.difficulty
+	hud.set_objective(_objective())
+	if _local_guard and _local_guard.boost_left > 0.0:
+		hud.set_inventory(shop.local_points, "Energy drink: %ds" % ceili(_local_guard.boost_left))
+	elif _local_guard and _boost_was_on:
+		_refresh_inventory()
+	_boost_was_on = _local_guard != null and _local_guard.boost_left > 0.0
 	hud.set_status(status)
 
 
@@ -552,7 +565,9 @@ func on_local_guard_ready(guard: Guard) -> void:
 	guard.message_shown.connect(hud.show_message)
 	guard.desk_action.connect(guard_room.on_desk_action)
 	guard.clipboard_requested.connect(_open_clipboard)
-	guard.item_use_requested.connect(shop.request_use)
+	guard.item_use_requested.connect(func() -> void:
+		if not guard_room.try_install():
+			shop.request_use())
 	guard.pause_requested.connect(func() -> void:
 		guard.input_blocked = true
 		pause_menu.open(_mode == "solo", _mode == "Hosting"))
@@ -574,12 +589,34 @@ func _on_clock_machine_used(by: Node) -> void:
 	_request_time_clock()
 
 
+var _boost_was_on := false
+
+
+## The line under the clock telling you what to do next.
+func _objective() -> String:
+	if _local_guard == null:
+		return ""
+	if _local_guard.is_dead:
+		return ""
+	match shift.state:
+		Shift.State.PRE_SHIFT:
+			if _clocked_in:
+				return "Waiting for the rest of the team to clock in."
+			return "Head through the front doors. The guard room is the door on the right of the lobby: clock in at the time clock."
+		Shift.State.ON_SHIFT:
+			return "Survive until 6 AM. Watch the cameras and log anything odd (Tab)."
+		Shift.State.MORNING:
+			return "It's 6 AM. Clock out at the time clock in the guard room to get paid."
+	return ""
+
+
 func _on_keypad_submitted(number: int) -> void:
 	if _local_guard == null or number != _local_guard.employee_number:
 		keypad.flash_display("UNKNOWN")
 		Sfx.play_flat(self, Sfx.notes([220.0, 180.0], 0.15, 0.25, "square"))
 		return
 	keypad.close()
+	_clocked_in = true
 	Sfx.play_flat(self, Sfx.notes([880.0, 1320.0], 0.08, 0.25, "square"))
 	_request_time_clock()
 
@@ -618,6 +655,23 @@ func _start_night(number: int, difficulty: int) -> void:
 	night.difficulty = difficulty
 	_apply_difficulty(difficulty)
 	shift.begin()
+	_clocked_in = false
+	if number == 1:
+		_show_first_night_tips()
+
+
+## A few pointers on the first night, a few seconds apart.
+func _show_first_night_tips() -> void:
+	var tips: Array[String] = [
+		"Tip: sit at a desk (E on a chair) to watch the cameras. A / D changes a monitor's camera.",
+		"Tip: something moved, missing, or there that shouldn't be? Press Tab and log where and what. Wrong guesses cost points.",
+		"Tip: the real night cleaner moves things too. Learn what's normal.",
+		"Tip: at 6 AM, clock out at the time clock or you don't get paid.",
+	]
+	for i in tips.size():
+		get_tree().create_timer(8.0 + i * 14.0).timeout.connect(func() -> void:
+			if shift.state == Shift.State.ON_SHIFT and night.number == 1:
+				hud.show_message(tips[i]))
 
 
 ## A player who just joined: which night it is and last night's difficulty, so their cameras
@@ -656,7 +710,11 @@ func _open_clipboard() -> void:
 	if shift.state == Shift.State.REPORT:
 		return
 	_local_guard.input_blocked = true
-	clipboard.open(guard_room.current_area())
+	# The camera you're looking at, or else the area you're standing in.
+	var area := guard_room.current_area()
+	if area == "":
+		area = SchoolBuilder.area_at(_local_guard.global_position)
+	clipboard.open(area)
 
 
 # --- Caught, ghosts and totems ---------------------------------------------------------------
@@ -699,6 +757,7 @@ func _on_revive_rolled(user_peer: int, roll: int, revived_peer: int, at: Vector3
 	if user == null or revived == null:
 		return
 	_announce.rpc("Guard %d rolled a %d at a totem. Guard %d is back!" % [user.slot, roll, revived.slot])
+	night.record_revive()
 	_guard_revived.rpc(revived_peer, at + Vector3(0.8, 0.1, 0))
 
 
@@ -816,6 +875,7 @@ func on_report() -> void:
 ## Every computer, when the host starts the next night: back to the gate, lights on, desks empty.
 func on_next_night() -> void:
 	school.clock_machine.prompt = "Clock in"
+	_clocked_in = false
 	_close_all_ui()
 	# After a team wipe the lights are still down; bring them back for the evening.
 	lighting.go_bright()

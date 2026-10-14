@@ -13,7 +13,7 @@ signal holding_changed(item: String)
 const ITEMS := {
 	"camera_kit": {
 		"name": "Spectral camera kit", "price": 150,
-		"about": "Install it at a guard room desk: stand at the desk's chair and press E. That desk's monitors then show what ordinary cameras can't.",
+		"about": "Install it at a guard room desk: stand by the desk's chair and press G (it takes 10 seconds). That desk's monitors then show what ordinary cameras can't.",
 	},
 	"lucky_charm": {
 		"name": "Lucky rabbit's foot", "price": 60,
@@ -41,7 +41,7 @@ const ITEMS := {
 	},
 }
 ## Items used or put down with G (the rest are fitted with E).
-const USED_WITH_G: Array[String] = ["motion_sensor", "glue_trap", "energy_drink", "flashlight"]
+const USED_WITH_G: Array[String] = ["camera_kit", "motion_sensor", "glue_trap", "energy_drink", "flashlight"]
 ## How far a motion sensor notices things, and how long it stays quiet after going off.
 const SENSOR_RANGE := 5.0
 const SENSOR_COOLDOWN := 30.0
@@ -118,7 +118,7 @@ func _request_use() -> void:
 		"":
 			_tell(peer, "You're not carrying anything. Buy something at the vending machine.")
 		"camera_kit":
-			_tell(peer, "Take it to a desk chair in the guard room and press E to install it.")
+			_tell(peer, "Stand by a desk chair in the guard room and press G to install it.")
 		"lucky_charm":
 			_tell(peer, "Keep it on you. It helps your roll at a revive totem.")
 		"door_kit":

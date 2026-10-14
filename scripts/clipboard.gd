@@ -17,6 +17,16 @@ var _entries: VBoxContainer
 var _empty_note: Label
 var _area: OptionButton
 var _type: OptionButton
+var _type_about: Label
+var _log_button: Button
+## What each kind of entry means, shown under the drop-downs.
+const TYPE_HELP := {
+	"Moved object": "Something is somewhere other than where it belongs.",
+	"Missing object": "Something that's normally there is gone.",
+	"Extra object": "Something that shouldn't be there at all.",
+	"Figure": "A still, dark shape. It vanishes if you walk up to it.",
+	"Monster": "Something that moves and comes after people. Log the area it's in right now.",
+}
 
 
 func _ready() -> void:
@@ -72,13 +82,19 @@ func _ready() -> void:
 		_type.add_item(type)
 	row.add_child(_type)
 	column.add_child(row)
+	_type_about = _label("", 15)
+	_type_about.modulate.a = 0.7
+	_type_about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(_type_about)
+	_type.item_selected.connect(func(_index: int) -> void: _explain_type())
+	_explain_type()
 
-	var log_button := Button.new()
-	log_button.text = "Log it"
-	log_button.custom_minimum_size = Vector2(0, 44)
-	log_button.add_theme_font_size_override("font_size", 20)
-	log_button.pressed.connect(_on_log_pressed)
-	column.add_child(log_button)
+	_log_button = Button.new()
+	_log_button.text = "Log it"
+	_log_button.custom_minimum_size = Vector2(0, 44)
+	_log_button.add_theme_font_size_override("font_size", 20)
+	_log_button.pressed.connect(_on_log_pressed)
+	column.add_child(_log_button)
 
 	var hint := _label("Tab or Esc to put the clipboard away", 15)
 	hint.modulate.a = 0.6
@@ -138,6 +154,13 @@ func _on_log_pressed() -> void:
 	if _area.selected < 0:
 		return
 	log_submitted.emit(_area.get_item_text(_area.selected), _type.get_item_text(_type.selected))
+	# A short pause so a double-click doesn't log the same thing twice.
+	_log_button.disabled = true
+	get_tree().create_timer(0.8).timeout.connect(func() -> void: _log_button.disabled = false)
+
+
+func _explain_type() -> void:
+	_type_about.text = TYPE_HELP.get(_type.get_item_text(_type.selected), "")
 
 
 func _label(text: String, size: int) -> Label:

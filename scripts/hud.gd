@@ -14,6 +14,7 @@ var _hint: Label
 var _status: Label
 var _controls: Label
 var _clock: Label
+var _objective: Label
 var _inventory: Label
 var _ghost_tint: ColorRect
 var _ghost_note: Label
@@ -61,6 +62,11 @@ func _ready() -> void:
 	_clock = _make_label(22, HORIZONTAL_ALIGNMENT_CENTER, VERTICAL_ALIGNMENT_TOP)
 	_clock.offset_top = 14
 
+	_objective = _make_label(18, HORIZONTAL_ALIGNMENT_CENTER, VERTICAL_ALIGNMENT_TOP)
+	_objective.offset_top = 46
+	_objective.add_theme_color_override("font_color", Color(1.0, 0.9, 0.6))
+	_objective.modulate.a = 0.85
+
 	_inventory = _make_label(18, HORIZONTAL_ALIGNMENT_RIGHT, VERTICAL_ALIGNMENT_BOTTOM)
 	_inventory.offset_right = -20
 	_inventory.offset_bottom = -20
@@ -75,7 +81,7 @@ func _ready() -> void:
 	_ghost_tint.visible = false
 	add_child(_ghost_tint)
 	_ghost_note = _make_label(20, HORIZONTAL_ALIGNMENT_CENTER, VERTICAL_ALIGNMENT_TOP)
-	_ghost_note.offset_top = 48
+	_ghost_note.offset_top = 76
 	_ghost_note.text = "You're a ghost. A teammate can try to bring you back at a revive totem."
 	_ghost_note.add_theme_color_override("font_color", Color(0.75, 0.85, 1.0))
 	_ghost_note.visible = false
@@ -184,6 +190,11 @@ func _build_feed_view() -> void:
 
 
 ## Session info in the top-right corner, e.g. "Hosting · 2 guards".
+## What you should be doing right now, under the clock, e.g. "Clock in at the guard room".
+func set_objective(text: String) -> void:
+	_objective.text = text
+
+
 func set_status(text: String) -> void:
 	_status.text = text
 

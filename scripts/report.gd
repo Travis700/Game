@@ -77,7 +77,7 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, outcom
 		_table.add_child(_cell("Caught" if row.get("died", false) else ("Yes" if row["clocked_out"] else "No"), 22))
 		_table.add_child(_cell("%d  (+%d)" % [row["correct"], row["correct_points"]], 22))
 		_table.add_child(_cell("%d  (-%d)" % [row["false"], row["false_points"]], 22))
-		_table.add_child(_cell("%+d" % row["pay"], 22))
+		_table.add_child(_cell("points lost" if row.get("lost", false) else "%+d" % row["pay"], 22))
 		_table.add_child(_cell(str(row["total"]), 22))
 	_summary.text = summary
 	_next_button.text = {"caught": "Start over from night 1", "won": "Start a new run"}.get(outcome, "Start night %d" % (night + 1))

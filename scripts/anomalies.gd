@@ -20,6 +20,10 @@ const CLEAR_AFTER_REPORT := 15.0
 ## A cleared or vanished anomaly can still be logged for this many in-game minutes.
 const LOG_WINDOW_AFTER_END := 30.0
 const MAX_ACTIVE := 4
+## An anomaly nobody logs fades away after this many in-game minutes (once nobody's near),
+## making room for new ones. It can come back later in the night.
+const FADE_AFTER := 90.0
+const REAPPEAR_AFTER := 60.0
 
 ## Each anomaly: area (a camera name), type, first night it can happen, what it does to which prop.
 const DEFINITIONS: Array[Dictionary] = [
@@ -81,6 +85,10 @@ var difficulty := 1
 var _props: Dictionary = {}
 var _home: Dictionary = {}
 var _active: Array[int] = []
+## Host: tonight's count of anomalies, including ones that came back a second time, and
+## missed ones whose record was replaced when they came back.
+var _appeared := 0
+var _missed_earlier := 0
 
 
 func build(school_builder: SchoolBuilder) -> void:
@@ -172,7 +180,9 @@ func spawn_random(night: int, minutes: float) -> bool:
 	var candidates: Array[int] = []
 	for i in DEFINITIONS.size():
 		var def := DEFINITIONS[i]
-		if def["night"] > night or records.has(i) or _prop_busy(def["prop"]) or def["prop"] in reserved_props \
+		var ended: float = records[i]["ended_at"] if records.has(i) else -1.0
+		var used := records.has(i) and (ended < 0.0 or minutes - ended < REAPPEAR_AFTER)
+		if def["night"] > night or used or _prop_busy(def["prop"]) or def["prop"] in reserved_props \
 				or SchoolBuilder.area_difficulty(def["area"]) > difficulty:
 			continue
 		if _guard_within(_props[def["prop"]].global_position, UNSEEN_DISTANCE):
@@ -181,6 +191,9 @@ func spawn_random(night: int, minutes: float) -> bool:
 	if candidates.is_empty():
 		return false
 	var chosen: int = candidates.pick_random()
+	if records.has(chosen) and records[chosen]["credited"].is_empty():
+		_missed_earlier += 1
+	_appeared += 1
 	records[chosen] = {"credited": [], "clear_at": -1.0, "ended_at": -1.0, "started_at": minutes}
 	_set_active.rpc(chosen, true)
 	return true
@@ -197,6 +210,8 @@ func update(minutes: float) -> void:
 		if def["kind"] == "figure" and _guard_within(spot, FIGURE_VANISH_DISTANCE):
 			_end(i, minutes)
 		elif record["clear_at"] >= 0.0 and minutes >= record["clear_at"] and not _guard_within(spot, UNSEEN_DISTANCE):
+			_end(i, minutes)
+		elif minutes - record["started_at"] > FADE_AFTER and not _guard_within(spot, UNSEEN_DISTANCE):
 			_end(i, minutes)
 
 
@@ -219,7 +234,7 @@ func check_log(peer_id: int, area: String, type: String, minutes: float) -> bool
 
 ## Host: anomalies tonight that nobody logged.
 func missed_count() -> int:
-	var missed := 0
+	var missed := _missed_earlier
 	for i: int in records:
 		if records[i]["credited"].is_empty():
 			missed += 1
@@ -227,7 +242,7 @@ func missed_count() -> int:
 
 
 func appeared_count() -> int:
-	return records.size()
+	return _appeared
 
 
 ## Host: for a player who joins mid-evening.
@@ -241,6 +256,8 @@ func reset_all() -> void:
 	for i in _active.duplicate():
 		_set_active.rpc(i, false)
 	records.clear()
+	_appeared = 0
+	_missed_earlier = 0
 
 
 func _end(index: int, minutes: float) -> void:

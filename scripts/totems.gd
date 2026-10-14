@@ -18,6 +18,7 @@ const SPOTS: Array[Vector3] = [
 var director: MonsterDirector
 var shop: Shop
 var _stones: Dictionary = {}
+const PROMPT := "Use the revive totem  (%d in 6: revive a teammate · %d in 6: something gets out)"
 var _stone_material: StandardMaterial3D
 var _rune_material: StandardMaterial3D
 
@@ -33,6 +34,14 @@ func _ready() -> void:
 
 
 ## Host: hides tonight's totems in random spots.
+## Shows better odds on the totems while you carry the lucky rabbit's foot.
+func _process(_delta: float) -> void:
+	var lucky := shop != null and shop.local_item == "lucky_charm"
+	var odds := REVIVE_ON_OR_BELOW + (1 if lucky else 0)
+	for stone: Interactable in _stones.values():
+		stone.prompt = PROMPT % [odds, 6 - odds] + ("  · uses your rabbit's foot" if lucky else "")
+
+
 func place_random() -> void:
 	clear_all()
 	var spots: Array = range(SPOTS.size())
@@ -58,7 +67,7 @@ func _place(index: int) -> void:
 	if _stones.has(index):
 		return
 	var stone := Interactable.new()
-	stone.prompt = "Use the revive totem  (4 in 6: revive a teammate · 2 in 6: something gets out)"
+	stone.prompt = PROMPT % [REVIVE_ON_OR_BELOW, 6 - REVIVE_ON_OR_BELOW]
 	stone.position = SPOTS[index]
 	var shape := BoxShape3D.new()
 	shape.size = Vector3(0.45, 0.9, 0.45)

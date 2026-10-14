@@ -57,6 +57,9 @@ var _totals: Dictionary = {}
 var _deaths := 0
 var _restart_run := false
 var _won := false
+## Host: each guard's correct logs tonight, as "area|type", so logging the same thing again
+## isn't counted as a false report.
+var _logged: Dictionary = {}
 var _clock_out_left := 0.0
 var _sync_timer := 0.0
 
@@ -117,6 +120,7 @@ func _on_shift_started() -> void:
 	if not multiplayer.is_server():
 		return
 	_stats.clear()
+	_logged.clear()
 	_deaths = 0
 	save_run(number, true)
 	director.plan_night(number)
@@ -173,9 +177,18 @@ func _receive_log(area: String, type: String) -> void:
 		return
 	var peer := _sender()
 	var stats: Dictionary = _stats.get_or_add(peer, {"correct": 0, "false": 0})
+	var entry := "%s|%s" % [area, type]
+	var logged: Array = _logged.get_or_add(peer, [])
 	var correct := director.check_log(peer, area) if type == "Monster" else anomalies.check_log(peer, area, type, minutes)
+	if not correct and type == "Missing object":
+		# The Mascot's empty stand really is a missing object.
+		correct = director.check_mascot_missing(peer, area)
 	if correct:
 		stats["correct"] += 1
+		logged.append(entry)
+	elif entry in logged:
+		# Already logged and paid for; a repeat isn't a false report.
+		director.tell(peer, "You've already logged that one.")
 	else:
 		stats["false"] += 1
 
@@ -265,6 +278,11 @@ func record_death() -> void:
 	_deaths += 1
 
 
+## Host: a guard was revived at a totem, so their death doesn't cost anyone.
+func record_revive() -> void:
+	_deaths = maxi(_deaths - 1, 0)
+
+
 ## Host: the whole team has been caught. The run starts over from night 1.
 func fail_night() -> void:
 	if shift.state != Shift.State.ON_SHIFT:
@@ -302,7 +320,10 @@ func _end_night() -> void:
 	if number >= LAST_NIGHT:
 		_won = true
 		_restart_run = true
-		summary = "You kept Westfield High safe for all %d nights. Whatever lives here will wait for the next crew.\n" % LAST_NIGHT + summary
+		var team_total := 0
+		for guard: Guard in players.get_children():
+			team_total += points_of(guard.name.to_int())
+		summary = "You kept Westfield High safe for all %d nights. Whatever lives here will wait for the next crew.\nFinal team score: %d points.\n" % [LAST_NIGHT, team_total] + summary
 		_show_report.rpc(number, rows, summary, "won")
 		# The next run starts fresh.
 		shop.reset_all()
@@ -329,14 +350,15 @@ func _build_rows(keep_pay: bool) -> Array:
 		var false_points: int = stats["false"] * FALSE_REPORT_POINTS
 		var pay: int = (SURVIVAL_PAY if clocked_out else 0) + correct_points - false_points - _deaths * DEATH_PENALTY
 		if keep_pay:
-			_totals[peer] = _totals.get(peer, 0) + pay
+			# Points never go below zero.
+			_totals[peer] = maxi(_totals.get(peer, 0) + pay, 0)
 		else:
 			_totals[peer] = 0
 		rows.append({
 			"name": "Guard %d  #%04d" % [guard.slot, guard.employee_number], "clocked_out": clocked_out, "died": guard.is_dead,
 			"correct": stats["correct"], "correct_points": correct_points,
 			"false": stats["false"], "false_points": false_points,
-			"pay": pay, "total": _totals[peer],
+			"pay": pay, "total": _totals[peer], "lost": not keep_pay,
 		})
 	return rows
 

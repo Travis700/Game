@@ -455,6 +455,21 @@ func stop_bell() -> void:
 		bell_changed.emit(false)
 
 
+## Host: a "Missing object" log in the gym while the Mascot is off its stand counts as
+## spotting it (the empty stand is exactly what the Gym camera shows).
+func check_mascot_missing(peer_id: int, area: String) -> bool:
+	if area != "Gym":
+		return false
+	for node in _container.get_children():
+		if node is Mascot and not node.is_queued_for_deletion():
+			var credited: Array = _credited.get_or_add(node.name, [])
+			if peer_id in credited:
+				return false
+			credited.append(peer_id)
+			return true
+	return false
+
+
 ## Tonight's clock, in in-game minutes. Host only.
 func minutes() -> float:
 	return _minutes

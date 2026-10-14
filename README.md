@@ -39,14 +39,18 @@ the internet if the host forwards port 7777 on their router. Steam lobbies will 
 3. Things change around the school: objects move, go missing or appear, and from night 2, figures.
    Watch the cameras, and when you spot something, press Tab and log where it is and what it is.
 4. At 6:00 AM the lights come back on. Clock out at the time clock within about 90 seconds.
-5. The report shows everyone's pay: 100 for clocking out, +25 per correct log, -10 per false report.
+5. The report shows everyone's pay: 100 for clocking out, +25 per correct log, -10 per false report,
+   and -50 for every guard caught that night (everyone pays; a revive at a totem refunds it).
+
+Logging the same thing twice isn't counted as a false report. Anomalies nobody logs fade after a while
+(and can come back later). Points never drop below zero.
 
 ## The vending machine
 
 Press E on the vending machine in the guard room to spend points. Purchases drop into the tray; press E
 to pick them up. You can carry one thing at a time (shown in the bottom-right corner).
 
-- **Spectral camera kit (150):** stand at a desk's chair with it and press E, then stay there for 10
+- **Spectral camera kit (150):** stand by a desk's chair with it and press G, then stay there for 10
   seconds. That desk's monitors switch to spectral feeds, which show the Ghost.
 - **Lucky rabbit's foot (60):** carry it to a revive totem. Your roll revives on 5 in 6 instead of 4 in 6.
 - **Guard room door kit (120):** stand in one of the guard room's two doorways and press E to fit a door,
