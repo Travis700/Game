@@ -129,6 +129,11 @@ a rank (in brackets); the machine shows which.
   else with a radio, wherever they are (it sounds like a radio, with a click when a call comes in).
   But a radio blares when a call comes in: monsters near the guard *receiving* the call hear it as
   if that guard were talking. Think before you call someone who's hiding.
+- **Pocket EMF reader (70, rank 2):** press G to clip it on; it's yours for the run. Its five lights (bottom
+  left) climb as monsters get close, even ones you can't see. Most top out at 4 (harmless ones at 3), but
+  the Ghost, the Specimen, the Understudy and the Other Cleaner push it to **EMF 5** up close: evidence,
+  and the surest way to tell the Other Cleaner from the real one.
+- **Thermos of coffee (30):** press G to drink it: +40 nerve.
 - **Energy drink (25):** press G to drink it and run faster for 30 seconds.
 - **Heavy-duty flashlight (80, rank 3):** press G to fit it. A longer, wider beam for the rest of the run.
 - **Air horn (70, rank 4):** press G to blast it. Every monster within 15 metres freezes for 6 seconds,

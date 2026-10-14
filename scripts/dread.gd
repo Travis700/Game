@@ -30,6 +30,9 @@ var _beat_left := 0.0
 var _scaring := false
 ## The first-night glimpse: done for this night, and the figure while it's showing.
 var _glimpsed := false
+## The EMF reader's current level (0-5) and time to its next beep.
+var emf_level := 0
+var _emf_beep := 0.0
 var _figure: Node3D
 
 
@@ -46,6 +49,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_flicker_flashlights()
 	_first_night_glimpse()
+	_read_emf(delta)
 	if local_guard == null or not is_instance_valid(local_guard) or local_guard.is_dead or director == null:
 		_fade_out(delta)
 		return
@@ -107,6 +111,44 @@ func _flicker_flashlights() -> void:
 
 
 ## The local guard was caught: the camera snaps to whatever caught them, with a scream.
+## The local guard's EMF reader: lights climb as monsters get close. Ordinary monsters top out
+## at 4 (harmless ones, like the night cleaner, at 3); EMF 5 is evidence of certain kinds.
+func _read_emf(delta: float) -> void:
+	var on := local_guard != null and is_instance_valid(local_guard) and local_guard.has_emf \
+			and not local_guard.is_dead and shift != null and shift.state == Shift.State.ON_SHIFT
+	if not on:
+		emf_level = 0
+		if hud:
+			hud.set_emf(-1)
+		return
+	var level := 0
+	for node in director.get_node("Live").get_children():
+		var monster := node as Monster
+		if monster == null or monster.state == "hidden":
+			continue
+		var distance := monster.global_position.distance_to(local_guard.global_position)
+		var reading := 0
+		if distance < 20.0:
+			reading = 1
+		if distance < 13.0:
+			reading = 2
+		if distance < 8.0:
+			reading = 3
+		if distance < 4.0:
+			reading = 4
+		reading = mini(reading, 3 if monster.harmless else 4)
+		if monster.emf5 and distance < 6.0:
+			reading = 5
+		level = maxi(level, reading)
+	emf_level = level
+	if hud:
+		hud.set_emf(level)
+	_emf_beep -= delta
+	if level > 0 and _emf_beep <= 0.0:
+		_emf_beep = 1.3 - level * 0.22
+		Sfx.play_flat(self, Sfx.notes([600.0 + level * 180.0], 0.05, 0.12, "square"), -12.0)
+
+
 ## Night 1, a few minutes in, the first time this player looks down the main hallway.
 func _first_night_glimpse() -> void:
 	if night == null or shift == null:

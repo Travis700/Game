@@ -37,6 +37,8 @@ var footstep_pitch := 1.0
 var footstep_stride := 0.8
 var footstep_volume := -2.0
 var silent := false
+## Pushes an EMF reader to its top level (EMF 5) up close. Evidence for the field guide.
+var emf5 := false
 
 var _agent: NavigationAgent3D
 ## Real seconds it has been trying to move without getting anywhere.

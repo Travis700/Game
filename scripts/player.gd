@@ -74,6 +74,8 @@ var battery := 1.0
 var hiding := false
 ## True once this guard has clipped on a walkie-talkie: they can talk on it (B) and hear it.
 var has_radio := false
+## True once this guard has clipped on an EMF reader: its lights show on their screen.
+var has_emf := false
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _bob_time := 0.0
@@ -146,6 +148,8 @@ func apply_personal(upgrade: String, on: bool) -> void:
 			set_bright_flashlight(on)
 		"radio":
 			has_radio = on
+		"emf":
+			has_emf = on
 
 
 ## Fits (or removes) the heavy-duty flashlight. Called on every computer, so everyone sees the beam.

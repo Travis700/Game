@@ -23,6 +23,7 @@ var _flee_to := Vector3.ZERO
 
 
 func _init() -> void:
+	emf5 = true
 	display_name = "the Specimen"
 	# Lots of small, quick, scratchy steps.
 	footstep_pitch = 2.6

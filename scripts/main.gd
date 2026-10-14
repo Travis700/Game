@@ -191,6 +191,7 @@ func _ready() -> void:
 	dread = Dread.new()
 	dread.name = "Dread"
 	dread.director = director
+	dread.hud = hud
 	dread.players = players
 	dread.shift = shift
 	add_child(dread)
@@ -725,6 +726,7 @@ func _create_guard(data: Dictionary) -> Node:
 	guard.hat = data.get("hat", "cap")
 	guard.bright_flashlight = "flashlight" in data.get("personal", [])
 	guard.has_radio = "radio" in data.get("personal", [])
+	guard.has_emf = "emf" in data.get("personal", [])
 	guard.position = SPAWN_POINT + Vector3((guard.slot - 2.5) * 1.4, 0, 0)
 	return guard
 

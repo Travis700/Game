@@ -40,7 +40,7 @@ const ENTRIES := {
 	},
 	"OtherCleaner": {
 		"name": "the Other Cleaner", "where": "Anywhere the cleaner goes",
-		"signs": "Looks just like the night cleaner, but it has no cart and its head sits wrong.",
+		"signs": "EMF 5. Looks just like the night cleaner, but it has no cart and its head sits wrong.",
 		"rule": "Don't get close. Log it as a Monster where you see it and it leaves.",
 		"rumour": "The night cleaner has been seen in two places at once.",
 	},
@@ -52,7 +52,7 @@ const ENTRIES := {
 	},
 	"SchoolGhost": {
 		"name": "the Ghost", "where": "Anywhere",
-		"signs": "Invisible to the eye. Only spectral monitors show it. Cameras it passes lose signal.",
+		"signs": "EMF 5. Invisible to the eye. Only spectral monitors show it. Cameras it passes lose signal.",
 		"rule": "Fit a spectral camera upgrade, and move away from the cameras that are cutting out.",
 		"rumour": "An old guard still clocks in. The time clock remembers.",
 	},
@@ -88,7 +88,7 @@ const ENTRIES := {
 	},
 	"Specimen": {
 		"name": "the Specimen", "where": "Science lab",
-		"signs": "Pale, low to the ground, too many legs. Its jar in the lab is empty.",
+		"signs": "EMF 5. Pale, low to the ground, too many legs. Its jar in the lab is empty.",
 		"rule": "It hates light. Catch it in your flashlight beam and it flees into the ceiling.",
 		"rumour": "Something in the science lab's big jar has been moving.",
 	},
@@ -100,7 +100,7 @@ const ENTRIES := {
 	},
 	"Understudy": {
 		"name": "the Understudy", "where": "Science wing",
-		"signs": "An extra guard with no face behind the visor, following one of you around. It talks in your teammates' voices.",
+		"signs": "EMF 5. An extra guard with no face behind the visor, following one of you around. It talks in your teammates' voices.",
 		"rule": "Keep moving. Spot the extra guard on the cameras and log it as a Monster.",
 		"rumour": "Count the guards on the cameras. Then count them again.",
 	},

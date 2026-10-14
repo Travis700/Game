@@ -31,6 +31,7 @@ var _next_line := randf_range(10.0, 25.0)
 
 
 func _init() -> void:
+	emf5 = true
 	display_name = "the Understudy"
 	leaves_when_logged = true
 	state = "wait"

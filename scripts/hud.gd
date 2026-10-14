@@ -19,6 +19,7 @@ var _voice_label: Label
 var _voice_bar: ProgressBar
 var _nerve_box: Control
 var _nerve_bar: ProgressBar
+var _emf: Label
 var _inventory: Label
 var _ghost_tint: ColorRect
 var _ghost_note: Label
@@ -122,6 +123,16 @@ func _ready() -> void:
 	nerve_box.add_child(_nerve_bar)
 	nerve_box.visible = false
 	_nerve_box = nerve_box
+
+	# Bottom left, above nerve: the EMF reader's lights, for guards who carry one.
+	_emf = Label.new()
+	_emf.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	_emf.offset_left = 20
+	_emf.offset_top = -112
+	_emf.offset_bottom = -84
+	_emf.add_theme_font_size_override("font_size", 18)
+	_emf.visible = false
+	add_child(_emf)
 
 	_build_feed_view()
 
@@ -262,6 +273,16 @@ func set_voice(transmitting: bool, level: float, on_radio := false) -> void:
 	box.visible = transmitting
 	_voice_bar.value = level
 	_voice_label.text = ("ON RADIO" if on_radio else "TALKING") + (" (LOUD)" if level > 0.6 else "")
+
+
+## The EMF reader: level 0-5, or -1 to hide it.
+func set_emf(level: int) -> void:
+	_emf.visible = level >= 0
+	if level < 0:
+		return
+	_emf.text = "EMF  " + "■".repeat(level) + "□".repeat(5 - level)
+	var colours := [Color(0.6, 0.6, 0.6), Color(0.4, 1.0, 0.4), Color(0.6, 1.0, 0.3), Color(1.0, 0.9, 0.3), Color(1.0, 0.55, 0.2), Color(1.0, 0.2, 0.2)]
+	_emf.add_theme_color_override("font_color", colours[level])
 
 
 ## Your nerve (0-100), shown below 100 while on shift. Turns red as it runs low.

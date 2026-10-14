@@ -47,6 +47,10 @@ const ITEMS := {
 		"name": "Heavy-duty flashlight", "price": 80, "rank": 3,
 		"about": "Press G to swap it for your flashlight. A longer, wider beam, for good. (The Librarian will notice it from further away too.)",
 	},
+	"emf": {
+		"name": "Pocket EMF reader", "price": 70, "rank": 2,
+		"about": "Press G to clip it on (it's yours for the run). Its lights climb as a monster gets close, even one you can't see. A few kinds push it all the way to EMF 5 (see the field guide).",
+	},
 	"coffee": {
 		"name": "Thermos of coffee", "price": 30,
 		"about": "Press G to drink it: steadies your nerve (+40). Low nerve means monsters notice you sooner, and you start seeing things.",
@@ -59,7 +63,7 @@ const ITEMS := {
 ## Every item needs at least this rank to buy, unless it says otherwise.
 const DEFAULT_RANK := 1
 ## Items used or put down with G (the rest are fitted with E).
-const USED_WITH_G: Array[String] = ["camera_kit", "portable_camera", "radio", "motion_sensor", "glue_trap", "energy_drink", "flashlight", "air_horn", "coffee"]
+const USED_WITH_G: Array[String] = ["camera_kit", "portable_camera", "radio", "motion_sensor", "glue_trap", "energy_drink", "flashlight", "air_horn", "coffee", "emf"]
 ## How far a motion sensor notices things, and how long it stays quiet after going off.
 const SENSOR_RANGE := 5.0
 const SENSOR_COOLDOWN := 30.0
@@ -191,14 +195,15 @@ func _request_use() -> void:
 				else:
 					_drink.rpc_id(peer)
 				_tell(peer, "You down the energy drink. Your heart's going like a drum.")
-		"flashlight", "radio":
+		"flashlight", "radio", "emf":
 			if owns(peer, item):
 				_tell(peer, "You've already got one of those.")
 				return
 			if take(peer, item):
 				set_owned(peer, item, true)
-				_tell(peer, "You swap in the heavy-duty flashlight. That's a proper beam." if item == "flashlight"
-						else "You clip the walkie-talkie to your belt. Hold %s to talk on it." % _key("radio_talk"))
+				_tell(peer, {"flashlight": "You swap in the heavy-duty flashlight. That's a proper beam.",
+						"emf": "You clip the EMF reader to your pocket. Its lights are quiet. For now."}.get(item,
+						"You clip the walkie-talkie to your belt. Hold %s to talk on it." % _key("radio_talk")))
 
 
 ## Host: fits (or removes) one of a guard's personal upgrades, on every computer.
