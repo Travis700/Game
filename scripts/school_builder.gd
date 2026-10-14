@@ -132,6 +132,50 @@ func _ready() -> void:
 	# After the main building's cameras, so those come first on the monitors.
 	_build_classroom_wing()
 	_build_science_wing()
+	_merge_static_meshes()
+
+
+## Thousands of boxes would each be a draw call. Once everything is built, the boxes that never
+## change are merged into one mesh per material per 20-metre square (so off-screen squares are
+## still skipped). Collision bodies stay as they are. Left alone: anything that's hidden, see-through,
+## has children, or gets its look changed later (ceiling light panels).
+const MERGE_CELL := 20.0
+
+
+func _merge_static_meshes() -> void:
+	var tools: Dictionary = {}
+	var merged: Array[MeshInstance3D] = []
+	var to_local := global_transform.affine_inverse()
+	for child in get_children():
+		var candidates: Array = []
+		if child is MeshInstance3D:
+			candidates.append(child)
+		elif child is StaticBody3D and not child is Interactable and (child as Node3D).visible:
+			for part in child.get_children():
+				if part is MeshInstance3D:
+					candidates.append(part)
+		for mesh: MeshInstance3D in candidates:
+			var material := mesh.material_override as StandardMaterial3D
+			if not mesh.visible or mesh.get_child_count() > 0 or not mesh.mesh is BoxMesh or material == null \
+					or material.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED \
+					or material == _mats["light_panel"] or material == _mats["flood_glow"]:
+				continue
+			var xform := to_local * mesh.global_transform
+			var cell := Vector2i(floori(xform.origin.x / MERGE_CELL), floori(xform.origin.z / MERGE_CELL))
+			var key := "%d|%d|%d" % [material.get_instance_id(), cell.x, cell.y]
+			if not tools.has(key):
+				var tool := SurfaceTool.new()
+				tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+				tools[key] = [tool, material]
+			(tools[key][0] as SurfaceTool).append_from(mesh.mesh, 0, xform)
+			merged.append(mesh)
+	for key: String in tools:
+		var batch := MeshInstance3D.new()
+		batch.mesh = (tools[key][0] as SurfaceTool).commit()
+		batch.material_override = tools[key][1]
+		add_child(batch)
+	for mesh in merged:
+		mesh.free()
 
 
 # --- Materials ---------------------------------------------------------------
