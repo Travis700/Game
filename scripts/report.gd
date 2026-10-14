@@ -2,11 +2,14 @@ extends CanvasLayer
 ## The end-of-night report: each guard's pay for the night and the team's results.
 
 signal next_night_requested
+## The host chose to keep going after the ninth night.
+signal overtime_requested
 
 var _title: Label
 var _table: GridContainer
 var _summary: Label
 var _next_button: Button
+var _overtime_button: Button
 var _waiting: Label
 ## A promotion earned with this night's XP, shown at the bottom of the next report.
 var promotion := ""
@@ -52,6 +55,11 @@ func _ready() -> void:
 	_next_button.add_theme_font_size_override("font_size", 22)
 	_next_button.pressed.connect(func() -> void: next_night_requested.emit())
 	column.add_child(_next_button)
+	_overtime_button = Button.new()
+	_overtime_button.custom_minimum_size = Vector2(0, 52)
+	_overtime_button.add_theme_font_size_override("font_size", 22)
+	_overtime_button.pressed.connect(func() -> void: overtime_requested.emit())
+	column.add_child(_overtime_button)
 
 	_waiting = Label.new()
 	_waiting.text = "Waiting for the host to start the next night..."
@@ -68,6 +76,8 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, outcom
 			_title.text = "NIGHT %d: EVERYONE WAS CAUGHT" % night
 		"won":
 			_title.text = "NIGHT %d: YOU MADE IT. THE RUN IS WON" % night
+		"overtime":
+			_title.text = "OVERTIME: NIGHT %d SURVIVED" % night
 		_:
 			_title.text = "NIGHT %d REPORT" % night
 	for child in _table.get_children():
@@ -89,6 +99,8 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, outcom
 		promotion = ""
 	_next_button.text = {"caught": "Start over from night 1", "won": "Start a new run"}.get(outcome, "Start night %d" % (night + 1))
 	_next_button.visible = is_host
+	_overtime_button.visible = is_host and outcome == "won"
+	_overtime_button.text = "Keep going: Overtime (night %d)" % (night + 1)
 	_waiting.visible = not is_host
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE

@@ -385,7 +385,7 @@ func _start_from_command_line() -> void:
 			night.conditions.forced.assign(arg.get_slice("=", 1).split(","))
 		elif arg.begins_with("--night="):
 			# For testing later nights, e.g. --night=7 when monsters can enter the guard room.
-			night_number = clampi(arg.get_slice("=", 1).to_int(), 1, Night.LAST_NIGHT)
+			night_number = clampi(arg.get_slice("=", 1).to_int(), 1, 99)
 			menu._continue.button_pressed = false
 	for arg in args:
 		if arg == "--solo":
@@ -487,7 +487,7 @@ func _start_run() -> void:
 	if not options["continue"]:
 		return
 	var saved := RunSave.read()
-	night.number = clampi(int(saved.get("night", 1)), 1, Night.LAST_NIGHT)
+	night.number = clampi(int(saved.get("night", 1)), 1, 99)
 	night.saved_points = saved.get("points", {})
 	night.saved_items = saved.get("items", {})
 	if saved.get("in_progress", false):
@@ -829,7 +829,8 @@ func _start_night(number: int, difficulty: int) -> void:
 	get_tree().create_timer(night.seconds_per_minute * 5.0).timeout.connect(func() -> void:
 		if shift.state == Shift.State.ON_SHIFT:
 			cameras.capture_references(night.time_text()))
-	SteamService.set_presence("Night %d of %d" % [number, Night.LAST_NIGHT])
+	SteamService.set_presence("Overtime: night %d" % number if number > Night.LAST_NIGHT
+			else "Night %d of %d" % [number, Night.LAST_NIGHT])
 	if number == 1:
 		_show_first_night_tips()
 	elif number == 2:

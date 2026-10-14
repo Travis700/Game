@@ -61,6 +61,7 @@ func _fill() -> void:
 		child.queue_free()
 	_heading("Career")
 	_line("Rank %d: %s  (%d XP)" % [Career.rank(), Career.rank_title(Career.rank()), Career.xp()])
+	_line("Furthest night: %s" % (str(Career.best_night()) if Career.best_night() > 0 else "none yet"))
 	for stat: String in Career.STATS:
 		_line("%s: %d" % [Career.STATS[stat], Career.stat(stat)])
 	_line("Monsters in your field guide: %d of %d" % [FieldGuide.discovered().size(), FieldGuide.ENTRIES.size()])

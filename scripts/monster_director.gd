@@ -153,6 +153,8 @@ func plan_night(number: int) -> void:
 	var wanted := MONSTERS_PER_NIGHT[clampi(number - 1, 0, MONSTERS_PER_NIGHT.size() - 1)] + difficulty - 1
 	if conditions and conditions.has("hazard_pay"):
 		wanted += 1
+	# Overtime: one more for every night past the last.
+	wanted += clampi(number - MONSTERS_PER_NIGHT.size(), 0, 5)
 	var count := mini(wanted, pool.size())
 	for i in count:
 		tonight.append({"kind": pool[i], "at": randf_range(25.0, 150.0)})

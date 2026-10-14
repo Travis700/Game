@@ -26,6 +26,8 @@ const ACHIEVEMENTS := {
 	"HOLD_THE_DOOR": ["Hold the door", "Clock out of a night where a monster battered a guard room door."],
 	"FULL_ROUND": ["Full round", "Punch every station on a night's round."],
 	"LIGHTS_ON": ["Who turned out the lights?", "Reset the breaker after a power cut."],
+	"OVERTIME": ["Overtime", "Survive a night of Overtime, after the ninth."],
+	"WORKAHOLIC": ["Workaholic", "Survive night 15."],
 }
 ## Every kind of monster, for the Field guide achievement.
 const MONSTER_KINDS: Array[String] = [
@@ -73,6 +75,14 @@ func logged_monster(peer_id: int, kind: String) -> void:
 		_saw_monster(kind)
 	elif peer_id in multiplayer.get_peers():
 		_saw_monster.rpc_id(peer_id, kind)
+
+
+## Host: a guard clocked out of this night; each player keeps the furthest night they've reached.
+func record_night(peer_id: int, night: int) -> void:
+	if peer_id == multiplayer.get_unique_id():
+		_record_night(night)
+	elif peer_id in multiplayer.get_peers():
+		_record_night.rpc_id(peer_id, night)
 
 
 ## Host: XP for a guard's night.
@@ -134,6 +144,14 @@ func _saw_monster(kind: String) -> void:
 
 
 @rpc("authority", "call_remote", "reliable")
+func _record_night(night: int) -> void:
+	var config := _load()
+	if night > int(config.get_value("career", "best_night", 0)):
+		config.set_value("career", "best_night", night)
+		config.save(PATH)
+
+
+@rpc("authority", "call_remote", "reliable")
 func _add_xp(amount: int) -> void:
 	var config := _load()
 	var before: int = config.get_value("career", "xp", 0)
@@ -173,6 +191,11 @@ static func stat(name: String) -> int:
 
 static func best_scores() -> Array:
 	return _load().get_value("career", "scores", [])
+
+
+## The furthest night this player has clocked out of (Overtime counts).
+static func best_night() -> int:
+	return _load().get_value("career", "best_night", 0)
 
 
 static func xp() -> int:

@@ -70,6 +70,16 @@ your clipboard, and on the Records screen): what it looks like and how to surviv
 haven't found yet show only a rumour. Once a monster is in your guide, you can name it in a Monster log
 for +25 more. The guide is kept on your computer across runs.
 
+**Overtime:** after winning night 9, the host can keep going instead of starting a new run: night 10,
+11 and on, keeping points and gear, with one more monster and one more shift note each night. Your
+furthest night is kept on the Records screen.
+
+**Shift notes and bonus objectives:** from night 2 each night has one or two conditions (fog, faulty
+wiring, old batteries, a full moon, an inspector's visit, sound carrying, a messy school, hazard pay),
+each worth +15% XP. Every night also has a team bonus objective (nobody runs, nobody shouts, log N
+things, name a monster, finish the round by 3 AM, nobody caught) worth +60 and +50 XP. Test conditions
+with `--conditions=fog,batteries`.
+
 **Ranks:** every night earns XP (even one where you're caught), kept across runs. There are eight ranks,
 from Trainee to Legend of Westfield. Your rank is on your name tag and the menu, and some vending
 machine items need a rank.

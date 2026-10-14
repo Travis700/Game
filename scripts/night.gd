@@ -28,6 +28,8 @@ const XP_PER_NAME := 20
 const XP_PER_PUNCH := 10
 ## Survive this night and the run is won.
 const LAST_NIGHT := 9
+## Overtime: after the ninth night the host can keep going. This night earns "Workaholic".
+const OVERTIME_GOAL := 15
 ## The highest difficulty: the main building plus both wings.
 const MAX_DIFFICULTY := 3
 
@@ -84,6 +86,7 @@ var _sync_timer := 0.0
 func _ready() -> void:
 	shift.started.connect(_on_shift_started)
 	report.next_night_requested.connect(_on_next_night_requested)
+	report.overtime_requested.connect(_on_overtime_requested)
 	clipboard.log_submitted.connect(_on_log_submitted)
 
 
@@ -408,25 +411,18 @@ func _end_night() -> void:
 		summary += "\n" + awards
 	summary += "\nPay: %d for clocking out, +%d per correct log, -%d per false report, -%d for each guard lost." % [
 		SURVIVAL_PAY, CORRECT_LOG_POINTS, FALSE_REPORT_POINTS, DEATH_PENALTY]
-	if number >= LAST_NIGHT:
+	if number == LAST_NIGHT:
 		_won = true
 		_restart_run = true
 		var team_total := 0
 		for guard: Guard in players.get_children():
 			team_total += points_of(guard.name.to_int())
-		summary = "You kept Westfield High safe for all %d nights. Whatever lives here will wait for the next crew.\nFinal team score: %d points.\n" % [LAST_NIGHT, team_total] + summary
-		shop.reset_spending()
+		summary = "You kept Westfield High safe for all %d nights. Whatever lives here will wait for the next crew.\nFinal team score: %d points. Or stay on for Overtime: the nights keep coming, and get worse.\n" % [LAST_NIGHT, team_total] + summary
 		_show_report.rpc(number, rows, summary, "won")
-		# The next run starts fresh.
-		shop.reset_all()
-		guard_room.reset_upgrades()
-		doors.reset_all()
+		# The run is over unless the host picks Overtime. Nothing carries on from a saved run.
 		RunSave.clear()
-		saved_points.clear()
-		saved_items.clear()
-		saved_personal.clear()
 		return
-	_show_report.rpc(number, rows, summary, "night")
+	_show_report.rpc(number, rows, summary, "overtime" if number > LAST_NIGHT else "night")
 	shop.push_wallets()
 	save_run(number + 1)
 
@@ -435,7 +431,7 @@ func _end_night() -> void:
 func _award_night() -> void:
 	if career == null:
 		return
-	var won := number >= LAST_NIGHT
+	var won := number == LAST_NIGHT
 	var team := maxi(run_team, players.get_child_count())
 	for guard: Guard in players.get_children():
 		var peer := guard.name.to_int()
@@ -454,6 +450,11 @@ func _award_night() -> void:
 			career.award(peer, "NIGHT_FIVE")
 		if doors.battered_tonight:
 			career.award(peer, "HOLD_THE_DOOR")
+		career.record_night(peer, number)
+		if number > LAST_NIGHT:
+			career.award(peer, "OVERTIME")
+		if number >= OVERTIME_GOAL:
+			career.award(peer, "WORKAHOLIC")
 		if won:
 			career.award(peer, "RUN_WON")
 			career.add_stat(peer, "runs_won")
@@ -532,6 +533,33 @@ func _build_rows(keep_pay: bool) -> Array:
 	return rows
 
 
+## Host, after the ninth night: the team stays on. Points, gear and upgrades carry on.
+func _on_overtime_requested() -> void:
+	if not multiplayer.is_server() or not _won:
+		return
+	anomalies.reset_all()
+	doors.reset_for_night()
+	_won = false
+	_restart_run = false
+	shop.push_wallets()
+	save_run(number + 1)
+	_begin_next_night.rpc(number + 1)
+
+
+## Host: a won run is over and a new one starts from nothing.
+func _reset_run() -> void:
+	for guard: Guard in players.get_children():
+		_totals[guard.name.to_int()] = 0
+	shop.reset_spending()
+	shop.reset_all()
+	guard_room.reset_upgrades()
+	doors.reset_all()
+	saved_points.clear()
+	saved_items.clear()
+	saved_personal.clear()
+	shop.push_wallets()
+
+
 func _on_next_night_requested() -> void:
 	if multiplayer.is_server():
 		anomalies.reset_all()
@@ -540,9 +568,7 @@ func _on_next_night_requested() -> void:
 		if _restart_run:
 			run_team = 0
 		if _won:
-			for guard: Guard in players.get_children():
-				_totals[guard.name.to_int()] = 0
-			shop.push_wallets()
+			_reset_run()
 		_restart_run = false
 		_won = false
 		_begin_next_night.rpc(next)
