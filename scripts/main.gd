@@ -511,6 +511,8 @@ func _start_run() -> void:
 	var options: Dictionary = menu.options()
 	night.difficulty_choice = options["difficulty"]
 	night.keep_gear = options["keep_gear"]
+	# The daily shift is the same length for everyone.
+	night.seconds_per_minute = Night.SECONDS_PER_MINUTE if night.daily != "" else options["seconds_per_minute"]
 	_password = options["password"]
 	if not options["continue"]:
 		return

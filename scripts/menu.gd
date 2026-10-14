@@ -6,6 +6,8 @@ signal host_requested
 signal daily_requested
 signal join_requested(address: String)
 
+## Night length choices: the label and real seconds per in-game minute.
+const NIGHT_LENGTHS := [["Short nights (8 min)", 1.35], ["Normal nights (12 min)", 2.0], ["Long nights (16 min)", 2.7]]
 ## What each difficulty adds to the map. Auto picks one level per guard (up to 3).
 const DIFFICULTIES := [
 	["Auto: one level per guard", "Picks the map size from the team: 1 guard plays difficulty 1, 2 guards play 2, and 3 or 4 guards play 3."],
@@ -34,6 +36,7 @@ var _buttons: Array[Button] = []
 var _difficulty: OptionButton
 var _difficulty_about: Label
 var _keep_gear: CheckBox
+var _night_length: OptionButton
 var _continue: CheckBox
 var _warned_about_save := false
 
@@ -216,6 +219,7 @@ func options() -> Dictionary:
 		"keep_gear": _keep_gear.button_pressed,
 		"continue": _continue.visible and _continue.button_pressed,
 		"password": _password.text,
+		"seconds_per_minute": float(NIGHT_LENGTHS[maxi(_night_length.selected, 0)][1]),
 	}
 
 
@@ -249,7 +253,18 @@ func _add_run_options(column: VBoxContainer) -> void:
 	_keep_gear.tooltip_text = "Upgrades and carried items survive a restart. Points still go back to zero."
 	_keep_gear.button_pressed = bool(saved.get("keep_gear", false))
 	_keep_gear.add_theme_font_size_override("font_size", 17)
-	column.add_child(_keep_gear)
+	_keep_gear.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var row := HBoxContainer.new()
+	row.add_child(_keep_gear)
+	_night_length = OptionButton.new()
+	for entry: Array in NIGHT_LENGTHS:
+		_night_length.add_item(entry[0])
+	_night_length.select(clampi(int(Profile.get("night_length")), 0, NIGHT_LENGTHS.size() - 1))
+	_night_length.item_selected.connect(func(index: int) -> void:
+		Profile.set("night_length", index)
+		Profile.save_settings())
+	row.add_child(_night_length)
+	column.add_child(row)
 
 	_continue = CheckBox.new()
 	_continue.text = "Continue saved run: %s" % RunSave.describe(saved)
