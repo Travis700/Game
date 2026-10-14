@@ -165,6 +165,15 @@ What keeps a player coming back after the first run:
 - **The phone.** From night 2 the front office phone rings 1–2 times a night: answer within 35 s for a tip about a live anomaly, or the power goes.
 - **First-night moment.** A harmless, local glimpse of a figure at the end of the main hallway on night 1.
 
+## 11d. Survival pillars (genre parity)
+
+- **Hiding.** 13 slatted cupboards (one per main area, one in the guard room). Inside, a guard isn't a target and any chase on them ends; a monster within 10 m that saw them climb in pulls them out after 1.4 s.
+- **Lockdown (the hunt).** From night 6 (1 a night, 2 from night 9): an alarm, then 30 s in which every monster (except the Ghost and the Shade) heads for the nearest reachable guard at 3.6 m/s, faster than walking and slower than running.
+- **Nerve (sanity).** 0–100 per guard, kept by the host. Drains: base 0.04/s, alone (in a team) 0.12/s, dark (power cut) 0.5/s, monster within 12 m 0.7/s, teammate caught −15. Gains: lit guard room 0.5/s, teammate within 8 m 0.08/s, coffee +40. Monsters notice a guard from up to 1.3× further as nerve falls; below 40, local hallucinations (footsteps, whispers, knocks, a figure at the edge of vision) every 8–30 s.
+- **Evidence.** The pocket EMF reader (rank 2) shows 1–4 by distance to the nearest monster (harmless ones cap at 3); the Ghost, Specimen, Understudy and Other Cleaner read EMF 5 within 6 m.
+- **Ghost agency.** Caught guards can leave a cold spot (E) every 4 s: a blue glow and a chill the living see, with a message if they're near.
+- **More monsters.** The Photographer (D1, night 3: don't look when the flash fires) and the Twins (D2, night 2: move only when neither is watched).
+
 ## 12. Technical plan
 
 - **Godot 4**, scripts in GDScript.
