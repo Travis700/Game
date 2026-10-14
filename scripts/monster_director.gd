@@ -62,6 +62,8 @@ var lockers: Lockers
 var school: SchoolBuilder
 var portrait: SelfPortrait
 var career: Career
+## Voice chat, so the Understudy can copy what guards said. Host only.
+var voice: VoiceChat
 
 var night_number := 1
 ## Tonight's difficulty: which wings are open. Monsters only come from open areas.

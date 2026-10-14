@@ -6,6 +6,9 @@ extends Monster
 ## Keep moving. If the guard it's following stands still where it can see them for a few
 ## seconds, it steps in to take over the role. On the cameras it's an extra guard who shouldn't
 ## be there: log it as a Monster and it takes a bow and leaves.
+##
+## It has learned your lines, too. Now and then, from a little way off, it says something one of
+## the guards said earlier tonight, in their voice (players can turn this off in the Esc menu).
 
 const FOLLOW_DISTANCE := 7.0
 const FOLLOW_SPEED := 3.6
@@ -15,12 +18,16 @@ const SIGHT_RANGE := 14.0
 const STILL_SECONDS := 4.0
 const STEP_IN_SECONDS := 4.0
 const STILL_SPEED := 0.3
+## Real seconds between its lines, and how far from the guard it's following it has to be.
+const LINE_EVERY := Vector2(25.0, 60.0)
+const LINE_MIN_DISTANCE := 4.0
 
 var _target: Guard
 var _still_for := 0.0
 var _warned := false
 var _step_left := 0.0
 var _uniform: StandardMaterial3D
+var _next_line := randf_range(10.0, 25.0)
 
 
 func _init() -> void:
@@ -48,6 +55,9 @@ func think(delta: float) -> void:
 	else:
 		halt()
 		face(_target.global_position - global_position)
+	_next_line -= delta
+	if _next_line <= 0.0 and distance > LINE_MIN_DISTANCE:
+		_next_line = randf_range(LINE_EVERY.x, LINE_EVERY.y) if _say_a_line() else 5.0
 	var watching := distance < SIGHT_RANGE and director.can_see(eye_position(), _target)
 	# Standing still is fair when the Crossing Guard's sign is up, and a guard sitting at a
 	# desk is working, not standing about.
@@ -72,6 +82,22 @@ func _step_in(delta: float) -> void:
 		state = "follow%d" % _target.slot
 		return
 	catch_nearby()
+
+
+## Says something a guard said earlier, in their voice: preferably a teammate of the guard it's
+## following, so it sounds like them calling from behind. False if it has nothing to say yet.
+func _say_a_line() -> bool:
+	if director.voice == null:
+		return false
+	var voices: Array[int] = []
+	for guard in director.living_guards():
+		if guard != _target and director.voice.has_lines(guard.name.to_int()):
+			voices.append(guard.name.to_int())
+	if voices.is_empty() and director.voice.has_lines(_target.name.to_int()):
+		voices.append(_target.name.to_int())
+	if voices.is_empty():
+		return false
+	return director.voice.mimic(self, voices.pick_random())
 
 
 func _pick_target() -> Guard:

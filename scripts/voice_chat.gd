@@ -22,6 +22,15 @@ const HANGOVER := 0.35
 const HEARING_RANGE := 26.0
 ## Network channel for voice, so it never holds up the game's own messages.
 const CHANNEL := 2
+## The Understudy's lines go on their own channel: they're big, and must arrive whole.
+const MIMIC_CHANNEL := 3
+## The Understudy's lines: the host keeps the last few things each guard said, in memory only
+## (never saved), so it can say them back. A pause this long (seconds) ends a line; lines are
+## kept between these lengths (bytes: one per sample at VOICE_RATE).
+const LINE_GAP := 0.5
+const LINE_MIN_BYTES := 8000
+const LINE_MAX_BYTES := 64000
+const LINES_KEPT := 6
 
 ## The local player's guard. Set by Main.
 var local_guard: Guard
@@ -56,6 +65,11 @@ var _last_packet: Dictionary = {}
 const PRIME_FRAMES := 960
 const MAX_QUEUED_FRAMES := 2400
 var _active := false
+## Host: peer id -> recent lines (PackedByteArray of mu-law samples), and the line being heard now.
+var _lines: Dictionary = {}
+var _taking: Dictionary = {}
+## Host: peers who've said monsters may not copy their voice.
+var _no_mimic: Dictionary = {}
 
 
 func _ready() -> void:
@@ -91,6 +105,8 @@ func _ready() -> void:
 ## Starts or stops listening to the microphone, e.g. when a session starts, or the setting changes.
 func set_active(on: bool) -> void:
 	_active = on and _profile_value("voice_mode", "push") != "off"
+	if on:
+		send_mimic_consent()
 	if _active and not _mic_player.playing and not test_input.is_valid():
 		var device: String = _profile_value("mic_device", "")
 		if device != "" and device in AudioServer.get_input_device_list():
@@ -173,7 +189,7 @@ func _downsample_into_outgoing(frames: PackedVector2Array) -> void:
 func _send(packet: PackedByteArray, loudness: float, radio: bool) -> void:
 	var me := multiplayer.get_unique_id()
 	if multiplayer.is_server():
-		_heard_by_host(me, loudness, radio)
+		_heard_by_host(me, loudness, radio, packet)
 	_voice.rpc(packet, loudness, radio)
 
 
@@ -182,7 +198,7 @@ func _send(packet: PackedByteArray, loudness: float, radio: bool) -> void:
 func _voice(packet: PackedByteArray, loudness: float, radio: bool) -> void:
 	var speaker := multiplayer.get_remote_sender_id()
 	if multiplayer.is_server():
-		_heard_by_host(speaker, loudness, radio)
+		_heard_by_host(speaker, loudness, radio, packet)
 	if radio and _hears_on_radio(speaker):
 		_play_radio(speaker, packet)
 	else:
@@ -191,10 +207,11 @@ func _voice(packet: PackedByteArray, loudness: float, radio: bool) -> void:
 
 ## Host: tells the monsters who's talking and how loudly. A radio call also comes out of
 ## every other living guard's radio, and monsters near them hear that too.
-func _heard_by_host(speaker: int, loudness: float, radio: bool) -> void:
+func _heard_by_host(speaker: int, loudness: float, radio: bool, packet: PackedByteArray) -> void:
 	if director == null:
 		return
 	director.report_voice(speaker, loudness)
+	_record(speaker, packet)
 	if not radio:
 		return
 	var talker := director.guard_by_peer(speaker)
@@ -303,6 +320,106 @@ func _push(player: Node, speaker: int, packet: PackedByteArray) -> void:
 		playback.push_frame(Vector2(sample, sample))
 
 
+# --- The Understudy's lines ----------------------------------------------------------------
+
+## Host: adds a packet to what this guard is saying now.
+func _record(speaker: int, packet: PackedByteArray) -> void:
+	if _no_mimic.has(speaker):
+		return
+	var now := Time.get_ticks_msec() / 1000.0
+	var take: Dictionary = _taking.get(speaker, {})
+	if take.is_empty() or now - float(take["last"]) > LINE_GAP or (take["data"] as PackedByteArray).size() >= LINE_MAX_BYTES:
+		_finish_line(speaker)
+		take = {"data": PackedByteArray(), "last": now}
+		_taking[speaker] = take
+	var data: PackedByteArray = take["data"]
+	data.append_array(packet)
+	take["data"] = data
+	take["last"] = now
+
+
+func _finish_line(speaker: int) -> void:
+	var take: Dictionary = _taking.get(speaker, {})
+	_taking.erase(speaker)
+	if take.is_empty() or (take["data"] as PackedByteArray).size() < LINE_MIN_BYTES:
+		return
+	var kept: Array = _lines.get_or_add(speaker, [])
+	kept.append(take["data"])
+	if kept.size() > LINES_KEPT:
+		kept.pop_front()
+
+
+## Host: something this guard said a while ago, or an empty array if there's nothing yet.
+func line_of(peer_id: int) -> PackedByteArray:
+	var take: Dictionary = _taking.get(peer_id, {})
+	if not take.is_empty() and Time.get_ticks_msec() / 1000.0 - float(take["last"]) > LINE_GAP:
+		_finish_line(peer_id)
+	var kept: Array = _lines.get(peer_id, [])
+	return kept.pick_random() if not kept.is_empty() else PackedByteArray()
+
+
+## Host: has this guard said anything it could copy?
+func has_lines(peer_id: int) -> bool:
+	return not line_of(peer_id).is_empty()
+
+
+## Host: `at` says something `peer_id` said, in their voice, for everyone nearby to hear.
+func mimic(at: Node3D, peer_id: int) -> bool:
+	var line := line_of(peer_id)
+	if line.is_empty():
+		return false
+	_mimic.rpc(at.get_path(), line)
+	return true
+
+
+@rpc("authority", "call_local", "reliable", MIMIC_CHANNEL)
+func _mimic(path: NodePath, line: PackedByteArray) -> void:
+	var speaker := get_node_or_null(path) as Node3D
+	if speaker == null:
+		return
+	var samples := _decode(line)
+	var data := PackedByteArray()
+	data.resize(samples.size() * 2)
+	for i in samples.size():
+		data.encode_s16(i * 2, int(clampf(samples[i], -1.0, 1.0) * 32767.0))
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = VOICE_RATE
+	wav.data = data
+	var player := Sfx.play_at(speaker, wav, linear_to_db(maxf(float(_profile_value("voice_volume", 1.0)), 0.0001)), HEARING_RANGE)
+	if player:
+		player.position = Vector3(0, 1.6, 0)
+		player.unit_size = 4.0
+		# Not quite right.
+		player.pitch_scale = 0.94
+
+
+## Tells the host whether monsters may copy this player's voice (the Esc menu setting).
+func send_mimic_consent() -> void:
+	if multiplayer.multiplayer_peer == null or multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
+		return
+	var allowed: bool = _profile_value("voice_mimic", true)
+	if multiplayer.is_server():
+		_mimic_consent(allowed)
+	else:
+		_mimic_consent.rpc_id(1, allowed)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _mimic_consent(allowed: bool) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer := multiplayer.get_remote_sender_id()
+	if peer == 0:
+		peer = multiplayer.get_unique_id()
+	if allowed:
+		_no_mimic.erase(peer)
+	else:
+		_no_mimic[peer] = true
+		_lines.erase(peer)
+		_taking.erase(peer)
+
+
 ## A player left: their voice players go too.
 func _forget_speaker(peer_id: int) -> void:
 	for table: Dictionary in [_voices, _radio_voices]:
@@ -312,6 +429,9 @@ func _forget_speaker(peer_id: int) -> void:
 		table.erase(peer_id)
 	_radio_last_heard.erase(peer_id)
 	_last_packet.erase(peer_id)
+	_lines.erase(peer_id)
+	_taking.erase(peer_id)
+	_no_mimic.erase(peer_id)
 
 
 func players_guard(peer_id: int) -> Guard:

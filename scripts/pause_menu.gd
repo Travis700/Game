@@ -129,6 +129,15 @@ func _ready() -> void:
 	var others := _slider(0.0, 1.5, Profile.voice_volume)
 	others.value_changed.connect(func(value: float) -> void: Profile.voice_volume = value)
 	voice_grid.add_child(others)
+	voice_grid.add_child(_small("Monsters"))
+	var mimic := CheckBox.new()
+	mimic.text = "May copy my voice"
+	mimic.button_pressed = Profile.voice_mimic
+	mimic.toggled.connect(func(on: bool) -> void:
+		Profile.voice_mimic = on
+		if voice:
+			voice.send_mimic_consent())
+	voice_grid.add_child(mimic)
 
 	column.add_child(_label("Graphics"))
 	var graphics := GridContainer.new()

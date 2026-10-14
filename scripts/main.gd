@@ -172,6 +172,7 @@ func _ready() -> void:
 	voice = VoiceChat.new()
 	voice.name = "Voice"
 	voice.director = director
+	director.voice = voice
 	add_child(voice)
 
 	dread = Dread.new()

@@ -94,7 +94,7 @@ const ENTRIES := {
 	},
 	"Understudy": {
 		"name": "the Understudy", "where": "Science wing",
-		"signs": "An extra guard with no face behind the visor, following one of you around.",
+		"signs": "An extra guard with no face behind the visor, following one of you around. It talks in your teammates' voices.",
 		"rule": "Keep moving. Spot the extra guard on the cameras and log it as a Monster.",
 		"rumour": "Count the guards on the cameras. Then count them again.",
 	},
