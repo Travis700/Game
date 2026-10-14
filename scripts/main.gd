@@ -48,6 +48,7 @@ var vending: CanvasLayer
 var keypad: CanvasLayer
 var ambience: Ambience
 var voice: VoiceChat
+var career: Career
 var pause_menu: CanvasLayer
 var spawner: MultiplayerSpawner
 var _local_guard: Guard
@@ -168,6 +169,11 @@ func _ready() -> void:
 	voice.director = director
 	add_child(voice)
 
+	career = Career.new()
+	career.name = "Career"
+	add_child(career)
+	director.career = career
+
 	totems = Totems.new()
 	totems.name = "Totems"
 	totems.director = director
@@ -178,6 +184,7 @@ func _ready() -> void:
 	shop = Shop.new()
 	shop.name = "Shop"
 	shop.director = director
+	shop.career = career
 	shop.cameras = cameras
 	shop.guard_room = guard_room
 	add_child(shop)
@@ -231,9 +238,12 @@ func _ready() -> void:
 	night.shop = shop
 	night.guard_room = guard_room
 	night.doors = doors
+	night.career = career
 	add_child(night)
 	shop.night = night
-	director.student_helped.connect(func(peer_id: int) -> void: night.add_bonus(peer_id))
+	director.student_helped.connect(func(peer_id: int) -> void:
+		night.add_bonus(peer_id)
+		career.award(peer_id, "GOOD_SAMARITAN"))
 	_refresh_inventory()
 
 	menu = Menu.new()
@@ -820,6 +830,7 @@ func _on_guard_caught(peer_id: int, by: String) -> void:
 	if guard == null or guard.is_dead:
 		return
 	night.record_death()
+	career.add_stat(peer_id, "times_caught")
 	_guard_died.rpc(peer_id, by, guard.global_position)
 	if director.living_guards().is_empty():
 		night.fail_night()
@@ -853,6 +864,8 @@ func _on_revive_rolled(user_peer: int, roll: int, revived_peer: int, at: Vector3
 		return
 	_announce.rpc("Guard %d rolled a %d at a totem. Guard %d is back!" % [user.slot, roll, revived.slot])
 	night.record_revive()
+	career.award(user_peer, "LIFESAVER")
+	career.award(revived_peer, "BACK_FROM_DEAD")
 	_guard_revived.rpc(revived_peer, at + Vector3(0.8, 0.1, 0))
 
 
@@ -957,6 +970,12 @@ func _refresh_guard_visibility() -> void:
 	var viewer_is_dead := _local_guard != null and _local_guard.is_dead
 	for guard: Guard in players.get_children():
 		guard.update_visibility(viewer_is_dead)
+
+
+## Every computer: this player just unlocked an achievement.
+func on_achievement(title: String) -> void:
+	hud.show_message("Achievement unlocked: %s" % title)
+	Sfx.play_flat(self, Sfx.notes([784.0, 988.0, 1175.0, 1568.0], 0.09, 0.22, "sine"))
 
 
 ## Every computer, when the night report appears: leave the desk and stop moving.

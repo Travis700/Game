@@ -125,6 +125,8 @@ func _request_turn() -> void:
 		director.tell(peer, "A blank canvas on an easel.")
 		return
 	director.tell(peer, "You turn the canvas to the wall. Behind you, something sighs.")
+	if director.career:
+		director.career.award(peer, "ART_CRITIC")
 	_subject = 0
 	_next_at = director.minutes() + randf_range(REST_MINUTES.x, REST_MINUTES.y)
 	_show.rpc(0, 1)

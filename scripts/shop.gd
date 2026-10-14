@@ -62,6 +62,9 @@ const TRAY := Vector3(18.75, 0.15, 16.6)
 var night: Night
 var director: MonsterDirector
 var cameras: SecurityCameras
+var career: Career
+## Host: points each guard has spent this run (for the Big spender achievement).
+var _spent: Dictionary = {}
 var guard_room: GuardRoom
 ## What this player is carrying ("" for nothing). Updated by the host.
 var local_item := ""
@@ -289,6 +292,11 @@ func _area_name(at: Vector3) -> String:
 	return area if area != "" else "the guard room"
 
 
+## Host: a run ended; spending counts from zero again.
+func reset_spending() -> void:
+	_spent.clear()
+
+
 ## Host: hands a guard an item without buying it, e.g. one they were carrying in a saved run.
 func give(peer_id: int, item: String) -> void:
 	if ITEMS.has(item):
@@ -335,6 +343,9 @@ func _request_buy(item: String) -> void:
 		_tell(peer, "You don't have enough points for that.")
 		return
 	night.spend(peer, price)
+	_spent[peer] = int(_spent.get(peer, 0)) + price
+	if career and _spent[peer] >= 1000:
+		career.award(peer, "BIG_SPENDER")
 	_send_wallet(peer)
 	_spawn_drop.rpc(_next_drop, item)
 	_next_drop += 1

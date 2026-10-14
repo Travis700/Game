@@ -24,6 +24,8 @@ const HEIGHT := 2.35
 var shop: Shop
 var director: MonsterDirector
 var local_guard: Guard
+## Host: has a monster battered one of the doors tonight? (For the Hold the door achievement.)
+var battered_tonight := false
 
 ## Doorway index -> fitted / shut / broken. Shown on every computer.
 var installed: Array[bool] = [false, false]
@@ -154,6 +156,7 @@ func update(delta: float) -> void:
 		if not banging:
 			continue
 		_health[i] -= delta
+		battered_tonight = true
 		_bang_cooldown[i] -= delta
 		if _bang_cooldown[i] <= 0.0:
 			_bang_cooldown[i] = 0.9
@@ -174,6 +177,7 @@ func reset_all() -> void:
 
 ## Host: a new night. Fitted doors are mended and left open.
 func reset_for_night() -> void:
+	battered_tonight = false
 	for i in DOORWAYS.size():
 		_health[i] = STRENGTH
 		if installed[i] and (closed[i] or broken[i]):

@@ -61,6 +61,7 @@ var anomalies: Anomalies
 var lockers: Lockers
 var school: SchoolBuilder
 var portrait: SelfPortrait
+var career: Career
 
 var night_number := 1
 ## Tonight's difficulty: which wings are open. Monsters only come from open areas.
@@ -472,6 +473,8 @@ func check_mascot_missing(peer_id: int, area: String) -> bool:
 			if peer_id in credited:
 				return false
 			credited.append(peer_id)
+			if career:
+				career.logged_monster(peer_id, "Mascot")
 			return true
 	return false
 
@@ -528,6 +531,8 @@ func check_log(peer_id: int, area: String) -> bool:
 		var credited: Array = _credited.get_or_add(monster.name, [])
 		if peer_id not in credited and SchoolBuilder.area_at(monster.global_position) == area:
 			credited.append(peer_id)
+			if career:
+				career.logged_monster(peer_id, monster.get_script().get_global_name())
 			if monster.leaves_when_logged:
 				# Found out, it slips away.
 				get_tree().create_timer(2.0).timeout.connect(func() -> void:
@@ -536,9 +541,13 @@ func check_log(peer_id: int, area: String) -> bool:
 			return true
 	if portrait.active and portrait.stage > 0 and area == "Art Room" and peer_id not in portrait.credited:
 		portrait.credited.append(peer_id)
+		if career:
+			career.logged_monster(peer_id, "SelfPortrait")
 		return true
 	if lockers.active and peer_id not in lockers.credited and lockers.has_open_in(area):
 		lockers.credited.append(peer_id)
+		if career:
+			career.logged_monster(peer_id, "Lockers")
 		return true
 	return false
 

@@ -111,6 +111,8 @@ func _answer() -> void:
 		_target = null
 		state = "teach"
 		director.tell(peer, "\"...Present.\" It makes a mark and goes back to the board.")
+		if director.career:
+			director.career.award(peer, "PRESENT")
 	else:
 		director.tell(peer, "It nods without looking up.")
 

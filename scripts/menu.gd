@@ -14,8 +14,10 @@ const DIFFICULTIES := [
 ]
 
 const HowToPlay := preload("res://scripts/how_to_play.gd")
+const Records := preload("res://scripts/records.gd")
 
 var _how_to_play: CanvasLayer
+var _records: CanvasLayer
 var _steam_label: Label
 var _status: Label
 var _address: LineEdit
@@ -108,12 +110,17 @@ func _ready() -> void:
 	var how := _button("How to play", func() -> void: _how_to_play.open())
 	how.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom_row.add_child(how)
+	how = _button("Records", func() -> void: _records.open())
+	how.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom_row.add_child(how)
 	var quit := _button("Quit", func() -> void: get_tree().quit())
 	quit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom_row.add_child(quit)
 	column.add_child(bottom_row)
 	_how_to_play = HowToPlay.new()
 	add_child(_how_to_play)
+	_records = Records.new()
+	add_child(_records)
 
 	_status = Label.new()
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

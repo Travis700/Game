@@ -34,6 +34,7 @@ var totems: Totems
 var shop: Shop
 var guard_room: GuardRoom
 var doors: GuardRoomDoors
+var career: Career
 
 var number := 1
 ## Tonight's map size (1-3), sent by the host when the night starts. 0 before the first night.
@@ -308,6 +309,7 @@ func fail_night() -> void:
 		saved_personal.clear()
 	# Everyone's points are gone, including guards who aren't here tonight.
 	saved_points.clear()
+	shop.reset_spending()
 	_show_report.rpc(number, rows, summary, "caught")
 	save_run(1)
 
@@ -316,6 +318,7 @@ func _end_night() -> void:
 	if shift.state != Shift.State.MORNING:
 		return
 	var rows := _build_rows(true)
+	_award_night()
 	var appeared := anomalies.appeared_count()
 	var missed := anomalies.missed_count()
 	var summary := "%d anomal%s tonight, %d missed by everyone.   Guards lost: %d." % [
@@ -329,6 +332,7 @@ func _end_night() -> void:
 		for guard: Guard in players.get_children():
 			team_total += points_of(guard.name.to_int())
 		summary = "You kept Westfield High safe for all %d nights. Whatever lives here will wait for the next crew.\nFinal team score: %d points.\n" % [LAST_NIGHT, team_total] + summary
+		shop.reset_spending()
 		_show_report.rpc(number, rows, summary, "won")
 		# The next run starts fresh.
 		shop.reset_all()
@@ -342,6 +346,39 @@ func _end_night() -> void:
 	_show_report.rpc(number, rows, summary, "night")
 	shop.push_wallets()
 	save_run(number + 1)
+
+
+## Host: achievements and stats for the night everyone clocked out of (or didn't).
+func _award_night() -> void:
+	if career == null:
+		return
+	var won := number >= LAST_NIGHT
+	var team := players.get_child_count()
+	for guard: Guard in players.get_children():
+		var peer := guard.name.to_int()
+		var stats: Dictionary = _stats.get(peer, {"correct": 0, "false": 0})
+		if stats["correct"] > 0:
+			career.add_stat(peer, "correct_logs", stats["correct"])
+		if stats["correct"] >= 10:
+			career.award(peer, "SHARP_EYES")
+		if stats["correct"] >= 5 and stats["false"] == 0:
+			career.award(peer, "BY_THE_BOOK")
+		if not shift.has_clocked_out(peer):
+			continue
+		career.add_stat(peer, "nights_survived")
+		career.award(peer, "FIRST_SHIFT")
+		if number >= 5:
+			career.award(peer, "NIGHT_FIVE")
+		if doors.battered_tonight:
+			career.award(peer, "HOLD_THE_DOOR")
+		if won:
+			career.award(peer, "RUN_WON")
+			career.add_stat(peer, "runs_won")
+			career.record_score(peer, points_of(peer), difficulty, team)
+			if team == 1:
+				career.award(peer, "RUN_WON_SOLO")
+			if difficulty >= MAX_DIFFICULTY:
+				career.award(peer, "RUN_WON_D3")
 
 
 ## One row per guard for the report. `keep_pay` is false when the run is starting over.
