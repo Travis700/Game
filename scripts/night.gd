@@ -392,7 +392,9 @@ func record_revive() -> void:
 
 ## Host: the whole team has been caught. The run starts over from night 1.
 func fail_night() -> void:
-	if shift.state != Shift.State.ON_SHIFT:
+	# Also from the morning: the last guard can be caught moments before 6 AM, and the report
+	# waits for their jumpscare, by which time it's morning with nobody left to clock out.
+	if shift.state != Shift.State.ON_SHIFT and not (shift.state == Shift.State.MORNING and director.living_guards().is_empty()):
 		return
 	director.end_night()
 	totems.clear_all()

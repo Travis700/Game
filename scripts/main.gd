@@ -783,7 +783,7 @@ func _guard_count() -> int:
 
 
 func _update_guards_required() -> void:
-	if shift.state == Shift.State.ON_SHIFT and _guard_count() > 0 and director.living_guards().is_empty():
+	if shift.state in [Shift.State.ON_SHIFT, Shift.State.MORNING] and _guard_count() > 0 and director.living_guards().is_empty():
 		night.fail_night()
 		return
 	if shift.state == Shift.State.MORNING:
@@ -1343,6 +1343,9 @@ func on_next_night() -> void:
 	for guard: Guard in players.get_children():
 		guard.set_dead(false)
 	director.remove_all_corpses()
+	# Everyone has to clock in again (the morning only counted the living).
+	if multiplayer.is_server():
+		_update_guards_required()
 	hud.set_ghost(false)
 	_refresh_guard_visibility()
 	if _local_guard:
