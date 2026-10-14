@@ -838,7 +838,7 @@ func _on_vending_used(by: Node) -> void:
 	if by != _local_guard or _local_guard.is_dead:
 		return
 	_local_guard.input_blocked = true
-	vending.open(shop.local_points, shop.local_item)
+	vending.open(shop.local_points, shop.local_item, _mode == "solo")
 
 
 func _refresh_inventory() -> void:

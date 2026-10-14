@@ -123,8 +123,8 @@ Which monsters are unlocked on which night is still to be set (section 14).
 
 | Item | Price | Effect |
 |---|---|---|
-| Spectral camera kit | 150 | Installed at a desk (10 s): that desk's monitors show the Ghost. |
-| Lucky rabbit's foot | 60 | Revive totems succeed on 5 in 6. |
+| Spectral camera kit | 150 | Installed at a desk with G (10 s): that desk's monitors show the Ghost. |
+| Lucky rabbit's foot | 60 | Revive totems succeed on 5 in 6 (co-op only; solo has no totems). |
 | Guard room door kit | 120 | A door for one of the two doorways; holds monsters about 15 s of banging. |
 | Motion sensor | 40 | Put down with G; announces which area a monster passed. |
 | Industrial glue trap | 60 | Put down with G; holds the first monster for 20 s. |

@@ -8,6 +8,10 @@ var is_open := false
 
 var _points: Label
 var _holding: Label
+## Items only useful with teammates: item id -> its Buy button.
+var _coop_buttons: Dictionary = {}
+## The co-op-only items.
+const COOP_ONLY: Array[String] = ["lucky_charm"]
 
 
 func _ready() -> void:
@@ -76,6 +80,8 @@ func _ready() -> void:
 		buy.text = "Buy"
 		buy.custom_minimum_size = Vector2(90, 44)
 		buy.pressed.connect(func() -> void: buy_requested.emit(item))
+		if item in COOP_ONLY:
+			_coop_buttons[item] = buy
 		row.add_child(buy)
 		rows.add_child(row)
 
@@ -86,7 +92,11 @@ func _ready() -> void:
 	column.add_child(hint)
 
 
-func open(points: int, holding: String) -> void:
+## `solo` greys out the things that only help a team.
+func open(points: int, holding: String, solo := false) -> void:
+	for button: Button in _coop_buttons.values():
+		button.disabled = solo
+		button.text = "Co-op only" if solo else "Buy"
 	refresh(points, holding)
 	visible = true
 	is_open = true
