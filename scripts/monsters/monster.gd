@@ -167,7 +167,8 @@ func patrol_step(points: Array[Vector3], delta: float, speed: float, pause: Vect
 ## is false) and passing `test`, if given.
 func find_guard(reach: float, need_sight := true, test := Callable()) -> Guard:
 	for guard in director.targetable_guards():
-		if distance_to_guard(guard) > reach:
+		# A guard whose nerve is going is noticed from further off.
+		if distance_to_guard(guard) > reach * director.nerve_reach(guard):
 			continue
 		if test.is_valid() and not test.call(guard):
 			continue

@@ -65,6 +65,11 @@ die, every camera shows NO POWER and the vending machine stops; only red emergen
 Reset the breaker in the custodian's closet (across the main hallway from the lobby) by holding E on it.
 Whoever resets it is paid like a correct log.
 
+**Nerve:** each guard's nerve (bottom left) drains in the dark, alone (with a team), near monsters and when a
+teammate is caught, and recovers in the lit guard room, near teammates, or with a **thermos of coffee**
+(vending machine, 30, +40). Low nerve: monsters notice you from up to 30% further away, and below 40 you
+get hallucinations (footsteps behind you, whispers, knocking, a figure at the edge of your vision).
+
 **Hiding:** a dozen slatted cupboards stand around the school (and wings). Press E to climb in and E to climb
 out. Nothing can find you inside, and a chase ends when you hide, unless the monster saw you go in, in
 which case it pulls you out.

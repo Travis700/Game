@@ -17,6 +17,8 @@ var _clock: Label
 var _objective: Label
 var _voice_label: Label
 var _voice_bar: ProgressBar
+var _nerve_box: Control
+var _nerve_bar: ProgressBar
 var _inventory: Label
 var _ghost_tint: ColorRect
 var _ghost_note: Label
@@ -96,6 +98,30 @@ func _ready() -> void:
 	voice_box.add_child(_voice_bar)
 	voice_box.visible = false
 	_voice_label.set_meta("box", voice_box)
+
+	# Bottom left, above the microphone: your nerve, while on shift.
+	var nerve_box := HBoxContainer.new()
+	nerve_box.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	nerve_box.offset_left = 20
+	nerve_box.offset_top = -80
+	nerve_box.offset_bottom = -54
+	nerve_box.add_theme_constant_override("separation", 10)
+	nerve_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(nerve_box)
+	var nerve_label := Label.new()
+	nerve_label.text = "NERVE"
+	nerve_label.add_theme_font_size_override("font_size", 15)
+	nerve_label.modulate.a = 0.75
+	nerve_box.add_child(nerve_label)
+	_nerve_bar = ProgressBar.new()
+	_nerve_bar.custom_minimum_size = Vector2(140, 10)
+	_nerve_bar.show_percentage = false
+	_nerve_bar.max_value = 100.0
+	_nerve_bar.value = 100.0
+	_nerve_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	nerve_box.add_child(_nerve_bar)
+	nerve_box.visible = false
+	_nerve_box = nerve_box
 
 	_build_feed_view()
 
@@ -236,6 +262,13 @@ func set_voice(transmitting: bool, level: float, on_radio := false) -> void:
 	box.visible = transmitting
 	_voice_bar.value = level
 	_voice_label.text = ("ON RADIO" if on_radio else "TALKING") + (" (LOUD)" if level > 0.6 else "")
+
+
+## Your nerve (0-100), shown below 100 while on shift. Turns red as it runs low.
+func set_nerve(value: float) -> void:
+	_nerve_bar.value = value
+	_nerve_box.visible = value < 99.5
+	_nerve_bar.modulate = Color(1, 1, 1).lerp(Color(1.0, 0.3, 0.25), clampf(1.0 - value / 60.0, 0.0, 1.0))
 
 
 ## Session info in the top-right corner, e.g. "Hosting · 2 guards".

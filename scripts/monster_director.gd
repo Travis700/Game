@@ -69,6 +69,8 @@ var career: Career
 var voice: VoiceChat
 ## Tonight's conditions (a full moon, sound carrying...). Host only.
 var conditions: Conditions
+## Everyone's nerve. Host only.
+var nerve: Nerve
 
 var night_number := 1
 ## Tonight's difficulty: which wings are open. Monsters only come from open areas.
@@ -536,6 +538,11 @@ func kill(guard: Guard, by: String, from := Vector3.INF) -> void:
 
 
 ## Sends a message to one player's screen.
+## How much further than usual monsters notice this guard (their nerve).
+func nerve_reach(guard: Guard) -> float:
+	return nerve.reach_factor(guard) if nerve else 1.0
+
+
 func flash_screen(peer_id: int, color: Color, seconds: float) -> void:
 	screen_flashed.emit(peer_id, color, seconds)
 

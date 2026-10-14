@@ -47,6 +47,10 @@ const ITEMS := {
 		"name": "Heavy-duty flashlight", "price": 80, "rank": 3,
 		"about": "Press G to swap it for your flashlight. A longer, wider beam, for good. (The Librarian will notice it from further away too.)",
 	},
+	"coffee": {
+		"name": "Thermos of coffee", "price": 30,
+		"about": "Press G to drink it: steadies your nerve (+40). Low nerve means monsters notice you sooner, and you start seeing things.",
+	},
 	"air_horn": {
 		"name": "Air horn", "price": 70, "rank": 4,
 		"about": "Press G to blast it: every monster within 15 metres freezes for 6 seconds. Everything in the school hears it.",
@@ -55,7 +59,7 @@ const ITEMS := {
 ## Every item needs at least this rank to buy, unless it says otherwise.
 const DEFAULT_RANK := 1
 ## Items used or put down with G (the rest are fitted with E).
-const USED_WITH_G: Array[String] = ["camera_kit", "portable_camera", "radio", "motion_sensor", "glue_trap", "energy_drink", "flashlight", "air_horn"]
+const USED_WITH_G: Array[String] = ["camera_kit", "portable_camera", "radio", "motion_sensor", "glue_trap", "energy_drink", "flashlight", "air_horn", "coffee"]
 ## How far a motion sensor notices things, and how long it stays quiet after going off.
 const SENSOR_RANGE := 5.0
 const SENSOR_COOLDOWN := 30.0
@@ -165,6 +169,10 @@ func _request_use() -> void:
 				target.y = 0.6
 				cameras.place_portable.rpc(slot, at, target)
 				_tell(peer, "Portable camera %d is up. Find it on the guard room monitors." % (slot + 1))
+		"coffee":
+			if take(peer, item):
+				night.nerve.add(peer, 40.0)
+				_tell(peer, "Hot, bitter, and exactly what you needed. Your hands stop shaking.")
 		"air_horn":
 			if take(peer, item):
 				var frozen := 0

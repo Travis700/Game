@@ -310,6 +310,15 @@ func _ready() -> void:
 	hiding.hud = hud
 	add_child(hiding)
 	night.hiding = hiding
+	var nerve := Nerve.new()
+	nerve.name = "Nerve"
+	nerve.director = director
+	nerve.players = players
+	nerve.power = power
+	nerve.hud = hud
+	add_child(nerve)
+	night.nerve = nerve
+	director.nerve = nerve
 	dread.night = night
 	add_child(night)
 	shop.night = night
@@ -793,6 +802,7 @@ func on_local_guard_ready(guard: Guard) -> void:
 	guard_room.local_guard = guard
 	cameras.viewer = guard
 	ambience.listener = guard
+	night.nerve.local_guard = guard
 	dread.local_guard = guard
 	voice.local_guard = guard
 	voice.set_active(true)
@@ -1023,6 +1033,7 @@ func _on_guard_caught(peer_id: int, by: String, from := Vector3.INF) -> void:
 	if hiding.hidden.has(peer_id):
 		hiding._set_hidden.rpc(peer_id, -1)
 	night.bonus.on_caught(guard)
+	night.nerve.on_caught(guard)
 	career.add_stat(peer_id, "times_caught")
 	_guard_died.rpc(peer_id, by, guard.global_position, from)
 	if director.living_guards().is_empty():
