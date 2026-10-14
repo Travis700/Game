@@ -2,11 +2,15 @@ class_name HallMonitor
 extends Monster
 ## The Hall Monitor: a tall, thin figure with a sash and a clipboard of its own.
 ## It walks the main hallway end to end. It leaves walkers alone, but if it sees a guard
-## running it blows its whistle and chases them until it loses sight of them.
+## running, or hears one talking loudly ("No talking in the halls!"), it blows its whistle and
+## chases them until it loses sight of them.
 
 const PATROL_SPEED := 1.5
 const CHASE_SPEED := 4.3
 const SIGHT_RANGE := 22.0
+## Only loud talking bothers it (quiet voices are fine): how loud, and how far it carries.
+const LOUD_VOICE := 0.45
+const HEAR_SHOUT := 16.0
 ## Seconds without seeing its target before it gives up the chase.
 const GIVE_UP_AFTER := 4.0
 const HALL_ENDS: Array[Vector3] = [Vector3(-36, 0, 7), Vector3(36, 0, 7)]
@@ -28,6 +32,9 @@ func think(delta: float) -> void:
 		return
 	patrol_step(HALL_ENDS, delta, PATROL_SPEED, Vector2.ZERO)
 	var runner := find_guard(SIGHT_RANGE, true, func(guard: Guard) -> bool: return guard.is_running)
+	if runner == null:
+		runner = find_guard(HEAR_SHOUT, false, func(guard: Guard) -> bool:
+			return director.voice_level(guard) > LOUD_VOICE and distance_to_guard(guard) < director.voice_reach(guard, 0.0, HEAR_SHOUT))
 	if runner:
 		_target = runner
 		start_chase()

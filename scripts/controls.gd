@@ -14,6 +14,7 @@ const BINDINGS := {
 	"zoom": [KEY_SPACE],
 	"clipboard": [KEY_TAB],
 	"use_item": [KEY_G],
+	"push_to_talk": [KEY_V],
 	"monitor_1": [KEY_1],
 	"monitor_2": [KEY_2],
 	"monitor_3": [KEY_3],
@@ -28,7 +29,7 @@ const MOUSE_BINDINGS := {
 const REBINDABLE := [
 	["move_forward", "Walk forward"], ["move_back", "Walk back / stand up"], ["move_left", "Walk left"],
 	["move_right", "Walk right"], ["sprint", "Run"], ["interact", "Use"], ["flashlight", "Flashlight"],
-	["clipboard", "Clipboard"], ["use_item", "Use item"], ["zoom", "Full-screen camera"],
+	["clipboard", "Clipboard"], ["use_item", "Use item"], ["zoom", "Full-screen camera"], ["push_to_talk", "Push to talk"],
 ]
 const SAVE_PATH := "user://controls.cfg"
 
@@ -50,28 +51,55 @@ func primary_key(action: String) -> int:
 	return _primary.get(action, BINDINGS[action][0])
 
 
-## Changes an action's main key and saves it.
-func rebind(action: String, keycode: int) -> void:
-	_swap_key(action, primary_key(action), keycode)
+## Keys that can't be taken: Esc (menu), F11 (fullscreen) and 1-4 (monitors).
+const RESERVED: Array[int] = [KEY_ESCAPE, KEY_F11, KEY_1, KEY_2, KEY_3, KEY_4]
+
+
+## Changes an action's main key and saves it. If another action already uses that key, the
+## two swap. Returns "" or a reason it can't be used.
+func rebind(action: String, keycode: int) -> String:
+	if keycode in RESERVED:
+		return "%s is kept for the game itself." % OS.get_keycode_string(keycode)
+	var old_key := primary_key(action)
+	for entry: Array in REBINDABLE:
+		var other: String = entry[0]
+		if other != action and keycode in _keys_of(other):
+			# Swap: the other action takes this one's old key.
+			_primary[other] = old_key
+			_apply(other)
 	_primary[action] = keycode
+	_apply(action)
 	_save()
+	return ""
 
 
 ## Puts every key back the way it started.
 func reset_all() -> void:
-	for action: String in _primary.keys():
-		_swap_key(action, _primary[action], BINDINGS[action][0])
 	_primary.clear()
+	for action: String in BINDINGS:
+		_apply(action)
 	_save()
 
 
-func _swap_key(action: String, old_key: int, new_key: int) -> void:
+## Every key an action responds to right now.
+func _keys_of(action: String) -> Array[int]:
+	var keys: Array[int] = [primary_key(action)]
+	for key: int in BINDINGS[action].slice(1):
+		if key not in keys:
+			keys.append(key)
+	return keys
+
+
+## Rebuilds an action's keys from scratch: its main key plus its built-in extras (arrow keys),
+## leaving mouse buttons alone.
+func _apply(action: String) -> void:
 	for event in InputMap.action_get_events(action):
-		if event is InputEventKey and (event as InputEventKey).physical_keycode == old_key:
+		if event is InputEventKey:
 			InputMap.action_erase_event(action, event)
-	var key := InputEventKey.new()
-	key.physical_keycode = new_key
-	InputMap.action_add_event(action, key)
+	for keycode in _keys_of(action):
+		var key := InputEventKey.new()
+		key.physical_keycode = keycode
+		InputMap.action_add_event(action, key)
 
 
 func _load_changes() -> void:
@@ -80,9 +108,8 @@ func _load_changes() -> void:
 		return
 	for action: String in config.get_section_keys("keys"):
 		if BINDINGS.has(action):
-			var keycode: int = config.get_value("keys", action)
-			_swap_key(action, BINDINGS[action][0], keycode)
-			_primary[action] = keycode
+			_primary[action] = int(config.get_value("keys", action))
+			_apply(action)
 
 
 func _save() -> void:

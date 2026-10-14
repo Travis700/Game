@@ -178,7 +178,7 @@ func confirm_new_run() -> bool:
 	if not _continue.visible or _continue.button_pressed or _warned_about_save:
 		return true
 	_warned_about_save = true
-	show_status("You have a saved run (%s). Starting a new one will replace it after the first night. Click again to start anyway, or tick \"Continue saved run\"." % RunSave.describe(RunSave.read()))
+	show_status("You have a saved run (%s). Starting a new one will replace it when the first night begins. Click again to start anyway, or tick \"Continue saved run\"." % RunSave.describe(RunSave.read()))
 	return false
 
 

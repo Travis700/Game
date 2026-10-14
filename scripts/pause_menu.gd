@@ -5,6 +5,8 @@ extends CanvasLayer
 signal closed
 signal leave_requested
 
+## Voice chat modes: setting value, and what the menu calls it.
+const VOICE_MODES := [["push", "Push to talk (hold V)"], ["open", "Open mic"], ["off", "Off"]]
 ## Choices for the 3D resolution, as a percentage of the window.
 const RENDER_SCALES: Array[int] = [100, 85, 70, 50]
 
@@ -15,9 +17,14 @@ var _sensitivity: HSlider
 var _volume: HSlider
 var _fullscreen: CheckBox
 var _leave: Button
+## Set by Main, for the microphone level meter and to apply the voice settings.
+var voice: VoiceChat
+var _mic_meter: ProgressBar
 var _main_column: VBoxContainer
 var _keys: VBoxContainer
 var _key_buttons: Dictionary = {}
+var _key_help: Label
+const KEYS_HELP := "Click a key, then press the new one (Esc to cancel). Taking a key another action uses swaps them. Arrow keys and the mouse keep working too."
 ## The action waiting for a key press, or "".
 var _listening := ""
 
@@ -64,6 +71,50 @@ func _ready() -> void:
 		Profile.volume = value
 		Profile.apply_volume())
 	column.add_child(_volume)
+	column.add_child(_label("Voice chat"))
+	var voice_grid := GridContainer.new()
+	voice_grid.columns = 2
+	voice_grid.add_theme_constant_override("h_separation", 12)
+	voice_grid.add_theme_constant_override("v_separation", 6)
+	column.add_child(voice_grid)
+	voice_grid.add_child(_small("Microphone"))
+	var mode := OptionButton.new()
+	for option in VOICE_MODES:
+		mode.add_item(option[1])
+	mode.select(maxi(VOICE_MODES.map(func(entry: Array) -> String: return entry[0]).find(Profile.voice_mode), 0))
+	mode.item_selected.connect(func(index: int) -> void:
+		Profile.voice_mode = VOICE_MODES[index][0]
+		if voice:
+			voice.set_active(true))
+	voice_grid.add_child(mode)
+	voice_grid.add_child(_small("Device"))
+	var device := OptionButton.new()
+	device.add_item("System default")
+	for name in AudioServer.get_input_device_list():
+		if name != "Default":
+			device.add_item(name)
+			if name == Profile.mic_device:
+				device.select(device.item_count - 1)
+	device.item_selected.connect(func(index: int) -> void:
+		Profile.mic_device = "" if index == 0 else device.get_item_text(index)
+		AudioServer.input_device = "Default" if index == 0 else device.get_item_text(index))
+	voice_grid.add_child(device)
+	voice_grid.add_child(_small("Open mic starts at"))
+	var threshold := _slider(0.02, 0.5, Profile.mic_threshold)
+	threshold.step = 0.01
+	threshold.value_changed.connect(func(value: float) -> void: Profile.mic_threshold = value)
+	voice_grid.add_child(threshold)
+	voice_grid.add_child(_small("Your mic level"))
+	_mic_meter = ProgressBar.new()
+	_mic_meter.max_value = 1.0
+	_mic_meter.show_percentage = false
+	_mic_meter.custom_minimum_size = Vector2(0, 14)
+	voice_grid.add_child(_mic_meter)
+	voice_grid.add_child(_small("Others' voices"))
+	var others := _slider(0.0, 1.5, Profile.voice_volume)
+	others.value_changed.connect(func(value: float) -> void: Profile.voice_volume = value)
+	voice_grid.add_child(others)
+
 	column.add_child(_label("Graphics"))
 	var graphics := GridContainer.new()
 	graphics.columns = 2
@@ -142,6 +193,11 @@ func close() -> void:
 	closed.emit()
 
 
+func _process(_delta: float) -> void:
+	if is_open and voice and _mic_meter:
+		_mic_meter.value = voice.level
+
+
 func _input(event: InputEvent) -> void:
 	if not is_open:
 		return
@@ -151,7 +207,8 @@ func _input(event: InputEvent) -> void:
 			return
 		get_viewport().set_input_as_handled()
 		if key.physical_keycode != KEY_ESCAPE:
-			Controls.rebind(_listening, key.physical_keycode)
+			var problem: String = Controls.rebind(_listening, key.physical_keycode)
+			_key_help.text = problem if problem != "" else KEYS_HELP
 		_listening = ""
 		_refresh_keys()
 		return
@@ -173,7 +230,8 @@ func _build_keys(panel: PanelContainer) -> void:
 	title.text = "KEYS"
 	title.add_theme_font_size_override("font_size", 30)
 	_keys.add_child(title)
-	var help := _small("Click a key, then press the new one (Esc to cancel). Arrow keys and the mouse keep working too.")
+	var help := _small(KEYS_HELP)
+	_key_help = help
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	help.custom_minimum_size = Vector2(400, 0)
 	_keys.add_child(help)
@@ -188,6 +246,7 @@ func _build_keys(panel: PanelContainer) -> void:
 		var button := Button.new()
 		button.custom_minimum_size = Vector2(150, 34)
 		button.pressed.connect(func() -> void:
+			_refresh_keys()
 			_listening = action
 			button.text = "Press a key...")
 		grid.add_child(button)
@@ -206,6 +265,7 @@ func _refresh_keys() -> void:
 
 func _show_main() -> void:
 	_listening = ""
+	_refresh_keys()
 	_keys.visible = false
 	_main_column.visible = true
 

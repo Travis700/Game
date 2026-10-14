@@ -1,0 +1,236 @@
+class_name VoiceChat
+extends Node
+## Proximity voice chat. Each player's voice comes out of their guard, fading with distance, so
+## guards who split up can't hear each other. The dead hear the living, but only other ghosts
+## hear the dead.
+##
+## Monsters can hear it too: the host is told how loud each guard is talking (see
+## MonsterDirector.voice_reach), and some monsters come for the noise.
+##
+## How it works: the microphone plays into a muted "Mic" bus with a capture effect. While you
+## talk (push-to-talk, or an open mic over a loudness threshold), the captured sound is cut down
+## to 16 kHz mono, squeezed to 8 bits per sample (mu-law) and sent to everyone in 20 ms packets.
+## Each computer plays other guards' voices through a 3D player on their guard.
+
+## Voice is sent at this sample rate.
+const VOICE_RATE := 16000
+## Samples per packet: 20 ms.
+const PACKET_SAMPLES := 320
+## Keep sending this long after an open mic drops below the threshold, so words don't get cut off.
+const HANGOVER := 0.35
+## How far a voice carries for other players (metres).
+const HEARING_RANGE := 26.0
+## Network channel for voice, so it never holds up the game's own messages.
+const CHANNEL := 2
+
+## The local player's guard. Set by Main.
+var local_guard: Guard
+var director: MonsterDirector
+## Set by tests: a function returning fake microphone frames (PackedVector2Array) instead of
+## the real microphone.
+var test_input := Callable()
+
+## The local player's voice right now: 0 (silent) to 1 (shouting). For the HUD.
+var level := 0.0
+## True while the local player is being sent to everyone.
+var transmitting := false
+
+var _mic_player: AudioStreamPlayer
+var _capture: AudioEffectCapture
+var _outgoing := PackedFloat32Array()
+var _hangover_left := 0.0
+var _resample_position := 0.0
+## Peer id -> AudioStreamPlayer3D playing that guard's voice on this computer.
+var _voices: Dictionary = {}
+var _active := false
+
+
+func _ready() -> void:
+	var bus := AudioServer.get_bus_index("Mic")
+	if bus < 0:
+		AudioServer.add_bus()
+		bus = AudioServer.bus_count - 1
+		AudioServer.set_bus_name(bus, "Mic")
+		AudioServer.add_bus_effect(bus, AudioEffectCapture.new())
+		# The capture still hears it; you just don't hear yourself.
+		AudioServer.set_bus_mute(bus, true)
+	_capture = AudioServer.get_bus_effect(bus, 0) as AudioEffectCapture
+	_mic_player = AudioStreamPlayer.new()
+	_mic_player.stream = AudioStreamMicrophone.new()
+	_mic_player.bus = "Mic"
+	add_child(_mic_player)
+
+
+## Starts or stops listening to the microphone, e.g. when a session starts, or the setting changes.
+func set_active(on: bool) -> void:
+	_active = on and _profile_value("voice_mode", "push") != "off"
+	if _active and not _mic_player.playing and not test_input.is_valid():
+		var device: String = _profile_value("mic_device", "")
+		if device != "" and device in AudioServer.get_input_device_list():
+			AudioServer.input_device = device
+		_mic_player.play()
+	elif not _active and _mic_player.playing:
+		_mic_player.stop()
+	if not _active:
+		transmitting = false
+		level = 0.0
+
+
+func _process(delta: float) -> void:
+	if not _active or local_guard == null or not local_guard.is_inside_tree() or multiplayer.multiplayer_peer == null:
+		return
+	var frames := _read_input()
+	if frames.is_empty():
+		return
+	# How loud: the RMS of what just came in, mapped so normal speech sits around 0.3-0.6.
+	var sum := 0.0
+	for frame in frames:
+		var mono := (frame.x + frame.y) * 0.5
+		sum += mono * mono
+	var rms := sqrt(sum / frames.size())
+	level = clampf((rms - 0.005) / 0.12, 0.0, 1.0)
+
+	var wants := false
+	match _profile_value("voice_mode", "push"):
+		"push":
+			wants = Input.is_action_pressed("push_to_talk") and not local_guard.input_blocked
+		"open":
+			var threshold: float = _profile_value("mic_threshold", 0.12)
+			if level > threshold:
+				_hangover_left = HANGOVER
+			else:
+				_hangover_left -= delta
+			wants = _hangover_left > 0.0
+	transmitting = wants
+	if not wants:
+		_outgoing.clear()
+		return
+	_downsample_into_outgoing(frames)
+	while _outgoing.size() >= PACKET_SAMPLES:
+		var packet := _encode(_outgoing.slice(0, PACKET_SAMPLES))
+		_outgoing = _outgoing.slice(PACKET_SAMPLES)
+		_send(packet, level)
+
+
+func _read_input() -> PackedVector2Array:
+	if test_input.is_valid():
+		return test_input.call()
+	if _capture == null or _capture.get_frames_available() == 0:
+		return PackedVector2Array()
+	return _capture.get_buffer(_capture.get_frames_available())
+
+
+## From the mixer's rate (usually 44.1 or 48 kHz) down to 16 kHz mono, averaging as it goes.
+func _downsample_into_outgoing(frames: PackedVector2Array) -> void:
+	var step := AudioServer.get_mix_rate() / VOICE_RATE
+	if test_input.is_valid():
+		step = 1.0
+	while _resample_position < frames.size():
+		var start := int(_resample_position)
+		var end := mini(int(_resample_position + step), frames.size())
+		var total := 0.0
+		for i in range(start, maxi(end, start + 1)):
+			total += (frames[i].x + frames[i].y) * 0.5
+		_outgoing.append(total / maxi(end - start, 1))
+		_resample_position += step
+	_resample_position -= frames.size()
+
+
+func _send(packet: PackedByteArray, loudness: float) -> void:
+	var me := multiplayer.get_unique_id()
+	if multiplayer.is_server():
+		_heard_by_host(me, loudness)
+	_voice.rpc(packet, loudness)
+
+
+## Every other computer: a packet of someone's voice.
+@rpc("any_peer", "call_remote", "unreliable_ordered", CHANNEL)
+func _voice(packet: PackedByteArray, loudness: float) -> void:
+	var speaker := multiplayer.get_remote_sender_id()
+	if multiplayer.is_server():
+		_heard_by_host(speaker, loudness)
+	_play(speaker, packet)
+
+
+## Host: tells the monsters who's talking and how loudly.
+func _heard_by_host(speaker: int, loudness: float) -> void:
+	if director:
+		director.report_voice(speaker, loudness)
+
+
+func _play(speaker: int, packet: PackedByteArray) -> void:
+	var guard := players_guard(speaker)
+	if guard == null or local_guard == null:
+		return
+	# Ghosts hear everyone; the living only hear the living.
+	if guard.is_dead and not local_guard.is_dead:
+		return
+	# Untyped first: the player may have been freed along with a guard who left.
+	var existing: Variant = _voices.get(speaker)
+	var player: AudioStreamPlayer3D = existing if is_instance_valid(existing) else null
+	if player == null or player.get_parent() != guard:
+		player = AudioStreamPlayer3D.new()
+		var stream := AudioStreamGenerator.new()
+		stream.mix_rate = VOICE_RATE
+		stream.buffer_length = 0.4
+		player.stream = stream
+		player.max_distance = HEARING_RANGE
+		player.unit_size = 4.0
+		player.position = Vector3(0, 1.6, 0)
+		guard.add_child(player)
+		player.play()
+		_voices[speaker] = player
+	player.volume_db = linear_to_db(maxf(float(_profile_value("voice_volume", 1.0)), 0.0001))
+	var playback := player.get_stream_playback() as AudioStreamGeneratorPlayback
+	if playback == null:
+		return
+	var samples := _decode(packet)
+	if playback.get_frames_available() < samples.size():
+		# Falling behind: drop this packet rather than letting the delay build up.
+		return
+	for sample in samples:
+		playback.push_frame(Vector2(sample, sample))
+
+
+func players_guard(peer_id: int) -> Guard:
+	return director.guard_by_peer(peer_id) if director else null
+
+
+## Is this player talking right now (for the "talking" marker over teammates)? Every computer.
+func is_talking(peer_id: int) -> bool:
+	var existing: Variant = _voices.get(peer_id)
+	if not is_instance_valid(existing):
+		return false
+	var player := existing as AudioStreamPlayer3D
+	var playback := player.get_stream_playback() as AudioStreamGeneratorPlayback
+	return playback != null and playback.get_frames_available() < int(VOICE_RATE * 0.35)
+
+
+# --- mu-law: 8 bits a sample, plenty for speech -------------------------------------------
+
+static func _encode(samples: PackedFloat32Array) -> PackedByteArray:
+	var bytes := PackedByteArray()
+	bytes.resize(samples.size())
+	for i in samples.size():
+		var x := clampf(samples[i], -1.0, 1.0)
+		var magnitude := log(1.0 + 255.0 * absf(x)) / log(256.0)
+		bytes[i] = int(magnitude * 127.0) | (128 if x < 0.0 else 0)
+	return bytes
+
+
+static func _decode(bytes: PackedByteArray) -> PackedFloat32Array:
+	var samples := PackedFloat32Array()
+	samples.resize(bytes.size())
+	for i in bytes.size():
+		var byte := bytes[i]
+		var magnitude := (pow(256.0, float(byte & 127) / 127.0) - 1.0) / 255.0
+		samples[i] = -magnitude if byte & 128 else magnitude
+	return samples
+
+
+func _profile_value(key: String, fallback: Variant) -> Variant:
+	var profile := get_node_or_null("/root/Profile")
+	if profile == null:
+		return fallback
+	var value: Variant = profile.get(key)
+	return fallback if value == null else value

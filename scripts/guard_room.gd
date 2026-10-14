@@ -191,11 +191,21 @@ func _update_controls_hint() -> void:
 	elif local_guard.seated_desk < 0:
 		hud.set_controls("")
 	elif _zoomed >= 0:
-		hud.set_controls("A / D  change camera     1-4  other monitors     Space  back to the desk     Tab  log it")
+		hud.set_controls("%s / %s  change camera     1-4  other monitors     %s  back to the desk     %s  log it" % [
+			_key("move_left"), _key("move_right"), _key("zoom"), _key("clipboard")])
 	elif _focused >= 0:
-		hud.set_controls("A / D  change camera     Space  full screen     1-4  monitor full screen     Tab  log     S  stand up")
+		hud.set_controls("%s / %s  change camera     %s  full screen     1-4  monitor full screen     %s  log     %s  stand up" % [
+			_key("move_left"), _key("move_right"), _key("zoom"), _key("clipboard"), _key("move_back")])
 	else:
-		hud.set_controls("Look at a monitor     1-4  monitor full screen     Tab  log     S  stand up")
+		hud.set_controls("Look at a monitor     1-4  monitor full screen     %s  log     %s  stand up" % [
+			_key("clipboard"), _key("move_back")])
+
+
+## The player's key for an action (Controls is an autoload, looked up by path so this
+## class-named script compiles anywhere).
+func _key(action: String) -> String:
+	var controls := get_node_or_null("/root/Controls")
+	return controls.key_name(action) if controls else action
 
 
 func _on_chair_used(by: Node, desk: int) -> void:

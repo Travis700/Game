@@ -122,6 +122,12 @@ func set_bright_flashlight(on: bool) -> void:
 	flashlight.light_energy = flashlight.get_meta("base_energy", flashlight.light_energy) * (1.5 if on else 1.0)
 
 
+## Shows a "talking" marker on the name tag while this guard's voice is coming through.
+func show_talking(talking: bool) -> void:
+	var base := "Guard %d  #%04d" % [slot, employee_number]
+	name_tag.text = base + ("\n((( talking )))" if talking else "")
+
+
 func uniform_color() -> Color:
 	return UNIFORM_COLORS[(slot - 1) % UNIFORM_COLORS.size()]
 

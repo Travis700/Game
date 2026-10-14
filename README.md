@@ -68,6 +68,22 @@ Sensors and traps are cleared away each morning.
 Upgrades and points last for the whole run, and are lost if the whole team is caught (unless the host
 ticked "Keep gear", which keeps upgrades and items).
 
+## Voice chat
+
+Talk to your team in the game. Voices come from each guard and fade with distance, so if you split
+up you can't hear each other. Ghosts hear the living, but only other ghosts hear a ghost.
+
+- **Hold V to talk** (push to talk). In the Esc menu you can switch to **Open mic** (it sends whenever
+  you're loud enough; set how loud with the slider and watch the level meter), pick your microphone,
+  or turn voice chat off.
+- While you're being heard, **TALKING** shows in the bottom left with how loud you are. Teammates who
+  are talking get a marker over their name.
+- **Monsters can hear you.** The louder you talk, the further it carries:
+  - the **Lunch Lady** hears even a whisper close by, and a normal voice from across the cafeteria;
+  - the **Librarian** treats talking near the stacks like noise: she shushes, then hunts;
+  - the **Hall Monitor** chases anyone talking loudly in the halls.
+  Sometimes the only way to stay alive is to keep quiet.
+
 ## Sound
 
 Everything is generated in code for now (no audio files): footsteps for every guard and monster
@@ -161,6 +177,7 @@ it runs; that's normal for games that aren't signed (Steam builds don't show it)
 | Esc | Menu: mouse sensitivity, volume, change keys, graphics (resolution, anti-aliasing, shadows, V-sync), fullscreen, leave the game (pauses solo; in a group the night keeps going) |
 | Tab | Clipboard: log anything odd you spot (after clocking in) |
 | G | Use or put down what you're carrying (sensors, traps, energy drink, flashlight) |
+| V | Push to talk (voice chat) |
 | F11 | Switch between fullscreen and a window |
 
 **At a guard room desk** (press E on a chair to sit):

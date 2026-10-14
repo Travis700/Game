@@ -8,6 +8,9 @@ const WANDER_SPEED := 1.2
 const HUNT_SPEED := 4.6
 const HEAR_RUNNING := 16.0
 const HEAR_WALKING := 5.0
+## Voices: a whisper carries this far to her, a shout this far.
+const HEAR_WHISPER := 5.0
+const HEAR_SHOUT := 22.0
 ## Seconds of silence at the place she heard something before she goes back to wandering.
 const LOSE_INTEREST_AFTER := 6.0
 const HOME: Array[AABB] = [
@@ -49,6 +52,7 @@ func _listen() -> bool:
 	for guard in director.targetable_guards():
 		var speed := director.guard_speed(guard)
 		var reach := HEAR_RUNNING if guard.is_running else (HEAR_WALKING if speed > 0.8 else 0.0)
+		reach = maxf(reach, director.voice_reach(guard, HEAR_WHISPER, HEAR_SHOUT))
 		if reach > 0.0 and distance_to_guard(guard) < reach:
 			_heard_at = guard.global_position
 			return true

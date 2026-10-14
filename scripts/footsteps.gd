@@ -16,9 +16,12 @@ var enabled := true
 
 var _last := Vector3.INF
 var _walked := 0.0
+## Speed smoothed over about a quarter of a second. Bodies move in physics steps, so on a fast
+## monitor some frames see no movement and others a whole step; the average is the real speed.
+var _speed := 0.0
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	var body := get_parent() as Node3D
 	if body == null or not body.is_inside_tree():
 		return
@@ -33,8 +36,9 @@ func _process(_delta: float) -> void:
 		_walked = 0.0
 		return
 	_walked += moved
+	_speed = lerpf(_speed, moved / maxf(delta, 0.001), 1.0 - exp(-delta * 4.0))
 	# Running steps come further apart and land harder.
-	var running := moved / maxf(get_process_delta_time(), 0.001) > 4.5
+	var running := _speed > 4.5
 	if _walked >= stride * (1.35 if running else 1.0):
 		_walked = 0.0
 		var loudness := volume_db + (5.0 if running else 0.0)

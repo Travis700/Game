@@ -14,6 +14,14 @@ var vsync := true
 var render_scale := 1.0
 var shadows := true
 var antialiasing := 1
+## Voice chat: "push" (hold the push-to-talk key), "open" (talks when you're loud enough) or "off".
+var voice_mode := "push"
+## Open mic: how loud (0-1) you have to be before it sends.
+var mic_threshold := 0.12
+## Other players' voices, 0 to 1.5.
+var voice_volume := 1.0
+## Which microphone ("" for the system default).
+var mic_device := ""
 
 ## Lights that cast shadows (the moon, flashlights), switched by the Shadows setting.
 const SHADOW_LIGHTS := "shadow_lights"
@@ -29,6 +37,10 @@ func _enter_tree() -> void:
 		render_scale = config.get_value("graphics", "render_scale", 1.0)
 		shadows = config.get_value("graphics", "shadows", true)
 		antialiasing = config.get_value("graphics", "antialiasing", 1)
+		voice_mode = config.get_value("voice", "mode", "push")
+		mic_threshold = config.get_value("voice", "threshold", 0.12)
+		voice_volume = config.get_value("voice", "volume", 1.0)
+		mic_device = config.get_value("voice", "device", "")
 	apply_volume()
 	if employee_number < 1000:
 		employee_number = randi_range(1000, 9999)
@@ -53,6 +65,10 @@ func save_settings() -> void:
 	config.set_value("graphics", "render_scale", render_scale)
 	config.set_value("graphics", "shadows", shadows)
 	config.set_value("graphics", "antialiasing", antialiasing)
+	config.set_value("voice", "mode", voice_mode)
+	config.set_value("voice", "threshold", mic_threshold)
+	config.set_value("voice", "volume", voice_volume)
+	config.set_value("voice", "device", mic_device)
 	config.save(PATH)
 
 

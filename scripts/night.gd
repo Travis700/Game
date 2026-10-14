@@ -218,6 +218,11 @@ func restore_guard(peer_id: int, badge: int) -> void:
 ## dropped from this session, so rejoining gives back exactly what they had.
 func remember_guard(guard: Guard) -> void:
 	var peer := guard.name.to_int()
+	if _won or _restart_run:
+		# The run is over (won or lost); nothing carries into the next one.
+		_totals.erase(peer)
+		shop.forget(peer)
+		return
 	var key := str(guard.employee_number)
 	saved_points[key] = points_of(peer)
 	var item := shop.held_by(peer)

@@ -47,6 +47,7 @@ var doors: GuardRoomDoors
 var vending: CanvasLayer
 var keypad: CanvasLayer
 var ambience: Ambience
+var voice: VoiceChat
 var pause_menu: CanvasLayer
 var spawner: MultiplayerSpawner
 var _local_guard: Guard
@@ -160,6 +161,11 @@ func _ready() -> void:
 		else:
 			_request_bell_off.rpc_id(1))
 
+	voice = VoiceChat.new()
+	voice.name = "Voice"
+	voice.director = director
+	add_child(voice)
+
 	totems = Totems.new()
 	totems.name = "Totems"
 	totems.director = director
@@ -199,6 +205,8 @@ func _ready() -> void:
 	pause_menu.name = "PauseMenu"
 	add_child(pause_menu)
 	pause_menu.closed.connect(_on_ui_closed)
+	pause_menu.closed.connect(hud.refresh_key_hint)
+	pause_menu.voice = voice
 	pause_menu.leave_requested.connect(func() -> void:
 		_back_to_menu("You ended the session." if multiplayer.is_server() and _mode != "solo" else ""))
 
@@ -285,6 +293,10 @@ func _process(_delta: float) -> void:
 	if night.difficulty > 0:
 		status += " · Difficulty %d" % night.difficulty
 	hud.set_objective(_objective())
+	hud.set_voice(voice.transmitting, voice.level)
+	for guard: Guard in players.get_children():
+		if guard != _local_guard:
+			guard.show_talking(voice.is_talking(guard.name.to_int()))
 	if _local_guard and _local_guard.boost_left > 0.0:
 		hud.set_inventory(shop.local_points, "Energy drink: %ds" % ceili(_local_guard.boost_left))
 	elif _local_guard and _boost_was_on:
@@ -583,6 +595,8 @@ func on_local_guard_ready(guard: Guard) -> void:
 	guard_room.local_guard = guard
 	cameras.viewer = guard
 	ambience.listener = guard
+	voice.local_guard = guard
+	voice.set_active(true)
 
 
 # --- Clocking in ---------------------------------------------------------------

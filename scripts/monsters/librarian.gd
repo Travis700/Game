@@ -10,6 +10,9 @@ const SHELVE_SPEED := 1.2
 const HUNT_SPEED := 4.6
 const LIGHT_RANGE := 14.0
 const HEAR_RUNNING := 10.0
+## Talking anywhere near the stacks: a whisper carries this far, a shout this far.
+const HEAR_WHISPER := 6.0
+const HEAR_SHOUT := 20.0
 ## Real seconds between the warning and the hunt.
 const WARNING_SECONDS := 2.0
 ## Real seconds of dark and quiet before it calms down.
@@ -45,8 +48,10 @@ func _shelve(delta: float) -> void:
 		_target = offender
 		_warning_left = WARNING_SECONDS
 		state = "shush"
-		director.tell(offender.name.to_int(), "\"Shhh.\" Something in the stacks doesn't like your %s." % (
-				"light" if offender.flashlight.visible else "footsteps"))
+		var what := "light" if offender.flashlight.visible else "footsteps"
+		if director.voice_level(offender) > 0.0:
+			what = "voice"
+		director.tell(offender.name.to_int(), "\"Shhh.\" Something in the stacks doesn't like your %s." % what)
 		return
 	patrol_step(STOPS, delta, SHELVE_SPEED, Vector2(5.0, 10.0), 3)
 
@@ -56,6 +61,8 @@ func _offender() -> Guard:
 	for guard in director.targetable_guards():
 		var distance := distance_to_guard(guard)
 		if guard.is_running and distance < HEAR_RUNNING:
+			return guard
+		if distance < director.voice_reach(guard, HEAR_WHISPER, HEAR_SHOUT):
 			return guard
 		if guard.flashlight.visible and distance < LIGHT_RANGE and director.lit_by_flashlight(eye_position(), LIGHT_RANGE, guard):
 			return guard
@@ -84,7 +91,8 @@ func _hunt(delta: float) -> void:
 		return
 	# Only what it can still see or hear counts: get far enough away and it loses you.
 	var distance := distance_to_guard(_target)
-	var loud := (_target.flashlight.visible and distance < LIGHT_RANGE * 1.5) or (_target.is_running and distance < HEAR_RUNNING)
+	var loud := (_target.flashlight.visible and distance < LIGHT_RANGE * 1.5) or (_target.is_running and distance < HEAR_RUNNING) \
+			or distance < director.voice_reach(_target, HEAR_WHISPER, HEAR_SHOUT)
 	_calm_for = 0.0 if loud else _calm_for + delta
 	if _calm_for > CALM_AFTER or not chase(_target, HUNT_SPEED, delta):
 		state = "shelve"

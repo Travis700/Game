@@ -90,6 +90,10 @@ var _blackouts: Dictionary = {}
 var bell_ringing := false
 var _bell_times: Array[float] = []
 var _bell_left := 0.0
+## Voice chat, host only: peer -> {"until": seconds, "level": 0-1} while that guard is talking.
+var _voices: Dictionary = {}
+## How long a voice counts as "still talking" after its last packet.
+const VOICE_LINGER := 0.4
 
 
 func build() -> void:
@@ -461,13 +465,42 @@ func check_mascot_missing(peer_id: int, area: String) -> bool:
 	if area != "Gym":
 		return false
 	for node in _container.get_children():
-		if node is Mascot and not node.is_queued_for_deletion():
-			var credited: Array = _credited.get_or_add(node.name, [])
+		if node is Mascot and not node.is_queued_for_deletion() \
+				and (node as Node3D).global_position.distance_to(MASCOT_STAND) > 2.0:
+			# Its own list: logging the Mascot as a Monster is a separate find.
+			var credited: Array = _credited.get_or_add(str(node.name) + ":missing", [])
 			if peer_id in credited:
 				return false
 			credited.append(peer_id)
 			return true
 	return false
+
+
+## Host: a guard's voice packet arrived (or the host is talking). `loudness` is 0-1.
+func report_voice(peer_id: int, loudness: float) -> void:
+	var guard := guard_by_peer(peer_id)
+	if guard == null or guard.is_dead:
+		return
+	var now := Time.get_ticks_msec() / 1000.0
+	var entry: Dictionary = _voices.get_or_add(peer_id, {"until": 0.0, "level": 0.0})
+	# Remember the loudest bit of the last moment, not just the latest packet.
+	entry["level"] = loudness if now > entry["until"] else maxf(entry["level"] * 0.9, loudness)
+	entry["until"] = now + VOICE_LINGER
+
+
+## How loud a guard is talking right now: 0 when they're quiet. Host only.
+func voice_level(guard: Guard) -> float:
+	var entry: Dictionary = _voices.get(guard.name.to_int(), {})
+	if entry.is_empty() or Time.get_ticks_msec() / 1000.0 > entry["until"]:
+		return 0.0
+	return entry["level"]
+
+
+## How far away a monster can hear this guard talking: from `whisper` (barely talking) to
+## `shout`. 0 when they're quiet. Host only.
+func voice_reach(guard: Guard, whisper: float, shout: float) -> float:
+	var level := voice_level(guard)
+	return 0.0 if level <= 0.0 else lerpf(whisper, shout, level)
 
 
 ## Tonight's clock, in in-game minutes. Host only.
@@ -553,6 +586,8 @@ func principal_done(principal: Monster) -> void:
 ## Called by the Ghost every frame: cameras near it lose their signal for a while.
 func ghost_passing(at: Vector3, distance: float) -> void:
 	for i in cameras.count():
+		if not cameras.is_open(i):
+			continue
 		if cameras.camera(i).global_position.distance_to(at) < distance and not _blackouts.has(i):
 			_blackouts[i] = _minutes + BLACKOUT_MINUTES
 			camera_signal_changed.emit(i, false)

@@ -87,6 +87,7 @@ func _arrive() -> void:
 	if real:
 		director.tell(peer, "\"Oh! They must have gone home. Thanks for walking with me... I'll wait outside for my mom.\"")
 		director.student_helped.emit(peer)
+		_stuck_for = 0.0
 		state = "leave"
 	else:
 		director.tell(peer, "The kid turns around. Its face is wrong.")

@@ -15,6 +15,8 @@ var _status: Label
 var _controls: Label
 var _clock: Label
 var _objective: Label
+var _voice_label: Label
+var _voice_bar: ProgressBar
 var _inventory: Label
 var _ghost_tint: ColorRect
 var _ghost_note: Label
@@ -48,11 +50,7 @@ func _ready() -> void:
 	_hint = _make_label(18, HORIZONTAL_ALIGNMENT_LEFT, VERTICAL_ALIGNMENT_TOP)
 	_hint.offset_left = 20
 	_hint.offset_top = 16
-	var move := "%s%s%s%s" % [Controls.key_name("move_forward"), Controls.key_name("move_left"),
-			Controls.key_name("move_back"), Controls.key_name("move_right")]
-	_hint.text = "%s  move\n%s  run\n%s  flashlight\n%s  use\n%s  clipboard\n%s  use item\nEsc  menu" % [
-		move if move.length() == 4 else "Move keys", Controls.key_name("sprint"), Controls.key_name("flashlight"),
-		Controls.key_name("interact"), Controls.key_name("clipboard"), Controls.key_name("use_item")]
+	refresh_key_hint()
 
 	_status = _make_label(18, HORIZONTAL_ALIGNMENT_RIGHT, VERTICAL_ALIGNMENT_TOP)
 	_status.offset_right = -20
@@ -75,6 +73,29 @@ func _ready() -> void:
 	_inventory.offset_right = -20
 	_inventory.offset_bottom = -20
 	_inventory.modulate.a = 0.8
+
+	# Bottom left: shows when your microphone is being sent, and how loud you are.
+	var voice_box := HBoxContainer.new()
+	voice_box.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	voice_box.offset_left = 20
+	voice_box.offset_top = -48
+	voice_box.offset_bottom = -20
+	voice_box.add_theme_constant_override("separation", 10)
+	voice_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(voice_box)
+	_voice_label = Label.new()
+	_voice_label.text = "TALKING"
+	_voice_label.add_theme_font_size_override("font_size", 18)
+	_voice_label.add_theme_color_override("font_color", Color(0.5, 1.0, 0.6))
+	voice_box.add_child(_voice_label)
+	_voice_bar = ProgressBar.new()
+	_voice_bar.custom_minimum_size = Vector2(120, 10)
+	_voice_bar.show_percentage = false
+	_voice_bar.max_value = 1.0
+	_voice_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	voice_box.add_child(_voice_bar)
+	voice_box.visible = false
+	_voice_label.set_meta("box", voice_box)
 
 	_build_feed_view()
 
@@ -195,8 +216,27 @@ func _build_feed_view() -> void:
 
 ## Session info in the top-right corner, e.g. "Hosting · 2 guards".
 ## What you should be doing right now, under the clock, e.g. "Clock in at the guard room".
+## The key list in the top left, using the player's own keys.
+func refresh_key_hint() -> void:
+	var move := "%s%s%s%s" % [Controls.key_name("move_forward"), Controls.key_name("move_left"),
+			Controls.key_name("move_back"), Controls.key_name("move_right")]
+	_hint.text = "%s  move\n%s  run\n%s  flashlight\n%s  use\n%s  clipboard\n%s  use item\n%s  talk (voice chat)\nEsc  menu" % [
+		move if move.length() == 4 else "Move keys", Controls.key_name("sprint"), Controls.key_name("flashlight"),
+		Controls.key_name("interact"), Controls.key_name("clipboard"), Controls.key_name("use_item"),
+		Controls.key_name("push_to_talk")]
+
+
 func set_objective(text: String) -> void:
 	_objective.text = text
+
+
+## The microphone indicator: shown while you're being heard, with how loud you are
+## (monsters hear loud voices from further away).
+func set_voice(transmitting: bool, level: float) -> void:
+	var box: Control = _voice_label.get_meta("box")
+	box.visible = transmitting
+	_voice_bar.value = level
+	_voice_label.text = "TALKING (LOUD)" if level > 0.6 else "TALKING"
 
 
 func set_status(text: String) -> void:

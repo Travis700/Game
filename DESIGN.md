@@ -30,6 +30,8 @@ A first-person co-op light-horror game for 1–4 players. The players are night 
 - **Keep gear on restart.** When on, upgrades and carried items survive a team wipe and points reset. When off, everything resets.
 - **Saving.** The host's computer saves after every night report (next night, difficulty, upgrades, doors, and each badge's points, item and flashlight). The menu offers to continue it.
 
+- **Voice chat.** Proximity voice (push to talk on V, or open mic). The dead hear the living; only ghosts hear ghosts. Monsters hear voices too: louder carries further (Lunch Lady, Librarian, Hall Monitor react), so keeping quiet is sometimes the way to survive.
+
 ## 4. The school and difficulty
 
 The map is one high school. Each difficulty opens another wing, through red doors at the ends of the main hallway. There are three levels (a fourth, outdoor level was dropped: three is plenty of school).
