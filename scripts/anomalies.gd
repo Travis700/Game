@@ -85,6 +85,8 @@ var difficulty := 1
 var _props: Dictionary = {}
 var _home: Dictionary = {}
 var _active: Array[int] = []
+## Host: whether the last correct check_log was the first guard to log that anomaly.
+var last_was_first := true
 ## Host: tonight's count of anomalies, including ones that came back a second time, and
 ## missed ones whose record was replaced when they came back.
 var _appeared := 0
@@ -232,6 +234,7 @@ func check_log(peer_id: int, area: String, type: String, minutes: float) -> bool
 		var ended: float = record["ended_at"]
 		if ended >= 0.0 and minutes - ended > LOG_WINDOW_AFTER_END:
 			continue
+		last_was_first = record["credited"].is_empty()
 		record["credited"].append(peer_id)
 		if record["clear_at"] < 0.0:
 			record["clear_at"] = minutes + CLEAR_AFTER_REPORT

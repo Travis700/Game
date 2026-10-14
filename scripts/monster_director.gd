@@ -83,6 +83,8 @@ var lockdown_left := 0.0
 var _lockdown_times: Array[float] = []
 ## Everyone's nerve. Host only.
 var nerve: Nerve
+## Host: whether the last correct Monster log was the first guard to log that monster.
+var last_log_was_first := true
 
 var night_number := 1
 ## Tonight's difficulty: which wings are open. Monsters only come from open areas.
@@ -632,6 +634,7 @@ func check_log(peer_id: int, area: String, named := "") -> String:
 			if each.get_script().get_global_name() == named:
 				monster = each
 		var kind: String = monster.get_script().get_global_name()
+		last_log_was_first = (_credited[monster.name] as Array).is_empty()
 		_credited[monster.name].append(peer_id)
 		if career:
 			career.logged_monster(peer_id, kind)
@@ -642,11 +645,13 @@ func check_log(peer_id: int, area: String, named := "") -> String:
 					remove_monster(monster))
 		return kind
 	if portrait.active and portrait.stage > 0 and area == "Art Room" and peer_id not in portrait.credited:
+		last_log_was_first = portrait.credited.is_empty()
 		portrait.credited.append(peer_id)
 		if career:
 			career.logged_monster(peer_id, "SelfPortrait")
 		return "SelfPortrait"
 	if lockers.active and peer_id not in lockers.credited and lockers.has_open_in(area):
+		last_log_was_first = lockers.credited.is_empty()
 		lockers.credited.append(peer_id)
 		if career:
 			career.logged_monster(peer_id, "Lockers")

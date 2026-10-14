@@ -14,6 +14,8 @@ const CLOCK_OUT_SECONDS := 90.0
 
 const SURVIVAL_PAY := 100
 const CORRECT_LOG_POINTS := 25
+## A teammate logging something someone else already logged: confirming it pays less.
+const CONFIRM_POINTS := 10
 ## Extra pay for naming the monster in a correct Monster log.
 const NAME_POINTS := 25
 const FALSE_REPORT_POINTS := 10
@@ -260,9 +262,15 @@ func _receive_log(area: String, type: String, named := "") -> void:
 	if not correct and type == "Missing object":
 		# The Mascot's empty stand really is a missing object.
 		correct = director.check_mascot_missing(peer, area)
+		anomalies.last_was_first = true
 	if correct:
 		bonus.on_correct_log(named != "" and named == found)
-	if correct and named != "" and named == found:
+	var first := (director.last_log_was_first if type == "Monster" else anomalies.last_was_first) or not correct
+	if correct and not first:
+		stats["confirmed"] = int(stats.get("confirmed", 0)) + 1
+		logged.append(entry)
+		_log_result(peer, true, "Confirmed: %s, %s. A teammate logged it first.  +%d" % [area, type.to_lower(), CONFIRM_POINTS])
+	elif correct and named != "" and named == found:
 		stats["correct"] += 1
 		stats["named"] = stats.get("named", 0) + 1
 		logged.append(entry)
@@ -627,7 +635,8 @@ func _build_rows(keep_pay: bool) -> Array:
 		var peer := guard.name.to_int()
 		var stats: Dictionary = _stats.get(peer, {"correct": 0, "false": 0})
 		var clocked_out := shift.has_clocked_out(peer)
-		var correct_points: int = stats["correct"] * CORRECT_LOG_POINTS + stats.get("named", 0) * NAME_POINTS
+		var correct_points: int = stats["correct"] * CORRECT_LOG_POINTS + stats.get("named", 0) * NAME_POINTS \
+				+ int(stats.get("confirmed", 0)) * CONFIRM_POINTS
 		var false_points: int = stats["false"] * FALSE_REPORT_POINTS
 		var round_points := rounds.pay_for(peer, clocked_out)
 		var pay: int = (SURVIVAL_PAY if clocked_out else 0) + correct_points - false_points + round_points \
@@ -643,6 +652,7 @@ func _build_rows(keep_pay: bool) -> Array:
 			_totals[peer] = 0
 		var xp: int = (XP_CLOCKED_OUT + number * XP_PER_NIGHT if clocked_out else XP_CAUGHT) \
 				+ stats["correct"] * XP_PER_LOG + stats.get("named", 0) * XP_PER_NAME \
+				+ int(stats.get("confirmed", 0)) * int(XP_PER_LOG / 2) \
 				+ int(rounds.punches.get(peer, 0)) * XP_PER_PUNCH
 		if clocked_out and bonus.achieved():
 			xp += Bonus.XP
@@ -659,7 +669,7 @@ func _build_rows(keep_pay: bool) -> Array:
 		rows.append({
 			"xp": xp,
 			"name": "Guard %d  #%04d" % [guard.slot, guard.employee_number], "clocked_out": clocked_out, "died": guard.is_dead,
-			"correct": stats["correct"], "correct_points": correct_points,
+			"correct": stats["correct"] + int(stats.get("confirmed", 0)), "correct_points": correct_points,
 			"false": stats["false"], "false_points": false_points,
 			"punched": rounds.punches.get(peer, 0), "round_points": round_points,
 			"pay": pay, "total": _totals[peer], "lost": not keep_pay,
