@@ -572,7 +572,7 @@ func _end_night() -> void:
 	_show_quota.rpc("")
 	if fired:
 		write_ups = 0
-		if hardcore:
+		if hardcore or number > LAST_NIGHT:
 			_restart_run = true
 			summary = "FIRED. Three write-ups, and the district lets the whole team go. A new crew starts from night 1.\n" + summary
 			_show_report.rpc(number, rows, summary, "fired:1")
