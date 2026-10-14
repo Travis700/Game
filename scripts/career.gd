@@ -24,6 +24,7 @@ const ACHIEVEMENTS := {
 	"ART_CRITIC": ["Art critic", "Turn the Self-Portrait to the wall."],
 	"BIG_SPENDER": ["Big spender", "Spend 1000 points at the vending machine in one run."],
 	"HOLD_THE_DOOR": ["Hold the door", "Clock out of a night where a monster battered a guard room door."],
+	"FULL_ROUND": ["Full round", "Punch every station on a night's round."],
 }
 ## Every kind of monster, for the Field guide achievement.
 const MONSTER_KINDS: Array[String] = [
@@ -37,6 +38,7 @@ const STATS := {
 	"correct_logs": "Correct logs",
 	"times_caught": "Times caught",
 	"monsters_logged": "Monsters logged",
+	"stations_punched": "Stations punched",
 }
 const MAX_SCORES := 10
 

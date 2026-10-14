@@ -66,6 +66,9 @@ var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _bob_time := 0.0
 var _footsteps: Footsteps
 var _prompt := ""
+## The thing E is being held down on (for things that take a moment, like a punch station).
+var _holding: Interactable
+var _hold_time := 0.0
 
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
@@ -298,6 +301,7 @@ func _handle_desk_input(event: InputEvent) -> bool:
 
 func _physics_process(delta: float) -> void:
 	_stick_look(delta)
+	_update_hold(delta)
 	if seated_desk >= 0:
 		_update_prompt()
 		return
@@ -344,6 +348,12 @@ func focused_interactable() -> Interactable:
 func _update_prompt() -> void:
 	var target := focused_interactable() if not is_dead else null
 	var text := "[E] " + target.prompt if target else ""
+	if target and target.hold_seconds > 0.0:
+		if target == _holding:
+			var filled := int(_hold_time / target.hold_seconds * 10.0)
+			text += "   " + "|".repeat(filled) + ".".repeat(10 - filled)
+		else:
+			text = "[Hold E] " + target.prompt
 	if text != _prompt:
 		_prompt = text
 		prompt_changed.emit(text)
@@ -353,5 +363,23 @@ func _interact() -> void:
 	if is_dead:
 		return
 	var target := focused_interactable()
-	if target:
+	if target and target.hold_seconds > 0.0:
+		_holding = target
+		_hold_time = 0.0
+	elif target:
+		target.interact(self)
+
+
+## Counts up while E stays held on the same thing, and uses it once it's been held long enough.
+func _update_hold(delta: float) -> void:
+	if _holding == null:
+		return
+	if is_dead or input_blocked or not Input.is_action_pressed("interact") \
+			or not is_instance_valid(_holding) or focused_interactable() != _holding:
+		_holding = null
+		return
+	_hold_time += delta
+	if _hold_time >= _holding.hold_seconds:
+		var target := _holding
+		_holding = null
 		target.interact(self)

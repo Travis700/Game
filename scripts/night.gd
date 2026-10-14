@@ -35,6 +35,7 @@ var shop: Shop
 var guard_room: GuardRoom
 var doors: GuardRoomDoors
 var career: Career
+var rounds: Rounds
 
 var number := 1
 ## Tonight's map size (1-3), sent by the host when the night starts. 0 before the first night.
@@ -128,6 +129,7 @@ func _on_shift_started() -> void:
 	_deaths = 0
 	save_run(number, true)
 	director.plan_night(number)
+	rounds.plan(number, difficulty)
 	# Totems only matter with teammates to bring back; alone, being caught ends the run.
 	if players.get_child_count() > 1:
 		totems.place_random()
@@ -162,6 +164,7 @@ func _run_shift(delta: float) -> void:
 		director.end_night()
 		totems.clear_all()
 		shop.clear_placed()
+		rounds.close()
 		shift.guards_required = director.living_guards().size()
 		_start_morning.rpc()
 
@@ -317,6 +320,7 @@ func fail_night() -> void:
 	director.end_night()
 	totems.clear_all()
 	shop.clear_placed()
+	rounds.clear()
 	_restart_run = true
 	var rows := _build_rows(false)
 	var summary := "The whole team was caught at %s.\nThe school keeps its secrets. The run starts over from night 1." % time_text()
@@ -341,10 +345,15 @@ func _end_night() -> void:
 		return
 	var rows := _build_rows(true)
 	_award_night()
+	var round_text := "Round: %d of %d stations punched%s." % [rounds.punched.size(), rounds.order.size(),
+			" (complete, +%d each)" % Rounds.ROUND_BONUS if rounds.is_complete()
+			else ", %d missed (-%d each)" % [rounds.missed_count(), rounds.missed_count() * Rounds.MISSED_PENALTY]]
+	rounds.clear()
 	var appeared := anomalies.appeared_count()
 	var missed := anomalies.missed_count()
 	var summary := "%d anomal%s tonight, %d missed by everyone.   Guards lost: %d." % [
 		appeared, "y" if appeared == 1 else "ies", missed, _deaths]
+	summary += "\n" + round_text
 	summary += "\nPay: %d for clocking out, +%d per correct log, -%d per false report, -%d for each guard lost." % [
 		SURVIVAL_PAY, CORRECT_LOG_POINTS, FALSE_REPORT_POINTS, DEATH_PENALTY]
 	if number >= LAST_NIGHT:
@@ -412,7 +421,9 @@ func _build_rows(keep_pay: bool) -> Array:
 		var clocked_out := shift.has_clocked_out(peer)
 		var correct_points: int = stats["correct"] * CORRECT_LOG_POINTS
 		var false_points: int = stats["false"] * FALSE_REPORT_POINTS
-		var pay: int = (SURVIVAL_PAY if clocked_out else 0) + correct_points - false_points - _deaths * DEATH_PENALTY
+		var round_points := rounds.pay_for(peer, clocked_out)
+		var pay: int = (SURVIVAL_PAY if clocked_out else 0) + correct_points - false_points + round_points \
+				- _deaths * DEATH_PENALTY
 		if keep_pay:
 			# Points never go below zero.
 			_totals[peer] = maxi(_totals.get(peer, 0) + pay, 0)
@@ -422,6 +433,7 @@ func _build_rows(keep_pay: bool) -> Array:
 			"name": "Guard %d  #%04d" % [guard.slot, guard.employee_number], "clocked_out": clocked_out, "died": guard.is_dead,
 			"correct": stats["correct"], "correct_points": correct_points,
 			"false": stats["false"], "false_points": false_points,
+			"punched": rounds.punches.get(peer, 0), "round_points": round_points,
 			"pay": pay, "total": _totals[peer], "lost": not keep_pay,
 		})
 	return rows

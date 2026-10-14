@@ -12,6 +12,8 @@ const TALK_LAYER := 1 << 5
 @export var prompt := "Use"
 ## Optional message shown to the guard after using it.
 @export var message := ""
+## When above 0, the guard has to hold E for this many seconds (while looking at it) to use it.
+@export var hold_seconds := 0.0
 
 
 func interact(by: Node) -> void:

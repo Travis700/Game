@@ -52,6 +52,7 @@ var ambience: Ambience
 var voice: VoiceChat
 var career: Career
 var dread: Dread
+var rounds: Rounds
 var pause_menu: CanvasLayer
 var spawner: MultiplayerSpawner
 var _local_guard: Guard
@@ -248,6 +249,12 @@ func _ready() -> void:
 	night.guard_room = guard_room
 	night.doors = doors
 	night.career = career
+	rounds = Rounds.new()
+	rounds.name = "Rounds"
+	rounds.director = director
+	rounds.career = career
+	add_child(rounds)
+	night.rounds = rounds
 	add_child(night)
 	shop.night = night
 	director.student_helped.connect(func(peer_id: int) -> void:
@@ -722,7 +729,9 @@ func _objective() -> String:
 				return "Waiting for the rest of the team to clock in."
 			return "Head through the front doors. The guard room is the door on the right of the lobby: clock in at the time clock."
 		Shift.State.ON_SHIFT:
-			return "Survive until 6 AM. Watch the cameras and log anything odd (%s)." % Controls.key_name("clipboard")
+			var text := "Survive until 6 AM. Watch the cameras and log anything odd (%s)." % Controls.key_name("clipboard")
+			var round_text := rounds.objective_text()
+			return text + "\n" + round_text if round_text != "" else text
 		Shift.State.MORNING:
 			return "It's 6 AM. Clock out at the time clock in the guard room to get paid."
 	return ""
@@ -789,6 +798,7 @@ func _show_first_night_tips() -> void:
 		"Tip: sit at a desk (E on a chair) to watch the cameras. A / D changes a monitor's camera.",
 		"Tip: something moved, missing, or there that shouldn't be? Press Tab and log where and what. Wrong guesses cost points.",
 		"Tip: the real night cleaner moves things too. Learn what's normal.",
+		"Tip: tonight's round is at the top of the screen. Find the amber lamps and hold E to punch them. The bell is loud.",
 		"Tip: at 6 AM, clock out at the time clock or you don't get paid.",
 	]
 	for i in tips.size():

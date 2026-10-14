@@ -61,9 +61,10 @@ Create these with exactly these API names. Mark them as set by the client.
 | `ART_CRITIC` | Art critic | Turn the Self-Portrait to the wall. |
 | `BIG_SPENDER` | Big spender | Spend 1000 points at the vending machine in one run. |
 | `HOLD_THE_DOOR` | Hold the door | Clock out of a night where a monster battered a guard room door. |
+| `FULL_ROUND` | Full round | Punch every station on a night's round. |
 
 Stats (type INT, set by client): `nights_survived`, `runs_won`, `correct_logs`, `times_caught`,
-`monsters_logged`.
+`monsters_logged`, `stations_punched`.
 
 Achievement icons are part of the art pass (64×64 locked and unlocked versions each).
 
