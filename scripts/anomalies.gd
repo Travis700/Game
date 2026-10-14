@@ -190,17 +190,20 @@ func spawn_random(night: int, minutes: float) -> bool:
 		candidates.append(i)
 	if candidates.is_empty():
 		return false
-	start(candidates.pick_random(), minutes)
+	start(candidates.pick_random(), minutes, night)
 	return true
 
 
 ## Host: starts one particular anomaly (by its place in DEFINITIONS), e.g. for training.
-func start(index: int, minutes: float) -> void:
+## Later in the run, moved things move less (a nudge instead of across the room), so the
+## cameras need a closer look: from all the way on night 1 to about a third by night 9.
+func start(index: int, minutes: float, night := 1) -> void:
 	if records.has(index) and records[index]["credited"].is_empty():
 		_missed_earlier += 1
 	_appeared += 1
-	records[index] = {"credited": [], "clear_at": -1.0, "ended_at": -1.0, "started_at": minutes}
-	_set_active.rpc(index, true)
+	var amount := clampf(1.12 - 0.085 * night + randf_range(-0.08, 0.08), 0.3, 1.0)
+	records[index] = {"credited": [], "clear_at": -1.0, "ended_at": -1.0, "started_at": minutes, "amount": amount}
+	_set_active.rpc(index, true, amount)
 
 
 ## Host, every frame: figures vanish when approached; reported anomalies get cleared up.
@@ -261,7 +264,7 @@ func appeared_count() -> int:
 ## Host: for a player who joins mid-evening.
 func send_state_to(peer_id: int) -> void:
 	for i in _active:
-		_set_active.rpc_id(peer_id, i, true)
+		_set_active.rpc_id(peer_id, i, true, float(records.get(i, {}).get("amount", 1.0)))
 
 
 ## Host: puts everything back for the next night.
@@ -297,7 +300,7 @@ func _guard_within(spot: Vector3, distance: float) -> bool:
 # --- Every computer: showing it ------------------------------------------------------
 
 @rpc("authority", "call_local", "reliable")
-func _set_active(index: int, on: bool) -> void:
+func _set_active(index: int, on: bool, amount := 1.0) -> void:
 	var def := DEFINITIONS[index]
 	var prop: Node3D = _props[def["prop"]]
 	if on and index not in _active:
@@ -311,8 +314,10 @@ func _set_active(index: int, on: bool) -> void:
 			_set_visible(prop, on)
 		"move":
 			if on:
-				prop.position = def["to"]
-				prop.rotation_degrees = Vector3(0, def["turn"], def.get("tip", 0.0))
+				var home: Transform3D = _home[def["prop"]]
+				prop.position = home.origin.lerp(def["to"], amount)
+				prop.rotation_degrees = home.basis.get_euler() * (180.0 / PI) * (1.0 - amount) \
+						+ Vector3(0, def["turn"], def.get("tip", 0.0)) * amount
 			else:
 				prop.transform = _home[def["prop"]]
 
