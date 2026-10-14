@@ -26,6 +26,7 @@ const XP_CAUGHT := 25
 const XP_PER_LOG := 20
 const XP_PER_NAME := 20
 const XP_PER_PUNCH := 10
+const XP_PER_WING := 0.25
 ## Survive this night and the run is won.
 const LAST_NIGHT := 9
 ## Overtime: after the ninth night the host can keep going. This night earns "Workaholic".
@@ -455,6 +456,8 @@ func _end_night() -> void:
 	bonus.clear()
 	if awards != "":
 		summary += "\n" + awards
+	if difficulty > 1:
+		summary += "\nDifficulty %d: +%d%% XP." % [difficulty, int(XP_PER_WING * (difficulty - 1) * 100)]
 	summary += "\nPay: %d for clocking out, +%d per correct log, -%d per false report, -%d for each guard lost." % [
 		SURVIVAL_PAY, CORRECT_LOG_POINTS, FALSE_REPORT_POINTS, DEATH_PENALTY]
 	if daily != "":
@@ -604,7 +607,8 @@ func _build_rows(keep_pay: bool) -> Array:
 				+ int(rounds.punches.get(peer, 0)) * XP_PER_PUNCH
 		if clocked_out and bonus.achieved():
 			xp += Bonus.XP
-		xp = int(xp * conditions.xp_factor())
+		# Harder nights are worth more: shift notes, and the bigger school (+25% per wing open).
+		xp = int(xp * conditions.xp_factor() * (1.0 + XP_PER_WING * (difficulty - 1)))
 		if career:
 			career.add_xp(peer, xp)
 		var who := guard.player_name if guard.player_name != "" else "Guard %d" % guard.slot
