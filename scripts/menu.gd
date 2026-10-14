@@ -13,8 +13,8 @@ const NIGHT_LENGTHS := [["Short nights (8 min)", 1.35], ["Normal nights (12 min)
 const DIFFICULTIES := [
 	["Auto: one level per guard", "Picks the map size from the team: 1 guard plays difficulty 1, 2 guards play 2, and 3 or 4 guards play 3."],
 	["1 · Main building", "The gate, lobby, front office, main hall, cafeteria, kitchen and gym. Best for one guard."],
-	["2 · + Classroom wing", "Opens the west wing: classrooms, the library and the nurse's office, and the Substitute, the Librarian and the Nurse who work there. Best for two guards."],
-	["3 · + Science wing", "Opens the east wing too: the science lab, art room and locker rooms, with the Specimen, the Self-Portrait, the Understudy and the Crossing Guard. Best for three or four guards."],
+	["2 · + Classroom wing", "Opens the west wing: classrooms, the library and the nurse's office, and the Substitute, the Librarian, the Nurse and the Twins who work there. Best for two guards."],
+	["3 · + Science wing", "Opens the east wing too: the science lab, art room and locker rooms, with the Specimen, the Self-Portrait, the Understudy, the Crossing Guard and the Coach. Best for three or four guards."],
 ]
 
 const HowToPlay := preload("res://scripts/how_to_play.gd")
