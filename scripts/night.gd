@@ -45,8 +45,8 @@ var keep_gear := false
 ## Host: points and carried items from the saved run, by badge number (as text).
 var saved_points: Dictionary = {}
 var saved_items: Dictionary = {}
-## Host: badges of guards who fitted the heavy-duty flashlight in the saved run.
-var saved_bright: Array = []
+## Host: personal upgrades (heavy-duty flashlight, walkie-talkie) by badge, from the saved run.
+var saved_personal: Dictionary = {}
 var minutes := 0.0
 var seconds_per_minute := SECONDS_PER_MINUTE
 
@@ -210,8 +210,8 @@ func restore_guard(peer_id: int, badge: int) -> void:
 		shop.send_wallet(peer_id)
 	if saved_items.has(key):
 		shop.give(peer_id, str(saved_items[key]))
-	if key in saved_bright:
-		shop.set_bright(peer_id, true)
+	for upgrade: String in saved_personal.get(key, []):
+		shop.set_owned(peer_id, upgrade, true)
 
 
 ## Host: a guard's player left. Their points, item and flashlight are kept by badge, and
@@ -230,8 +230,7 @@ func remember_guard(guard: Guard) -> void:
 		saved_items[key] = item
 	else:
 		saved_items.erase(key)
-	if shop.has_bright(peer) and key not in saved_bright:
-		saved_bright.append(key)
+	saved_personal[key] = shop.owned_by(peer)
 	_totals.erase(peer)
 	shop.forget(peer)
 
@@ -248,12 +247,11 @@ func save_run(next_night: int, in_progress := false) -> void:
 			saved_items[key] = item
 		else:
 			saved_items.erase(key)
-		if shop.has_bright(peer) and key not in saved_bright:
-			saved_bright.append(key)
+		saved_personal[key] = shop.owned_by(peer)
 	RunSave.write({
 		"night": next_night, "difficulty": difficulty_choice, "keep_gear": keep_gear,
 		"points": saved_points, "items": saved_items, "upgrades": guard_room.upgraded.duplicate(),
-		"doors": doors.installed.duplicate(), "bright": saved_bright, "in_progress": in_progress,
+		"doors": doors.installed.duplicate(), "personal": saved_personal, "in_progress": in_progress,
 	})
 
 
@@ -307,7 +305,7 @@ func fail_night() -> void:
 		guard_room.reset_upgrades()
 		doors.reset_all()
 		saved_items.clear()
-		saved_bright.clear()
+		saved_personal.clear()
 	# Everyone's points are gone, including guards who aren't here tonight.
 	saved_points.clear()
 	_show_report.rpc(number, rows, summary, "caught")
@@ -339,7 +337,7 @@ func _end_night() -> void:
 		RunSave.clear()
 		saved_points.clear()
 		saved_items.clear()
-		saved_bright.clear()
+		saved_personal.clear()
 		return
 	_show_report.rpc(number, rows, summary, "night")
 	shop.push_wallets()

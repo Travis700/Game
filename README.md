@@ -60,6 +60,10 @@ to pick them up. You can carry one thing at a time (shown in the bottom-right co
 - **Industrial glue trap (60):** press G to put it down. The first monster to step on it is stuck for 20 seconds.
 - **Portable camera (100):** press G to set it up where you stand, facing the way you look. It appears on
   the guard room monitors (A / D to find it) until morning. Two at most per night.
+- **Walkie-talkie (90):** press G to clip it on; it's yours for the run. Hold **B** to talk to everyone
+  else with a radio, wherever they are (it sounds like a radio, with a click when a call comes in).
+  But a radio blares when a call comes in: monsters near the guard *receiving* the call hear it as
+  if that guard were talking. Think before you call someone who's hiding.
 - **Energy drink (25):** press G to drink it and run faster for 30 seconds.
 - **Heavy-duty flashlight (80):** press G to fit it. A longer, wider beam for the rest of the run.
 
@@ -83,6 +87,8 @@ up you can't hear each other. Ghosts hear the living, but only other ghosts hear
   - the **Librarian** treats talking near the stacks like noise: she shushes, then hunts;
   - the **Hall Monitor** chases anyone talking loudly in the halls.
   Sometimes the only way to stay alive is to keep quiet.
+- **Walkie-talkies** (vending machine) let split-up guards talk at any distance, but every radio that
+  receives a call is loud enough for monsters near it to hear.
 
 ## Sound
 
@@ -178,6 +184,7 @@ it runs; that's normal for games that aren't signed (Steam builds don't show it)
 | Tab | Clipboard: log anything odd you spot (after clocking in) |
 | G | Use or put down what you're carrying (sensors, traps, energy drink, flashlight) |
 | V | Push to talk (voice chat) |
+| B | Talk on the walkie-talkie (once you have one) |
 | F11 | Switch between fullscreen and a window |
 
 **At a guard room desk** (press E on a chair to sit):

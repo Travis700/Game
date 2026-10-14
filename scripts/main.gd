@@ -293,7 +293,7 @@ func _process(_delta: float) -> void:
 	if night.difficulty > 0:
 		status += " · Difficulty %d" % night.difficulty
 	hud.set_objective(_objective())
-	hud.set_voice(voice.transmitting, voice.level)
+	hud.set_voice(voice.transmitting, voice.level, voice.on_radio)
 	for guard: Guard in players.get_children():
 		if guard != _local_guard:
 			guard.show_talking(voice.is_talking(guard.name.to_int()))
@@ -420,7 +420,12 @@ func _start_run() -> void:
 	for doorway in mini(fitted.size(), GuardRoomDoors.DOORWAYS.size()):
 		if fitted[doorway]:
 			doors.install(doorway)
-	night.saved_bright.assign(saved.get("bright", []))
+	night.saved_personal = saved.get("personal", {})
+	# Saves from before the walkie-talkie listed flashlights on their own.
+	for badge: String in saved.get("bright", []):
+		var list: Array = night.saved_personal.get_or_add(badge, [])
+		if "flashlight" not in list:
+			list.append("flashlight")
 	print("[run] Continuing the saved run: ", RunSave.describe(saved))
 
 
@@ -516,9 +521,9 @@ func _on_peer_disconnected(peer_id: int) -> void:
 ## Host only. The spawner runs _create_guard with the same data on every computer,
 ## including players who join later.
 func _spawn_guard(peer_id: int, badge: int) -> void:
-	# The heavy-duty flashlight goes in the spawn data so every computer builds the guard with it.
-	var bright := str(badge) in night.saved_bright
-	spawner.spawn({"peer_id": peer_id, "slot": _free_slot(), "badge": badge, "bright": bright})
+	# Personal upgrades go in the spawn data so every computer builds the guard with them.
+	var personal: Array = night.saved_personal.get(str(badge), [])
+	spawner.spawn({"peer_id": peer_id, "slot": _free_slot(), "badge": badge, "personal": personal})
 	night.restore_guard(peer_id, badge)
 
 
@@ -527,7 +532,8 @@ func _create_guard(data: Dictionary) -> Node:
 	guard.name = str(data["peer_id"])
 	guard.slot = data["slot"]
 	guard.employee_number = data.get("badge", 0)
-	guard.bright_flashlight = data.get("bright", false)
+	guard.bright_flashlight = "flashlight" in data.get("personal", [])
+	guard.has_radio = "radio" in data.get("personal", [])
 	guard.position = SPAWN_POINT + Vector3((guard.slot - 2.5) * 1.4, 0, 0)
 	return guard
 

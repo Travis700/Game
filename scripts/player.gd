@@ -55,6 +55,8 @@ var input_blocked := false
 var boost_left := 0.0
 ## True once this guard has fitted the heavy-duty flashlight: a longer, wider beam.
 var bright_flashlight := false
+## True once this guard has clipped on a walkie-talkie: they can talk on it (B) and hear it.
+var has_radio := false
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _bob_time := 0.0
@@ -112,6 +114,15 @@ func _ready() -> void:
 		camera.current = true
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		get_tree().call_group("game", "on_local_guard_ready", self)
+
+
+## Fits or removes a personal upgrade ("flashlight" or "radio"). Called on every computer.
+func apply_personal(upgrade: String, on: bool) -> void:
+	match upgrade:
+		"flashlight":
+			set_bright_flashlight(on)
+		"radio":
+			has_radio = on
 
 
 ## Fits (or removes) the heavy-duty flashlight. Called on every computer, so everyone sees the beam.

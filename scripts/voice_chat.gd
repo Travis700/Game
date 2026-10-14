@@ -34,6 +34,10 @@ var test_input := Callable()
 var level := 0.0
 ## True while the local player is being sent to everyone.
 var transmitting := false
+## True while that's over the walkie-talkie.
+var on_radio := false
+## Beyond this, a radio call is heard over the radio rather than in person.
+const RADIO_OVER := 8.0
 
 var _mic_player: AudioStreamPlayer
 var _capture: AudioEffectCapture
@@ -42,6 +46,9 @@ var _hangover_left := 0.0
 var _resample_position := 0.0
 ## Peer id -> AudioStreamPlayer3D playing that guard's voice on this computer.
 var _voices: Dictionary = {}
+## Peer id -> AudioStreamPlayer for that guard's voice coming over this guard's radio.
+var _radio_voices: Dictionary = {}
+var _radio_last_heard: Dictionary = {}
 var _active := false
 
 
@@ -55,6 +62,19 @@ func _ready() -> void:
 		# The capture still hears it; you just don't hear yourself.
 		AudioServer.set_bus_mute(bus, true)
 	_capture = AudioServer.get_bus_effect(bus, 0) as AudioEffectCapture
+	# The walkie-talkie: thin and crackly.
+	if AudioServer.get_bus_index("Radio") < 0:
+		AudioServer.add_bus()
+		var radio := AudioServer.bus_count - 1
+		AudioServer.set_bus_name(radio, "Radio")
+		var band := AudioEffectBandPassFilter.new()
+		band.cutoff_hz = 1600.0
+		band.resonance = 0.7
+		AudioServer.add_bus_effect(radio, band)
+		var crunch := AudioEffectDistortion.new()
+		crunch.mode = AudioEffectDistortion.MODE_CLIP
+		crunch.drive = 0.35
+		AudioServer.add_bus_effect(radio, crunch)
 	_mic_player = AudioStreamPlayer.new()
 	_mic_player.stream = AudioStreamMicrophone.new()
 	_mic_player.bus = "Mic"
@@ -101,6 +121,13 @@ func _process(delta: float) -> void:
 			else:
 				_hangover_left -= delta
 			wants = _hangover_left > 0.0
+	# The walkie-talkie: hold its key (only while alive, with one clipped on).
+	var radio := local_guard.has_radio and not local_guard.is_dead and not local_guard.input_blocked \
+			and Input.is_action_pressed("radio_talk")
+	if radio and not on_radio:
+		_squelch(null)
+	on_radio = radio
+	wants = wants or radio
 	transmitting = wants
 	if not wants:
 		_outgoing.clear()
@@ -109,7 +136,7 @@ func _process(delta: float) -> void:
 	while _outgoing.size() >= PACKET_SAMPLES:
 		var packet := _encode(_outgoing.slice(0, PACKET_SAMPLES))
 		_outgoing = _outgoing.slice(PACKET_SAMPLES)
-		_send(packet, level)
+		_send(packet, level, on_radio)
 
 
 func _read_input() -> PackedVector2Array:
@@ -136,26 +163,87 @@ func _downsample_into_outgoing(frames: PackedVector2Array) -> void:
 	_resample_position -= frames.size()
 
 
-func _send(packet: PackedByteArray, loudness: float) -> void:
+func _send(packet: PackedByteArray, loudness: float, radio: bool) -> void:
 	var me := multiplayer.get_unique_id()
 	if multiplayer.is_server():
-		_heard_by_host(me, loudness)
-	_voice.rpc(packet, loudness)
+		_heard_by_host(me, loudness, radio)
+	_voice.rpc(packet, loudness, radio)
 
 
-## Every other computer: a packet of someone's voice.
+## Every other computer: a packet of someone's voice, maybe over the walkie-talkie.
 @rpc("any_peer", "call_remote", "unreliable_ordered", CHANNEL)
-func _voice(packet: PackedByteArray, loudness: float) -> void:
+func _voice(packet: PackedByteArray, loudness: float, radio: bool) -> void:
 	var speaker := multiplayer.get_remote_sender_id()
 	if multiplayer.is_server():
-		_heard_by_host(speaker, loudness)
-	_play(speaker, packet)
+		_heard_by_host(speaker, loudness, radio)
+	if radio and _hears_on_radio(speaker):
+		_play_radio(speaker, packet)
+	else:
+		_play(speaker, packet)
 
 
-## Host: tells the monsters who's talking and how loudly.
-func _heard_by_host(speaker: int, loudness: float) -> void:
-	if director:
-		director.report_voice(speaker, loudness)
+## Host: tells the monsters who's talking and how loudly. A radio call also comes out of
+## every other living guard's radio, and monsters near them hear that too.
+func _heard_by_host(speaker: int, loudness: float, radio: bool) -> void:
+	if director == null:
+		return
+	director.report_voice(speaker, loudness)
+	if not radio:
+		return
+	var talker := director.guard_by_peer(speaker)
+	if talker == null or talker.is_dead:
+		return
+	for guard in director.living_guards():
+		if guard != talker and guard.has_radio:
+			director.report_voice(guard.name.to_int(), loudness * 0.85)
+
+
+## Does the local guard hear this speaker over the radio (rather than in person)?
+func _hears_on_radio(speaker: int) -> bool:
+	var talker := players_guard(speaker)
+	if talker == null or local_guard == null or not local_guard.has_radio or local_guard.is_dead or talker.is_dead:
+		return false
+	return talker.global_position.distance_to(local_guard.global_position) > RADIO_OVER
+
+
+func _play_radio(speaker: int, packet: PackedByteArray) -> void:
+	var existing: Variant = _radio_voices.get(speaker)
+	var player: AudioStreamPlayer = existing if is_instance_valid(existing) else null
+	if player == null:
+		player = AudioStreamPlayer.new()
+		var stream := AudioStreamGenerator.new()
+		stream.mix_rate = VOICE_RATE
+		stream.buffer_length = 0.4
+		player.stream = stream
+		player.bus = "Radio"
+		add_child(player)
+		player.play()
+		_radio_voices[speaker] = player
+	var now := Time.get_ticks_msec() / 1000.0
+	if now - float(_radio_last_heard.get(speaker, 0.0)) > 0.5:
+		# The click at the start of a call.
+		_squelch(player)
+	_radio_last_heard[speaker] = now
+	player.volume_db = linear_to_db(maxf(float(_profile_value("voice_volume", 1.0)), 0.0001)) + 2.0
+	var playback := player.get_stream_playback() as AudioStreamGeneratorPlayback
+	if playback == null:
+		return
+	var samples := _decode(packet)
+	if playback.get_frames_available() < samples.size():
+		return
+	for sample in samples:
+		playback.push_frame(Vector2(sample, sample))
+
+
+## The radio's click and hiss, when you key up (`from` null) or a call comes in.
+func _squelch(_from: Node) -> void:
+	var click := AudioStreamPlayer.new()
+	click.stream = Sfx.notes([1.0, 1.0], 0.06, 0.25, "noise")
+	click.bus = "Radio"
+	click.volume_db = -6.0
+	add_child(click)
+	click.play()
+	click.finished.connect(click.queue_free)
 
 
 func _play(speaker: int, packet: PackedByteArray) -> void:

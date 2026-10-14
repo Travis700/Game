@@ -35,6 +35,10 @@ const ITEMS := {
 		"name": "Portable camera", "price": 100,
 		"about": "Press G to set it up where you stand, pointing the way you're facing. It shows up on the guard room monitors (A / D to find it) until morning. Two at most.",
 	},
+	"radio": {
+		"name": "Walkie-talkie", "price": 90,
+		"about": "Press G to clip it on (it's yours for the run). Hold B to talk to everyone else with one, wherever they are. Careful: a radio blares when someone calls in, and monsters hear it.",
+	},
 	"energy_drink": {
 		"name": "Energy drink", "price": 25,
 		"about": "Press G to drink it: you run faster for 30 seconds.",
@@ -45,7 +49,7 @@ const ITEMS := {
 	},
 }
 ## Items used or put down with G (the rest are fitted with E).
-const USED_WITH_G: Array[String] = ["camera_kit", "portable_camera", "motion_sensor", "glue_trap", "energy_drink", "flashlight"]
+const USED_WITH_G: Array[String] = ["camera_kit", "portable_camera", "radio", "motion_sensor", "glue_trap", "energy_drink", "flashlight"]
 ## How far a motion sensor notices things, and how long it stays quiet after going off.
 const SENSOR_RANGE := 5.0
 const SENSOR_COOLDOWN := 30.0
@@ -70,8 +74,8 @@ var _next_drop := 1
 ## Sensors and traps put down tonight: id -> {"item", "node", "position", "quiet"}. Every computer
 ## has the nodes; the host checks them.
 var _placed: Dictionary = {}
-## Host: peers who've fitted the heavy-duty flashlight.
-var _bright: Array[int] = []
+## Host: personal upgrades each guard has fitted for the run: peer -> ["flashlight", "radio"].
+var _owned: Dictionary = {}
 var _box_material: StandardMaterial3D
 
 
@@ -157,45 +161,57 @@ func _request_use() -> void:
 				else:
 					_drink.rpc_id(peer)
 				_tell(peer, "You down the energy drink. Your heart's going like a drum.")
-		"flashlight":
+		"flashlight", "radio":
+			if owns(peer, item):
+				_tell(peer, "You've already got one of those.")
+				return
 			if take(peer, item):
-				set_bright(peer, true)
-				_tell(peer, "You swap in the heavy-duty flashlight. That's a proper beam.")
+				set_owned(peer, item, true)
+				_tell(peer, "You swap in the heavy-duty flashlight. That's a proper beam." if item == "flashlight"
+						else "You clip the walkie-talkie to your belt. Hold %s to talk on it." % _key("radio_talk"))
 
 
-## Host: fits (or removes) a guard's heavy-duty flashlight, on every computer.
-func set_bright(peer_id: int, on: bool) -> void:
-	if on and peer_id not in _bright:
-		_bright.append(peer_id)
+## Host: fits (or removes) one of a guard's personal upgrades, on every computer.
+func set_owned(peer_id: int, upgrade: String, on: bool) -> void:
+	var list: Array = _owned.get_or_add(peer_id, [])
+	if on and upgrade not in list:
+		list.append(upgrade)
 	elif not on:
-		_bright.erase(peer_id)
-	_set_bright.rpc(peer_id, on)
+		list.erase(upgrade)
+	_set_owned.rpc(peer_id, upgrade, on)
+
+
+## Host: does this guard have this personal upgrade?
+func owns(peer_id: int, upgrade: String) -> bool:
+	return upgrade in _owned.get(peer_id, [])
+
+
+## Host: every personal upgrade a guard has, e.g. for saving.
+func owned_by(peer_id: int) -> Array:
+	return (_owned.get(peer_id, []) as Array).duplicate()
 
 
 ## Host: a guard's player left; what they held is now kept in the save (see Night).
 func forget(peer_id: int) -> void:
 	_held.erase(peer_id)
-	_bright.erase(peer_id)
+	_owned.erase(peer_id)
 
 
-func has_bright(peer_id: int) -> bool:
-	return peer_id in _bright
-
-
-## Host: brings a player who just joined up to date on everyone's flashlights.
+## Host: brings a player who just joined up to date on everyone's upgrades.
 func send_state_to(peer_id: int) -> void:
-	for bright_peer in _bright:
-		_set_bright.rpc_id(peer_id, bright_peer, true)
+	for owner: int in _owned:
+		for upgrade: String in _owned[owner]:
+			_set_owned.rpc_id(peer_id, owner, upgrade, true)
 	# Anything still sitting in the vending machine's tray.
 	for drop_id: int in _drops:
 		_spawn_drop.rpc_id(peer_id, drop_id, _drops[drop_id]["item"])
 
 
 @rpc("authority", "call_local", "reliable")
-func _set_bright(peer_id: int, on: bool) -> void:
+func _set_owned(peer_id: int, upgrade: String, on: bool) -> void:
 	var guard := director.guard_by_peer(peer_id)
 	if guard:
-		guard.set_bright_flashlight(on)
+		guard.apply_personal(upgrade, on)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -298,8 +314,10 @@ func reset_all() -> void:
 		_send_holding(peer_id)
 	for drop_id: int in _drops.keys():
 		_remove_drop.rpc(drop_id)
-	for peer_id in _bright.duplicate():
-		set_bright(peer_id, false)
+	for peer_id: int in _owned.keys():
+		for upgrade: String in (_owned[peer_id] as Array).duplicate():
+			set_owned(peer_id, upgrade, false)
+	_owned.clear()
 	clear_placed()
 	push_wallets()
 
@@ -397,6 +415,13 @@ func _set_wallet(points: int) -> void:
 func _set_holding(item: String) -> void:
 	local_item = item
 	holding_changed.emit(item)
+
+
+## A player's key for an action (Controls is an autoload, looked up by path). Note this is the
+## host's own setting, close enough for a hint.
+func _key(action: String) -> String:
+	var controls := get_node_or_null("/root/Controls")
+	return controls.key_name(action) if controls else action
 
 
 func _tell(peer_id: int, text: String) -> void:

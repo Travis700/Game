@@ -220,10 +220,10 @@ func _build_feed_view() -> void:
 func refresh_key_hint() -> void:
 	var move := "%s%s%s%s" % [Controls.key_name("move_forward"), Controls.key_name("move_left"),
 			Controls.key_name("move_back"), Controls.key_name("move_right")]
-	_hint.text = "%s  move\n%s  run\n%s  flashlight\n%s  use\n%s  clipboard\n%s  use item\n%s  talk (voice chat)\nEsc  menu" % [
+	_hint.text = "%s  move\n%s  run\n%s  flashlight\n%s  use\n%s  clipboard\n%s  use item\n%s  talk (voice chat)\n%s  walkie-talkie\nEsc  menu" % [
 		move if move.length() == 4 else "Move keys", Controls.key_name("sprint"), Controls.key_name("flashlight"),
 		Controls.key_name("interact"), Controls.key_name("clipboard"), Controls.key_name("use_item"),
-		Controls.key_name("push_to_talk")]
+		Controls.key_name("push_to_talk"), Controls.key_name("radio_talk")]
 
 
 func set_objective(text: String) -> void:
@@ -232,11 +232,11 @@ func set_objective(text: String) -> void:
 
 ## The microphone indicator: shown while you're being heard, with how loud you are
 ## (monsters hear loud voices from further away).
-func set_voice(transmitting: bool, level: float) -> void:
+func set_voice(transmitting: bool, level: float, on_radio := false) -> void:
 	var box: Control = _voice_label.get_meta("box")
 	box.visible = transmitting
 	_voice_bar.value = level
-	_voice_label.text = "TALKING (LOUD)" if level > 0.6 else "TALKING"
+	_voice_label.text = ("ON RADIO" if on_radio else "TALKING") + (" (LOUD)" if level > 0.6 else "")
 
 
 func set_status(text: String) -> void:
