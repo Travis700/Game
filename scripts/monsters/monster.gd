@@ -188,6 +188,9 @@ func start_chase() -> void:
 func chase(target: Guard, speed: float, delta: float, give_up_after := INF) -> bool:
 	if not is_instance_valid(target) or target.is_dead:
 		return false
+	# Hidden in a cupboard: it's lost them (if it saw them go in, Hiding deals with that).
+	if target.hiding:
+		return false
 	if give_up_after < INF:
 		if director.can_see(eye_position(), target):
 			_unseen_for = 0.0

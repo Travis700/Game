@@ -15,6 +15,8 @@ signal clipboard_requested
 signal pause_requested
 ## G: use or place whatever the guard is carrying.
 signal item_use_requested
+## E while hiding in a cupboard: climb out.
+signal leave_hiding_requested
 ## E as a ghost: leave a cold spot where you're looking, for the living to see.
 signal ghost_ping_requested(at: Vector3)
 
@@ -68,6 +70,8 @@ var boost_left := 0.0
 var bright_flashlight := false
 ## How strong the flashlight's batteries are tonight (1 = fresh; less on an "Old batteries" night).
 var battery := 1.0
+## True while hiding in a cupboard: can look around, can't move, and monsters can't find you.
+var hiding := false
 ## True once this guard has clipped on a walkie-talkie: they can talk on it (B) and hear it.
 var has_radio := false
 
@@ -338,10 +342,10 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= _gravity * delta
 
 	var input := Vector2.ZERO
-	if not input_blocked:
+	if not input_blocked and not hiding:
 		input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (transform.basis * Vector3(input.x, 0, input.y)).normalized()
-	is_running = not input_blocked and Input.is_action_pressed("sprint") and input.y < 0.0
+	is_running = not input_blocked and not hiding and Input.is_action_pressed("sprint") and input.y < 0.0
 	boost_left = maxf(boost_left - delta, 0.0)
 	var speed := WALK_SPEED
 	if is_running:
@@ -391,6 +395,9 @@ func _update_prompt() -> void:
 func _interact() -> void:
 	if is_dead:
 		_ghost_ping()
+		return
+	if hiding:
+		leave_hiding_requested.emit()
 		return
 	var target := focused_interactable()
 	if target and target.hold_seconds > 0.0:

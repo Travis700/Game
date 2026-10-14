@@ -52,6 +52,7 @@ var power: Power
 var conditions: Conditions
 var bonus: Bonus
 var phone: Phone
+var hiding: Hiding
 ## The date of the daily shift being played (see Daily), or "" for an ordinary run.
 var daily := ""
 ## Emitted on the host when a daily shift's report is closed: back to the menu.
@@ -202,6 +203,7 @@ func _run_shift(delta: float) -> void:
 		rounds.close()
 		power.end_night()
 		phone.end_night()
+		hiding.release_all()
 		shift.guards_required = director.living_guards().size()
 		_start_morning.rpc()
 
@@ -382,6 +384,7 @@ func fail_night() -> void:
 	shop.clear_placed()
 	power.end_night()
 	phone.end_night()
+	hiding.release_all()
 	_restart_run = true
 	var rows := _build_rows(false)
 	rounds.clear()

@@ -335,7 +335,7 @@ func living_guards() -> Array[Guard]:
 func targetable_guards() -> Array[Guard]:
 	var result: Array[Guard] = []
 	for guard in living_guards():
-		if may_enter(guard.global_position):
+		if may_enter(guard.global_position) and not guard.hiding:
 			result.append(guard)
 	return result
 
@@ -357,7 +357,7 @@ func nearest_living_guard(from: Vector3) -> Guard:
 	var best_distance := INF
 	for guard in living_guards():
 		var distance := from.distance_to(guard.global_position)
-		if distance < best_distance and may_enter(guard.global_position):
+		if distance < best_distance and may_enter(guard.global_position) and not guard.hiding:
 			best = guard
 			best_distance = distance
 	return best

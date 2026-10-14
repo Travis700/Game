@@ -56,6 +56,7 @@ var voice: VoiceChat
 var career: Career
 var dread: Dread
 var rounds: Rounds
+var hiding: Hiding
 ## Host: when each ghost may next leave a cold spot.
 var _ghost_ping_at: Dictionary = {}
 var power: Power
@@ -302,6 +303,13 @@ func _ready() -> void:
 	phone.power = power
 	add_child(phone)
 	night.phone = phone
+	hiding = Hiding.new()
+	hiding.name = "Hiding"
+	hiding.director = director
+	hiding.players = players
+	hiding.hud = hud
+	add_child(hiding)
+	night.hiding = hiding
 	dread.night = night
 	add_child(night)
 	shop.night = night
@@ -682,6 +690,8 @@ func _on_peer_disconnected(peer_id: int) -> void:
 		guard.queue_free()
 	shift.remove_guard(peer_id)
 	guard_room.on_peer_left(peer_id)
+	if hiding.hidden.has(peer_id):
+		hiding._set_hidden.rpc(peer_id, -1)
 	_update_guards_required()
 
 
@@ -763,6 +773,11 @@ func on_local_guard_ready(guard: Guard) -> void:
 	guard.message_shown.connect(hud.show_message)
 	guard.desk_action.connect(guard_room.on_desk_action)
 	guard.clipboard_requested.connect(_open_clipboard)
+	guard.leave_hiding_requested.connect(func() -> void:
+		if multiplayer.is_server():
+			hiding._request(-1)
+		else:
+			hiding._request.rpc_id(1, -1))
 	guard.ghost_ping_requested.connect(func(at: Vector3) -> void:
 		if multiplayer.is_server():
 			_request_ghost_ping(at)
@@ -1004,6 +1019,9 @@ func _on_guard_caught(peer_id: int, by: String, from := Vector3.INF) -> void:
 	if guard == null or guard.is_dead:
 		return
 	night.record_death()
+	# Caught in a cupboard (e.g. by the Self-Portrait): the ghost climbs out.
+	if hiding.hidden.has(peer_id):
+		hiding._set_hidden.rpc(peer_id, -1)
 	night.bonus.on_caught(guard)
 	career.add_stat(peer_id, "times_caught")
 	_guard_died.rpc(peer_id, by, guard.global_position, from)

@@ -65,6 +65,10 @@ die, every camera shows NO POWER and the vending machine stops; only red emergen
 Reset the breaker in the custodian's closet (across the main hallway from the lobby) by holding E on it.
 Whoever resets it is paid like a correct log.
 
+**Hiding:** a dozen slatted cupboards stand around the school (and wings). Press E to climb in and E to climb
+out. Nothing can find you inside, and a chase ends when you hide, unless the monster saw you go in, in
+which case it pulls you out.
+
 **The phone:** from night 2 the front office phone rings once or twice a night. Answer it (E) within about
 35 seconds for a tip-off about where something is out of place right now. Let it ring out and the power goes.
 
