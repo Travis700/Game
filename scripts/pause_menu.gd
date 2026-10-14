@@ -5,6 +5,9 @@ extends CanvasLayer
 signal closed
 signal leave_requested
 
+## Choices for the 3D resolution, as a percentage of the window.
+const RENDER_SCALES: Array[int] = [100, 85, 70, 50]
+
 var is_open := false
 var _title: Label
 var _note: Label
@@ -54,6 +57,45 @@ func _ready() -> void:
 		Profile.volume = value
 		Profile.apply_volume())
 	column.add_child(_volume)
+	column.add_child(_label("Graphics"))
+	var graphics := GridContainer.new()
+	graphics.columns = 2
+	graphics.add_theme_constant_override("h_separation", 12)
+	graphics.add_theme_constant_override("v_separation", 6)
+	column.add_child(graphics)
+	graphics.add_child(_small("Resolution"))
+	var scale := OptionButton.new()
+	for percent in RENDER_SCALES:
+		scale.add_item("%d%%%s" % [percent, " (sharpest)" if percent == 100 else ""])
+	scale.select(maxi(RENDER_SCALES.find(roundi(Profile.render_scale * 100)), 0))
+	scale.item_selected.connect(func(index: int) -> void:
+		Profile.render_scale = RENDER_SCALES[index] / 100.0
+		Profile.apply_graphics())
+	graphics.add_child(scale)
+	graphics.add_child(_small("Anti-aliasing"))
+	var aa := OptionButton.new()
+	for option in ["Off", "2x", "4x"]:
+		aa.add_item(option)
+	aa.select(Profile.antialiasing)
+	aa.item_selected.connect(func(index: int) -> void:
+		Profile.antialiasing = index
+		Profile.apply_graphics())
+	graphics.add_child(aa)
+	var shadows := CheckBox.new()
+	shadows.text = "Shadows"
+	shadows.button_pressed = Profile.shadows
+	shadows.toggled.connect(func(on: bool) -> void:
+		Profile.shadows = on
+		Profile.apply_graphics())
+	graphics.add_child(shadows)
+	var vsync := CheckBox.new()
+	vsync.text = "V-sync"
+	vsync.button_pressed = Profile.vsync
+	vsync.toggled.connect(func(on: bool) -> void:
+		Profile.vsync = on
+		Profile.apply_graphics())
+	graphics.add_child(vsync)
+
 	_fullscreen = CheckBox.new()
 	_fullscreen.text = "Fullscreen (F11)"
 	_fullscreen.toggled.connect(func(on: bool) -> void:
@@ -99,6 +141,14 @@ func _label(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_size_override("font_size", 17)
+	return label
+
+
+func _small(text: String) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 15)
+	label.modulate.a = 0.8
 	return label
 
 

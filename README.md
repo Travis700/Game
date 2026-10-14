@@ -158,7 +158,7 @@ it runs; that's normal for games that aren't signed (Steam builds don't show it)
 | Mouse | Look |
 | F | Flashlight |
 | E | Use. Press E on the time clock in the guard room to clock in and start the night. |
-| Esc | Menu: mouse sensitivity, volume, fullscreen, leave the game (pauses solo; in a group the night keeps going) |
+| Esc | Menu: mouse sensitivity, volume, graphics (resolution, anti-aliasing, shadows, V-sync), fullscreen, leave the game (pauses solo; in a group the night keeps going) |
 | Tab | Clipboard: log anything odd you spot (after clocking in) |
 | G | Use or put down what you're carrying (sensors, traps, energy drink, flashlight) |
 | F11 | Switch between fullscreen and a window |

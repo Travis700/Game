@@ -9,6 +9,14 @@ var employee_number := 0
 var mouse_sensitivity := 1.0
 ## Master volume, 0 to 1.
 var volume := 0.8
+## Graphics: V-sync, 3D resolution (1.0 = full), shadows, and anti-aliasing (0 off, 1 = 2x, 2 = 4x).
+var vsync := true
+var render_scale := 1.0
+var shadows := true
+var antialiasing := 1
+
+## Lights that cast shadows (the moon, flashlights), switched by the Shadows setting.
+const SHADOW_LIGHTS := "shadow_lights"
 
 
 func _enter_tree() -> void:
@@ -17,6 +25,10 @@ func _enter_tree() -> void:
 		employee_number = config.get_value("employee", "number", 0)
 		mouse_sensitivity = config.get_value("settings", "mouse_sensitivity", 1.0)
 		volume = config.get_value("settings", "volume", 0.8)
+		vsync = config.get_value("graphics", "vsync", true)
+		render_scale = config.get_value("graphics", "render_scale", 1.0)
+		shadows = config.get_value("graphics", "shadows", true)
+		antialiasing = config.get_value("graphics", "antialiasing", 1)
 	apply_volume()
 	if employee_number < 1000:
 		employee_number = randi_range(1000, 9999)
@@ -37,8 +49,26 @@ func save_settings() -> void:
 	config.set_value("employee", "number", employee_number)
 	config.set_value("settings", "mouse_sensitivity", mouse_sensitivity)
 	config.set_value("settings", "volume", volume)
+	config.set_value("graphics", "vsync", vsync)
+	config.set_value("graphics", "render_scale", render_scale)
+	config.set_value("graphics", "shadows", shadows)
+	config.set_value("graphics", "antialiasing", antialiasing)
 	config.save(PATH)
 
 
 func apply_volume() -> void:
 	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(volume, 0.0001)))
+
+
+func _ready() -> void:
+	apply_graphics()
+
+
+## Applies the graphics settings to the game window and every shadow-casting light.
+func apply_graphics() -> void:
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED)
+	var root := get_tree().root
+	root.scaling_3d_scale = clampf(render_scale, 0.5, 1.0)
+	root.msaa_3d = [Viewport.MSAA_DISABLED, Viewport.MSAA_2X, Viewport.MSAA_4X][clampi(antialiasing, 0, 2)]
+	for light in get_tree().get_nodes_in_group(SHADOW_LIGHTS):
+		(light as Light3D).shadow_enabled = shadows

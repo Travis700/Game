@@ -930,6 +930,8 @@ func _make_environment() -> Environment:
 	moon.light_color = Color(0.6, 0.7, 1.0)
 	moon.light_energy = 0.25
 	moon.shadow_enabled = true
+	moon.add_to_group(Profile.SHADOW_LIGHTS)
+	moon.shadow_enabled = Profile.shadows
 	moon.rotation_degrees = Vector3(-40, 35, 0)
 	add_child(moon)
 	return env

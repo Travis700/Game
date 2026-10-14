@@ -84,6 +84,11 @@ func _ready() -> void:
 	_footsteps.name = "Footsteps"
 	add_child(_footsteps)
 	flashlight.set_meta("base_energy", flashlight.light_energy)
+	# The Shadows setting (Profile is an autoload; looked up by path, see _look).
+	flashlight.add_to_group("shadow_lights")
+	var profile := get_node_or_null("/root/Profile")
+	if profile:
+		flashlight.shadow_enabled = bool(profile.get("shadows"))
 	if bright_flashlight:
 		set_bright_flashlight(true)
 	var local := is_local()
