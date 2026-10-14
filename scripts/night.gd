@@ -36,6 +36,7 @@ var guard_room: GuardRoom
 var doors: GuardRoomDoors
 var career: Career
 var rounds: Rounds
+var power: Power
 
 var number := 1
 ## Tonight's map size (1-3), sent by the host when the night starts. 0 before the first night.
@@ -130,6 +131,7 @@ func _on_shift_started() -> void:
 	save_run(number, true)
 	director.plan_night(number)
 	rounds.plan(number, difficulty)
+	power.plan(number)
 	# Totems only matter with teammates to bring back; alone, being caught ends the run.
 	if players.get_child_count() > 1:
 		totems.place_random()
@@ -151,6 +153,7 @@ func _run_shift(delta: float) -> void:
 			break
 	anomalies.update(minutes)
 	director.update(minutes, delta)
+	power.update(minutes)
 	shop.update(delta)
 	doors.update(delta)
 
@@ -165,6 +168,7 @@ func _run_shift(delta: float) -> void:
 		totems.clear_all()
 		shop.clear_placed()
 		rounds.close()
+		power.end_night()
 		shift.guards_required = director.living_guards().size()
 		_start_morning.rpc()
 
@@ -321,6 +325,7 @@ func fail_night() -> void:
 	totems.clear_all()
 	shop.clear_placed()
 	rounds.clear()
+	power.end_night()
 	_restart_run = true
 	var rows := _build_rows(false)
 	var summary := "The whole team was caught at %s.\nThe school keeps its secrets. The run starts over from night 1." % time_text()

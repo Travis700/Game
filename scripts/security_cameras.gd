@@ -44,6 +44,8 @@ var _tripods: Array[Node3D] = []
 ## Feed key -> SubViewport. Key = camera * 2, plus 1 for the spectral feed.
 var _feeds: Array[SubViewport] = []
 var _no_signal: Array[Control] = []
+## The NO POWER screen over each feed, shown while the school's power is cut.
+var _no_power: Array[Control] = []
 var _focus := -1
 var _next := 0
 var _blink := 0.0
@@ -247,7 +249,15 @@ func set_signal(camera_index: int, working: bool) -> void:
 
 
 func is_working(camera_index: int) -> bool:
-	return not _no_signal[key(camera_index, false)].visible
+	return not _no_signal[key(camera_index, false)].visible and not _no_power[key(camera_index, false)].visible
+
+
+## The school's power went out (every feed shows NO POWER) or came back.
+func set_power(on: bool) -> void:
+	for feed_key in _no_power.size():
+		_no_power[feed_key].visible = not on
+		if feed_key != _focus:
+			_feeds[feed_key].render_target_update_mode = SubViewport.UPDATE_ONCE
 
 
 ## Shows one feed full screen (-1 for none). That feed then refreshes every frame.
@@ -287,18 +297,23 @@ func _add_overlay(viewport: SubViewport, index: int, camera_name: String, spectr
 	viewport.add_child(time)
 	_time_labels.append(time)
 
-	var no_signal := ColorRect.new()
-	no_signal.color = Color(0.04, 0.04, 0.05)
-	no_signal.size = Vector2(FEED_SIZE)
-	no_signal.visible = false
-	var text := _feed_label("NO SIGNAL", Vector2(0, 0))
-	text.size = Vector2(FEED_SIZE)
-	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	text.add_theme_font_size_override("font_size", 48)
-	no_signal.add_child(text)
-	viewport.add_child(no_signal)
-	_no_signal.append(no_signal)
+	_no_signal.append(_blank_screen(viewport, "NO SIGNAL", Color(0.04, 0.04, 0.05)))
+	_no_power.append(_blank_screen(viewport, "NO POWER", Color(0.02, 0.0, 0.0)))
+
+
+func _blank_screen(viewport: SubViewport, text: String, color: Color) -> Control:
+	var screen := ColorRect.new()
+	screen.color = color
+	screen.size = Vector2(FEED_SIZE)
+	screen.visible = false
+	var label := _feed_label(text, Vector2(0, 0))
+	label.size = Vector2(FEED_SIZE)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 48)
+	screen.add_child(label)
+	viewport.add_child(screen)
+	return screen
 
 
 func _feed_label(text: String, at: Vector2) -> Label:

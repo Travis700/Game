@@ -25,6 +25,7 @@ const ACHIEVEMENTS := {
 	"BIG_SPENDER": ["Big spender", "Spend 1000 points at the vending machine in one run."],
 	"HOLD_THE_DOOR": ["Hold the door", "Clock out of a night where a monster battered a guard room door."],
 	"FULL_ROUND": ["Full round", "Punch every station on a night's round."],
+	"LIGHTS_ON": ["Who turned out the lights?", "Reset the breaker after a power cut."],
 }
 ## Every kind of monster, for the Field guide achievement.
 const MONSTER_KINDS: Array[String] = [

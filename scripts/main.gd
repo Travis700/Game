@@ -53,6 +53,7 @@ var voice: VoiceChat
 var career: Career
 var dread: Dread
 var rounds: Rounds
+var power: Power
 var pause_menu: CanvasLayer
 var spawner: MultiplayerSpawner
 var _local_guard: Guard
@@ -255,6 +256,15 @@ func _ready() -> void:
 	rounds.career = career
 	add_child(rounds)
 	night.rounds = rounds
+	power = Power.new()
+	power.name = "Power"
+	power.school = school
+	power.cameras = cameras
+	power.director = director
+	power.career = career
+	add_child(power)
+	power.breaker_reset.connect(night.add_bonus)
+	night.power = power
 	add_child(night)
 	shop.night = night
 	director.student_helped.connect(func(peer_id: int) -> void:
@@ -790,6 +800,8 @@ func _start_night(number: int, difficulty: int) -> void:
 	SteamService.set_presence("Night %d of %d" % [number, Night.LAST_NIGHT])
 	if number == 1:
 		_show_first_night_tips()
+	elif number == 2:
+		hud.show_message("Tip: from tonight the power can go out. The breaker is in the custodian's closet, across the hall from the lobby.")
 
 
 ## A few pointers on the first night, a few seconds apart.
@@ -976,6 +988,9 @@ func _camera_signal(camera_index: int, working: bool) -> void:
 
 func _on_vending_used(by: Node) -> void:
 	if by != _local_guard or _local_guard.is_dead:
+		return
+	if not power.on:
+		hud.show_message("The vending machine is dead. No power.")
 		return
 	_local_guard.input_blocked = true
 	vending.open(shop.local_points, shop.local_item, _mode == "solo")
