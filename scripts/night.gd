@@ -380,12 +380,15 @@ func _end_night() -> void:
 	var round_text := "Round: %d of %d stations punched%s." % [rounds.punched.size(), rounds.order.size(),
 			" (complete, +%d each)" % Rounds.ROUND_BONUS if rounds.is_complete()
 			else ", %d missed (-%d for each guard)" % [rounds.missed_count(), rounds.missed_count() * Rounds.MISSED_PENALTY]]
+	var awards := _awards()
 	rounds.clear()
 	var appeared := anomalies.appeared_count()
 	var missed := anomalies.missed_count()
 	var summary := "%d anomal%s tonight, %d missed by everyone.   Guards lost: %d." % [
 		appeared, "y" if appeared == 1 else "ies", missed, _deaths]
 	summary += "\n" + round_text
+	if awards != "":
+		summary += "\n" + awards
 	summary += "\nPay: %d for clocking out, +%d per correct log, -%d per false report, -%d for each guard lost." % [
 		SURVIVAL_PAY, CORRECT_LOG_POINTS, FALSE_REPORT_POINTS, DEATH_PENALTY]
 	if number >= LAST_NIGHT:
@@ -442,6 +445,34 @@ func _award_night() -> void:
 				career.award(peer, "RUN_WON_SOLO")
 			if difficulty >= MAX_DIFFICULTY:
 				career.award(peer, "RUN_WON_D3")
+
+
+## Co-op only: who did best tonight, e.g. "Sharpest eyes: Sam (4 logs)  ·  Night watchman: Guard 2 (3 stations)".
+func _awards() -> String:
+	if players.get_child_count() < 2:
+		return ""
+	var awards: Array[String] = []
+	var categories := [
+		["Sharpest eyes", ["log", "logs"], func(peer: int) -> int: return int(_stats.get(peer, {}).get("correct", 0))],
+		["Monster expert", ["named", "named"], func(peer: int) -> int: return int(_stats.get(peer, {}).get("named", 0))],
+		["Night watchman", ["station", "stations"], func(peer: int) -> int: return int(rounds.punches.get(peer, 0))],
+	]
+	for category: Array in categories:
+		var best: Guard = null
+		var best_count := 0
+		var tied := false
+		for guard: Guard in players.get_children():
+			var count: int = (category[2] as Callable).call(guard.name.to_int())
+			if count > best_count:
+				best = guard
+				best_count = count
+				tied = false
+			elif count == best_count and count > 0:
+				tied = true
+		if best and not tied:
+			var who := best.player_name if best.player_name != "" else "Guard %d" % best.slot
+			awards.append("%s: %s (%d %s)" % [category[0], who, best_count, category[1][0 if best_count == 1 else 1]])
+	return "  ·  ".join(awards)
 
 
 ## One row per guard for the report. `keep_pay` is false when the run is starting over.
