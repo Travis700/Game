@@ -128,10 +128,11 @@ Which monsters are unlocked on which night is still to be set (section 14).
 | Guard room door kit | 120 | A door for one of the two doorways; holds monsters about 15 s of banging. |
 | Motion sensor | 40 | Put down with G; announces which area a monster passed. |
 | Industrial glue trap | 60 | Put down with G; holds the first monster for 20 s. |
+| Portable camera | 100 | Set up anywhere with G; an extra monitor feed until morning (two at most). |
 | Energy drink | 25 | Faster running for 30 s. |
 | Heavy-duty flashlight | 80 | Longer, wider beam for the rest of the run. |
 
-**Ideas not built yet:** radio, extra cameras, coffee.
+**Ideas not built yet:** radio, coffee.
 
 ## 12. Technical plan
 

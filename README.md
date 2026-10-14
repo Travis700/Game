@@ -58,6 +58,8 @@ to pick them up. You can carry one thing at a time (shown in the bottom-right co
   them for about 15 seconds of banging, then gives way and hangs open for a minute.
 - **Motion sensor (40):** press G to put it down. When a monster walks past, everyone hears which area.
 - **Industrial glue trap (60):** press G to put it down. The first monster to step on it is stuck for 20 seconds.
+- **Portable camera (100):** press G to set it up where you stand, facing the way you look. It appears on
+  the guard room monitors (A / D to find it) until morning. Two at most per night.
 - **Energy drink (25):** press G to drink it and run faster for 30 seconds.
 - **Heavy-duty flashlight (80):** press G to fit it. A longer, wider beam for the rest of the run.
 

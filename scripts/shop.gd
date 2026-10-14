@@ -31,6 +31,10 @@ const ITEMS := {
 		"name": "Industrial glue trap", "price": 60,
 		"about": "Press G to put it down. The first monster to step on it is stuck there for 20 seconds.",
 	},
+	"portable_camera": {
+		"name": "Portable camera", "price": 100,
+		"about": "Press G to set it up where you stand, pointing the way you're facing. It shows up on the guard room monitors (A / D to find it) until morning. Two at most.",
+	},
 	"energy_drink": {
 		"name": "Energy drink", "price": 25,
 		"about": "Press G to drink it: you run faster for 30 seconds.",
@@ -41,7 +45,7 @@ const ITEMS := {
 	},
 }
 ## Items used or put down with G (the rest are fitted with E).
-const USED_WITH_G: Array[String] = ["camera_kit", "motion_sensor", "glue_trap", "energy_drink", "flashlight"]
+const USED_WITH_G: Array[String] = ["camera_kit", "portable_camera", "motion_sensor", "glue_trap", "energy_drink", "flashlight"]
 ## How far a motion sensor notices things, and how long it stays quiet after going off.
 const SENSOR_RANGE := 5.0
 const SENSOR_COOLDOWN := 30.0
@@ -53,6 +57,8 @@ const TRAY := Vector3(18.75, 0.15, 16.6)
 
 var night: Night
 var director: MonsterDirector
+var cameras: SecurityCameras
+var guard_room: GuardRoom
 ## What this player is carrying ("" for nothing). Updated by the host.
 var local_item := ""
 var local_points := 0
@@ -130,6 +136,20 @@ func _request_use() -> void:
 				_place.rpc(_next_drop, item, at)
 				_next_drop += 1
 				_tell(peer, "Motion sensor set up in %s." % _area_name(at) if item == "motion_sensor" else "Glue trap down. Try not to step in it.")
+		"portable_camera":
+			var slot := cameras.free_portable()
+			if slot < 0:
+				_tell(peer, "Both portable camera channels are in use tonight.")
+				return
+			if take(peer, item):
+				var forward := -guard.global_basis.z
+				forward.y = 0.0
+				forward = forward.normalized()
+				var at := guard.global_position + forward * 0.2 + Vector3(0, 2.2, 0)
+				var target := at + forward * 8.0
+				target.y = 0.6
+				cameras.place_portable.rpc(slot, at, target)
+				_tell(peer, "Portable camera %d is up. Find it on the guard room monitors." % (slot + 1))
 		"energy_drink":
 			if take(peer, item):
 				if peer == multiplayer.get_unique_id():
@@ -203,10 +223,12 @@ func update(delta: float) -> void:
 				break
 
 
-## Host: the night's over, so the sensors and traps get cleared away.
+## Host: the night's over, so the sensors, traps and portable cameras get cleared away.
 func clear_placed() -> void:
 	for id: int in _placed.keys():
 		_remove_placed.rpc(id)
+	cameras.clear_portables.rpc()
+	guard_room.drop_closed_cameras()
 
 
 @rpc("authority", "call_local", "reliable")

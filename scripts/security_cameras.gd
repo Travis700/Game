@@ -17,6 +17,10 @@ const GUARD_ROOM := AABB(Vector3(6, -1, 10), Vector3(14, 5, 10))
 const SPECTRAL_LAYER := 1 << 12
 ## Things on this layer (the fake Student) never show up on any camera.
 const HIDDEN_FROM_CAMERAS := 1 << 11
+## Spare cameras for portable cameras guards set up during the night (vending machine).
+const PORTABLE_COUNT := 2
+## A portable camera's "difficulty": closed until someone sets it up.
+const PORTABLE_CLOSED := 99
 
 var names: Array[String] = []
 ## The lowest difficulty each camera's wing is open at.
@@ -27,6 +31,10 @@ var difficulty := 1
 var viewer: Node3D
 ## Feeds currently on at least one monitor, as feed keys (see `key`). Set by GuardRoom.
 var shown: Array[int] = []
+## Index of the first portable camera (they come after the school's own).
+var first_portable := 0
+var _portable_on: Array[bool] = []
+var _tripods: Array[Node3D] = []
 
 ## Feed key -> SubViewport. Key = camera * 2, plus 1 for the spectral feed.
 var _feeds: Array[SubViewport] = []
@@ -63,6 +71,7 @@ func build(spots: Array[Dictionary]) -> void:
 			camera.look_at_from_position(spot["position"], spot["target"], Vector3.UP)
 			_add_overlay(viewport, i, spot["name"], spectral)
 			_feeds.append(viewport)
+	_build_portables(normal_env, spectral_env)
 
 
 func count() -> int:
@@ -71,7 +80,97 @@ func count() -> int:
 
 ## Can this camera be shown at tonight's difficulty?
 func is_open(camera_index: int) -> bool:
+	if camera_index >= first_portable:
+		return _portable_on[camera_index - first_portable]
 	return difficulties[camera_index] <= difficulty
+
+
+## The first portable camera nobody has set up yet tonight, or -1.
+func free_portable() -> int:
+	for i in PORTABLE_COUNT:
+		if not _portable_on[i]:
+			return i
+	return -1
+
+
+## The area a camera looks at, for the clipboard (a portable camera's is in its name).
+func area_of(camera_index: int) -> String:
+	var camera_name := names[camera_index]
+	if camera_index >= first_portable:
+		return camera_name.get_slice(" · ", 1) if " · " in camera_name else ""
+	return camera_name
+
+
+## Every computer: sets up portable camera `slot` at `at`, looking towards `target`.
+@rpc("authority", "call_local", "reliable")
+func place_portable(slot: int, at: Vector3, target: Vector3) -> void:
+	_portable_on[slot] = true
+	var index := first_portable + slot
+	var area := SchoolBuilder.area_at(target)
+	names[index] = "Portable %d%s" % [slot + 1, (" · " + area) if area != "" else ""]
+	for spectral: bool in [false, true]:
+		var feed := _feeds[key(index, spectral)]
+		(feed.get_child(0) as Camera3D).look_at_from_position(at, target, Vector3.UP)
+		(feed.get_child(1) as Label).text = "CAM P%d  %s%s" % [slot + 1, area.to_upper(), "  ·  SPECTRAL" if spectral else ""]
+		feed.render_target_update_mode = SubViewport.UPDATE_ONCE
+	var tripod := _tripods[slot]
+	tripod.position = Vector3(at.x, 0, at.z)
+	tripod.rotation.y = atan2(at.x - target.x, at.z - target.z)
+	tripod.visible = true
+
+
+## Every computer, in the morning: the portable cameras are packed away.
+@rpc("authority", "call_local", "reliable")
+func clear_portables() -> void:
+	for slot in PORTABLE_COUNT:
+		_portable_on[slot] = false
+		_tripods[slot].visible = false
+		names[first_portable + slot] = "Portable %d (not set up)" % (slot + 1)
+
+
+func _build_portables(normal_env: Environment, spectral_env: Environment) -> void:
+	first_portable = names.size()
+	var metal := StandardMaterial3D.new()
+	metal.albedo_color = Color(0.15, 0.15, 0.17)
+	for slot in PORTABLE_COUNT:
+		var index := first_portable + slot
+		names.append("Portable %d (not set up)" % (slot + 1))
+		difficulties.append(PORTABLE_CLOSED)
+		_portable_on.append(false)
+		for spectral: bool in [false, true]:
+			var viewport := SubViewport.new()
+			viewport.name = "FeedP%d%s" % [slot + 1, "Spectral" if spectral else ""]
+			viewport.size = FEED_SIZE
+			viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+			add_child(viewport)
+			var camera := Camera3D.new()
+			camera.fov = 72.0
+			camera.far = 60.0
+			camera.environment = spectral_env if spectral else normal_env
+			camera.cull_mask &= ~HIDDEN_FROM_CAMERAS
+			if not spectral:
+				camera.cull_mask &= ~SPECTRAL_LAYER
+			viewport.add_child(camera)
+			_add_overlay(viewport, index, "Portable %d" % (slot + 1), spectral)
+			_feeds.append(viewport)
+		# A little camera on a tripod, where it was set up.
+		var tripod := Node3D.new()
+		tripod.visible = false
+		for leg in 3:
+			var stick := MeshInstance3D.new()
+			stick.mesh = Monster.box(Vector3(0.03, 2.2, 0.03))
+			stick.material_override = metal
+			var angle := TAU * leg / 3.0
+			stick.position = Vector3(cos(angle) * 0.18, 1.05, sin(angle) * 0.18)
+			stick.rotation = Vector3(sin(angle) * 0.12, 0, -cos(angle) * 0.12)
+			tripod.add_child(stick)
+		var body := MeshInstance3D.new()
+		body.mesh = Monster.box(Vector3(0.18, 0.14, 0.28))
+		body.material_override = metal
+		body.position = Vector3(0, 2.2, 0)
+		tripod.add_child(body)
+		add_child(tripod)
+		_tripods.append(tripod)
 
 
 ## The cameras that can be shown tonight, in order.

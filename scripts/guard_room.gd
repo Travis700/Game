@@ -152,7 +152,7 @@ func on_desk_action(action: String) -> void:
 ## The camera you're looking at (full screen, or the monitor in front of you), or "" if none.
 func current_area() -> String:
 	var monitor := _zoomed if _zoomed >= 0 else _focused
-	return cameras.names[assignments[monitor]] if monitor >= 0 else ""
+	return cameras.area_of(assignments[monitor]) if monitor >= 0 else ""
 
 
 ## Leaves the full-screen view and stands up, e.g. when the next night begins.
@@ -329,6 +329,15 @@ func fit_to_open_cameras() -> void:
 		var camera := open[monitor % open.size()]
 		if assignments[monitor] != camera:
 			_set_camera.rpc(monitor, camera)
+
+
+## Host: monitors showing a camera that's gone (a portable camera packed away) switch to
+## an open one.
+func drop_closed_cameras() -> void:
+	var open := cameras.open_cameras()
+	for monitor in assignments.size():
+		if not cameras.is_open(assignments[monitor]):
+			_set_camera.rpc(monitor, open[monitor % open.size()])
 
 
 ## Host only: frees the desk of a guard who left the session.

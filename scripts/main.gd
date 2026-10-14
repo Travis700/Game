@@ -170,6 +170,8 @@ func _ready() -> void:
 	shop = Shop.new()
 	shop.name = "Shop"
 	shop.director = director
+	shop.cameras = cameras
+	shop.guard_room = guard_room
 	add_child(shop)
 	doors = GuardRoomDoors.new()
 	doors.name = "GuardRoomDoors"
