@@ -396,7 +396,7 @@ func _mimic(path: NodePath, line: PackedByteArray) -> void:
 
 ## Tells the host whether monsters may copy this player's voice (the Esc menu setting).
 func send_mimic_consent() -> void:
-	if multiplayer.multiplayer_peer == null or multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
+	if multiplayer.multiplayer_peer == null:
 		return
 	var allowed: bool = _profile_value("voice_mimic", true)
 	if multiplayer.is_server():

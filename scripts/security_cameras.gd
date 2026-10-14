@@ -113,6 +113,12 @@ func capture_references(time_text: String) -> void:
 			_references[i] = ImageTexture.create_from_image(image)
 
 
+## Forgets last night's photos (a new night is starting).
+func clear_references() -> void:
+	_references.clear()
+	reference_time = ""
+
+
 ## The early-night photo for a camera, or null.
 func reference(camera_index: int) -> Texture2D:
 	return _references.get(camera_index)

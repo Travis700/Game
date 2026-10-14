@@ -595,6 +595,10 @@ func _register_employee(badge: int, password: String, player_name := "", rank :=
 	while badge < 1000 or _badge_in_use(badge):
 		badge = randi_range(1000, 9999)
 	_spawn_guard(peer_id, badge, player_name, rank)
+	# Spawn data is replayed as it was first sent: tell them about anyone promoted since.
+	for guard: Guard in players.get_children():
+		if guard.name.to_int() != peer_id:
+			_set_rank.rpc_id(peer_id, guard.name.to_int(), guard.rank)
 	shop.send_state_to(peer_id)
 	doors.send_state_to(peer_id)
 	_sync_session.rpc_id(peer_id, night.number, night.difficulty)
@@ -792,6 +796,7 @@ func _start_night(number: int, difficulty: int) -> void:
 	print("[net] Night %d started at difficulty %d" % [number, difficulty])
 	night.number = number
 	night.difficulty = difficulty
+	cameras.clear_references()
 	_apply_difficulty(difficulty)
 	shift.begin()
 	_clocked_in = false

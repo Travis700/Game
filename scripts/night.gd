@@ -351,10 +351,10 @@ func fail_night() -> void:
 	director.end_night()
 	totems.clear_all()
 	shop.clear_placed()
-	rounds.clear()
 	power.end_night()
 	_restart_run = true
 	var rows := _build_rows(false)
+	rounds.clear()
 	var summary := "The whole team was caught at %s.\nThe school keeps its secrets. The run starts over from night 1." % time_text()
 	if keep_gear:
 		summary += "\nYou keep your upgrades and whatever you're carrying. Points start again from zero."

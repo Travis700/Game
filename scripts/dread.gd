@@ -46,7 +46,8 @@ func _process(delta: float) -> void:
 			continue
 		var distance := monster.global_position.distance_to(local_guard.global_position)
 		nearest = minf(nearest, distance)
-		if monster.state in CHASE_STATES:
+		# The Understudy's states carry the slot of the guard it's after ("follow2", "step2").
+		if monster.state in CHASE_STATES or monster.state.trim_suffix(monster.state.right(1)) in CHASE_STATES:
 			hunting = minf(hunting, distance)
 	# Heartbeat: from one a second, far off, to racing when it's on top of you.
 	if nearest < HEARTBEAT_RANGE:
