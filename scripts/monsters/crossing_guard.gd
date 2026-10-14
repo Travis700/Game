@@ -7,7 +7,8 @@ extends Monster
 ## don't move: anyone it can see moving gets run down. When the sign comes down, go.
 
 const WALK_SPEED := 2.0
-const CHARGE_SPEED := 6.4
+## Just under running speed: run and break line of sight and you can get away.
+const CHARGE_SPEED := 5.4
 const SIGHT_RANGE := 22.0
 ## Real seconds: grace after the whistle, how long the sign stays up, and the longest charge.
 const GRACE_SECONDS := 1.2
@@ -59,7 +60,7 @@ func _hold_sign(delta: float) -> void:
 		return
 	if _stop_left > STOP_SECONDS:
 		return
-	for guard in director.living_guards():
+	for guard in director.targetable_guards():
 		if director.guard_speed(guard) > MOVING_SPEED and distance_to_guard(guard) < SIGHT_RANGE \
 				and director.can_see(eye_position(), guard):
 			_target = guard

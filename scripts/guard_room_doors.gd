@@ -134,6 +134,9 @@ func _request_use(doorway: int) -> void:
 
 ## Host, every frame of the night: monsters at a shut door bang on it until it gives.
 func update(delta: float) -> void:
+	# Before night 7 nothing tries to get in, so nothing bangs on the doors.
+	if director.night_number < MonsterDirector.GUARD_ROOM_OPENS_ON_NIGHT:
+		return
 	for i in DOORWAYS.size():
 		if broken[i]:
 			_broken_left[i] -= delta

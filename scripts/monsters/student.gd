@@ -8,6 +8,10 @@ const LEAD_SPEED := 2.6
 const CHASE_SPEED := 5.2
 const CHASE_TIME := 10.0
 const NOTICE_DISTANCE := 4.5
+## Real seconds it waits for a guard who stopped following before giving up on them.
+const WAIT_FOR_FOLLOWER := 20.0
+## Real seconds the fake stands still after turning round, before it comes for you.
+const REVEAL_PAUSE := 1.2
 const DESTINATIONS: Array[Vector3] = [Vector3(35, 0, -25), Vector3(-35, 0, -25), Vector3(0, 0, -27)]
 
 ## Set by the director when it spawns: is this a real kid?
@@ -15,6 +19,7 @@ var real := false
 var _destination := Vector3.ZERO
 var _follower: Guard
 var _chase_left := 0.0
+var _waiting_for := 0.0
 
 
 func _init() -> void:
@@ -33,9 +38,10 @@ func think(delta: float) -> void:
 	match state:
 		"wait":
 			halt()
-			for guard in director.living_guards():
-				if distance_to_guard(guard) < NOTICE_DISTANCE:
+			for guard in director.targetable_guards():
+				if distance_to_guard(guard) < NOTICE_DISTANCE and director.can_see(eye_position(), guard):
 					_follower = guard
+					_waiting_for = 0.0
 					_destination = DESTINATIONS.pick_random()
 					state = "lead"
 					director.tell(guard.name.to_int(), "A kid grabs your sleeve: \"Please, I got locked in, and my friend's hurt. Follow me!\"")
@@ -49,13 +55,22 @@ func think(delta: float) -> void:
 			elif distance_to_guard(_follower) > 8.0:
 				halt()
 				face(_follower.global_position - global_position)
+				_waiting_for += delta
+				if _waiting_for > WAIT_FOR_FOLLOWER:
+					# They didn't follow. Wait for someone else.
+					_follower = null
+					state = "wait"
 			else:
+				_waiting_for = 0.0
 				move_to(_destination, LEAD_SPEED)
 		"reveal":
 			_chase_left -= delta
-			if is_instance_valid(_follower) and not _follower.is_dead:
+			if _chase_left > CHASE_TIME - REVEAL_PAUSE:
+				# A moment to see its face, and to run.
+				halt()
+			elif is_instance_valid(_follower) and not _follower.is_dead:
 				move_to(_follower.global_position, CHASE_SPEED)
-			catch_nearby()
+				catch_nearby()
 			if _chase_left <= 0.0:
 				director.remove_monster(self)
 		"leave":

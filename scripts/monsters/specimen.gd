@@ -6,7 +6,8 @@ extends Monster
 ## It can't stand light. Catch it in your flashlight beam and it scuttles off into the ceiling,
 ## then drops out somewhere else a while later. The Librarian hates that flashlight, though.
 
-const CRAWL_SPEED := 3.0
+## A little faster than walking, so you can't just stroll away from it.
+const CRAWL_SPEED := 3.4
 const FLEE_SPEED := 6.0
 const LIGHT_RANGE := 12.0
 ## Real seconds it stays hidden in the ceiling.

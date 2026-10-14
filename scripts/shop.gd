@@ -152,6 +152,12 @@ func set_bright(peer_id: int, on: bool) -> void:
 	_set_bright.rpc(peer_id, on)
 
 
+## Host: a guard's player left; what they held is now kept in the save (see Night).
+func forget(peer_id: int) -> void:
+	_held.erase(peer_id)
+	_bright.erase(peer_id)
+
+
 func has_bright(peer_id: int) -> bool:
 	return peer_id in _bright
 
@@ -160,6 +166,9 @@ func has_bright(peer_id: int) -> bool:
 func send_state_to(peer_id: int) -> void:
 	for bright_peer in _bright:
 		_set_bright.rpc_id(peer_id, bright_peer, true)
+	# Anything still sitting in the vending machine's tray.
+	for drop_id: int in _drops:
+		_spawn_drop.rpc_id(peer_id, drop_id, _drops[drop_id]["item"])
 
 
 @rpc("authority", "call_local", "reliable")
@@ -278,6 +287,9 @@ func _request_buy(item: String) -> void:
 	if not multiplayer.is_server() or not ITEMS.has(item):
 		return
 	var peer := _sender()
+	var buyer := director.guard_by_peer(peer)
+	if buyer == null or buyer.is_dead:
+		return
 	var price: int = ITEMS[item]["price"]
 	if night.points_of(peer) < price:
 		_tell(peer, "You don't have enough points for that.")

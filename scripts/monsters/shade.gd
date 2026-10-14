@@ -16,6 +16,11 @@ func _init() -> void:
 	state = "hunt"
 
 
+## Something let out of a totem isn't one of the school's monsters, so it can't be logged.
+func loggable() -> bool:
+	return false
+
+
 func think(delta: float) -> void:
 	_age += delta
 	if _age > LIFETIME:

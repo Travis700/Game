@@ -64,7 +64,7 @@ func _shelve(delta: float) -> void:
 
 ## The nearest living guard it can see with their light on it, or hear running.
 func _offender() -> Guard:
-	for guard in director.living_guards():
+	for guard in director.targetable_guards():
 		var distance := distance_to_guard(guard)
 		if guard.is_running and distance < HEAR_RUNNING:
 			return guard
@@ -93,7 +93,9 @@ func _hunt(delta: float) -> void:
 	if not is_instance_valid(_target) or _target.is_dead:
 		state = "shelve"
 		return
-	var loud := _target.flashlight.visible or _target.is_running
+	# Only what it can still see or hear counts: get far enough away and it loses you.
+	var distance := distance_to_guard(_target)
+	var loud := (_target.flashlight.visible and distance < LIGHT_RANGE * 1.5) or (_target.is_running and distance < HEAR_RUNNING)
 	_calm_for = 0.0 if loud else _calm_for + delta
 	if _calm_for > CALM_AFTER or not move_to(_target.global_position, HUNT_SPEED):
 		state = "shelve"

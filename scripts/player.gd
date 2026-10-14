@@ -80,6 +80,8 @@ func _ready() -> void:
 	name_tag.text = "Guard %d  #%04d" % [slot, employee_number]
 
 	flashlight.set_meta("base_energy", flashlight.light_energy)
+	if bright_flashlight:
+		set_bright_flashlight(true)
 	var local := is_local()
 	# Your own body is hidden from your own eyes but still shows up on the cameras.
 	if local:

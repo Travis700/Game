@@ -10,6 +10,9 @@ extends CharacterBody3D
 const LAYER := 1 << 3
 const KILL_DISTANCE := 1.1
 const GRAVITY := 9.8
+## The Bell never pushes a monster faster than this (just under a guard's running speed),
+## so every chase can still be outrun.
+const BELL_SPEED_CAP := 5.4
 
 var director: MonsterDirector
 ## Shown in death messages, e.g. "Caught by the Hall Monitor."
@@ -106,7 +109,7 @@ func move_to(target: Vector3, speed: float) -> bool:
 	var direction := next - global_position
 	direction.y = 0.0
 	# Everything moves faster while the school bell rings.
-	speed *= director.speed_multiplier()
+	speed = minf(speed * director.speed_multiplier(), maxf(speed, BELL_SPEED_CAP))
 	if direction.length() > 0.05:
 		direction = direction.normalized()
 		face(direction)
@@ -150,7 +153,7 @@ func distance_to_guard(guard: Guard) -> float:
 
 ## Catches any living guard within reach. Returns true if it caught someone.
 func catch_nearby() -> bool:
-	for guard in director.living_guards():
+	for guard in director.targetable_guards():
 		if distance_to_guard(guard) < KILL_DISTANCE:
 			director.kill(guard, display_name)
 			return true

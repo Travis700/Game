@@ -9,7 +9,7 @@ extends Monster
 
 const FOLLOW_DISTANCE := 7.0
 const FOLLOW_SPEED := 3.6
-const STEP_IN_SPEED := 5.4
+const STEP_IN_SPEED := 5.0
 const SIGHT_RANGE := 14.0
 ## Real seconds its guard can stand still before it steps in, and how long it keeps coming.
 const STILL_SECONDS := 4.0
@@ -49,7 +49,10 @@ func think(delta: float) -> void:
 		halt()
 		face(_target.global_position - global_position)
 	var watching := distance < SIGHT_RANGE and director.can_see(eye_position(), _target)
-	if watching and director.guard_speed(_target) < STILL_SPEED:
+	# Standing still is fair when the Crossing Guard's sign is up, and a guard sitting at a
+	# desk is working, not standing about.
+	var excused := director.stop_sign_up() or director.is_seated(_target)
+	if watching and not excused and director.guard_speed(_target) < STILL_SPEED:
 		_still_for += delta
 	else:
 		_still_for = 0.0
@@ -74,7 +77,7 @@ func _step_in(delta: float) -> void:
 func _pick_target() -> Guard:
 	var best: Guard = null
 	var best_distance := INF
-	for guard in director.living_guards():
+	for guard in director.targetable_guards():
 		var distance := distance_to_guard(guard)
 		if director.may_enter(guard.global_position) and distance < best_distance:
 			best = guard

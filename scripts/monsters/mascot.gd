@@ -12,8 +12,17 @@ func _init() -> void:
 	state = "frozen"
 
 
-func think(_delta: float) -> void:
-	if director.is_watched(self):
+var _watched := false
+var _look_again := 0.0
+
+
+func think(delta: float) -> void:
+	# Checking every guard and camera is a lot of rays, so look ten times a second.
+	_look_again -= delta
+	if _look_again <= 0.0:
+		_look_again = 0.1
+		_watched = director.is_watched(self)
+	if _watched:
 		halt()
 		state = "frozen"
 		return

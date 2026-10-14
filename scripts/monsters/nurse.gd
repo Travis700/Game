@@ -44,8 +44,8 @@ func think(delta: float) -> void:
 
 func _rounds(delta: float) -> void:
 	if _rest_left <= 0.0:
-		for guard in director.living_guards():
-			if distance_to_guard(guard) < NOTICE_RANGE and _is_alone(guard) and director.may_enter(guard.global_position) \
+		for guard in director.targetable_guards():
+			if distance_to_guard(guard) < NOTICE_RANGE and _is_alone(guard) \
 					and director.can_see(eye_position(), guard):
 				_target = guard
 				_follow_left = FOLLOW_SECONDS

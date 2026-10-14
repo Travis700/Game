@@ -54,6 +54,8 @@ const AREAS := {
 	"Science Lab": AABB(Vector3(40, -1, -14), Vector3(22, 6, 18)),
 	"Art Room": AABB(Vector3(62, -1, -14), Vector3(18, 6, 18)),
 	"Locker Rooms": AABB(Vector3(40, -1, 10), Vector3(40, 6, 10)),
+	# No camera covers it, but from night 7 things get in, and guards need to log them.
+	"Guard Room": AABB(Vector3(6, -1, 10), Vector3(14, 6, 10)),
 }
 ## The lowest difficulty each wing's areas are open at. Areas not listed are always open.
 const AREA_DIFFICULTY := {

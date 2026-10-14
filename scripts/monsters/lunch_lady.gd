@@ -46,7 +46,7 @@ func think(delta: float) -> void:
 
 
 func _listen() -> bool:
-	for guard in director.living_guards():
+	for guard in director.targetable_guards():
 		var speed := director.guard_speed(guard)
 		var reach := HEAR_RUNNING if guard.is_running else (HEAR_WALKING if speed > 0.8 else 0.0)
 		if reach > 0.0 and distance_to_guard(guard) < reach:

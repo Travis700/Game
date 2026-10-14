@@ -45,7 +45,7 @@ const SUMMON_EVERY := Vector2(60.0, 100.0)
 const SUMMON_SECONDS := 45.0
 ## How long a camera stays dark after the Ghost passes (in-game minutes).
 const BLACKOUT_MINUTES := 20.0
-const FRONT_OFFICE := Vector3(-13, 0, 13)
+const FRONT_OFFICE := Vector3(-11.5, 0, 15)
 const GUARD_ROOM := AABB(Vector3(6, -1, 10), Vector3(14, 5, 10))
 const MASCOT_STAND := Vector3(9.0, 0.3, 1.5)
 ## The Bell: from this night it can ring at the wrong time, speeding every monster up until
@@ -303,9 +303,20 @@ func _create_monster(data: Dictionary) -> Node:
 func living_guards() -> Array[Guard]:
 	var living: Array[Guard] = []
 	for guard: Guard in players.get_children():
-		if not guard.is_dead and guard.is_inside_tree():
+		# A guard whose player just left is still in the tree until the end of the frame.
+		if not guard.is_dead and guard.is_inside_tree() and not guard.is_queued_for_deletion():
 			living.append(guard)
 	return living
+
+
+## Living guards a monster may go after: before night 7 that leaves out anyone in the
+## guard room, so nothing reaches (or notices) them through its walls and doorways.
+func targetable_guards() -> Array[Guard]:
+	var result: Array[Guard] = []
+	for guard in living_guards():
+		if may_enter(guard.global_position):
+			result.append(guard)
+	return result
 
 
 func dead_guards() -> Array[Guard]:
@@ -400,10 +411,24 @@ func active_monsters() -> Array[Monster]:
 	var result: Array[Monster] = []
 	for node in _container.get_children():
 		var monster := node as Monster
-		if monster and not monster.harmless and not monster is SchoolGhost and monster.loggable() \
-				and not monster.is_queued_for_deletion():
+		# The Shade counts here even though it can't be logged; the Ghost floats over everything.
+		if monster and not monster.harmless and not monster is SchoolGhost \
+				and (monster.loggable() or monster is Shade) and not monster.is_queued_for_deletion():
 			result.append(monster)
 	return result
+
+
+## Is this guard sitting at a guard room desk? (Works for every guard, on the host.)
+func is_seated(guard: Guard) -> bool:
+	return guard.name.to_int() in guard_room.occupants
+
+
+## True while a Crossing Guard is holding up its STOP sign (everyone should be standing still).
+func stop_sign_up() -> bool:
+	for node in _container.get_children():
+		if node is CrossingGuard and (node as Monster).state == "stop":
+			return true
+	return false
 
 
 ## How much faster monsters move right now (the Bell).
@@ -450,7 +475,7 @@ func tell(peer_id: int, text: String) -> void:
 func check_log(peer_id: int, area: String) -> bool:
 	for node: Node in _container.get_children():
 		var monster := node as Monster
-		if monster == null or monster is Shade or monster.harmless or monster.is_queued_for_deletion() or not monster.loggable():
+		if monster == null or monster.harmless or monster.is_queued_for_deletion() or not monster.loggable():
 			continue
 		var credited: Array = _credited.get_or_add(monster.name, [])
 		if peer_id not in credited and SchoolBuilder.area_at(monster.global_position) == area:
@@ -566,5 +591,8 @@ func _track_guard_speeds(delta: float) -> void:
 	for guard: Guard in players.get_children():
 		var now := guard.global_position
 		var before: Vector3 = _last_positions.get(guard.name, now)
-		_speeds[guard.name] = Vector2(now.x - before.x, now.z - before.z).length() / delta
+		var speed := Vector2(now.x - before.x, now.z - before.z).length() / delta
+		# Faster than anyone can run means a teleport (sitting down, standing up, a revive),
+		# not movement.
+		_speeds[guard.name] = 0.0 if speed > 12.0 else speed
 		_last_positions[guard.name] = now

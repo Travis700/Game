@@ -23,6 +23,8 @@ func _ready() -> void:
 
 
 func think(delta: float) -> void:
+	# It floats: no gravity builds up.
+	velocity = Vector3.ZERO
 	var target := director.nearest_living_guard(global_position)
 	if target == null:
 		return
@@ -30,9 +32,11 @@ func think(delta: float) -> void:
 	to_target.y = 0.0
 	if to_target.length() > 0.1:
 		var step := to_target.normalized() * SPEED * delta
-		var next := global_position + step
-		if director.may_enter(next):
-			global_position = next
+		# Slide along the guard room walls rather than stopping dead at them (before night 7).
+		for candidate: Vector3 in [step, Vector3(step.x, 0, 0), Vector3(0, 0, step.z)]:
+			if director.may_enter(global_position + candidate):
+				global_position += candidate
+				break
 		face(to_target)
 	director.ghost_passing(global_position, BLACKOUT_DISTANCE)
 	catch_nearby()

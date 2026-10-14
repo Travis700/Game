@@ -121,9 +121,7 @@ func _ready() -> void:
 	clipboard.name = "Clipboard"
 	add_child(clipboard)
 	clipboard.set_areas(anomalies.areas(1))
-	clipboard.closed.connect(func() -> void:
-		if _local_guard:
-			_local_guard.input_blocked = false)
+	clipboard.closed.connect(_on_ui_closed)
 
 	lockers = Lockers.new()
 	lockers.name = "Lockers"
@@ -176,9 +174,7 @@ func _ready() -> void:
 	vending.name = "Vending"
 	add_child(vending)
 	vending.buy_requested.connect(shop.request_buy)
-	vending.closed.connect(func() -> void:
-		if _local_guard:
-			_local_guard.input_blocked = false)
+	vending.closed.connect(_on_ui_closed)
 	shop.wallet_changed.connect(func(_points: int) -> void: _refresh_inventory())
 	shop.holding_changed.connect(func(_item: String) -> void: _refresh_inventory())
 	school.vending_machine.used.connect(_on_vending_used)
@@ -187,16 +183,12 @@ func _ready() -> void:
 	keypad.name = "Keypad"
 	add_child(keypad)
 	keypad.submitted.connect(_on_keypad_submitted)
-	keypad.closed.connect(func() -> void:
-		if _local_guard:
-			_local_guard.input_blocked = false)
+	keypad.closed.connect(_on_ui_closed)
 
 	pause_menu = PauseMenu.new()
 	pause_menu.name = "PauseMenu"
 	add_child(pause_menu)
-	pause_menu.closed.connect(func() -> void:
-		if _local_guard and shift.state != Shift.State.REPORT:
-			_local_guard.input_blocked = false)
+	pause_menu.closed.connect(_on_ui_closed)
 	pause_menu.leave_requested.connect(func() -> void:
 		_back_to_menu("You ended the session." if multiplayer.is_server() and _mode != "solo" else ""))
 
@@ -240,6 +232,24 @@ func _ready() -> void:
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 
 	_start_from_command_line()
+
+
+## A menu (clipboard, keypad, vending machine, Esc menu) closed: the guard can move again,
+## unless another menu is still open or the night report is up.
+func _on_ui_closed() -> void:
+	if _local_guard == null or shift.state == Shift.State.REPORT:
+		return
+	if clipboard.is_open or keypad.is_open or vending.is_open or pause_menu.is_open:
+		return
+	_local_guard.input_blocked = false
+
+
+## Closes every menu, e.g. when your guard is caught or the night report comes up.
+func _close_all_ui() -> void:
+	clipboard.close()
+	keypad.close()
+	vending.close()
+	pause_menu.close()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -363,6 +373,12 @@ func _start_run() -> void:
 	night.number = clampi(int(saved.get("night", 1)), 1, Night.LAST_NIGHT)
 	night.saved_points = saved.get("points", {})
 	night.saved_items = saved.get("items", {})
+	if saved.get("in_progress", false):
+		# The last session quit in the middle of a night. Replaying it costs that night's
+		# survival pay, so quitting isn't a way out of a bad night.
+		for key: String in night.saved_points:
+			night.saved_points[key] = maxi(int(night.saved_points[key]) - Night.SURVIVAL_PAY, 0)
+		menu.show_status("Last time, the run was left mid-shift. Everyone loses %d points." % Night.SURVIVAL_PAY)
 	var upgrades: Array = saved.get("upgrades", [])
 	for desk in mini(upgrades.size(), GuardRoom.DESKS):
 		if upgrades[desk]:
@@ -410,7 +426,7 @@ func _on_peer_connected(peer_id: int) -> void:
 	if not multiplayer.is_server():
 		return
 	if shift.state == Shift.State.ON_SHIFT:
-		_turn_away.rpc_id(peer_id, "That team's shift has already started.")
+		_reject(peer_id, "That team's shift has already started.")
 		return
 	print("[net] Guard joined (peer %d)" % peer_id)
 	guard_room.send_state_to(peer_id)
@@ -425,13 +441,13 @@ func _register_employee(badge: int, password: String) -> void:
 	if not multiplayer.is_server() or players.has_node(str(peer_id)):
 		return
 	if password != _password:
-		_turn_away.rpc_id(peer_id, "Wrong room password." if password != "" else "That room needs a password.")
+		_reject(peer_id, "Wrong room password." if password != "" else "That room needs a password.")
 		return
 	if shift.state != Shift.State.PRE_SHIFT:
-		_turn_away.rpc_id(peer_id, "That team's shift has already started.")
+		_reject(peer_id, "That team's shift has already started.")
 		return
 	if players.get_child_count() >= MAX_GUARDS:
-		_turn_away.rpc_id(peer_id, "That team is full.")
+		_reject(peer_id, "That team is full.")
 		return
 	# Two copies of the game on one computer share a badge. Lend the second one a spare.
 	while badge < 1000 or _badge_in_use(badge):
@@ -439,6 +455,7 @@ func _register_employee(badge: int, password: String) -> void:
 	_spawn_guard(peer_id, badge)
 	shop.send_state_to(peer_id)
 	doors.send_state_to(peer_id)
+	_sync_session.rpc_id(peer_id, night.number, night.difficulty)
 	_update_guards_required()
 
 
@@ -453,19 +470,22 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	if not multiplayer.is_server():
 		return
 	print("[net] Guard left (peer %d)" % peer_id)
-	var guard := players.get_node_or_null(str(peer_id))
+	var guard := players.get_node_or_null(str(peer_id)) as Guard
 	if guard:
+		# Keep what they had, by badge, so they get exactly that back if they rejoin.
+		night.remember_guard(guard)
 		guard.queue_free()
 	shift.remove_guard(peer_id)
 	guard_room.on_peer_left(peer_id)
-	# Count the guards once the leaver's node is gone.
-	_update_guards_required.call_deferred()
+	_update_guards_required()
 
 
 ## Host only. The spawner runs _create_guard with the same data on every computer,
 ## including players who join later.
 func _spawn_guard(peer_id: int, badge: int) -> void:
-	spawner.spawn({"peer_id": peer_id, "slot": _free_slot(), "badge": badge})
+	# The heavy-duty flashlight goes in the spawn data so every computer builds the guard with it.
+	var bright := str(badge) in night.saved_bright
+	spawner.spawn({"peer_id": peer_id, "slot": _free_slot(), "badge": badge, "bright": bright})
 	night.restore_guard(peer_id, badge)
 
 
@@ -474,6 +494,7 @@ func _create_guard(data: Dictionary) -> Node:
 	guard.name = str(data["peer_id"])
 	guard.slot = data["slot"]
 	guard.employee_number = data.get("badge", 0)
+	guard.bright_flashlight = data.get("bright", false)
 	guard.position = SPAWN_POINT + Vector3((guard.slot - 2.5) * 1.4, 0, 0)
 	return guard
 
@@ -488,8 +509,17 @@ func _free_slot() -> int:
 	return MAX_GUARDS
 
 
+## Guards in the session, not counting one whose player has just left.
+func _guard_count() -> int:
+	var count := 0
+	for guard in players.get_children():
+		if not guard.is_queued_for_deletion():
+			count += 1
+	return count
+
+
 func _update_guards_required() -> void:
-	if shift.state == Shift.State.ON_SHIFT and players.get_child_count() > 0 and director.living_guards().is_empty():
+	if shift.state == Shift.State.ON_SHIFT and _guard_count() > 0 and director.living_guards().is_empty():
 		night.fail_night()
 		return
 	if shift.state == Shift.State.MORNING:
@@ -497,9 +527,17 @@ func _update_guards_required() -> void:
 		if shift.everyone_clocked_out():
 			night._end_night()
 		return
-	shift.guards_required = players.get_child_count()
+	shift.guards_required = _guard_count()
 	if shift.state == Shift.State.PRE_SHIFT and shift.clocked_in_count() > 0 and shift.everyone_clocked_in():
 		_start_night.rpc(night.number, night.pick_difficulty())
+
+
+## Host: tells a player why they can't join, then disconnects them once the message is through.
+func _reject(peer_id: int, reason: String) -> void:
+	_turn_away.rpc_id(peer_id, reason)
+	get_tree().create_timer(1.0).timeout.connect(func() -> void:
+		if multiplayer.multiplayer_peer is ENetMultiplayerPeer and peer_id in multiplayer.get_peers():
+			(multiplayer.multiplayer_peer as ENetMultiplayerPeer).disconnect_peer(peer_id))
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -582,9 +620,20 @@ func _start_night(number: int, difficulty: int) -> void:
 	shift.begin()
 
 
+## A player who just joined: which night it is and last night's difficulty, so their cameras
+## and clipboard match everyone else's until the night starts.
+@rpc("authority", "call_remote", "reliable")
+func _sync_session(number: int, difficulty: int) -> void:
+	night.number = number
+	night.difficulty = difficulty
+	if difficulty > 0:
+		_apply_difficulty(difficulty, false)
+
+
 ## Every computer, as the night starts: opens tonight's wings and their cameras and areas.
-func _apply_difficulty(difficulty: int) -> void:
-	school.open_wings(difficulty)
+func _apply_difficulty(difficulty: int, open_doors := true) -> void:
+	if open_doors:
+		school.open_wings(difficulty)
 	cameras.difficulty = difficulty
 	anomalies.difficulty = difficulty
 	director.difficulty = difficulty
@@ -632,7 +681,7 @@ func _guard_died(peer_id: int, by: String, at: Vector3) -> void:
 	director.place_corpse(peer_id, at, guard.uniform_color())
 	if guard == _local_guard:
 		guard_room.leave_desk()
-		clipboard.close()
+		_close_all_ui()
 		guard.input_blocked = false
 		hud.flash(Color(0.6, 0.0, 0.0, 0.85), 2.0)
 		hud.set_ghost(true)
@@ -758,6 +807,7 @@ func _refresh_guard_visibility() -> void:
 
 ## Every computer, when the night report appears: leave the desk and stop moving.
 func on_report() -> void:
+	_close_all_ui()
 	if _local_guard:
 		guard_room.leave_desk()
 		_local_guard.input_blocked = true
@@ -766,6 +816,9 @@ func on_report() -> void:
 ## Every computer, when the host starts the next night: back to the gate, lights on, desks empty.
 func on_next_night() -> void:
 	school.clock_machine.prompt = "Clock in"
+	_close_all_ui()
+	# After a team wipe the lights are still down; bring them back for the evening.
+	lighting.go_bright()
 	# The wings stay locked until the night starts.
 	school.open_wings(1)
 	# Everyone starts the new night alive.

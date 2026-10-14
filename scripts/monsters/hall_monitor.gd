@@ -34,7 +34,7 @@ func _patrol() -> void:
 	if global_position.distance_to(end) < 1.5:
 		_patrol_end = 1 - _patrol_end
 	move_to(end, PATROL_SPEED)
-	for guard in director.living_guards():
+	for guard in director.targetable_guards():
 		if guard.is_running and distance_to_guard(guard) < SIGHT_RANGE and director.can_see(eye_position(), guard):
 			_target = guard
 			_unseen_for = 0.0

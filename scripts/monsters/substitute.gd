@@ -74,7 +74,7 @@ func _go_about(delta: float) -> void:
 		if _teach_left <= 0.0:
 			_room = (_room + 1 + randi() % (CLASSROOMS.size() - 1)) % CLASSROOMS.size()
 			_teach_left = randf_range(40.0, 80.0)
-	for guard in director.living_guards():
+	for guard in director.targetable_guards():
 		if _excused.has(guard.name.to_int()) or distance_to_guard(guard) > NOTICE_RANGE:
 			continue
 		if director.can_see(eye_position(), guard):

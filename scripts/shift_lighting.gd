@@ -29,6 +29,8 @@ const NIGHT := {
 
 var environment: Environment
 var school: SchoolBuilder
+## The lights-out sequence and the dimming, so going bright can cut them short.
+var _tweens: Array[Tween] = []
 
 
 func apply_pre_shift() -> void:
@@ -38,6 +40,7 @@ func apply_pre_shift() -> void:
 
 func go_dark() -> void:
 	var sequence := create_tween()
+	_tweens.append(sequence)
 	for flood: SpotLight3D in get_tree().get_nodes_in_group(FLOODLIGHTS):
 		sequence.tween_callback(_cut_floodlight.bind(flood))
 		sequence.tween_interval(FLOOD_GAP)
@@ -65,6 +68,7 @@ func _switch_off(light: Light3D) -> void:
 
 func _dim_everything() -> void:
 	var dim := create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE)
+	_tweens.append(dim)
 	for light: Light3D in _school_lights():
 		if light.visible:
 			dim.tween_property(light, "light_energy", light.get_meta("night_energy"), DIM_SECONDS)
@@ -80,8 +84,13 @@ func _start_flickering() -> void:
 			(light as FlickerLight).start_flickering()
 
 
-## 6 AM: everything comes back on, ready for the next evening.
+## 6 AM (or the team being caught): everything comes back on, ready for the next evening.
+## Safe to call when the lights are already on.
 func go_bright() -> void:
+	for tween in _tweens:
+		if tween.is_valid():
+			tween.kill()
+	_tweens.clear()
 	for flood: SpotLight3D in get_tree().get_nodes_in_group(FLOODLIGHTS):
 		flood.visible = true
 		var lens: MeshInstance3D = flood.get_meta("lens")

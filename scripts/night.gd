@@ -118,6 +118,7 @@ func _on_shift_started() -> void:
 		return
 	_stats.clear()
 	_deaths = 0
+	save_run(number, true)
 	director.plan_night(number)
 	totems.place_random()
 	# Spread tonight's anomalies across the night, starting about 20 minutes in.
@@ -198,8 +199,26 @@ func restore_guard(peer_id: int, badge: int) -> void:
 		shop.set_bright(peer_id, true)
 
 
+## Host: a guard's player left. Their points, item and flashlight are kept by badge, and
+## dropped from this session, so rejoining gives back exactly what they had.
+func remember_guard(guard: Guard) -> void:
+	var peer := guard.name.to_int()
+	var key := str(guard.employee_number)
+	saved_points[key] = points_of(peer)
+	var item := shop.held_by(peer)
+	if item != "":
+		saved_items[key] = item
+	else:
+		saved_items.erase(key)
+	if shop.has_bright(peer) and key not in saved_bright:
+		saved_bright.append(key)
+	_totals.erase(peer)
+	shop.forget(peer)
+
+
 ## Host: writes the run to disk so it can be continued, with `next_night` up next.
-func save_run(next_night: int) -> void:
+## `in_progress` marks a save made as a night starts (the night isn't finished yet).
+func save_run(next_night: int, in_progress := false) -> void:
 	for guard: Guard in players.get_children():
 		var key := str(guard.employee_number)
 		var peer := guard.name.to_int()
@@ -214,7 +233,7 @@ func save_run(next_night: int) -> void:
 	RunSave.write({
 		"night": next_night, "difficulty": difficulty_choice, "keep_gear": keep_gear,
 		"points": saved_points, "items": saved_items, "upgrades": guard_room.upgraded.duplicate(),
-		"doors": doors.installed.duplicate(), "bright": saved_bright,
+		"doors": doors.installed.duplicate(), "bright": saved_bright, "in_progress": in_progress,
 	})
 
 
