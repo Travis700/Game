@@ -42,6 +42,7 @@ const ROSTER := {
 	"specimen": {"name": "The Specimen", "home": "Science Lab", "night": 3},
 	"understudy": {"name": "The Understudy", "home": "Locker Rooms", "night": 4},
 	"photographer": {"name": "The Photographer", "home": "Lobby", "night": 3},
+	"twins": {"name": "The Twins", "home": "Room 101", "night": 2},
 }
 ## The intercom: in-game minutes between the Principal's summonses, and real seconds to answer.
 const SUMMON_EVERY := Vector2(60.0, 100.0)
@@ -233,6 +234,14 @@ func _start(kind: String, minutes: float) -> void:
 			spawn("specimen", Vector3(58, 0, -6))
 		"photographer":
 			spawn("photographer", Vector3(0, 0, 15))
+		"twins":
+			spawn("twin", Vector3(-47, 0, 15))
+			spawn("twin", Vector3(-61, 0, 15))
+			var twins: Array = _container.get_children().filter(func(m: Node) -> bool:
+				return m is Twin and (m as Twin).sibling == null)
+			if twins.size() >= 2:
+				twins[-2].sibling = twins[-1]
+				twins[-1].sibling = twins[-2]
 		"understudy":
 			spawn("understudy", Vector3(50, 0, 15))
 
@@ -305,6 +314,8 @@ func _create_monster(data: Dictionary) -> Node:
 			monster = Nurse.new()
 		"photographer":
 			monster = Photographer.new()
+		"twin":
+			monster = Twin.new()
 		"crossing_guard":
 			monster = CrossingGuard.new()
 		"specimen":

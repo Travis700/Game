@@ -7,7 +7,7 @@ The full plan is in [DESIGN.md](DESIGN.md).
 
 Version 1.0.0. The game is complete apart from the art and audio pass: every model is a
 placeholder made of boxes, and every sound is generated in code. Everything else is in:
-nine nights, three difficulties (main building, classroom wing, science wing), 16 monsters,
+nine nights, three difficulties (main building, classroom wing, science wing), 17 monsters,
 the guard room and its 16 cameras, watchman rounds, power cuts, the field guide, ranks, the
 vending machine, saving, achievements and records, proximity voice chat and walkie-talkies
 (and a monster that copies your voice), controller support, settings, and Steam lobbies and
@@ -195,6 +195,7 @@ on your clipboard as "Monster" in that area for points.
 | The Ghost | 5 | Anywhere | Invisible to your eyes. Drifts through walls toward the living and knocks out cameras it passes. Only spectral monitors show it, and the time clock lists one name too many. |
 | The Photographer | 3 | Main building | An old flash camera for a face. When it sees you, its flash whines as it charges: look away or get out of sight before it fires, or you're blinded and it rushes you. |
 | The Substitute | 1 | Classroom wing (difficulty 2+) | Takes the register when you come near: "Guard 2?" Look at it and press E to answer, or get detention. |
+| The Twins | 2 | Rooms 101 and 102 (difficulty 2+) | Two girls who only move when neither is being watched, in person or on a monitor. Keep one on a screen at all times. |
 | The Librarian | 2 | Library, West Hall (difficulty 2+) | Hates light and noise. Shine your flashlight on it or run nearby and it shushes you, then hunts you until it's dark and quiet. |
 | The Nurse | 3 | Classroom wing (difficulty 2+) | Follows any guard who's on their own, slowly and steadily, with a heart monitor's beep. Stick together and she leaves you be. |
 | The Crossing Guard | 1 | Science wing, east main hall (difficulty 3) | Blows its whistle and holds up a STOP sign at a "crossing". Don't move while the sign is up, or it runs you down. |

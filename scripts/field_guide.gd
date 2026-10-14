@@ -92,6 +92,12 @@ const ENTRIES := {
 		"rule": "It hates light. Catch it in your flashlight beam and it flees into the ceiling.",
 		"rumour": "Something in the science lab's big jar has been moving.",
 	},
+	"Twin": {
+		"name": "the Twins", "where": "Classroom wing",
+		"signs": "Two girls in matching dresses, one in Room 101 and one in Room 102. A giggle when they move.",
+		"rule": "They only move when neither is watched. Keep one of them on a monitor, or in sight, at all times.",
+		"rumour": "Two girls are waiting in the classrooms. They never come one at a time.",
+	},
 	"Photographer": {
 		"name": "the Photographer", "where": "Main building",
 		"signs": "An old flash camera where its face should be. A high whine as the flash charges.",
