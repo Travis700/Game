@@ -64,7 +64,7 @@ func _enter_tree() -> void:
 		employee_number = randi_range(1000, 9999)
 		# 0451 belongs to someone else.
 		config.set_value("employee", "number", employee_number)
-		config.save(PATH)
+		_save(config)
 
 
 ## "#2731"
@@ -93,7 +93,7 @@ func save_settings() -> void:
 	config.set_value("career", "training_done", training_done)
 	config.set_value("settings", "captions", captions)
 	config.set_value("settings", "night_length", night_length)
-	config.save(PATH)
+	_save(config)
 
 
 func apply_volume() -> void:
@@ -112,3 +112,14 @@ func apply_graphics() -> void:
 	root.msaa_3d = [Viewport.MSAA_DISABLED, Viewport.MSAA_2X, Viewport.MSAA_4X][clampi(antialiasing, 0, 2)]
 	for light in get_tree().get_nodes_in_group(SHADOW_LIGHTS):
 		(light as Light3D).shadow_enabled = shadows
+
+
+## Writes a new file and swaps it in, so a crash mid-save can't lose the settings and badge.
+func _save(config: ConfigFile) -> void:
+	var temp := PATH + ".new"
+	if config.save(temp) != OK:
+		return
+	var dir := DirAccess.open("user://")
+	if dir and dir.rename(temp, PATH) != OK:
+		dir.remove(PATH)
+		dir.rename(temp, PATH)
