@@ -49,7 +49,7 @@ const ROSTER := {
 ## Lockdown: from this night the alarm can go, and for LOCKDOWN_SECONDS (real) every monster
 ## hunts the nearest guard it can reach, wherever they are. Hide, or get to the guard room.
 const LOCKDOWN_FROM_NIGHT := 6
-const LOCKDOWN_SECONDS := 40.0
+const LOCKDOWN_SECONDS := 30.0
 const LOCKDOWN_SPEED := 3.6
 ## The intercom: in-game minutes between the Principal's summonses, and real seconds to answer.
 const SUMMON_EVERY := Vector2(60.0, 100.0)

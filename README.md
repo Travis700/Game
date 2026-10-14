@@ -70,7 +70,7 @@ teammate is caught, and recovers in the lit guard room, near teammates, or with 
 (vending machine, 30, +40). Low nerve: monsters notice you from up to 30% further away, and below 40 you
 get hallucinations (footsteps behind you, whispers, knocking, a figure at the edge of your vision).
 
-**Lockdown:** from night 6 (once a night; twice from night 9 and in Overtime) an alarm wails and for 40 seconds
+**Lockdown:** from night 6 (once a night; twice from night 9 and in Overtime) an alarm wails and for 30 seconds
 every monster hunts the nearest guard it can reach. Hide, get to the guard room (before night 7), or outrun them.
 
 **Hiding:** a dozen slatted cupboards stand around the school (and wings). Press E to climb in and E to climb

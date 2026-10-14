@@ -21,6 +21,7 @@ const SPOTS := [
 	{"at": Vector3(41.0, 0, -13.2), "facing": Vector3(0, 0, 1), "area": "Science Lab"},
 	{"at": Vector3(79.2, 0, 15.0), "facing": Vector3(-1, 0, 0), "area": "Locker Rooms"},
 	{"at": Vector3(79.2, 0, -10.0), "facing": Vector3(-1, 0, 0), "area": "Art Room"},
+	{"at": Vector3(19.2, 0, 11.0), "facing": Vector3(-1, 0, 0), "area": "Guard Room"},
 ]
 ## A monster this close that can see you climb in knows where you are.
 const SEEN_RANGE := 10.0
