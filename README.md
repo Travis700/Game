@@ -299,6 +299,7 @@ LB push to talk, RT walkie-talkie, Start menu. In menus, the D-pad moves and A s
 | A / D | Change which camera that monitor shows |
 | Space, left click or E | Show that camera full screen (press again to go back) |
 | 1 / 2 / 3 / 4 | Show that monitor full screen (numbers are on each monitor's frame) |
+| Q | Flag the camera you're watching full screen: everyone gets a message and a marker over that area for 20 seconds |
 | S | Stand up |
 
 ## Project layout

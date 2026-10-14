@@ -17,6 +17,7 @@ const BINDINGS := {
 	"push_to_talk": [KEY_V],
 	"radio_talk": [KEY_B],
 	"compare": [KEY_R],
+	"ping": [KEY_Q],
 	"monitor_1": [KEY_1],
 	"monitor_2": [KEY_2],
 	"monitor_3": [KEY_3],
@@ -55,7 +56,7 @@ const MOUSE_BINDINGS := {
 const REBINDABLE := [
 	["move_forward", "Walk forward"], ["move_back", "Walk back / stand up"], ["move_left", "Walk left"],
 	["move_right", "Walk right"], ["sprint", "Run"], ["interact", "Use"], ["flashlight", "Flashlight"],
-	["clipboard", "Clipboard"], ["use_item", "Use item"], ["zoom", "Full-screen camera"], ["compare", "Compare camera with photo"], ["push_to_talk", "Push to talk"], ["radio_talk", "Talk on the walkie-talkie"],
+	["clipboard", "Clipboard"], ["use_item", "Use item"], ["zoom", "Full-screen camera"], ["compare", "Compare camera with photo"], ["ping", "Flag a camera for the team"], ["push_to_talk", "Push to talk"], ["radio_talk", "Talk on the walkie-talkie"],
 ]
 const SAVE_PATH := "user://controls.cfg"
 

@@ -17,6 +17,8 @@ const PauseMenu := preload("res://scripts/pause_menu.gd")
 ## Ghosts' cold spots: how often each ghost can leave one, and how long one lasts.
 const GHOST_PING_EVERY := 4.0
 const GHOST_PING_SECONDS := 6.0
+## How long a flagged camera's marker shows.
+const FLAG_SECONDS := 20.0
 ## Real seconds between the last guard being caught and the night's results.
 const SCARE_SECONDS := 2.0
 
@@ -844,6 +846,8 @@ func on_local_guard_ready(guard: Guard) -> void:
 		pause_menu.open(_mode == "solo", _mode == "Hosting"))
 	doors.local_guard = guard
 	guard_room.local_guard = guard
+	if not guard_room.camera_pinged.is_connected(_on_camera_pinged):
+		guard_room.camera_pinged.connect(_on_camera_pinged)
 	cameras.viewer = guard
 	ambience.listener = guard
 	captions.local_guard = guard
@@ -1068,6 +1072,55 @@ func _update_tonight_board() -> void:
 	if shift.state == Shift.State.PRE_SHIFT:
 		lines.append("(Written up when everyone clocks in.)")
 	_tonight_board.text = "\n".join(lines)
+
+
+## The local guard flagged a camera: everyone gets told, and a marker shows the spot.
+func _on_camera_pinged(camera_index: int) -> void:
+	var area := cameras.area_of(camera_index)
+	if area == "" or not SchoolBuilder.AREAS.has(area):
+		return
+	if multiplayer.is_server():
+		_request_flag(area)
+	else:
+		_request_flag.rpc_id(1, area)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_flag(area: String) -> void:
+	var peer := multiplayer.get_remote_sender_id()
+	if peer == 0:
+		peer = multiplayer.get_unique_id()
+	var guard := players.get_node_or_null(str(peer)) as Guard
+	if guard == null or guard.is_dead or not SchoolBuilder.AREAS.has(area):
+		return
+	var now := Time.get_ticks_msec() / 1000.0
+	if now < float(_ghost_ping_at.get(-peer, 0.0)):
+		return
+	_ghost_ping_at[-peer] = now + 2.0
+	_flag.rpc(area, guard.player_name if guard.player_name != "" else "Guard %d" % guard.slot)
+
+
+## Every computer: a flag over the middle of an area for a while, seen through walls.
+@rpc("authority", "call_local", "reliable")
+func _flag(area: String, who: String) -> void:
+	var box: AABB = SchoolBuilder.AREAS[area]
+	var marker := Label3D.new()
+	marker.text = "⚑ %s\n(%s)" % [area, who]
+	marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	marker.no_depth_test = true
+	marker.fixed_size = true
+	marker.pixel_size = 0.0012
+	marker.font_size = 28
+	marker.modulate = Color(1.0, 0.85, 0.3)
+	marker.outline_size = 6
+	add_child(marker)
+	marker.global_position = Vector3(box.get_center().x, 2.2, box.get_center().z)
+	var fade := marker.create_tween()
+	fade.tween_interval(FLAG_SECONDS)
+	fade.tween_property(marker, "modulate:a", 0.0, 1.0)
+	fade.tween_callback(marker.queue_free)
+	hud.show_message("%s flagged the %s camera." % [who, area])
+	Sfx.play_flat(self, Sfx.notes([1046.0, 1318.0], 0.08, 0.2, "triangle"), -6.0)
 
 
 ## A ghost pressed G: the next living teammate's view, then back to wandering about.
