@@ -864,6 +864,11 @@ func _on_clock_machine_used(by: Node) -> void:
 	if by != _local_guard or _local_guard.is_dead:
 		return
 	if shift.state == Shift.State.PRE_SHIFT:
+		if _badge_typed:
+			# The clock remembers you after the first night of the session.
+			if not _clocked_in:
+				_on_keypad_submitted(_local_guard.employee_number)
+			return
 		# Clocking in takes your badge number.
 		_local_guard.input_blocked = true
 		keypad.open("#%04d" % _local_guard.employee_number)
@@ -872,6 +877,9 @@ func _on_clock_machine_used(by: Node) -> void:
 
 
 var _boost_was_on := false
+## True once this player has typed their badge number this session; after that the clock
+## just takes a tap.
+var _badge_typed := false
 
 
 ## The line under the clock telling you what to do next.
@@ -909,6 +917,7 @@ func _on_keypad_submitted(number: int) -> void:
 		return
 	keypad.close()
 	_clocked_in = true
+	_badge_typed = true
 	Sfx.play_flat(self, Sfx.notes([880.0, 1320.0], 0.08, 0.25, "square"))
 	_request_time_clock()
 
