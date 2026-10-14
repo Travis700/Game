@@ -216,7 +216,6 @@ func _run_shift(delta: float) -> void:
 		power.end_night()
 		phone.end_night()
 		hiding.release_all()
-		nerve.reset()
 		shift.guards_required = director.living_guards().size()
 		_start_morning.rpc()
 
@@ -501,6 +500,8 @@ func _award_night() -> void:
 			career.award(peer, "NIGHT_FIVE")
 		if doors.battered_tonight:
 			career.award(peer, "HOLD_THE_DOOR")
+		if number >= 6 and float(nerve.levels.get(peer, Nerve.MAX)) > 70.0:
+			career.award(peer, "STEADY_NERVES")
 		if daily == "":
 			career.record_night(peer, number)
 		if number > LAST_NIGHT:

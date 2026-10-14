@@ -89,6 +89,8 @@ func _go(next: int) -> void:
 func _finish() -> void:
 	_finished = true
 	objective = ""
+	if night.career:
+		night.career._unlock("TRAINED")
 	var profile := get_node_or_null("/root/Profile")
 	if profile:
 		profile.set("training_done", true)

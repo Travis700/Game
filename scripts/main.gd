@@ -328,6 +328,7 @@ func _ready() -> void:
 	add_child(captions)
 	director.nerve = nerve
 	dread.night = night
+	dread.career = career
 	add_child(night)
 	shop.night = night
 	director.student_helped.connect(func(peer_id: int) -> void:

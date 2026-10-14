@@ -517,6 +517,10 @@ func _update_lockdown(minutes: float, delta: float) -> void:
 		if lockdown_left <= 0.0:
 			lockdown_left = 0.0
 			lockdown_changed.emit(false)
+			if career:
+				for guard in living_guards():
+					if guard.hiding:
+						career.award(guard.name.to_int(), "HIDE_AND_SEEK")
 			announcement.emit("The alarm stops. Whatever was hunting goes back to what it was doing.", "")
 		return
 	if not _lockdown_times.is_empty() and minutes >= _lockdown_times[0]:

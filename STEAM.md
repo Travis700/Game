@@ -64,6 +64,11 @@ Create these with exactly these API names. Mark them as set by the client.
 | `FULL_ROUND` | Full round | Punch every station on a night's round. |
 | `DAILY` | Clocking on | Finish a daily shift. |
 | `DAILY_STREAK` | Regular | Play the daily shift five days in a row. |
+| `HIDE_AND_SEEK` | Hide and seek | Be hidden in a cupboard when a lockdown ends. |
+| `STEADY_NERVES` | Nerves of steel | Clock out of night 6 or later with your nerve above 70. |
+| `EMF_FIVE` | Five lights | See an EMF reader hit 5. |
+| `TRAINED` | Fully trained | Finish the training shift. |
+| `LEGEND` | Legend of Westfield | Reach the top rank. |
 | `OVERTIME` | Overtime | Survive a night of Overtime, after the ninth. |
 | `WORKAHOLIC` | Workaholic | Survive night 15. |
 | `LIGHTS_ON` | Who turned out the lights? | Reset the breaker after a power cut. |

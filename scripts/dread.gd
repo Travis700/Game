@@ -21,6 +21,7 @@ var players: Node3D
 var local_guard: Guard
 var hud: CanvasLayer
 var night: Night
+var career: Career
 var shift: Shift
 var school: SchoolBuilder
 
@@ -140,6 +141,8 @@ func _read_emf(delta: float) -> void:
 		if monster.emf5 and distance < 6.0:
 			reading = 5
 		level = maxi(level, reading)
+	if level == 5 and emf_level != 5 and career:
+		career._unlock("EMF_FIVE")
 	emf_level = level
 	if hud:
 		hud.set_emf(level)

@@ -28,6 +28,11 @@ const ACHIEVEMENTS := {
 	"LIGHTS_ON": ["Who turned out the lights?", "Reset the breaker after a power cut."],
 	"DAILY": ["Clocking on", "Finish a daily shift."],
 	"DAILY_STREAK": ["Regular", "Play the daily shift five days in a row."],
+	"HIDE_AND_SEEK": ["Hide and seek", "Be hidden in a cupboard when a lockdown ends."],
+	"STEADY_NERVES": ["Nerves of steel", "Clock out of night 6 or later with your nerve above 70."],
+	"EMF_FIVE": ["Five lights", "See an EMF reader hit 5."],
+	"TRAINED": ["Fully trained", "Finish the training shift."],
+	"LEGEND": ["Legend of Westfield", "Reach the top rank."],
 	"OVERTIME": ["Overtime", "Survive a night of Overtime, after the ninth."],
 	"WORKAHOLIC": ["Workaholic", "Survive night 15."],
 }
@@ -180,6 +185,8 @@ func _add_xp(amount: int) -> void:
 	var new_rank := rank_of(before + amount)
 	if new_rank > old_rank:
 		get_tree().call_group("game", "on_rank_up", new_rank, rank_title(new_rank))
+		if new_rank >= RANKS.size():
+			_unlock("LEGEND")
 
 
 @rpc("authority", "call_remote", "reliable")
