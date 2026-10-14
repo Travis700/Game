@@ -62,6 +62,8 @@ var _primary: Dictionary = {}
 
 
 func _enter_tree() -> void:
+	# This is the first autoload, so older saves are moved into place before anything reads them.
+	RunSave.migrate_old_saves()
 	_register_defaults()
 	_load_changes()
 
@@ -84,6 +86,9 @@ const RESERVED: Array[int] = [KEY_ESCAPE, KEY_F11, KEY_1, KEY_2, KEY_3, KEY_4]
 func rebind(action: String, keycode: int) -> String:
 	if keycode in RESERVED:
 		return "%s is kept for the game itself." % OS.get_keycode_string(keycode)
+	for other: String in BINDINGS:
+		if keycode in (BINDINGS[other] as Array).slice(1):
+			return "%s is always a second key for walking. Pick another." % OS.get_keycode_string(keycode)
 	var old_key := primary_key(action)
 	for entry: Array in REBINDABLE:
 		var other: String = entry[0]

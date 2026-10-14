@@ -51,7 +51,7 @@ func use_fake_steam(fake: Object) -> void:
 	_steam = fake
 	available = true
 	user_name = str(_call("getPersonaName"))
-	steam_id = int(_call("getSteamID"))
+	steam_id = _int(_call("getSteamID"))
 	_connect("lobby_created", _on_lobby_created)
 	_connect("lobby_joined", _on_lobby_joined)
 	_connect("lobby_match_list", _on_lobby_match_list)
@@ -59,6 +59,8 @@ func use_fake_steam(fake: Object) -> void:
 
 
 func _ready() -> void:
+	# Steam's callbacks keep running while the game is paused (solo Esc menu).
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	if not Engine.has_singleton("Steam"):
 		print("[steam] GodotSteam isn't installed; using direct connections.")
 		return
@@ -68,7 +70,7 @@ func _ready() -> void:
 		return
 	available = true
 	user_name = str(_call("getPersonaName"))
-	steam_id = int(_call("getSteamID"))
+	steam_id = _int(_call("getSteamID"))
 	print("[steam] Signed in as %s" % user_name)
 	_connect("lobby_created", _on_lobby_created)
 	_connect("lobby_joined", _on_lobby_joined)
@@ -171,9 +173,13 @@ func _on_lobby_created(result: int, id: int) -> void:
 		peer = test_peer_factory.call(true, id)
 		error = OK
 	elif peer.has_method("host_with_lobby"):
-		error = peer.call("host_with_lobby", id)
+		error = _result(peer.call("host_with_lobby", id))
 	elif peer.has_method("create_host"):
-		error = peer.call("create_host", 0)
+		error = _result(peer.call("create_host", 0))
+	else:
+		lobby_failed.emit("This version of GodotSteam's SteamMultiplayerPeer isn't supported. Install GodotSteam 4.13 or newer.")
+		leave_lobby()
+		return
 	if error != OK:
 		lobby_failed.emit("Couldn't start hosting over Steam (error %d)." % error)
 		leave_lobby()
@@ -198,8 +204,10 @@ func _on_lobby_joined(id: int, _permissions: int, _locked: bool, response: int) 
 		return
 	lobby_id = id
 	lobby_code = str(_call("getLobbyData", [id, "code"]))
-	var owner := int(_call("getLobbyOwner", [id]))
+	var owner := _int(_call("getLobbyOwner", [id]))
 	if owner == steam_id:
+		lobby_failed.emit("That's your own lobby.")
+		leave_lobby()
 		return
 	var peer := _make_peer()
 	if peer == null:
@@ -211,9 +219,13 @@ func _on_lobby_joined(id: int, _permissions: int, _locked: bool, response: int) 
 		peer = test_peer_factory.call(false, id)
 		error = OK
 	elif peer.has_method("connect_to_lobby"):
-		error = peer.call("connect_to_lobby", id)
+		error = _result(peer.call("connect_to_lobby", id))
 	elif peer.has_method("create_client"):
-		error = peer.call("create_client", owner, 0)
+		error = _result(peer.call("create_client", owner, 0))
+	else:
+		lobby_failed.emit("This version of GodotSteam's SteamMultiplayerPeer isn't supported. Install GodotSteam 4.13 or newer.")
+		leave_lobby()
+		return
 	if error != OK:
 		lobby_failed.emit("Couldn't connect to the host over Steam (error %d)." % error)
 		leave_lobby()
@@ -273,10 +285,16 @@ func unlock_achievement(api_name: String) -> void:
 	_call("storeStats")
 
 
-func set_stat(api_name: String, value: int) -> void:
+## Adds to one of the player's Steam stats (Steam keeps the total, across all their PCs).
+func add_stat(api_name: String, amount: int) -> void:
 	if not available:
 		return
-	_call("setStatInt", [api_name, value])
+	var current: Variant = _call("getStatInt", [api_name]) if _steam.has_method("getStatInt") else _call("getStat", [api_name])
+	var total := _int(current) + amount
+	if _steam.has_method("setStatInt"):
+		_call("setStatInt", [api_name, total])
+	else:
+		_call("setStat", [api_name, total])
 	_call("storeStats")
 
 
@@ -285,12 +303,15 @@ func set_stat(api_name: String, value: int) -> void:
 ## Starts Steam up, coping with the different GodotSteam versions' steamInitEx arguments.
 func _initialize() -> bool:
 	var app_id := _app_id()
-	var arguments := 2
+	var arguments := -1
 	for method in _steam.get_method_list():
 		if method["name"] == "steamInitEx":
 			arguments = (method["args"] as Array).size()
 	var result: Variant
-	if arguments >= 3:
+	if arguments < 0:
+		# Very old GodotSteam: only steamInit. Bool in some versions, a dictionary in others.
+		result = _steam.call("steamInit") if _steam.has_method("steamInit") else null
+	elif arguments >= 3:
 		# Older GodotSteam: steamInitEx(retrieve_stats, app_id, embed_callbacks).
 		result = _steam.call("steamInitEx", true, app_id, false)
 	else:
@@ -298,6 +319,9 @@ func _initialize() -> bool:
 	var status := -1
 	if result is Dictionary:
 		status = int((result as Dictionary).get("status", -1))
+		# Old steamInit reported success as 1; steamInitEx reports it as 0.
+		if arguments < 0 and status == 1:
+			status = 0
 	elif result is bool:
 		status = 0 if result else -1
 	if status != 0:
@@ -317,6 +341,16 @@ func _app_id() -> int:
 		if text.is_valid_int():
 			return text.to_int()
 	return int(ProjectSettings.get_setting(APP_ID_SETTING, TEST_APP_ID))
+
+
+## A GodotSteam call's result as an Error, treating "returns nothing" as success.
+static func _result(value: Variant) -> int:
+	return int(value) if value is int else OK
+
+
+## An int from a GodotSteam call, or 0 if it gave something else (or nothing).
+static func _int(value: Variant) -> int:
+	return int(value) if (value is int or value is float) else 0
 
 
 func _call(method: String, arguments: Array = []) -> Variant:

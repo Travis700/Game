@@ -98,7 +98,7 @@ func _add_stat(stat: String, amount: int) -> void:
 	config.save(PATH)
 	var steam := get_node_or_null("/root/SteamService")
 	if steam:
-		steam.set_stat(stat, value)
+		steam.add_stat(stat, amount)
 
 
 @rpc("authority", "call_remote", "reliable")

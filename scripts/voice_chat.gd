@@ -49,10 +49,17 @@ var _voices: Dictionary = {}
 ## Peer id -> AudioStreamPlayer for that guard's voice coming over this guard's radio.
 var _radio_voices: Dictionary = {}
 var _radio_last_heard: Dictionary = {}
+## Peer id -> when their last voice packet arrived (seconds), for the "talking" marker.
+var _last_packet: Dictionary = {}
+## A little delay before a voice starts playing, so packets arriving unevenly don't leave gaps,
+## and the most that may be queued before packets are dropped (so delay can't build up).
+const PRIME_FRAMES := 960
+const MAX_QUEUED_FRAMES := 2400
 var _active := false
 
 
 func _ready() -> void:
+	multiplayer.peer_disconnected.connect(_forget_speaker)
 	var bus := AudioServer.get_bus_index("Mic")
 	if bus < 0:
 		AudioServer.add_bus()
@@ -191,10 +198,12 @@ func _heard_by_host(speaker: int, loudness: float, radio: bool) -> void:
 	if not radio:
 		return
 	var talker := director.guard_by_peer(speaker)
-	if talker == null or talker.is_dead:
+	# Only a living guard with a radio can call over it.
+	if talker == null or talker.is_dead or not talker.has_radio:
 		return
 	for guard in director.living_guards():
-		if guard != talker and guard.has_radio:
+		# Guards close by hear the call in person, not out of their own radio.
+		if guard != talker and guard.has_radio and guard.global_position.distance_to(talker.global_position) > RADIO_OVER:
 			director.report_voice(guard.name.to_int(), loudness * 0.85)
 
 
@@ -211,10 +220,7 @@ func _play_radio(speaker: int, packet: PackedByteArray) -> void:
 	var player: AudioStreamPlayer = existing if is_instance_valid(existing) else null
 	if player == null:
 		player = AudioStreamPlayer.new()
-		var stream := AudioStreamGenerator.new()
-		stream.mix_rate = VOICE_RATE
-		stream.buffer_length = 0.4
-		player.stream = stream
+		player.stream = _make_generator()
 		player.bus = "Radio"
 		add_child(player)
 		player.play()
@@ -225,14 +231,7 @@ func _play_radio(speaker: int, packet: PackedByteArray) -> void:
 		_squelch(player)
 	_radio_last_heard[speaker] = now
 	player.volume_db = linear_to_db(maxf(float(_profile_value("voice_volume", 1.0)), 0.0001)) + 2.0
-	var playback := player.get_stream_playback() as AudioStreamGeneratorPlayback
-	if playback == null:
-		return
-	var samples := _decode(packet)
-	if playback.get_frames_available() < samples.size():
-		return
-	for sample in samples:
-		playback.push_frame(Vector2(sample, sample))
+	_push(player, speaker, packet)
 
 
 ## The radio's click and hiss, when you key up (`from` null) or a call comes in.
@@ -258,10 +257,7 @@ func _play(speaker: int, packet: PackedByteArray) -> void:
 	var player: AudioStreamPlayer3D = existing if is_instance_valid(existing) else null
 	if player == null or player.get_parent() != guard:
 		player = AudioStreamPlayer3D.new()
-		var stream := AudioStreamGenerator.new()
-		stream.mix_rate = VOICE_RATE
-		stream.buffer_length = 0.4
-		player.stream = stream
+		player.stream = _make_generator()
 		player.max_distance = HEARING_RANGE
 		player.unit_size = 4.0
 		player.position = Vector3(0, 1.6, 0)
@@ -269,15 +265,53 @@ func _play(speaker: int, packet: PackedByteArray) -> void:
 		player.play()
 		_voices[speaker] = player
 	player.volume_db = linear_to_db(maxf(float(_profile_value("voice_volume", 1.0)), 0.0001))
-	var playback := player.get_stream_playback() as AudioStreamGeneratorPlayback
+	_push(player, speaker, packet)
+
+
+func _make_generator() -> AudioStreamGenerator:
+	var stream := AudioStreamGenerator.new()
+	# Godot 4.4+ only uses mix_rate when told the rate is custom.
+	if "mix_rate_mode" in stream:
+		stream.set("mix_rate_mode", 2)
+	stream.mix_rate = VOICE_RATE
+	stream.buffer_length = 0.4
+	return stream
+
+
+## Queues a packet on a voice player: after a pause it first queues a moment of silence
+## (smoothing out uneven packets), and it drops packets if too much is waiting (so the delay
+## can't build up).
+func _push(player: Node, speaker: int, packet: PackedByteArray) -> void:
+	var playback := player.call("get_stream_playback") as AudioStreamGeneratorPlayback
 	if playback == null:
 		return
+	var now := Time.get_ticks_msec() / 1000.0
+	var free := playback.get_frames_available()
+	# The buffer's real size (Godot rounds it up), learned from how much is free when empty.
+	var capacity := maxi(int(player.get_meta("capacity", 0)), free)
+	player.set_meta("capacity", capacity)
+	var queued := capacity - free
 	var samples := _decode(packet)
-	if playback.get_frames_available() < samples.size():
-		# Falling behind: drop this packet rather than letting the delay build up.
+	if now - float(_last_packet.get(speaker, 0.0)) > 0.3 and queued == 0:
+		for i in mini(PRIME_FRAMES, free):
+			playback.push_frame(Vector2.ZERO)
+		free = playback.get_frames_available()
+	_last_packet[speaker] = now
+	if queued > MAX_QUEUED_FRAMES or free < samples.size():
 		return
 	for sample in samples:
 		playback.push_frame(Vector2(sample, sample))
+
+
+## A player left: their voice players go too.
+func _forget_speaker(peer_id: int) -> void:
+	for table: Dictionary in [_voices, _radio_voices]:
+		var existing: Variant = table.get(peer_id)
+		if is_instance_valid(existing):
+			(existing as Node).queue_free()
+		table.erase(peer_id)
+	_radio_last_heard.erase(peer_id)
+	_last_packet.erase(peer_id)
 
 
 func players_guard(peer_id: int) -> Guard:
@@ -286,12 +320,7 @@ func players_guard(peer_id: int) -> Guard:
 
 ## Is this player talking right now (for the "talking" marker over teammates)? Every computer.
 func is_talking(peer_id: int) -> bool:
-	var existing: Variant = _voices.get(peer_id)
-	if not is_instance_valid(existing):
-		return false
-	var player := existing as AudioStreamPlayer3D
-	var playback := player.get_stream_playback() as AudioStreamGeneratorPlayback
-	return playback != null and playback.get_frames_available() < int(VOICE_RATE * 0.35)
+	return Time.get_ticks_msec() / 1000.0 - float(_last_packet.get(peer_id, -10.0)) < 0.25
 
 
 # --- mu-law: 8 bits a sample, plenty for speech -------------------------------------------

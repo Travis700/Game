@@ -58,6 +58,8 @@ var _totals: Dictionary = {}
 var _deaths := 0
 var _restart_run := false
 var _won := false
+## Host: the most guards on any night of this run (so "solo" means solo all the way). Saved.
+var run_team := 0
 ## Host: each guard's correct logs tonight, as "area|type", so logging the same thing again
 ## isn't counted as a false report.
 var _logged: Dictionary = {}
@@ -120,6 +122,7 @@ func _on_shift_started() -> void:
 	clipboard.set_header("Night %d   ·   Westfield High School" % number)
 	if not multiplayer.is_server():
 		return
+	run_team = maxi(run_team, players.get_child_count())
 	_stats.clear()
 	_logged.clear()
 	_deaths = 0
@@ -253,6 +256,7 @@ func save_run(next_night: int, in_progress := false) -> void:
 		"night": next_night, "difficulty": difficulty_choice, "keep_gear": keep_gear,
 		"points": saved_points, "items": saved_items, "upgrades": guard_room.upgraded.duplicate(),
 		"doors": doors.installed.duplicate(), "personal": saved_personal, "in_progress": in_progress,
+		"spent": shop.spent, "team": run_team,
 	})
 
 
@@ -311,6 +315,7 @@ func fail_night() -> void:
 	saved_points.clear()
 	shop.reset_spending()
 	_show_report.rpc(number, rows, summary, "caught")
+	run_team = 0
 	save_run(1)
 
 
@@ -353,7 +358,7 @@ func _award_night() -> void:
 	if career == null:
 		return
 	var won := number >= LAST_NIGHT
-	var team := players.get_child_count()
+	var team := maxi(run_team, players.get_child_count())
 	for guard: Guard in players.get_children():
 		var peer := guard.name.to_int()
 		var stats: Dictionary = _stats.get(peer, {"correct": 0, "false": 0})
@@ -410,6 +415,8 @@ func _on_next_night_requested() -> void:
 		anomalies.reset_all()
 		doors.reset_for_night()
 		var next := 1 if _restart_run else number + 1
+		if _restart_run:
+			run_team = 0
 		if _won:
 			for guard: Guard in players.get_children():
 				_totals[guard.name.to_int()] = 0

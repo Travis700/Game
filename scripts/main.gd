@@ -459,6 +459,8 @@ func _start_run() -> void:
 		if fitted[doorway]:
 			doors.install(doorway)
 	night.saved_personal = saved.get("personal", {})
+	shop.spent = saved.get("spent", {})
+	night.run_team = int(saved.get("team", 0))
 	# Saves from before the walkie-talkie listed flashlights on their own.
 	for badge: String in saved.get("bright", []):
 		var list: Array = night.saved_personal.get_or_add(badge, [])
@@ -484,6 +486,7 @@ func _on_steam_lobby_ready(peer: MultiplayerPeer, is_host: bool) -> void:
 
 
 func _on_steam_lobby_failed(reason: String) -> void:
+	SteamService.leave_lobby()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	menu.set_busy(false)
 	menu.show_status(reason)
@@ -509,6 +512,7 @@ func _on_connected_to_server() -> void:
 
 
 func _on_connection_failed() -> void:
+	SteamService.leave_lobby()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	menu.set_busy(false)
 	menu.show_status("Couldn't reach the host. Check the address, and that the host is in a game.")

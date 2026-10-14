@@ -6,7 +6,7 @@ signal closed
 signal leave_requested
 
 ## Voice chat modes: setting value, and what the menu calls it.
-const VOICE_MODES := [["push", "Push to talk (hold V)"], ["open", "Open mic"], ["off", "Off"]]
+const VOICE_MODES := [["push", "Push to talk"], ["open", "Open mic"], ["off", "Off"]]
 ## Choices for the 3D resolution, as a percentage of the window.
 const RENDER_SCALES: Array[int] = [100, 85, 70, 50]
 
@@ -105,10 +105,10 @@ func _ready() -> void:
 	voice_grid.add_child(_small("Device"))
 	var device := OptionButton.new()
 	device.add_item("System default")
-	for name in AudioServer.get_input_device_list():
-		if name != "Default":
-			device.add_item(name)
-			if name == Profile.mic_device:
+	for device_name in AudioServer.get_input_device_list():
+		if device_name != "Default":
+			device.add_item(device_name)
+			if device_name == Profile.mic_device:
 				device.select(device.item_count - 1)
 	device.item_selected.connect(func(index: int) -> void:
 		Profile.mic_device = "" if index == 0 else device.get_item_text(index)

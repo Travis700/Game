@@ -63,8 +63,8 @@ var night: Night
 var director: MonsterDirector
 var cameras: SecurityCameras
 var career: Career
-## Host: points each guard has spent this run (for the Big spender achievement).
-var _spent: Dictionary = {}
+## Host: points spent this run, by badge (for the Big spender achievement). Saved with the run.
+var spent: Dictionary = {}
 var guard_room: GuardRoom
 ## What this player is carrying ("" for nothing). Updated by the host.
 var local_item := ""
@@ -202,9 +202,9 @@ func forget(peer_id: int) -> void:
 
 ## Host: brings a player who just joined up to date on everyone's upgrades.
 func send_state_to(peer_id: int) -> void:
-	for owner: int in _owned:
-		for upgrade: String in _owned[owner]:
-			_set_owned.rpc_id(peer_id, owner, upgrade, true)
+	for owner_peer: int in _owned:
+		for upgrade: String in _owned[owner_peer]:
+			_set_owned.rpc_id(peer_id, owner_peer, upgrade, true)
 	# Anything still sitting in the vending machine's tray.
 	for drop_id: int in _drops:
 		_spawn_drop.rpc_id(peer_id, drop_id, _drops[drop_id]["item"])
@@ -294,7 +294,7 @@ func _area_name(at: Vector3) -> String:
 
 ## Host: a run ended; spending counts from zero again.
 func reset_spending() -> void:
-	_spent.clear()
+	spent.clear()
 
 
 ## Host: hands a guard an item without buying it, e.g. one they were carrying in a saved run.
@@ -343,8 +343,9 @@ func _request_buy(item: String) -> void:
 		_tell(peer, "You don't have enough points for that.")
 		return
 	night.spend(peer, price)
-	_spent[peer] = int(_spent.get(peer, 0)) + price
-	if career and _spent[peer] >= 1000:
+	var badge := str(buyer.employee_number)
+	spent[badge] = int(spent.get(badge, 0)) + price
+	if career and spent[badge] >= 1000:
 		career.award(peer, "BIG_SPENDER")
 	_send_wallet(peer)
 	_spawn_drop.rpc(_next_drop, item)

@@ -5,6 +5,19 @@ class_name RunSave
 const PATH := "user://run.json"
 
 
+## Saves and settings used to live in Godot's default folder ("app_userdata/Night Shift"); the
+## game now has its own ("NightShift"). Copies anything over that isn't there yet, once.
+static func migrate_old_saves() -> void:
+	var old_dir := OS.get_data_dir().path_join("Godot/app_userdata/Night Shift")
+	if not DirAccess.dir_exists_absolute(old_dir):
+		return
+	for file: String in ["profile.cfg", "controls.cfg", "run.json", "career.cfg"]:
+		var from := old_dir.path_join(file)
+		var to := "user://" + file
+		if FileAccess.file_exists(from) and not FileAccess.file_exists(to):
+			DirAccess.copy_absolute(from, ProjectSettings.globalize_path(to))
+
+
 static func exists() -> bool:
 	return FileAccess.file_exists(PATH)
 

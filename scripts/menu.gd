@@ -219,7 +219,7 @@ func set_steam_status(on: bool, user_name: String) -> void:
 			else "Steam isn't running: playing over direct connections."
 	if on:
 		_address.text = ""
-		_address.placeholder_text = "Lobby code (or a host's address)"
+		_address.placeholder_text = "Friend's 6-letter lobby code"
 
 
 func show_status(text: String) -> void:
