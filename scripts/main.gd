@@ -276,6 +276,12 @@ func _ready() -> void:
 	director.conditions = conditions
 	rounds.conditions = conditions
 	power.conditions = conditions
+	var bonus := Bonus.new()
+	bonus.name = "Bonus"
+	bonus.director = director
+	bonus.rounds = rounds
+	add_child(bonus)
+	night.bonus = bonus
 	add_child(night)
 	shop.night = night
 	director.student_helped.connect(func(peer_id: int) -> void:
@@ -762,6 +768,8 @@ func _objective() -> String:
 			var round_text := rounds.objective_text()
 			if round_text != "":
 				text += "\n" + round_text
+			if night.bonus.status != "":
+				text += "\n" + night.bonus.status
 			if not night.conditions.active.is_empty():
 				text += "\nTonight: " + ", ".join(night.conditions.names())
 			return text
@@ -894,6 +902,7 @@ func _on_guard_caught(peer_id: int, by: String, from := Vector3.INF) -> void:
 	if guard == null or guard.is_dead:
 		return
 	night.record_death()
+	night.bonus.on_caught(guard)
 	career.add_stat(peer_id, "times_caught")
 	_guard_died.rpc(peer_id, by, guard.global_position, from)
 	if director.living_guards().is_empty():
