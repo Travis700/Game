@@ -38,6 +38,8 @@ const MAX_LINES := 4
 var local_guard: Guard
 
 var _box: VBoxContainer
+## Caption text -> when it was last shown, so a monster flickering between states doesn't spam.
+var _shown_at: Dictionary = {}
 
 
 func _ready() -> void:
@@ -62,6 +64,10 @@ func heard(kind: String, new_state: String, at: Vector3) -> void:
 	var to := at - local_guard.global_position
 	if to.length() > HEARING:
 		return
+	var now := Time.get_ticks_msec() / 1000.0
+	if now - float(_shown_at.get(text, -100.0)) < SHOW_SECONDS:
+		return
+	_shown_at[text] = now
 	_add("[%s, %s]" % [text, _direction(to)])
 
 

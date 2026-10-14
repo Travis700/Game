@@ -740,14 +740,24 @@ func _anyone_in_guard_room() -> bool:
 	return false
 
 
+## Measured over a fifth of a second rather than one frame: other players' positions arrive in
+## steps, so a single frame can look like standing still (or a jump).
+const SPEED_WINDOW := 0.2
+
+
 func _track_guard_speeds(delta: float) -> void:
 	if delta <= 0.0:
 		return
+	var time := Time.get_ticks_msec() / 1000.0
 	for guard: Guard in players.get_children():
 		var now := guard.global_position
-		var before: Vector3 = _last_positions.get(guard.name, now)
-		var speed := Vector2(now.x - before.x, now.z - before.z).length() / delta
+		var sample: Array = _last_positions.get(guard.name, [now, time])
+		var elapsed := time - float(sample[1])
+		if elapsed < SPEED_WINDOW and _last_positions.has(guard.name):
+			continue
+		var before: Vector3 = sample[0]
+		var speed := Vector2(now.x - before.x, now.z - before.z).length() / maxf(elapsed, delta)
 		# Faster than anyone can run means a teleport (sitting down, standing up, a revive),
 		# not movement.
 		_speeds[guard.name] = 0.0 if speed > 12.0 else speed
-		_last_positions[guard.name] = now
+		_last_positions[guard.name] = [now, time]

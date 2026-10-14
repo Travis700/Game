@@ -187,8 +187,9 @@ func _add_xp(amount: int) -> void:
 	var new_rank := rank_of(before + amount)
 	if new_rank > old_rank:
 		get_tree().call_group("game", "on_rank_up", new_rank, rank_title(new_rank))
-		if new_rank >= RANKS.size():
-			_unlock("LEGEND")
+	# Also for anyone who was already at the top before this achievement existed.
+	if new_rank >= RANKS.size():
+		_unlock("LEGEND")
 
 
 @rpc("authority", "call_remote", "reliable")

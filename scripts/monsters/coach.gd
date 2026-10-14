@@ -13,11 +13,14 @@ const GRACE_SECONDS := 1.0
 ## Below this speed (m/s) counts as slacking.
 const HUSTLE_SPEED := 4.2
 const GIVE_UP_AFTER := 4.0
+## How long below hustle speed before it counts as slacking.
+const SLACK_SECONDS := 0.4
 const SPOTS: Array[Vector3] = [Vector3(45, 0, 15), Vector3(66, 0, 15), Vector3(76, 0, 15), Vector3(55, 0, 7), Vector3(72, 0, 7)]
 
 var _target: Guard
 var _watching: Guard
 var _grace := 0.0
+var _slacking := 0.0
 ## The guards it's already blown the whistle at, so it doesn't keep doing it.
 var _whistled: Dictionary = {}
 
@@ -30,6 +33,8 @@ func _init() -> void:
 func think(delta: float) -> void:
 	if state == "chase":
 		if not chase(_target, CHASE_SPEED, delta, GIVE_UP_AFTER):
+			if is_instance_valid(_target):
+				_whistled.erase(_target.name)
 			_target = null
 			state = "pace"
 		return
@@ -46,7 +51,9 @@ func think(delta: float) -> void:
 			return
 		face(_watching.global_position - global_position)
 		_grace -= delta
-		if _grace <= 0.0 and director.guard_speed(_watching) < HUSTLE_SPEED:
+		# A moment of slacking, not a single slow reading.
+		_slacking = _slacking + delta if director.guard_speed(_watching) < HUSTLE_SPEED else 0.0
+		if _grace <= 0.0 and _slacking > SLACK_SECONDS:
 			director.tell(_watching.name.to_int(), "\"DID I SAY STOP?\"")
 			_target = _watching
 			_watching = null
@@ -58,6 +65,7 @@ func think(delta: float) -> void:
 		_watching = guard
 		_whistled[guard.name] = true
 		_grace = GRACE_SECONDS
+		_slacking = 0.0
 		state = "whistle"
 		director.tell(guard.name.to_int(), "A whistle. \"HUSTLE, Guard %d! Laps! Until I can't see you!\"" % guard.slot)
 

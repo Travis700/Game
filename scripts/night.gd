@@ -93,6 +93,8 @@ var _logged: Dictionary = {}
 ## stations, caught. Shown when the run ends. And how many nights it has lasted.
 var _run_stats: Dictionary = {}
 var _run_nights := 0
+## Host: everyone's nerve at 6 AM, for the Nerves of steel achievement.
+var _morning_nerve: Dictionary = {}
 var _clock_out_left := 0.0
 var _sync_timer := 0.0
 
@@ -217,6 +219,9 @@ func _run_shift(delta: float) -> void:
 		power.end_night()
 		phone.end_night()
 		hiding.release_all()
+		# Morning: nerves settle (kept for the night's awards first).
+		_morning_nerve = nerve.levels.duplicate()
+		nerve.reset()
 		shift.guards_required = director.living_guards().size()
 		_start_morning.rpc()
 
@@ -505,7 +510,7 @@ func _award_night() -> void:
 			career.award(peer, "NIGHT_FIVE")
 		if doors.battered_tonight:
 			career.award(peer, "HOLD_THE_DOOR")
-		if number >= 6 and float(nerve.levels.get(peer, Nerve.MAX)) > 70.0:
+		if number >= 6 and float(_morning_nerve.get(peer, Nerve.MAX)) > 70.0:
 			career.award(peer, "STEADY_NERVES")
 		if daily == "":
 			career.record_night(peer, number)
