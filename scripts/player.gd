@@ -17,6 +17,8 @@ signal pause_requested
 signal item_use_requested
 ## E while hiding in a cupboard: climb out.
 signal leave_hiding_requested
+## G as a ghost: watch through the next living teammate's eyes (or back to your own).
+signal spectate_requested
 ## E as a ghost: leave a cold spot where you're looking, for the living to see.
 signal ghost_ping_requested(at: Vector3)
 
@@ -279,6 +281,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		flashlight.visible = not flashlight.visible
 	elif event.is_action_pressed("interact"):
 		_interact()
+	elif event.is_action_pressed("use_item") and is_dead:
+		spectate_requested.emit()
 	elif event.is_action_pressed("use_item") and not is_dead:
 		item_use_requested.emit()
 

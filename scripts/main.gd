@@ -58,6 +58,8 @@ var dread: Dread
 var rounds: Rounds
 var _siren: AudioStreamPlayer
 var captions: Captions
+## The teammate a ghost is watching through, or null.
+var _spectating: Guard
 var hiding: Hiding
 ## Host: when each ghost may next leave a cold spot.
 var _ghost_ping_at: Dictionary = {}
@@ -396,6 +398,10 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(_delta: float) -> void:
 	if _mode == "":
 		return
+	# Stop watching a teammate who's gone or been caught, or once you're back on your feet.
+	if _spectating != null and (not is_instance_valid(_spectating) or _spectating.is_dead
+			or _local_guard == null or not _local_guard.is_dead):
+		_watch(null)
 	var guards := players.get_child_count()
 	var status := "Solo" if _mode == "solo" else "%s · %d guard%s" % [_mode, guards, "" if guards == 1 else "s"]
 	if _room_code != "":
@@ -820,6 +826,7 @@ func on_local_guard_ready(guard: Guard) -> void:
 			_request_ghost_ping(at)
 		else:
 			_request_ghost_ping.rpc_id(1, at))
+	guard.spectate_requested.connect(_spectate_next)
 	guard.item_use_requested.connect(func() -> void:
 		if not guard_room.try_install():
 			shop.request_use())
@@ -1024,6 +1031,41 @@ func _ghost_ping(at: Vector3, slot: int) -> void:
 	fade.tween_callback(spot.queue_free)
 	if _local_guard and not _local_guard.is_dead and _local_guard.global_position.distance_to(at) < 25.0:
 		hud.show_message("A cold spot. Guard %d is trying to tell you something." % slot)
+
+
+## A ghost pressed G: the next living teammate's view, then back to wandering about.
+func _spectate_next() -> void:
+	var living: Array[Guard] = []
+	for guard: Guard in players.get_children():
+		if guard != _local_guard and not guard.is_dead:
+			living.append(guard)
+	var next := living.find(_spectating) + 1 if _spectating else 0
+	_watch(living[next] if next < living.size() else null)
+
+
+func _watch(target: Guard) -> void:
+	if _spectating and is_instance_valid(_spectating):
+		_spectating.camera.current = false
+		_show_body_to_viewer(_spectating, true)
+	_spectating = target
+	if target:
+		# See what they see: without their own body in the way, or the Ghost they can't see.
+		_show_body_to_viewer(target, false)
+		target.camera.cull_mask &= ~(Guard.SELF_LAYER | SecurityCameras.SPECTRAL_LAYER)
+		target.camera.current = true
+		hud.show_message("Watching %s. G for the next, or back to yourself." % (target.player_name if target.player_name != "" else "Guard %d" % target.slot))
+	elif _local_guard and is_instance_valid(_local_guard):
+		_local_guard.camera.current = true
+
+
+func _show_body_to_viewer(guard: Guard, shown: bool) -> void:
+	var layers := 1 if shown else Guard.SELF_LAYER
+	guard.body_mesh.layers = layers
+	guard.visor.layers = layers
+	var hat := guard.head.get_node_or_null("Hat")
+	if hat:
+		for part in hat.get_children():
+			(part as MeshInstance3D).layers = layers
 
 
 ## Every computer: the lockdown alarm wails (or stops).
