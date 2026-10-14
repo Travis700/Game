@@ -13,6 +13,9 @@ const DIFFICULTIES := [
 	["3 · + Science wing", "Opens the east wing too: the science lab, art room and locker rooms, with the Specimen, the Self-Portrait, the Understudy and the Crossing Guard. Best for three or four guards."],
 ]
 
+const HowToPlay := preload("res://scripts/how_to_play.gd")
+
+var _how_to_play: CanvasLayer
 var _status: Label
 var _address: LineEdit
 var _password: LineEdit
@@ -94,7 +97,17 @@ func _ready() -> void:
 	column.add_child(hint)
 
 	column.add_child(_spacer(6))
-	column.add_child(_button("Quit", func() -> void: get_tree().quit()))
+	var bottom_row := HBoxContainer.new()
+	bottom_row.add_theme_constant_override("separation", 8)
+	var how := _button("How to play", func() -> void: _how_to_play.open())
+	how.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom_row.add_child(how)
+	var quit := _button("Quit", func() -> void: get_tree().quit())
+	quit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom_row.add_child(quit)
+	column.add_child(bottom_row)
+	_how_to_play = HowToPlay.new()
+	add_child(_how_to_play)
 
 	_status = Label.new()
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
