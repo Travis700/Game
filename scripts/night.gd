@@ -444,6 +444,7 @@ func _end_night() -> void:
 			team_total += points_of(guard.name.to_int())
 		summary = "You kept Westfield High safe for all %d nights. Whatever lives here will wait for the next crew.\nFinal team score: %d points. Or stay on for Overtime: the nights keep coming, and get worse.\n" % [LAST_NIGHT, team_total] + summary
 		_show_report.rpc(number, rows, summary, "won")
+		shop.push_wallets()
 		# The run is over unless the host picks Overtime. Nothing carries on from a saved run.
 		RunSave.clear()
 		return
