@@ -1,6 +1,6 @@
 # Night Shift — Design Document
 
-*Working title. Status: all core features built in greybox (blocky placeholder art); next are playtesting, Steam and the art pass. Numbers marked (tunable) are starting points to adjust during playtesting.*
+*Status: version 1.0.0, feature complete in greybox. Left: the art and audio pass (textures, models, sounds), then the Steamworks steps in STEAM.md and the store page. Numbers marked (tunable) are starting points to adjust during playtesting.*
 
 ## 1. Overview
 
@@ -154,7 +154,9 @@ Which monsters are unlocked on which night is still to be set (section 14).
 6. ~~Monsters, death, ghosts and revive totems~~
 7. ~~Vending machine and items~~
 8. ~~Content: all 15 monsters, D2 and D3 wings, nights 1–9, saving, badges, room codes, Esc menu~~
-9. **Next:** playtesting and balance; Steam (GodotSteam lobbies and relay, store page); art pass (textures, models, sounds) before the store page.
+9. ~~Steam: lobbies with codes, invites, rich presence, achievements and stats (GodotSteam, optional at runtime)~~
+10. ~~Release features: voice chat and walkie-talkies, controller support, settings (keys, graphics, FOV, audio, voice), records, credits and licences, Windows and Linux builds~~
+11. **Next:** the art and audio pass (textures, models, sounds); then the Steamworks steps (STEAM.md), store page and release.
 
 ## 14. Open questions
 

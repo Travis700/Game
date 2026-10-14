@@ -3,6 +3,15 @@
 A first-person co-op light-horror game about night security at an American high school, made in Godot 4.
 The full plan is in [DESIGN.md](DESIGN.md).
 
+## Status
+
+Version 1.0.0. The game is complete apart from the art and audio pass: every model is a
+placeholder made of boxes, and every sound is generated in code. Everything else is in:
+nine nights, three difficulties (main building, classroom wing, science wing), 15 monsters,
+the guard room and its 16 cameras, the vending machine, saving, achievements and records,
+proximity voice chat and walkie-talkies, controller support, settings, and Steam lobbies and
+invites (see [STEAM.md](STEAM.md) for the Steamworks steps that need your account).
+
 ## Running it
 
 1. Open Godot 4.7 or newer.
@@ -21,6 +30,9 @@ password before hosting, joiners type the same password. Room codes work on the 
 the internet if the host forwards port 7777 on their router. Steam lobbies will make this easier later.
 
 ### The menu
+
+- **How to play**, **Records** (career stats, best scores, achievements) and **Credits** (with the
+  software licences) are along the bottom.
 
 - **Your employee badge** is a number this computer picked for you the first time you played. You type it
   into the time clock to clock in, and your saved points are linked to it.
