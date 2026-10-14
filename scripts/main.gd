@@ -583,6 +583,8 @@ func _start_run() -> void:
 	night.saved_personal = saved.get("personal", {})
 	shop.spent = saved.get("spent", {})
 	night.run_team = int(saved.get("team", 0))
+	night._run_stats = saved.get("run_stats", {})
+	night._run_nights = int(saved.get("run_nights", 0))
 	# Saves from before the walkie-talkie listed flashlights on their own.
 	for badge: String in saved.get("bright", []):
 		var list: Array = night.saved_personal.get_or_add(badge, [])

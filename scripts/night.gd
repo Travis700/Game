@@ -88,6 +88,10 @@ var run_team := 0
 ## Host: each guard's correct logs tonight, as "area|type", so logging the same thing again
 ## isn't counted as a false report.
 var _logged: Dictionary = {}
+## Host: totals for the whole run so far, by guard name ("Sam" or "Guard 2"): logs, named,
+## stations, caught. Shown when the run ends. And how many nights it has lasted.
+var _run_stats: Dictionary = {}
+var _run_nights := 0
 var _clock_out_left := 0.0
 var _sync_timer := 0.0
 
@@ -348,6 +352,7 @@ func save_run(next_night: int, in_progress := false) -> void:
 	RunSave.write({
 		"night": next_night, "difficulty": difficulty_choice, "keep_gear": keep_gear,
 		"points": saved_points, "items": saved_items, "upgrades": guard_room.upgraded.duplicate(),
+		"run_stats": _run_stats, "run_nights": _run_nights,
 		"doors": doors.installed.duplicate(), "personal": saved_personal, "in_progress": in_progress,
 		"spent": shop.spent, "team": run_team,
 	})
@@ -406,6 +411,9 @@ func fail_night() -> void:
 		_finish_daily(rows, 0, "Caught at %s. Score: 0." % time_text())
 		return
 	var summary := "The whole team was caught at %s.\nThe school keeps its secrets. The run starts over from night 1." % time_text()
+	_run_nights += 1
+	summary += "\n" + _run_summary()
+	_forget_run()
 	if keep_gear:
 		summary += "\nYou keep your upgrades and whatever you're carrying. Points start again from zero."
 	else:
@@ -426,6 +434,7 @@ func _end_night() -> void:
 	if shift.state != Shift.State.MORNING:
 		return
 	var rows := _build_rows(true)
+	_run_nights += 1
 	_award_night()
 	var round_text := "Round: %d of %d stations punched%s." % [rounds.punched.size(), rounds.order.size(),
 			" (complete, +%d each)" % Rounds.ROUND_BONUS if rounds.is_complete()
@@ -457,6 +466,7 @@ func _end_night() -> void:
 		var team_total := 0
 		for guard: Guard in players.get_children():
 			team_total += points_of(guard.name.to_int())
+		summary += "\n" + _run_summary()
 		summary = "You kept Westfield High safe for all %d nights. Whatever lives here will wait for the next crew.\nFinal team score: %d points. Or stay on for Overtime: the nights keep coming, and get worse.\n" % [LAST_NIGHT, team_total] + summary
 		_show_report.rpc(number, rows, summary, "won")
 		shop.push_wallets()
@@ -505,6 +515,36 @@ func _award_night() -> void:
 				career.award(peer, "RUN_WON_SOLO")
 			if difficulty >= MAX_DIFFICULTY:
 				career.award(peer, "RUN_WON_D3")
+
+
+## The run's totals for the report when it ends, e.g. "This run: 5 nights. Sam: 12 logs, 2 named,
+## 8 stations, caught once. Run MVP: Sam." Then forgets them, ready for the next run.
+func _run_summary() -> String:
+	if _run_stats.is_empty():
+		return ""
+	var lines: Array[String] = []
+	var best := ""
+	var best_score := -INF
+	for who: String in _run_stats:
+		var run: Dictionary = _run_stats[who]
+		var caught := int(run["caught"])
+		lines.append("%s: %d logs, %d named, %d stations, %s" % [who, run["logs"], run["named"], run["stations"],
+				"never caught" if caught == 0 else ("caught once" if caught == 1 else "caught %d times" % caught)])
+		var score: float = run["logs"] * 25 + run["named"] * 25 + run["stations"] * 20 - caught * 50
+		if score > best_score:
+			best_score = score
+			best = who
+		elif score == best_score:
+			best = ""  # A tie: no MVP.
+	var text := "This run: %d night%s.  %s." % [_run_nights, "" if _run_nights == 1 else "s", ".  ".join(lines)]
+	if _run_stats.size() > 1 and best != "" and best_score > 0.0:
+		text += "  Run MVP: %s." % best
+	return text
+
+
+func _forget_run() -> void:
+	_run_stats.clear()
+	_run_nights = 0
 
 
 ## Co-op only: who did best tonight, e.g. "Sharpest eyes: Sam (4 logs)  ·  Night watchman: Guard 2 (3 stations)".
@@ -564,6 +604,12 @@ func _build_rows(keep_pay: bool) -> Array:
 		xp = int(xp * conditions.xp_factor())
 		if career:
 			career.add_xp(peer, xp)
+		var who := guard.player_name if guard.player_name != "" else "Guard %d" % guard.slot
+		var run: Dictionary = _run_stats.get_or_add(who, {"logs": 0, "named": 0, "stations": 0, "caught": 0})
+		run["logs"] += int(stats["correct"])
+		run["named"] += int(stats.get("named", 0))
+		run["stations"] += int(rounds.punches.get(peer, 0))
+		run["caught"] += 1 if guard.is_dead else 0
 		rows.append({
 			"xp": xp,
 			"name": "Guard %d  #%04d" % [guard.slot, guard.employee_number], "clocked_out": clocked_out, "died": guard.is_dead,
@@ -608,6 +654,7 @@ func _on_overtime_requested() -> void:
 
 ## Host: a won run is over and a new one starts from nothing.
 func _reset_run() -> void:
+	_forget_run()
 	for guard: Guard in players.get_children():
 		_totals[guard.name.to_int()] = 0
 	shop.reset_spending()
