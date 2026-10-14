@@ -14,6 +14,8 @@ var vsync := true
 var render_scale := 1.0
 var shadows := true
 var antialiasing := 1
+## Field of view, in degrees.
+var fov := 75.0
 ## Voice chat: "push" (hold the push-to-talk key), "open" (talks when you're loud enough) or "off".
 var voice_mode := "push"
 ## Open mic: how loud (0-1) you have to be before it sends.
@@ -37,6 +39,7 @@ func _enter_tree() -> void:
 		render_scale = config.get_value("graphics", "render_scale", 1.0)
 		shadows = config.get_value("graphics", "shadows", true)
 		antialiasing = config.get_value("graphics", "antialiasing", 1)
+		fov = config.get_value("graphics", "fov", 75.0)
 		voice_mode = config.get_value("voice", "mode", "push")
 		mic_threshold = config.get_value("voice", "threshold", 0.12)
 		voice_volume = config.get_value("voice", "volume", 1.0)
@@ -65,6 +68,7 @@ func save_settings() -> void:
 	config.set_value("graphics", "render_scale", render_scale)
 	config.set_value("graphics", "shadows", shadows)
 	config.set_value("graphics", "antialiasing", antialiasing)
+	config.set_value("graphics", "fov", fov)
 	config.set_value("voice", "mode", voice_mode)
 	config.set_value("voice", "threshold", mic_threshold)
 	config.set_value("voice", "volume", voice_volume)

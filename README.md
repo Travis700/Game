@@ -157,6 +157,12 @@ time clock before the night starts.
 Without launch arguments, each window shows the menu: choose **Host a game** in one and **Join** (address
 `127.0.0.1`) in the other.
 
+## Steam
+
+Steam lobbies, invites, Steam names, rich presence and achievements are built in. They switch on
+when the GodotSteam add-on is installed and Steam is running; see [STEAM.md](STEAM.md) for the
+steps (App ID, GodotSteam, achievements, builds). Without Steam the game uses direct connections.
+
 ## Making a .exe to share
 
 The project comes with a Windows export preset, so you can make a stand-alone game that friends can
@@ -167,7 +173,7 @@ run without Godot.
 2. Open **Project → Export...**, pick **Windows Desktop**, and click **Export Project**.
 3. Keep the suggested path, `builds/windows/NightShift.exe`, untick **Export With Debug**, and save.
 
-That gives you a single `NightShift.exe`. Zip it and send it. The `builds` folder is ignored by git,
+That gives you a single `NightShift.exe`. There's a **Linux** preset too (for Steam Deck and Linux). Zip it and send it. The `builds` folder is ignored by git,
 so builds never end up in the repository. Windows may warn about an unknown publisher the first time
 it runs; that's normal for games that aren't signed (Steam builds don't show it).
 

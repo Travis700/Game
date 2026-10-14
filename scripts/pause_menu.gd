@@ -22,6 +22,7 @@ var _invite: Button
 var voice: VoiceChat
 var _mic_meter: ProgressBar
 var _main_column: VBoxContainer
+var _scroll: ScrollContainer
 var _keys: VBoxContainer
 var _key_buttons: Dictionary = {}
 var _key_help: Label
@@ -49,9 +50,16 @@ func _ready() -> void:
 	style.set_content_margin_all(24)
 	panel.add_theme_stylebox_override("panel", style)
 	center.add_child(panel)
+	# The settings scroll if the window is too short for all of them.
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.custom_minimum_size = Vector2(460, 0)
+	panel.add_child(scroll)
+	_scroll = scroll
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 12)
-	panel.add_child(column)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(column)
 	_main_column = column
 	_build_keys(panel)
 
@@ -66,6 +74,11 @@ func _ready() -> void:
 	_sensitivity = _slider(0.2, 3.0, Profile.mouse_sensitivity)
 	_sensitivity.value_changed.connect(func(value: float) -> void: Profile.mouse_sensitivity = value)
 	column.add_child(_sensitivity)
+	column.add_child(_label("Field of view"))
+	var fov := _slider(60.0, 100.0, Profile.fov)
+	fov.step = 1.0
+	fov.value_changed.connect(func(value: float) -> void: Profile.fov = value)
+	column.add_child(fov)
 	column.add_child(_label("Volume"))
 	_volume = _slider(0.0, 1.0, Profile.volume)
 	_volume.value_changed.connect(func(value: float) -> void:
@@ -164,7 +177,7 @@ func _ready() -> void:
 	_invite = _button("Invite Steam friends", func() -> void: SteamService.invite_friends())
 	column.add_child(_invite)
 	column.add_child(_button("Change keys...", func() -> void:
-		column.visible = false
+		_scroll.visible = false
 		_keys.visible = true))
 	column.add_child(_button("Resume", close))
 	_leave = _button("Leave to the main menu", func() -> void: leave_requested.emit())
@@ -179,6 +192,7 @@ func open(solo: bool, hosting: bool) -> void:
 	get_tree().paused = solo
 	_fullscreen.set_pressed_no_signal(DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN)
 	_leave.text = "End the session (everyone leaves)" if hosting else "Leave to the main menu"
+	_scroll.custom_minimum_size.y = minf(get_viewport().get_visible_rect().size.y * 0.85, 900.0)
 	_show_main()
 	_invite.visible = SteamService.available and SteamService.lobby_id != 0
 	visible = true
@@ -271,7 +285,7 @@ func _show_main() -> void:
 	_listening = ""
 	_refresh_keys()
 	_keys.visible = false
-	_main_column.visible = true
+	_scroll.visible = true
 
 
 func _label(text: String) -> Label:

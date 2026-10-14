@@ -15,9 +15,11 @@ const DIFFICULTIES := [
 
 const HowToPlay := preload("res://scripts/how_to_play.gd")
 const Records := preload("res://scripts/records.gd")
+const Credits := preload("res://scripts/credits.gd")
 
 var _how_to_play: CanvasLayer
 var _records: CanvasLayer
+var _credits: CanvasLayer
 var _steam_label: Label
 var _status: Label
 var _address: LineEdit
@@ -113,6 +115,9 @@ func _ready() -> void:
 	how = _button("Records", func() -> void: _records.open())
 	how.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom_row.add_child(how)
+	how = _button("Credits", func() -> void: _credits.open())
+	how.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom_row.add_child(how)
 	var quit := _button("Quit", func() -> void: get_tree().quit())
 	quit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom_row.add_child(quit)
@@ -121,6 +126,16 @@ func _ready() -> void:
 	add_child(_how_to_play)
 	_records = Records.new()
 	add_child(_records)
+	_credits = Credits.new()
+	add_child(_credits)
+
+	var version := Label.new()
+	version.text = "v%s" % ProjectSettings.get_setting("application/config/version", "dev")
+	version.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	version.offset_left = 16
+	version.offset_top = -34
+	version.modulate.a = 0.4
+	add_child(version)
 
 	_status = Label.new()
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

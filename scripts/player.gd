@@ -135,6 +135,14 @@ func set_bright_flashlight(on: bool) -> void:
 	flashlight.light_energy = flashlight.get_meta("base_energy", flashlight.light_energy) * (1.5 if on else 1.0)
 
 
+func _process(_delta: float) -> void:
+	# The field of view from the Esc menu (Profile looked up by path, see _look).
+	if is_local():
+		var profile := get_node_or_null("/root/Profile")
+		if profile:
+			camera.fov = float(profile.get("fov"))
+
+
 ## Shows a "talking" marker on the name tag while this guard's voice is coming through.
 func show_talking(talking: bool) -> void:
 	name_tag.text = _tag_text() + ("\n((( talking )))" if talking else "")
