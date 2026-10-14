@@ -119,6 +119,29 @@ const ENTRIES := {
 }
 
 
+## The kind of monster a "caught by ..." name belongs to (e.g. "the Lunch Lady" -> "LunchLady"),
+## or "" if it isn't one in the guide.
+static func kind_for_name(caught_by: String) -> String:
+	if caught_by == "something you couldn't see":
+		return "SchoolGhost"
+	if caught_by == "something in the lockers":
+		return "Lockers"
+	for kind: String in ENTRIES:
+		if (ENTRIES[kind]["name"] as String).to_lower() == caught_by.to_lower():
+			return kind
+	return ""
+
+
+## What to tell a guard who was just caught by this: the rule, if they know the monster.
+static func caught_tip(caught_by: String) -> String:
+	var kind := kind_for_name(caught_by)
+	if kind == "":
+		return ""
+	if kind in discovered():
+		return "Remember: " + ENTRIES[kind]["rule"]
+	return "Log it correctly next time and its page in your field guide will tell you how to survive it."
+
+
 static func display_name(kind: String) -> String:
 	return ENTRIES[kind]["name"] if ENTRIES.has(kind) else kind
 

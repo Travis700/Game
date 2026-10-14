@@ -60,6 +60,9 @@ var _siren: AudioStreamPlayer
 var captions: Captions
 ## The teammate a ghost is watching through, or null.
 var _spectating: Guard
+## The notice board in the guard room: tonight's shift notes, bonus objective and round.
+var _tonight_board: Label3D
+var _board_timer := 0.0
 var hiding: Hiding
 ## Host: when each ghost may next leave a cold spot.
 var _ghost_ping_at: Dictionary = {}
@@ -411,6 +414,10 @@ func _process(_delta: float) -> void:
 	if night.difficulty > 0:
 		status += " · Difficulty %d" % night.difficulty
 	hud.set_objective(_objective())
+	_board_timer -= _delta
+	if _board_timer <= 0.0:
+		_board_timer = 1.0
+		_update_tonight_board()
 	hud.set_voice(voice.transmitting, voice.level, voice.on_radio)
 	for guard: Guard in players.get_children():
 		if guard != _local_guard:
@@ -1033,6 +1040,34 @@ func _ghost_ping(at: Vector3, slot: int) -> void:
 		hud.show_message("A cold spot. Guard %d is trying to tell you something." % slot)
 
 
+## The guard room's notice board, written up for tonight.
+func _update_tonight_board() -> void:
+	if _tonight_board == null:
+		_tonight_board = Label3D.new()
+		_tonight_board.position = Vector3(9.5, 1.62, 10.2)
+		_tonight_board.pixel_size = 0.0032
+		_tonight_board.font_size = 30
+		_tonight_board.width = 700
+		_tonight_board.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_tonight_board.modulate = Color(0.12, 0.1, 0.08)
+		_tonight_board.outline_size = 0
+		_tonight_board.double_sided = false
+		add_child(_tonight_board)
+	var lines: Array[String] = ["TONIGHT  ·  NIGHT %d" % night.number]
+	if night.conditions.active.is_empty():
+		lines.append("Shift notes: none")
+	else:
+		lines.append("Shift notes: " + ", ".join(night.conditions.names()))
+	if night.bonus.status != "":
+		lines.append(night.bonus.status)
+	var round_text := rounds.objective_text()
+	if round_text != "":
+		lines.append(round_text)
+	if shift.state == Shift.State.PRE_SHIFT:
+		lines.append("(Written up when everyone clocks in.)")
+	_tonight_board.text = "\n".join(lines)
+
+
 ## A ghost pressed G: the next living teammate's view, then back to wandering about.
 func _spectate_next() -> void:
 	var living: Array[Guard] = []
@@ -1148,7 +1183,8 @@ func _guard_died(peer_id: int, by: String, at: Vector3, from := Vector3.INF) -> 
 		dread.jumpscare(from)
 		hud.flash(Color(0.6, 0.0, 0.0, 0.4), 2.0)
 		hud.set_ghost(true)
-		hud.show_message("You were caught by %s." % by)
+		var tip := FieldGuide.caught_tip(by)
+		hud.show_message("You were caught by %s.%s" % [by, "\n" + tip if tip != "" else ""], 9.0 if tip != "" else 4.0)
 		Sfx.play_flat(self, Sfx.notes([110.0, 104.0, 98.0, 92.0], 0.35, 0.4, "saw"))
 	else:
 		hud.show_message("Guard %d was caught by %s." % [guard.slot, by])

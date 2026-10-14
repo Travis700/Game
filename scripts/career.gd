@@ -7,6 +7,8 @@ extends Node
 ## `add_stat` with a guard's peer id, and this sends it to that player's computer.
 
 const PATH := "user://career.cfg"
+const TEMP_PATH := "user://career.cfg.new"
+const BACKUP_PATH := "user://career.cfg.bak"
 ## Achievement API names (also used in Steamworks), with the name and how to get it.
 const ACHIEVEMENTS := {
 	"FIRST_SHIFT": ["First shift", "Clock out after your first night."],
@@ -99,7 +101,7 @@ func record_daily(date: String, score: int) -> bool:
 	if score <= best:
 		return false
 	config.set_value("daily", date, score)
-	config.save(PATH)
+	_save(config)
 	_unlock("DAILY")
 	if daily_streak() >= 5:
 		_unlock("DAILY_STREAK")
@@ -137,7 +139,7 @@ func _unlock(achievement: String) -> void:
 	if config.get_value("achievements", achievement, false):
 		return
 	config.set_value("achievements", achievement, Time.get_datetime_string_from_system(false, true))
-	config.save(PATH)
+	_save(config)
 	get_tree().call_group("game", "on_achievement", ACHIEVEMENTS[achievement][0])
 
 
@@ -146,7 +148,7 @@ func _add_stat(stat: String, amount: int) -> void:
 	var config := _load()
 	var value: int = config.get_value("stats", stat, 0) + amount
 	config.set_value("stats", stat, value)
-	config.save(PATH)
+	_save(config)
 	var steam := get_node_or_null("/root/SteamService")
 	if steam:
 		steam.add_stat(stat, amount)
@@ -159,7 +161,7 @@ func _saw_monster(kind: String) -> void:
 	if kind not in seen:
 		seen.append(kind)
 		config.set_value("career", "monsters_seen", seen)
-		config.save(PATH)
+		_save(config)
 	if MONSTER_KINDS.all(func(each: String) -> bool: return each in seen):
 		_unlock("MONSTER_EXPERT")
 
@@ -169,7 +171,7 @@ func _record_night(night: int) -> void:
 	var config := _load()
 	if night > int(config.get_value("career", "best_night", 0)):
 		config.set_value("career", "best_night", night)
-		config.save(PATH)
+		_save(config)
 		var steam := get_node_or_null("/root/SteamService")
 		if steam and night > 9:
 			steam.submit_score("furthest_night", night)
@@ -180,7 +182,7 @@ func _add_xp(amount: int) -> void:
 	var config := _load()
 	var before: int = config.get_value("career", "xp", 0)
 	config.set_value("career", "xp", before + amount)
-	config.save(PATH)
+	_save(config)
 	var old_rank := rank_of(before)
 	var new_rank := rank_of(before + amount)
 	if new_rank > old_rank:
@@ -197,7 +199,7 @@ func _record_score(points: int, difficulty: int, guards: int) -> void:
 			"date": Time.get_date_string_from_system()})
 	scores.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["points"] > b["points"])
 	config.set_value("career", "scores", scores.slice(0, MAX_SCORES))
-	config.save(PATH)
+	_save(config)
 
 
 # --- Reading the records (for the menu) ---------------------------------------------------
@@ -275,5 +277,28 @@ static func monsters_seen() -> Array:
 
 static func _load() -> ConfigFile:
 	var config := ConfigFile.new()
-	config.load(PATH)
+	var damaged := config.load(PATH) != OK
+	# A file with something in it but nothing readable is damaged too.
+	if not damaged and config.get_sections().is_empty() and FileAccess.file_exists(PATH):
+		damaged = FileAccess.get_file_as_bytes(PATH).size() > 0
+	if damaged and FileAccess.file_exists(BACKUP_PATH):
+		# The career file is damaged (e.g. the game was killed while saving): use the backup.
+		config = ConfigFile.new()
+		config.load(BACKUP_PATH)
 	return config
+
+
+## Saves without ever leaving a half-written career behind: write a new file, keep the old one
+## as a backup, then swap the new one in.
+static func _save(config: ConfigFile) -> void:
+	if config.save(TEMP_PATH) != OK:
+		return
+	var dir := DirAccess.open("user://")
+	if dir == null:
+		return
+	if FileAccess.file_exists(PATH):
+		dir.copy(PATH, BACKUP_PATH)
+	if dir.rename(TEMP_PATH, PATH) != OK:
+		# Some systems won't rename over an existing file.
+		dir.remove(PATH)
+		dir.rename(TEMP_PATH, PATH)

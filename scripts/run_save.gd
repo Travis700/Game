@@ -33,10 +33,18 @@ static func read() -> Dictionary:
 	return data if data is Dictionary else {}
 
 
+## Writes a new file and then swaps it in, so a crash mid-save can't leave a broken run.
 static func write(data: Dictionary) -> void:
-	var file := FileAccess.open(PATH, FileAccess.WRITE)
-	if file:
-		file.store_string(JSON.stringify(data, "\t"))
+	var temp := PATH + ".new"
+	var file := FileAccess.open(temp, FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_string(JSON.stringify(data, "\t"))
+	file.close()
+	var dir := DirAccess.open("user://")
+	if dir and dir.rename(temp, PATH) != OK:
+		dir.remove(PATH)
+		dir.rename(temp, PATH)
 
 
 static func clear() -> void:
