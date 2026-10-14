@@ -60,6 +60,7 @@ func _fill() -> void:
 	for child in _body.get_children():
 		child.queue_free()
 	_heading("Career")
+	_line("Rank %d: %s  (%d XP)" % [Career.rank(), Career.rank_title(Career.rank()), Career.xp()])
 	for stat: String in Career.STATS:
 		_line("%s: %d" % [Career.STATS[stat], Career.stat(stat)])
 	_line("Monsters in your field guide: %d of %d" % [FieldGuide.discovered().size(), FieldGuide.ENTRIES.size()])

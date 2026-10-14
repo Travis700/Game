@@ -12,7 +12,7 @@ signal holding_changed(item: String)
 
 const ITEMS := {
 	"camera_kit": {
-		"name": "Spectral camera kit", "price": 150,
+		"name": "Spectral camera kit", "price": 150, "rank": 2,
 		"about": "Install it at a guard room desk: stand by the desk's chair and press G (it takes 10 seconds). That desk's monitors then show what ordinary cameras can't.",
 	},
 	"lucky_charm": {
@@ -28,11 +28,11 @@ const ITEMS := {
 		"about": "Press G to put it down. When something walks past tonight, everyone hears where.",
 	},
 	"glue_trap": {
-		"name": "Industrial glue trap", "price": 60,
+		"name": "Industrial glue trap", "price": 60, "rank": 2,
 		"about": "Press G to put it down. The first monster to step on it is stuck there for 20 seconds.",
 	},
 	"portable_camera": {
-		"name": "Portable camera", "price": 100,
+		"name": "Portable camera", "price": 100, "rank": 3,
 		"about": "Press G to set it up where you stand, pointing the way you're facing. It shows up on the guard room monitors (A / D to find it) until morning. Two at most.",
 	},
 	"radio": {
@@ -44,18 +44,26 @@ const ITEMS := {
 		"about": "Press G to drink it: you run faster for 30 seconds.",
 	},
 	"flashlight": {
-		"name": "Heavy-duty flashlight", "price": 80,
+		"name": "Heavy-duty flashlight", "price": 80, "rank": 3,
 		"about": "Press G to swap it for your flashlight. A longer, wider beam, for good. (The Librarian will notice it from further away too.)",
 	},
+	"air_horn": {
+		"name": "Air horn", "price": 70, "rank": 4,
+		"about": "Press G to blast it: every monster within 15 metres freezes for 6 seconds. Everything in the school hears it.",
+	},
 }
+## Every item needs at least this rank to buy, unless it says otherwise.
+const DEFAULT_RANK := 1
 ## Items used or put down with G (the rest are fitted with E).
-const USED_WITH_G: Array[String] = ["camera_kit", "portable_camera", "radio", "motion_sensor", "glue_trap", "energy_drink", "flashlight"]
+const USED_WITH_G: Array[String] = ["camera_kit", "portable_camera", "radio", "motion_sensor", "glue_trap", "energy_drink", "flashlight", "air_horn"]
 ## How far a motion sensor notices things, and how long it stays quiet after going off.
 const SENSOR_RANGE := 5.0
 const SENSOR_COOLDOWN := 30.0
 const TRAP_RANGE := 0.9
 const TRAP_SECONDS := 20.0
 const BOOST_SECONDS := 30.0
+const HORN_RANGE := 15.0
+const HORN_SECONDS := 6.0
 ## Where purchases land: the tray at the bottom of the vending machine.
 const TRAY := Vector3(18.75, 0.15, 16.6)
 
@@ -157,6 +165,17 @@ func _request_use() -> void:
 				target.y = 0.6
 				cameras.place_portable.rpc(slot, at, target)
 				_tell(peer, "Portable camera %d is up. Find it on the guard room monitors." % (slot + 1))
+		"air_horn":
+			if take(peer, item):
+				var frozen := 0
+				for monster in director.active_monsters():
+					if monster.global_position.distance_to(guard.global_position) < HORN_RANGE:
+						monster.stuck_in_trap = maxf(monster.stuck_in_trap, HORN_SECONDS)
+						frozen += 1
+				# As loud as it gets: everything listening for voices hears it.
+				director.report_voice(peer, 1.0)
+				_horn.rpc(peer)
+				_tell(peer, "HOOOONK. Everything nearby freezes." if frozen > 0 else "HOOOONK. Nothing nearby, but everything heard that.")
 		"energy_drink":
 			if take(peer, item):
 				if peer == multiplayer.get_unique_id():
@@ -339,6 +358,9 @@ func _request_buy(item: String) -> void:
 	if buyer == null or buyer.is_dead:
 		return
 	var price: int = ITEMS[item]["price"]
+	if buyer.rank < rank_needed(item):
+		_tell(peer, "That's for a %s or above." % Career.rank_title(rank_needed(item)))
+		return
 	if night.points_of(peer) < price:
 		_tell(peer, "You don't have enough points for that.")
 		return
@@ -351,6 +373,18 @@ func _request_buy(item: String) -> void:
 	_spawn_drop.rpc(_next_drop, item)
 	_next_drop += 1
 	_tell(peer, "Clunk. %s drops into the tray." % item_name(item))
+
+
+## The rank a guard needs to buy this item.
+static func rank_needed(item: String) -> int:
+	return ITEMS[item].get("rank", DEFAULT_RANK)
+
+
+@rpc("authority", "call_local", "reliable")
+func _horn(peer_id: int) -> void:
+	var guard := director.guard_by_peer(peer_id)
+	if guard:
+		Sfx.play_at(guard, Sfx.notes([233.0, 233.0, 233.0, 233.0, 233.0, 233.0], 0.14, 0.6, "saw"), 8.0, 80.0)
 
 
 @rpc("any_peer", "call_remote", "reliable")

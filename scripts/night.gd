@@ -18,6 +18,14 @@ const CORRECT_LOG_POINTS := 25
 const NAME_POINTS := 25
 const FALSE_REPORT_POINTS := 10
 const DEATH_PENALTY := 50
+## XP (career progress, kept across runs) for a night: clocking out (plus a bit per night of the
+## run), or just being there, and more for each correct log, named monster and punched station.
+const XP_CLOCKED_OUT := 100
+const XP_PER_NIGHT := 10
+const XP_CAUGHT := 25
+const XP_PER_LOG := 20
+const XP_PER_NAME := 20
+const XP_PER_PUNCH := 10
 ## Survive this night and the run is won.
 const LAST_NIGHT := 9
 ## The highest difficulty: the main building plus both wings.
@@ -371,7 +379,7 @@ func _end_night() -> void:
 	_award_night()
 	var round_text := "Round: %d of %d stations punched%s." % [rounds.punched.size(), rounds.order.size(),
 			" (complete, +%d each)" % Rounds.ROUND_BONUS if rounds.is_complete()
-			else ", %d missed (-%d each)" % [rounds.missed_count(), rounds.missed_count() * Rounds.MISSED_PENALTY]]
+			else ", %d missed (-%d for each guard)" % [rounds.missed_count(), rounds.missed_count() * Rounds.MISSED_PENALTY]]
 	rounds.clear()
 	var appeared := anomalies.appeared_count()
 	var missed := anomalies.missed_count()
@@ -453,7 +461,13 @@ func _build_rows(keep_pay: bool) -> Array:
 			_totals[peer] = maxi(_totals.get(peer, 0) + pay, 0)
 		else:
 			_totals[peer] = 0
+		var xp: int = (XP_CLOCKED_OUT + number * XP_PER_NIGHT if clocked_out else XP_CAUGHT) \
+				+ stats["correct"] * XP_PER_LOG + stats.get("named", 0) * XP_PER_NAME \
+				+ int(rounds.punches.get(peer, 0)) * XP_PER_PUNCH
+		if career:
+			career.add_xp(peer, xp)
 		rows.append({
+			"xp": xp,
 			"name": "Guard %d  #%04d" % [guard.slot, guard.employee_number], "clocked_out": clocked_out, "died": guard.is_dead,
 			"correct": stats["correct"], "correct_points": correct_points,
 			"false": stats["false"], "false_points": false_points,

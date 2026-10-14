@@ -8,8 +8,10 @@ var _table: GridContainer
 var _summary: Label
 var _next_button: Button
 var _waiting: Label
+## A promotion earned with this night's XP, shown at the bottom of the next report.
+var promotion := ""
 
-const COLUMNS := ["Guard", "Clocked out", "Correct logs", "False reports", "Round", "Tonight's pay", "Total"]
+const COLUMNS := ["Guard", "Clocked out", "Correct logs", "False reports", "Round", "Tonight's pay", "Total", "XP"]
 
 
 func _ready() -> void:
@@ -23,7 +25,7 @@ func _ready() -> void:
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
 	var column := VBoxContainer.new()
-	column.custom_minimum_size = Vector2(1000, 0)
+	column.custom_minimum_size = Vector2(1080, 0)
 	column.add_theme_constant_override("separation", 16)
 	center.add_child(column)
 
@@ -80,7 +82,11 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, outcom
 		_table.add_child(_cell("%d  (%+d)" % [row.get("punched", 0), row.get("round_points", 0)], 22))
 		_table.add_child(_cell("points lost" if row.get("lost", false) else "%+d" % row["pay"], 22))
 		_table.add_child(_cell(str(row["total"]), 22))
+		_table.add_child(_cell("+%d" % row.get("xp", 0), 22))
 	_summary.text = summary
+	if promotion != "":
+		_summary.text += "\n\n★ " + promotion + " ★"
+		promotion = ""
 	_next_button.text = {"caught": "Start over from night 1", "won": "Start a new run"}.get(outcome, "Start night %d" % (night + 1))
 	_next_button.visible = is_host
 	_waiting.visible = not is_host

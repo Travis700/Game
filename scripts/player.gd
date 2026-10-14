@@ -46,6 +46,9 @@ var slot := 1
 var employee_number := 0
 ## The player's name (their Steam name), or "" to show "Guard 2".
 var player_name := ""
+## The player's rank (1 = Trainee), from their career. Shown on their name tag; some vending
+## machine items need a higher rank.
+var rank := 1
 ## The guard room desk this guard is sitting at, or -1 when standing.
 var seated_desk := -1
 ## Mouse look is paused while a camera feed fills the screen.
@@ -148,16 +151,22 @@ func _process(_delta: float) -> void:
 			camera.fov = float(profile.get("fov"))
 
 
+## Redraws the name tag (e.g. after a promotion).
+func refresh_tag() -> void:
+	name_tag.text = _tag_text()
+
+
 ## Shows a "talking" marker on the name tag while this guard's voice is coming through.
 func show_talking(talking: bool) -> void:
 	name_tag.text = _tag_text() + ("\n((( talking )))" if talking else "")
 
 
-## "Guard 2  #1637", or "Sam (Guard 2)" with a Steam name.
+## "Guard 2  #1637", or "Sam (Guard 2)" with a Steam name, and their rank under it.
 func _tag_text() -> String:
+	var title := Career.rank_title(rank)
 	if player_name != "":
-		return "%s  (Guard %d)" % [player_name, slot]
-	return "Guard %d  #%04d" % [slot, employee_number]
+		return "%s  (Guard %d)\n%s" % [player_name, slot, title]
+	return "Guard %d  #%04d\n%s" % [slot, employee_number, title]
 
 
 func uniform_color() -> Color:

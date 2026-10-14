@@ -21,6 +21,8 @@ var _how_to_play: CanvasLayer
 var _records: CanvasLayer
 var _credits: CanvasLayer
 var _steam_label: Label
+var _rank_label: Label
+var _rank_bar: ProgressBar
 var _status: Label
 var _address: LineEdit
 var _password: LineEdit
@@ -74,6 +76,18 @@ func _ready() -> void:
 	badge.add_theme_font_size_override("font_size", 18)
 	badge.add_theme_color_override("font_color", Color(0.7, 0.9, 1.0))
 	column.add_child(badge)
+	_rank_label = Label.new()
+	_rank_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_rank_label.add_theme_font_size_override("font_size", 16)
+	column.add_child(_rank_label)
+	_rank_bar = ProgressBar.new()
+	_rank_bar.show_percentage = false
+	_rank_bar.custom_minimum_size = Vector2(0, 8)
+	column.add_child(_rank_bar)
+	_show_rank()
+	visibility_changed.connect(func() -> void:
+		if visible:
+			_show_rank())
 	_steam_label = Label.new()
 	_steam_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_steam_label.add_theme_font_size_override("font_size", 15)
@@ -257,3 +271,18 @@ func _spacer(height: float) -> Control:
 	var spacer := Control.new()
 	spacer.custom_minimum_size = Vector2(0, height)
 	return spacer
+
+
+## "Rank 3 · Patrol Officer · 1,450 / 2,500 XP", with a bar to the next rank.
+func _show_rank() -> void:
+	var xp := Career.xp()
+	var rank := Career.rank()
+	var floor_xp: int = Career.RANKS[rank - 1][0]
+	var next := Career.next_rank_xp(rank)
+	if next < 0:
+		_rank_label.text = "Rank %d · %s · %d XP" % [rank, Career.rank_title(rank), xp]
+		_rank_bar.value = _rank_bar.max_value
+	else:
+		_rank_label.text = "Rank %d · %s · %d / %d XP" % [rank, Career.rank_title(rank), xp, next]
+		_rank_bar.max_value = next - floor_xp
+		_rank_bar.value = xp - floor_xp

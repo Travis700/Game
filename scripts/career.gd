@@ -42,6 +42,13 @@ const STATS := {
 	"stations_punched": "Stations punched",
 }
 const MAX_SCORES := 10
+## Ranks: the XP needed for each, and its title. XP comes from every night worked, and stays
+## with the player across runs.
+const RANKS := [
+	[0, "Trainee"], [400, "Night Watch"], [1200, "Patrol Officer"], [2500, "Senior Guard"],
+	[4500, "Shift Supervisor"], [7500, "Head of Security"], [12000, "Night Warden"],
+	[20000, "Legend of Westfield"],
+]
 
 
 # --- Host: things happening to a guard ----------------------------------------------------
@@ -66,6 +73,16 @@ func logged_monster(peer_id: int, kind: String) -> void:
 		_saw_monster(kind)
 	elif peer_id in multiplayer.get_peers():
 		_saw_monster.rpc_id(peer_id, kind)
+
+
+## Host: XP for a guard's night.
+func add_xp(peer_id: int, amount: int) -> void:
+	if amount <= 0:
+		return
+	if peer_id == multiplayer.get_unique_id():
+		_add_xp(amount)
+	elif peer_id in multiplayer.get_peers():
+		_add_xp.rpc_id(peer_id, amount)
 
 
 ## Host: a run was won with these final points; each player keeps it in their best scores.
@@ -117,6 +134,18 @@ func _saw_monster(kind: String) -> void:
 
 
 @rpc("authority", "call_remote", "reliable")
+func _add_xp(amount: int) -> void:
+	var config := _load()
+	var before: int = config.get_value("career", "xp", 0)
+	config.set_value("career", "xp", before + amount)
+	config.save(PATH)
+	var old_rank := rank_of(before)
+	var new_rank := rank_of(before + amount)
+	if new_rank > old_rank:
+		get_tree().call_group("game", "on_rank_up", new_rank, rank_title(new_rank))
+
+
+@rpc("authority", "call_remote", "reliable")
 func _record_score(points: int, difficulty: int, guards: int) -> void:
 	var config := _load()
 	var scores: Array = config.get_value("career", "scores", [])
@@ -144,6 +173,32 @@ static func stat(name: String) -> int:
 
 static func best_scores() -> Array:
 	return _load().get_value("career", "scores", [])
+
+
+static func xp() -> int:
+	return _load().get_value("career", "xp", 0)
+
+
+## This player's rank, 1 (Trainee) and up.
+static func rank() -> int:
+	return rank_of(xp())
+
+
+static func rank_of(points: int) -> int:
+	var result := 1
+	for i in RANKS.size():
+		if points >= int(RANKS[i][0]):
+			result = i + 1
+	return result
+
+
+static func rank_title(rank_number: int) -> String:
+	return RANKS[clampi(rank_number, 1, RANKS.size()) - 1][1]
+
+
+## XP needed for the rank after this one, or -1 at the top.
+static func next_rank_xp(rank_number: int) -> int:
+	return int(RANKS[rank_number][0]) if rank_number < RANKS.size() else -1
 
 
 static func monsters_seen() -> Array:

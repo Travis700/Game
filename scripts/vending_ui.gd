@@ -10,6 +10,8 @@ var _points: Label
 var _holding: Label
 ## Items only useful with teammates: item id -> its Buy button.
 var _coop_buttons: Dictionary = {}
+## Item -> its Buy button.
+var _buy_buttons: Dictionary = {}
 var _first_buy: Array = []
 ## The co-op-only items.
 const COOP_ONLY: Array[String] = ["lucky_charm"]
@@ -79,10 +81,11 @@ func _ready() -> void:
 		row.add_child(text)
 		var buy := Button.new()
 		buy.text = "Buy"
-		buy.custom_minimum_size = Vector2(90, 44)
+		buy.custom_minimum_size = Vector2(110, 44)
 		buy.pressed.connect(func() -> void: buy_requested.emit(item))
 		if _first_buy.is_empty():
 			_first_buy.append(buy)
+		_buy_buttons[item] = buy
 		if item in COOP_ONLY:
 			_coop_buttons[item] = buy
 		row.add_child(buy)
@@ -95,11 +98,21 @@ func _ready() -> void:
 	column.add_child(hint)
 
 
-## `solo` greys out the things that only help a team.
-func open(points: int, holding: String, solo := false) -> void:
-	for button: Button in _coop_buttons.values():
-		button.disabled = solo
-		button.text = "Co-op only" if solo else "Buy"
+## `solo` greys out the things that only help a team, and `rank` the ones this guard can't buy yet.
+func open(points: int, holding: String, solo := false, rank := 1) -> void:
+	for item: String in _buy_buttons:
+		var button: Button = _buy_buttons[item]
+		var needed := Shop.rank_needed(item)
+		if rank < needed:
+			button.disabled = true
+			button.text = "Rank %d" % needed
+			button.tooltip_text = "Reach %s to buy this." % Career.rank_title(needed)
+		elif solo and item in COOP_ONLY:
+			button.disabled = true
+			button.text = "Co-op only"
+		else:
+			button.disabled = false
+			button.text = "Buy"
 	refresh(points, holding)
 	visible = true
 	is_open = true

@@ -407,7 +407,7 @@ func _play_solo() -> void:
 	director.bake_navigation()
 	_start_run()
 	_enter_school()
-	_spawn_guard(1, Profile.employee_number, _player_name())
+	_spawn_guard(1, Profile.employee_number, _player_name(), Career.rank())
 
 
 func _host() -> void:
@@ -435,7 +435,7 @@ func _begin_hosting() -> void:
 	director.bake_navigation()
 	_start_run()
 	_enter_school()
-	_spawn_guard(1, Profile.employee_number, _player_name())
+	_spawn_guard(1, Profile.employee_number, _player_name(), Career.rank())
 
 
 func _join(typed: String) -> void:
@@ -534,7 +534,7 @@ func _on_steam_invite(lobby_id: int) -> void:
 func _on_connected_to_server() -> void:
 	_mode = "Connected"
 	_enter_school()
-	_register_employee.rpc_id(1, Profile.employee_number, _password, _player_name())
+	_register_employee.rpc_id(1, Profile.employee_number, _password, _player_name(), Career.rank())
 	print("[net] Joined as peer %d" % multiplayer.get_unique_id())
 
 
@@ -578,7 +578,7 @@ func _on_peer_connected(peer_id: int) -> void:
 
 ## Host: a player who just joined shows their badge. Their guard spawns with it.
 @rpc("any_peer", "call_remote", "reliable")
-func _register_employee(badge: int, password: String, player_name := "") -> void:
+func _register_employee(badge: int, password: String, player_name := "", rank := 1) -> void:
 	var peer_id := multiplayer.get_remote_sender_id()
 	if not multiplayer.is_server() or players.has_node(str(peer_id)):
 		return
@@ -594,7 +594,7 @@ func _register_employee(badge: int, password: String, player_name := "") -> void
 	# Two copies of the game on one computer share a badge. Lend the second one a spare.
 	while badge < 1000 or _badge_in_use(badge):
 		badge = randi_range(1000, 9999)
-	_spawn_guard(peer_id, badge, player_name)
+	_spawn_guard(peer_id, badge, player_name, rank)
 	shop.send_state_to(peer_id)
 	doors.send_state_to(peer_id)
 	_sync_session.rpc_id(peer_id, night.number, night.difficulty)
@@ -624,11 +624,11 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 ## Host only. The spawner runs _create_guard with the same data on every computer,
 ## including players who join later.
-func _spawn_guard(peer_id: int, badge: int, player_name := "") -> void:
+func _spawn_guard(peer_id: int, badge: int, player_name := "", rank := 1) -> void:
 	# Personal upgrades go in the spawn data so every computer builds the guard with them.
 	var personal: Array = night.saved_personal.get(str(badge), [])
 	spawner.spawn({"peer_id": peer_id, "slot": _free_slot(), "badge": badge, "personal": personal,
-			"name": player_name.left(24)})
+			"name": player_name.left(24), "rank": clampi(rank, 1, Career.RANKS.size())})
 	night.restore_guard(peer_id, badge)
 
 
@@ -638,6 +638,7 @@ func _create_guard(data: Dictionary) -> Node:
 	guard.slot = data["slot"]
 	guard.employee_number = data.get("badge", 0)
 	guard.player_name = data.get("name", "")
+	guard.rank = data.get("rank", 1)
 	guard.bright_flashlight = "flashlight" in data.get("personal", [])
 	guard.has_radio = "radio" in data.get("personal", [])
 	guard.position = SPAWN_POINT + Vector3((guard.slot - 2.5) * 1.4, 0, 0)
@@ -994,7 +995,7 @@ func _on_vending_used(by: Node) -> void:
 		hud.show_message("The vending machine is dead. No power.")
 		return
 	_local_guard.input_blocked = true
-	vending.open(shop.local_points, shop.local_item, _mode == "solo")
+	vending.open(shop.local_points, shop.local_item, _mode == "solo", _local_guard.rank)
 
 
 func _refresh_inventory() -> void:
@@ -1021,6 +1022,44 @@ func _refresh_guard_visibility() -> void:
 
 
 ## Every computer: this player just unlocked an achievement.
+## Called (through the "game" group) when this player reaches a new rank.
+func on_rank_up(rank: int, title: String) -> void:
+	hud.show_message("PROMOTED: you're now a %s (rank %d)." % [title, rank])
+	night.report.promotion = "Promoted to %s (rank %d)." % [title, rank]
+	var unlocked: Array[String] = []
+	for item: String in Shop.ITEMS:
+		if Shop.rank_needed(item) == rank:
+			unlocked.append(Shop.item_name(item))
+	if not unlocked.is_empty():
+		night.report.promotion += " New at the vending machine: " + ", ".join(unlocked) + "."
+	Sfx.play_flat(self, Sfx.notes([523.0, 659.0, 784.0, 1047.0], 0.14, 0.3, "triangle"))
+	if _local_guard:
+		_local_guard.rank = rank
+		if multiplayer.is_server():
+			_request_rank(rank)
+		else:
+			_request_rank.rpc_id(1, rank)
+
+
+## Host: a guard was promoted mid-session; everyone updates their name tag (and the shop knows).
+@rpc("any_peer", "call_remote", "reliable")
+func _request_rank(rank: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer := multiplayer.get_remote_sender_id()
+	if peer == 0:
+		peer = multiplayer.get_unique_id()
+	_set_rank.rpc(peer, clampi(rank, 1, Career.RANKS.size()))
+
+
+@rpc("authority", "call_local", "reliable")
+func _set_rank(peer_id: int, rank: int) -> void:
+	var guard := players.get_node_or_null(str(peer_id)) as Guard
+	if guard:
+		guard.rank = rank
+		guard.refresh_tag()
+
+
 func on_achievement(title: String) -> void:
 	hud.show_message("Achievement unlocked: %s" % title)
 	Sfx.play_flat(self, Sfx.notes([784.0, 988.0, 1175.0, 1568.0], 0.09, 0.22, "sine"))
