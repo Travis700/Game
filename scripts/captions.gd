@@ -29,6 +29,7 @@ const SOUNDS := {
 	"Substitute:detention": "A bell: detention",
 	"Twin:moving": "Giggling",
 	":hunt": "Running footsteps",
+	"Speaker:lure": "An alarm from a camera speaker",
 }
 const HEARING := 30.0
 const SHOW_SECONDS := 4.0

@@ -53,6 +53,11 @@ func _shelve(delta: float) -> void:
 			what = "voice"
 		director.tell(offender.name.to_int(), "\"Shhh.\" Something in the stacks doesn't like your %s." % what)
 		return
+	# A noise in the stacks: she goes to see who's making it.
+	var noise := director.noise_near(global_position, 25.0)
+	if noise != Vector3.INF:
+		move_to(noise, SHELVE_SPEED * 2.0)
+		return
 	patrol_step(STOPS, delta, SHELVE_SPEED, Vector2(5.0, 10.0), 3)
 
 

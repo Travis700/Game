@@ -19,6 +19,8 @@ const GHOST_PING_EVERY := 4.0
 const GHOST_PING_SECONDS := 6.0
 ## How long a flagged camera's marker shows.
 const FLAG_SECONDS := 20.0
+## Real seconds between camera speaker noises, per guard.
+const LURE_COOLDOWN := 60.0
 ## Real seconds between the last guard being caught and the night's results.
 const SCARE_SECONDS := 2.0
 
@@ -65,6 +67,8 @@ var _spectating: Guard
 ## The notice board in the guard room: tonight's shift notes, bonus objective and round.
 var _tonight_board: Label3D
 var _board_timer := 0.0
+## Host: when each guard can next use a camera speaker.
+var _lure_ready: Dictionary = {}
 var hiding: Hiding
 ## Host: when each ghost may next leave a cold spot.
 var _ghost_ping_at: Dictionary = {}
@@ -849,6 +853,11 @@ func on_local_guard_ready(guard: Guard) -> void:
 	guard_room.local_guard = guard
 	if not guard_room.camera_pinged.is_connected(_on_camera_pinged):
 		guard_room.camera_pinged.connect(_on_camera_pinged)
+		guard_room.camera_lured.connect(func(camera_index: int) -> void:
+			if multiplayer.is_server():
+				_request_lure(camera_index)
+			else:
+				_request_lure.rpc_id(1, camera_index))
 	cameras.viewer = guard
 	ambience.listener = guard
 	captions.local_guard = guard
@@ -1131,6 +1140,41 @@ func _flag(area: String, who: String) -> void:
 	fade.tween_callback(marker.queue_free)
 	hud.show_message("%s flagged the %s camera." % [who, area])
 	Sfx.play_flat(self, Sfx.notes([1046.0, 1318.0], 0.08, 0.2, "triangle"), -6.0)
+
+
+## Host: a guard at the monitors set off a camera's speaker. Monsters that listen come running.
+@rpc("any_peer", "call_remote", "reliable")
+func _request_lure(camera_index: int) -> void:
+	var peer := multiplayer.get_remote_sender_id()
+	if peer == 0:
+		peer = multiplayer.get_unique_id()
+	var guard := players.get_node_or_null(str(peer)) as Guard
+	if guard == null or guard.is_dead or shift.state != Shift.State.ON_SHIFT or camera_index < 0 or camera_index >= cameras.count():
+		return
+	var now := Time.get_ticks_msec() / 1000.0
+	var ready_at := float(_lure_ready.get(peer, 0.0))
+	if now < ready_at:
+		_tell(peer, "The speaker's still recharging (%d s)." % ceili(ready_at - now))
+		return
+	if not cameras.is_working(camera_index):
+		_tell(peer, "That camera's not working.")
+		return
+	_lure_ready[peer] = now + LURE_COOLDOWN
+	var at := cameras.camera(camera_index).global_position
+	at.y = 0.0
+	director.make_noise(at)
+	_lure_sound.rpc(at)
+	_tell(peer, "A burst of static and an alarm tone from the %s camera. Anything that listens will go and look." % cameras.area_of(camera_index))
+
+
+@rpc("authority", "call_local", "reliable")
+func _lure_sound(at: Vector3) -> void:
+	var spot := Node3D.new()
+	add_child(spot)
+	spot.global_position = at + Vector3(0, 2.5, 0)
+	Sfx.play_at(spot, Sfx.notes([1.0, 1.0, 900.0, 1200.0, 900.0, 1200.0, 900.0], 0.2, 0.4, "square"), 4.0, 45.0)
+	get_tree().create_timer(3.0).timeout.connect(spot.queue_free)
+	captions.heard("Speaker", "lure", at)
 
 
 ## A ghost pressed G: the next living teammate's view, then back to wandering about.

@@ -339,6 +339,8 @@ func _handle_desk_input(event: InputEvent) -> bool:
 		action = "compare"
 	elif event.is_action_pressed("ping"):
 		action = "ping"
+	elif event.is_action_pressed("flashlight") and look_locked:
+		action = "lure"
 	elif event.is_action_pressed("move_back"):
 		action = "stand"
 	elif event.is_action_pressed("pause") and look_locked:

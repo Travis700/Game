@@ -30,7 +30,12 @@ func think(delta: float) -> void:
 			_target = null
 			state = "patrol"
 		return
-	patrol_step(HALL_ENDS, delta, PATROL_SPEED, Vector2.ZERO)
+	# Noise in the halls: it goes to check.
+	var noise := director.noise_near(global_position, 25.0)
+	if noise != Vector3.INF:
+		move_to(noise, PATROL_SPEED * 2.0)
+	else:
+		patrol_step(HALL_ENDS, delta, PATROL_SPEED, Vector2.ZERO)
 	var runner := find_guard(SIGHT_RANGE, true, func(guard: Guard) -> bool: return guard.is_running)
 	if runner == null:
 		runner = find_guard(HEAR_SHOUT, false, func(guard: Guard) -> bool:

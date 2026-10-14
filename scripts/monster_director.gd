@@ -85,6 +85,8 @@ var _lockdown_times: Array[float] = []
 var nerve: Nerve
 ## Host: whether the last correct Monster log was the first guard to log that monster.
 var last_log_was_first := true
+## Host: recent loud noises: [position, until (real seconds)].
+var _noises: Array = []
 
 var night_number := 1
 ## Tonight's difficulty: which wings are open. Monsters only come from open areas.
@@ -606,6 +608,26 @@ func kill(guard: Guard, by: String, from := Vector3.INF) -> void:
 ## How much further than usual monsters notice this guard (their nerve).
 func nerve_reach(guard: Guard) -> float:
 	return nerve.reach_factor(guard) if nerve else 1.0
+
+
+## Host: a loud noise somewhere (e.g. a camera speaker), for monsters that hunt by sound.
+func make_noise(at: Vector3, seconds := 6.0) -> void:
+	_noises.append([at, _minutes_clock() + seconds])
+
+
+## Host: the newest noise still going within `reach` of `from`, or Vector3.INF.
+func noise_near(from: Vector3, reach: float) -> Vector3:
+	var now := _minutes_clock()
+	var found := Vector3.INF
+	for noise: Array in _noises:
+		if float(noise[1]) >= now and (noise[0] as Vector3).distance_to(from) < reach:
+			found = noise[0]
+	_noises = _noises.filter(func(noise: Array) -> bool: return float(noise[1]) >= now)
+	return found
+
+
+func _minutes_clock() -> float:
+	return Time.get_ticks_msec() / 1000.0
 
 
 func flash_screen(peer_id: int, color: Color, seconds: float) -> void:

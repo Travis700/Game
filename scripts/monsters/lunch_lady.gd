@@ -18,6 +18,9 @@ const HOME: Array[AABB] = [
 	AABB(Vector3(-4, 0, -29), Vector3(8, 1, 16)),
 ]
 
+## How far she hears a loud noise (a camera speaker).
+const NOISE_REACH := 40.0
+
 var _wander_target := Vector3.ZERO
 var _wander_timer := 0.0
 var _heard_at := Vector3.ZERO
@@ -56,6 +59,11 @@ func _listen() -> bool:
 		if reach > 0.0 and distance_to_guard(guard) < reach:
 			_heard_at = guard.global_position
 			return true
+	# Or anything loud nearby, like a camera speaker.
+	var noise := director.noise_near(global_position, NOISE_REACH)
+	if noise != Vector3.INF:
+		_heard_at = noise
+		return true
 	return false
 
 

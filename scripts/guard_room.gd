@@ -8,6 +8,8 @@ extends Node
 
 ## The local guard flagged a camera for the team (Q at a desk).
 signal camera_pinged(camera_index: int)
+## The local guard played a noise through a camera's speaker (F, full screen).
+signal camera_lured(camera_index: int)
 
 const CCTV_SHADER := preload("res://shaders/cctv.gdshader")
 ## Monitors sit on their own physics layer, so only a seated guard's view can pick them out.
@@ -147,6 +149,9 @@ func on_desk_action(action: String) -> void:
 		"ping":
 			if monitor >= 0:
 				camera_pinged.emit(assignments[monitor])
+		"lure":
+			if _zoomed >= 0:
+				camera_lured.emit(assignments[_zoomed])
 		"compare":
 			if _zoomed < 0 and monitor >= 0:
 				_toggle_zoom(monitor)
@@ -221,8 +226,8 @@ func _update_controls_hint() -> void:
 	elif local_guard.seated_desk < 0:
 		hud.set_controls("")
 	elif _zoomed >= 0:
-		hud.set_controls("%s / %s  change camera     %s  compare with tonight's photo     %s  flag it for the team     %s  back     %s  log it" % [
-			_key("move_left"), _key("move_right"), _key("compare"), _key("ping"), _key("zoom"), _key("clipboard")])
+		hud.set_controls("%s / %s  change camera     %s  compare     %s  flag it     %s  noise through its speaker     %s  back     %s  log it" % [
+			_key("move_left"), _key("move_right"), _key("compare"), _key("ping"), _key("flashlight"), _key("zoom"), _key("clipboard")])
 	elif _focused >= 0:
 		hud.set_controls("%s / %s  change camera     %s  full screen     %s  compare with photo     %s  log     %s  stand up" % [
 			_key("move_left"), _key("move_right"), _key("zoom"), _key("compare"), _key("clipboard"), _key("move_back")])
