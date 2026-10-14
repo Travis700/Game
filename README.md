@@ -42,7 +42,9 @@ the internet if the host forwards port 7777 on their router. Steam lobbies will 
   into the time clock to clock in, and your saved points are linked to it.
 - **Difficulty** sets how much of the school is open. *Auto* picks one level per guard.
   1 is the main building, 2 adds the classroom wing, 3 adds the science wing too. Each wing has its own monsters.
-- **Keep gear if the whole team is caught:** upgrades and carried items survive a restart (points don't).
+- **Checkpoints and Hardcore:** if the whole team is caught, the run goes back to the last checkpoint
+  (night 1, 4 or 7): everyone keeps their gear and half their points. Tick **Hardcore** for the old rule:
+  back to night 1 with nothing. (A wipe in Overtime ends the run.)
 - **Continue saved run** appears once you've finished a night. The host's computer saves after every night
   report: the next night, the difficulty, upgrades, and each guard's points and item (by badge number).
   Survive night 9 and the run is won.

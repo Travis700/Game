@@ -69,6 +69,11 @@ var difficulty := 0
 var difficulty_choice := 0
 ## Host: upgrades and carried items survive the whole team being caught.
 var keep_gear := false
+## Host: Hardcore runs go back to night 1 with nothing when the team is caught; otherwise to the
+## last checkpoint (nights 1, 4 and 7) with gear kept and points halved.
+var hardcore := false
+## Host: where a run picks up after a wipe (0 = not restarting at a checkpoint).
+var _restart_at := 0
 ## Host: points and carried items from the saved run, by badge number (as text).
 var saved_points: Dictionary = {}
 var saved_items: Dictionary = {}
@@ -355,7 +360,7 @@ func save_run(next_night: int, in_progress := false) -> void:
 			saved_items.erase(key)
 		saved_personal[key] = shop.owned_by(peer)
 	RunSave.write({
-		"night": next_night, "difficulty": difficulty_choice, "keep_gear": keep_gear,
+		"night": next_night, "difficulty": difficulty_choice, "keep_gear": keep_gear, "hardcore": hardcore,
 		"points": saved_points, "items": saved_items, "upgrades": guard_room.upgraded.duplicate(),
 		"run_stats": _run_stats, "run_nights": _run_nights,
 		"doors": doors.installed.duplicate(), "personal": saved_personal, "in_progress": in_progress,
@@ -409,6 +414,9 @@ func fail_night() -> void:
 	phone.end_night()
 	hiding.release_all()
 	nerve.reset()
+	if daily == "" and not hardcore and number <= LAST_NIGHT:
+		_fail_to_checkpoint()
+		return
 	_restart_run = true
 	var rows := _build_rows(false)
 	rounds.clear()
@@ -435,6 +443,32 @@ func fail_night() -> void:
 	_show_report.rpc(number, rows, summary, "caught")
 	run_team = 0
 	save_run(1)
+
+
+## The first night of the stretch this night is in: 1, 4 or 7.
+static func checkpoint_for(night_number: int) -> int:
+	return 1 + int((clampi(night_number, 1, LAST_NIGHT) - 1) / 3.0) * 3
+
+
+## Host: the team was caught on an ordinary (not Hardcore) run. Back to the last checkpoint:
+## tonight's pay still counts, everyone keeps their gear, and then points are halved.
+func _fail_to_checkpoint() -> void:
+	var rows := _build_rows(true)
+	rounds.clear()
+	bonus.clear()
+	conditions.clear()
+	_run_nights += 1
+	_restart_at = checkpoint_for(number)
+	for peer: int in _totals:
+		_totals[peer] = int(_totals[peer] / 2)
+	for badge: String in saved_points:
+		saved_points[badge] = int(int(saved_points[badge]) / 2)
+	for row: Dictionary in rows:
+		row["total"] = int(int(row["total"]) / 2)
+	var summary := "The whole team was caught at %s.\nBack to night %d, the last checkpoint. You keep your gear; everyone's points are halved." % [time_text(), _restart_at]
+	_show_report.rpc(number, rows, summary, "checkpoint:%d" % _restart_at)
+	shop.push_wallets()
+	save_run(_restart_at)
 
 
 func _end_night() -> void:
@@ -688,7 +722,8 @@ func _on_next_night_requested() -> void:
 	if multiplayer.is_server():
 		anomalies.reset_all()
 		doors.reset_for_night()
-		var next := 1 if _restart_run else number + 1
+		var next := 1 if _restart_run else (_restart_at if _restart_at > 0 else number + 1)
+		_restart_at = 0
 		if _restart_run:
 			run_team = 0
 		if _won:

@@ -69,7 +69,8 @@ func _ready() -> void:
 
 
 ## `rows` is one dictionary per guard; see Night._build_report.
-## `outcome` is "night" (an ordinary night), "caught" (everyone was caught) or "won" (the last night).
+## `outcome` is "night" (an ordinary night), "caught" (everyone was caught, back to night 1),
+## "checkpoint:N" (caught, back to night N), "won", "overtime", "daily" or "training".
 func show_report(night: int, rows: Array, summary: String, is_host: bool, outcome := "night") -> void:
 	match outcome:
 		"caught":
@@ -84,6 +85,8 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, outcom
 			_title.text = "OVERTIME: NIGHT %d SURVIVED" % night
 		_:
 			_title.text = "NIGHT %d REPORT" % night
+	if outcome.begins_with("checkpoint"):
+		_title.text = "NIGHT %d: EVERYONE WAS CAUGHT" % night
 	for child in _table.get_children():
 		child.queue_free()
 	for heading in COLUMNS:
@@ -101,7 +104,7 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, outcom
 	if promotion != "":
 		_summary.text += "\n\n★ " + promotion + " ★"
 		promotion = ""
-	_next_button.text = {"caught": "Start over from night 1", "won": "Start a new run", "daily": "Back to the menu", "training": "Back to the menu"}.get(outcome, "Start night %d" % (night + 1))
+	_next_button.text = "Back to night %d" % outcome.get_slice(":", 1).to_int() if outcome.begins_with("checkpoint") else {"caught": "Start over from night 1", "won": "Start a new run", "daily": "Back to the menu", "training": "Back to the menu"}.get(outcome, "Start night %d" % (night + 1))
 	_next_button.visible = is_host
 	_overtime_button.visible = is_host and outcome == "won"
 	_overtime_button.text = "Keep going: Overtime (night %d)" % (night + 1)

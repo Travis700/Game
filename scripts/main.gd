@@ -501,7 +501,7 @@ func _play_solo() -> void:
 func _play_daily() -> void:
 	menu._continue.button_pressed = false
 	night.daily = Daily.today()
-	night.keep_gear = false
+	night.hardcore = false
 	_play_solo()
 	night.number = Daily.night_of(night.daily)
 	night.give_everyone(Daily.STARTING_POINTS)
@@ -516,7 +516,7 @@ func _play_training() -> void:
 	training.hud = hud
 	add_child(training)
 	night.training = training
-	night.keep_gear = false
+	night.hardcore = false
 	_play_solo()
 	night.number = 1
 	training.guard = _local_guard
@@ -575,7 +575,7 @@ func _join(typed: String) -> void:
 func _start_run() -> void:
 	var options: Dictionary = menu.options()
 	night.difficulty_choice = options["difficulty"]
-	night.keep_gear = options["keep_gear"]
+	night.hardcore = options["hardcore"]
 	# The daily shift is the same length for everyone.
 	night.seconds_per_minute = Night.SECONDS_PER_MINUTE if night.daily != "" else options["seconds_per_minute"]
 	_password = options["password"]

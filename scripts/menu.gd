@@ -220,7 +220,7 @@ func _ready() -> void:
 func options() -> Dictionary:
 	return {
 		"difficulty": _difficulty.selected,
-		"keep_gear": _keep_gear.button_pressed,
+		"hardcore": _keep_gear.button_pressed,
 		"continue": _continue.visible and _continue.button_pressed,
 		"password": _password.text,
 		"seconds_per_minute": float(NIGHT_LENGTHS[maxi(_night_length.selected, 0)][1]),
@@ -253,9 +253,9 @@ func _add_run_options(column: VBoxContainer) -> void:
 	_explain_difficulty()
 
 	_keep_gear = CheckBox.new()
-	_keep_gear.text = "Keep gear if the whole team is caught"
-	_keep_gear.tooltip_text = "Upgrades and carried items survive a restart. Points still go back to zero."
-	_keep_gear.button_pressed = bool(saved.get("keep_gear", false))
+	_keep_gear.text = "Hardcore"
+	_keep_gear.tooltip_text = "Normally, if the whole team is caught you go back to the last checkpoint (nights 1, 4 and 7) with your gear and half your points. Hardcore: back to night 1 with nothing."
+	_keep_gear.button_pressed = bool(saved.get("hardcore", false))
 	_keep_gear.add_theme_font_size_override("font_size", 17)
 	_keep_gear.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var row := HBoxContainer.new()
