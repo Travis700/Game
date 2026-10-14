@@ -65,6 +65,10 @@ the internet if the host forwards port 7777 on their router. Steam lobbies will 
    punched, -10 each per station missed, and -50 for every guard caught that night (everyone pays;
    a revive at a totem refunds it). It also shows the XP everyone earned.
 
+**Work target:** from night 2 the team must earn (30 + 22 × night) points per guard from work: correct logs,
+named monsters and punched stations (not clocking out). Miss it and everyone gets a write-up; three write-ups
+and the team is fired, back to the last checkpoint (night 1 on Hardcore). Shown under the clock and on the board.
+
 **Power cuts:** from night 2 the power goes out now and then (more often later in the run). The lights
 die, every camera shows NO POWER and the vending machine stops; only red emergency lights are left.
 Reset the breaker in the custodian's closet (across the main hallway from the lobby) by holding E on it.

@@ -74,6 +74,18 @@ var keep_gear := false
 ## Host: Hardcore runs go back to night 1 with nothing when the team is caught; otherwise to the
 ## last checkpoint (nights 1, 4 and 7) with gear kept and points halved.
 var hardcore := false
+## The nightly work target (from night 2): the team has to earn this many points from real work
+## (logs, naming, stations) per guard. Miss it and everyone gets a write-up; three and the
+## district lets the team go (back to the last checkpoint, or night 1 on Hardcore).
+const QUOTA_BASE := 30
+const QUOTA_PER_NIGHT := 22
+const WRITE_UPS_TO_FIRE := 3
+var write_ups := 0
+## Host: tonight's team target (0 = none tonight).
+var quota_target := 0
+## Every computer: "Work target: 85 / 160   ·   write-ups 1 of 3", or "".
+var quota_text := ""
+var _quota_timer := 0.0
 ## Host: where a run picks up after a wipe (0 = not restarting at a checkpoint).
 var _restart_at := 0
 ## Host: points and carried items from the saved run, by badge number (as text).
@@ -180,6 +192,7 @@ func _on_shift_started() -> void:
 	rounds.plan(number, difficulty)
 	bonus.pick(number)
 	nerve.reset()
+	quota_target = 0 if number < 2 or daily != "" else (QUOTA_BASE + QUOTA_PER_NIGHT * number) * players.get_child_count()
 	power.plan(number)
 	phone.plan(number)
 	# Totems only matter with teammates to bring back; alone, being caught ends the run.
@@ -209,6 +222,10 @@ func _run_shift(delta: float) -> void:
 	phone.update(minutes, delta)
 	bonus.update(minutes, delta)
 	nerve.update(delta)
+	_quota_timer -= delta
+	if _quota_timer <= 0.0:
+		_quota_timer = 1.0
+		_send_quota()
 	shop.update(delta)
 	doors.update(delta)
 
@@ -370,7 +387,7 @@ func save_run(next_night: int, in_progress := false) -> void:
 	RunSave.write({
 		"night": next_night, "difficulty": difficulty_choice, "keep_gear": keep_gear, "hardcore": hardcore,
 		"points": saved_points, "items": saved_items, "upgrades": guard_room.upgraded.duplicate(),
-		"run_stats": _run_stats, "run_nights": _run_nights,
+		"run_stats": _run_stats, "run_nights": _run_nights, "write_ups": write_ups,
 		"doors": doors.installed.duplicate(), "personal": saved_personal, "in_progress": in_progress,
 		"spent": shop.spent, "team": run_team,
 	})
@@ -422,6 +439,8 @@ func fail_night() -> void:
 	phone.end_night()
 	hiding.release_all()
 	nerve.reset()
+	quota_target = 0
+	_show_quota.rpc("")
 	if daily == "" and not hardcore and number <= LAST_NIGHT:
 		_fail_to_checkpoint()
 		return
@@ -451,6 +470,34 @@ func fail_night() -> void:
 	_show_report.rpc(number, rows, summary, "caught")
 	run_team = 0
 	save_run(1)
+
+
+## Host: points the team has earned tonight from work (not from clocking out).
+func _team_work() -> int:
+	var total := 0
+	for peer: int in _stats:
+		var stats: Dictionary = _stats[peer]
+		total += int(stats["correct"]) * CORRECT_LOG_POINTS + int(stats.get("named", 0)) * NAME_POINTS \
+				+ int(stats.get("confirmed", 0)) * CONFIRM_POINTS
+	for peer: int in rounds.punches:
+		total += int(rounds.punches[peer]) * rounds.punch_points()
+	return total
+
+
+func _send_quota() -> void:
+	var text := ""
+	if quota_target > 0:
+		text = "Work target: %d / %d" % [mini(_team_work(), quota_target), quota_target]
+		if _team_work() >= quota_target:
+			text += " (met)"
+		if write_ups > 0:
+			text += "   ·   write-ups %d of %d" % [write_ups, WRITE_UPS_TO_FIRE]
+	_show_quota.rpc(text)
+
+
+@rpc("authority", "call_local", "reliable")
+func _show_quota(text: String) -> void:
+	quota_text = text
 
 
 ## The first night of the stretch this night is in: 1, 4 or 7.
@@ -483,6 +530,7 @@ func _end_night() -> void:
 	if shift.state != Shift.State.MORNING:
 		return
 	var rows := _build_rows(true)
+	var work := _team_work()
 	_run_nights += 1
 	_award_night()
 	var round_text := "Round: %d of %d stations punched%s." % [rounds.punched.size(), rounds.order.size(),
@@ -510,6 +558,31 @@ func _end_night() -> void:
 	if daily != "":
 		var row: Dictionary = rows[0] if not rows.is_empty() else {}
 		_finish_daily(rows, int(row.get("pay", 0)), summary)
+		return
+	var fired := false
+	if quota_target > 0 and number != LAST_NIGHT:
+		if work >= quota_target:
+			summary = "Work target met: %d / %d.\n" % [work, quota_target] + summary
+		else:
+			write_ups += 1
+			fired = write_ups >= WRITE_UPS_TO_FIRE
+			summary = "WRITE-UP %d of %d: the team only managed %d of tonight's %d work target.\n" % [
+					write_ups, WRITE_UPS_TO_FIRE, work, quota_target] + summary
+	quota_target = 0
+	_show_quota.rpc("")
+	if fired:
+		write_ups = 0
+		if hardcore:
+			_restart_run = true
+			summary = "FIRED. Three write-ups, and the district lets the whole team go. A new crew starts from night 1.\n" + summary
+			_show_report.rpc(number, rows, summary, "fired:1")
+			save_run(1)
+		else:
+			_restart_at = checkpoint_for(number)
+			summary = "FIRED. Three write-ups. You're rehired on probation from night %d, the last checkpoint.\n" % _restart_at + summary
+			_show_report.rpc(number, rows, summary, "fired:%d" % _restart_at)
+			shop.push_wallets()
+			save_run(_restart_at)
 		return
 	if number == LAST_NIGHT:
 		_won = true
@@ -598,6 +671,7 @@ func _run_summary() -> String:
 func _forget_run() -> void:
 	_run_stats.clear()
 	_run_nights = 0
+	write_ups = 0
 
 
 ## Co-op only: who did best tonight, e.g. "Sharpest eyes: Sam (4 logs)  ·  Night watchman: Guard 2 (3 stations)".

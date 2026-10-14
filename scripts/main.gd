@@ -608,6 +608,7 @@ func _start_run() -> void:
 	night.run_team = int(saved.get("team", 0))
 	night._run_stats = saved.get("run_stats", {})
 	night._run_nights = int(saved.get("run_nights", 0))
+	night.write_ups = int(saved.get("write_ups", 0))
 	# Saves from before the walkie-talkie listed flashlights on their own.
 	for badge: String in saved.get("bright", []):
 		var list: Array = night.saved_personal.get_or_add(badge, [])
@@ -909,6 +910,8 @@ func _objective() -> String:
 			var round_text := rounds.objective_text()
 			if round_text != "":
 				text += "\n" + round_text
+			if night.quota_text != "":
+				text += "\n" + night.quota_text
 			if night.bonus.status != "":
 				text += "\n" + night.bonus.status
 			if not night.conditions.active.is_empty():
@@ -1083,6 +1086,8 @@ func _update_tonight_board() -> void:
 		lines.append("Shift notes: none")
 	else:
 		lines.append("Shift notes: " + ", ".join(night.conditions.names()))
+	if night.quota_text != "":
+		lines.append(night.quota_text)
 	if night.bonus.status != "":
 		lines.append(night.bonus.status)
 	var round_text := rounds.objective_text()
