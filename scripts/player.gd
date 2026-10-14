@@ -20,7 +20,9 @@ signal leave_hiding_requested
 ## G as a ghost: watch through the next living teammate's eyes (or back to your own).
 signal spectate_requested
 ## E as a ghost: leave a cold spot where you're looking, for the living to see.
-signal ghost_ping_requested(at: Vector3)
+signal ghost_ping_requested(at: Vector3, touched: Object)
+## E with nothing in front of you: throw what you're carrying, if anything.
+signal throw_requested
 
 const WALK_SPEED := 3.2
 const SPRINT_SPEED := 5.6
@@ -444,17 +446,19 @@ func _interact() -> void:
 		_hold_time = 0.0
 	elif target:
 		target.interact(self)
+	else:
+		throw_requested.emit()
 
 
 ## Where a ghost is looking: the first thing within 25 metres, or 25 metres out.
 func _ghost_ping() -> void:
 	var from := camera.global_position
 	var to := from - camera.global_basis.z * 25.0
-	var query := PhysicsRayQueryParameters3D.create(from, to, 1)
+	var query := PhysicsRayQueryParameters3D.create(from, to, 1 | Interactable.TALK_LAYER)
 	query.exclude = [get_rid()]
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	var at: Vector3 = hit["position"] + (hit["normal"] as Vector3) * 0.3 if not hit.is_empty() else to
-	ghost_ping_requested.emit(at)
+	ghost_ping_requested.emit(at, hit.get("collider"))
 
 
 ## Counts up while E stays held on the same thing, and uses it once it's been held long enough.

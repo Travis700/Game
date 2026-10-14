@@ -70,6 +70,7 @@ var _board_timer := 0.0
 ## Host: when each guard can next use a camera speaker.
 var _lure_ready: Dictionary = {}
 var hiding: Hiding
+var clutter: Clutter
 ## Host: when each ghost may next leave a cold spot.
 var _ghost_ping_at: Dictionary = {}
 var power: Power
@@ -326,6 +327,12 @@ func _ready() -> void:
 	hiding.hud = hud
 	add_child(hiding)
 	night.hiding = hiding
+	clutter = Clutter.new()
+	clutter.name = "Clutter"
+	clutter.director = director
+	add_child(clutter)
+	clutter.carried_changed.connect(_refresh_inventory)
+	night.clutter = clutter
 	var nerve := Nerve.new()
 	nerve.name = "Nerve"
 	nerve.director = director
@@ -749,6 +756,8 @@ func _on_peer_disconnected(peer_id: int) -> void:
 		guard.queue_free()
 	shift.remove_guard(peer_id)
 	guard_room.on_peer_left(peer_id)
+	if clutter.carried.has(peer_id):
+		clutter._set_carried.rpc(peer_id, -1)
 	if hiding.hidden.has(peer_id):
 		hiding._set_hidden.rpc(peer_id, -1)
 	_update_guards_required()
@@ -838,11 +847,27 @@ func on_local_guard_ready(guard: Guard) -> void:
 			hiding._request(-1)
 		else:
 			hiding._request.rpc_id(1, -1))
-	guard.ghost_ping_requested.connect(func(at: Vector3) -> void:
-		if multiplayer.is_server():
+	guard.ghost_ping_requested.connect(func(at: Vector3, touched: Object) -> void:
+		var item := clutter.index_of(touched)
+		if item >= 0:
+			# A ghost can knock things over instead.
+			if multiplayer.is_server():
+				clutter.request_knock(item)
+			else:
+				clutter.request_knock.rpc_id(1, item)
+		elif multiplayer.is_server():
 			_request_ghost_ping(at)
 		else:
 			_request_ghost_ping.rpc_id(1, at))
+	guard.throw_requested.connect(func() -> void:
+		if not clutter.carried.has(multiplayer.get_unique_id()):
+			return
+		var eye := guard.camera.global_position
+		var forward := -guard.camera.global_basis.z
+		if multiplayer.is_server():
+			clutter.request_throw(eye, forward)
+		else:
+			clutter.request_throw.rpc_id(1, eye, forward))
 	guard.spectate_requested.connect(_spectate_next)
 	guard.item_use_requested.connect(func() -> void:
 		if not guard_room.try_install():
@@ -1405,6 +1430,9 @@ func _refresh_inventory() -> void:
 	var carrying := Shop.item_name(shop.local_item)
 	if shop.local_item in Shop.USED_WITH_G:
 		carrying += "  (G to use)"
+	var in_hand := clutter.carried_name(multiplayer.get_unique_id()) if clutter and multiplayer.multiplayer_peer else ""
+	if in_hand != "":
+		carrying = ("%s, and " % carrying if carrying != "" else "") + "a %s (E to throw)" % in_hand
 	hud.set_inventory(shop.local_points, carrying)
 	if vending.is_open:
 		vending.refresh(shop.local_points, shop.local_item)

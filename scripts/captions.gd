@@ -30,6 +30,7 @@ const SOUNDS := {
 	"Twin:moving": "Giggling",
 	":hunt": "Running footsteps",
 	"Speaker:lure": "An alarm from a camera speaker",
+	"Clutter:landed": "Something clattering",
 }
 const HEARING := 30.0
 const SHOW_SECONDS := 4.0

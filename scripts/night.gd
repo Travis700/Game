@@ -56,6 +56,7 @@ var conditions: Conditions
 var bonus: Bonus
 var phone: Phone
 var hiding: Hiding
+var clutter: Clutter
 var nerve: Nerve
 ## The date of the daily shift being played (see Daily), or "" for an ordinary run.
 var daily := ""
@@ -243,6 +244,7 @@ func _run_shift(delta: float) -> void:
 		power.end_night()
 		phone.end_night()
 		hiding.release_all()
+		clutter.reset_all()
 		# Morning: nerves settle (kept for the night's awards first).
 		_morning_nerve = nerve.levels.duplicate()
 		nerve.reset()
@@ -438,6 +440,7 @@ func fail_night() -> void:
 	power.end_night()
 	phone.end_night()
 	hiding.release_all()
+	clutter.reset_all()
 	nerve.reset()
 	quota_target = 0
 	_show_quota.rpc("")

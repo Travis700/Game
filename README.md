@@ -85,6 +85,10 @@ isn't full). Run out and you're winded until it comes back up; an energy drink m
 **Lockdown:** from night 6 (once a night; twice from night 9 and in Overtime) an alarm wails and for 30 seconds
 every monster hunts the nearest guard it can reach. Hide, get to the guard room (before night 7), or outrun them.
 
+**Throwing things:** eleven bits of clutter (a traffic cone, a basketball, a lunch tray, books...) lie about the
+school. E picks one up, E again throws it; it clatters where it lands and draws the sound-hunting monsters. Ghosts
+can knock clutter over (E while looking at it, every 20 seconds).
+
 **Hiding:** a dozen slatted cupboards stand around the school (and wings). Press E to climb in and E to climb
 out. Nothing can find you inside, and a chase ends when you hide, unless the monster saw you go in, in
 which case it pulls you out.
