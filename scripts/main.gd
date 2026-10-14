@@ -282,6 +282,13 @@ func _ready() -> void:
 	bonus.rounds = rounds
 	add_child(bonus)
 	night.bonus = bonus
+	var phone := Phone.new()
+	phone.name = "Phone"
+	phone.director = director
+	phone.anomalies = anomalies
+	phone.power = power
+	add_child(phone)
+	night.phone = phone
 	add_child(night)
 	shop.night = night
 	director.student_helped.connect(func(peer_id: int) -> void:

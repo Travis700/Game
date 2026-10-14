@@ -65,6 +65,9 @@ die, every camera shows NO POWER and the vending machine stops; only red emergen
 Reset the breaker in the custodian's closet (across the main hallway from the lobby) by holding E on it.
 Whoever resets it is paid like a correct log.
 
+**The phone:** from night 2 the front office phone rings once or twice a night. Answer it (E) within about
+35 seconds for a tip-off about where something is out of place right now. Let it ring out and the power goes.
+
 **The field guide:** log a monster correctly and it goes in your field guide (the button at the top of
 your clipboard, and on the Records screen): what it looks like and how to survive it. Monsters you
 haven't found yet show only a rumour. Once a monster is in your guide, you can name it in a Monster log

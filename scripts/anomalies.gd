@@ -232,6 +232,15 @@ func check_log(peer_id: int, area: String, type: String, minutes: float) -> bool
 	return false
 
 
+## Host: an anomaly that's out right now, as {"area", "type"}, or {} if there isn't one.
+## (For the phone's tip-offs.)
+func tip() -> Dictionary:
+	if _active.is_empty():
+		return {}
+	var def: Dictionary = DEFINITIONS[_active.pick_random()]
+	return {"area": def["area"], "type": def["type"]}
+
+
 ## Host: anomalies tonight that nobody logged.
 func missed_count() -> int:
 	var missed := _missed_earlier

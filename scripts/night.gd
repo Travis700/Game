@@ -51,6 +51,7 @@ var rounds: Rounds
 var power: Power
 var conditions: Conditions
 var bonus: Bonus
+var phone: Phone
 ## The date of the daily shift being played (see Daily), or "" for an ordinary run.
 var daily := ""
 ## Emitted on the host when a daily shift's report is closed: back to the menu.
@@ -158,6 +159,7 @@ func _on_shift_started() -> void:
 	rounds.plan(number, difficulty)
 	bonus.pick(number)
 	power.plan(number)
+	phone.plan(number)
 	# Totems only matter with teammates to bring back; alone, being caught ends the run.
 	if players.get_child_count() > 1:
 		totems.place_random()
@@ -182,6 +184,7 @@ func _run_shift(delta: float) -> void:
 	anomalies.update(minutes)
 	director.update(minutes, delta)
 	power.update(minutes)
+	phone.update(minutes, delta)
 	bonus.update(minutes, delta)
 	shop.update(delta)
 	doors.update(delta)
@@ -198,6 +201,7 @@ func _run_shift(delta: float) -> void:
 		shop.clear_placed()
 		rounds.close()
 		power.end_night()
+		phone.end_night()
 		shift.guards_required = director.living_guards().size()
 		_start_morning.rpc()
 
@@ -377,6 +381,7 @@ func fail_night() -> void:
 	totems.clear_all()
 	shop.clear_placed()
 	power.end_night()
+	phone.end_night()
 	_restart_run = true
 	var rows := _build_rows(false)
 	rounds.clear()
