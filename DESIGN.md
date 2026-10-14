@@ -152,6 +152,18 @@ XP per night: 100 + 10 × night number for clocking out (25 if caught), +20 per 
 
 **Ideas not built yet:** coffee.
 
+## 11c. Replayability and long-term goals
+
+What keeps a player coming back after the first run:
+
+- **Shift notes (conditions).** From night 2 each night rolls 1 (nights 2–4) or 2 (5+) conditions, +1 per Overtime night: Fog advisory (thick fog), Faulty wiring (+2 power cuts), Inspector's visit (+3 stations, double punch pay), Sound carries (monsters hear voices 1.5× as far), Old batteries (dim, short flashlights), Messy school (no cleaner, 1.5× anomalies), Full moon (monsters 15% faster), Hazard pay (+1 monster, pay ×1.5). Each is worth +15% XP.
+- **Bonus objective.** One team challenge a night, tracked live: nobody runs, nobody raises their voice, log N things, name a monster, finish the round by 3 AM, nobody caught. +60 points and +50 XP each.
+- **Overtime.** After winning night 9 the host can keep going: points and gear carry on, +1 monster and +1 condition a night. Furthest night is a career record and a Steam leaderboard; achievements at night 10 and 15.
+- **Daily shift.** One solo night a day, seeded from the date (night 4–8, difficulty 2, two conditions, 250 starting points): the same monsters, round and objective for everyone. Score = that night's pay. Best per day and the streak of days are kept; friends' scores show on the menu (Steam leaderboard per day).
+- **Hats.** 12 hats unlocked by rank (8) and achievements (4), worn for everyone and the cameras to see.
+- **The phone.** From night 2 the front office phone rings 1–2 times a night: answer within 35 s for a tip about a live anomaly, or the power goes.
+- **First-night moment.** A harmless, local glimpse of a figure at the end of the main hallway on night 1.
+
 ## 12. Technical plan
 
 - **Godot 4**, scripts in GDScript.
