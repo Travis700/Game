@@ -64,6 +64,8 @@ var portrait: SelfPortrait
 var career: Career
 ## Voice chat, so the Understudy can copy what guards said. Host only.
 var voice: VoiceChat
+## Tonight's conditions (a full moon, sound carrying...). Host only.
+var conditions: Conditions
 
 var night_number := 1
 ## Tonight's difficulty: which wings are open. Monsters only come from open areas.
@@ -149,6 +151,8 @@ func plan_night(number: int) -> void:
 	pool.shuffle()
 	# Bigger maps (for bigger teams) bring one more monster per open wing.
 	var wanted := MONSTERS_PER_NIGHT[clampi(number - 1, 0, MONSTERS_PER_NIGHT.size() - 1)] + difficulty - 1
+	if conditions and conditions.has("hazard_pay"):
+		wanted += 1
 	var count := mini(wanted, pool.size())
 	for i in count:
 		tonight.append({"kind": pool[i], "at": randf_range(25.0, 150.0)})
@@ -160,8 +164,9 @@ func plan_night(number: int) -> void:
 		for i in (1 if number < 7 else 2):
 			_bell_times.append(randf_range(60.0, 300.0))
 		_bell_times.sort()
-	# The real night cleaner works every night.
-	tonight.append({"kind": "cleaner", "at": 10.0})
+	# The real night cleaner works every night, unless they've called in sick.
+	if not (conditions and conditions.has("messy")):
+		tonight.append({"kind": "cleaner", "at": 10.0})
 	print("[night] Monsters tonight: ", tonight.map(func(m: Dictionary) -> String: return "%s at %s" % [m["kind"], Night.format_time(m["at"])]))
 
 
@@ -440,7 +445,8 @@ func stop_sign_up() -> bool:
 
 ## How much faster monsters move right now (the Bell).
 func speed_multiplier() -> float:
-	return BELL_SPEED if bell_ringing else 1.0
+	var moon := Conditions.FULL_MOON_SPEED if conditions and conditions.has("full_moon") else 1.0
+	return (BELL_SPEED if bell_ringing else 1.0) * moon
 
 
 func _update_bell(minutes: float, delta: float) -> void:
@@ -505,7 +511,8 @@ func voice_level(guard: Guard) -> float:
 ## `shout`. 0 when they're quiet. Host only.
 func voice_reach(guard: Guard, whisper: float, shout: float) -> float:
 	var level := voice_level(guard)
-	return 0.0 if level <= 0.0 else lerpf(whisper, shout, level)
+	var carries := 1.5 if conditions and conditions.has("sharp_ears") else 1.0
+	return 0.0 if level <= 0.0 else lerpf(whisper, shout, level) * carries
 
 
 ## Tonight's clock, in in-game minutes. Host only.

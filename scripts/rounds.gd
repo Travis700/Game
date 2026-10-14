@@ -37,6 +37,7 @@ const LAMP_TODO := Color(1.0, 0.6, 0.1)
 const LAMP_DONE := Color(0.2, 1.0, 0.35)
 
 var director: MonsterDirector
+var conditions: Conditions
 var career: Career
 
 ## Tonight's work order (station indices), and the ones punched so far. On every computer.
@@ -67,7 +68,8 @@ func plan(night_number: int, difficulty: int) -> void:
 		if SchoolBuilder.AREA_DIFFICULTY.get(STATIONS[i]["area"], 1) <= difficulty:
 			candidates.append(i)
 	candidates.shuffle()
-	var count := mini(3 + int((night_number - 1) / 2.0), candidates.size())
+	var count := 3 + int((night_number - 1) / 2.0) + (3 if conditions and conditions.has("inspector") else 0)
+	count = mini(count, candidates.size())
 	var picked := candidates.slice(0, count)
 	picked.sort()
 	punches.clear()
@@ -86,6 +88,11 @@ func clear() -> void:
 	_set_state.rpc(PackedInt32Array(), PackedInt32Array(), false)
 
 
+## Pay per punch: double when the inspector is visiting.
+func punch_points() -> int:
+	return PUNCH_POINTS * (2 if conditions and conditions.has("inspector") else 1)
+
+
 func missed_count() -> int:
 	return order.size() - punched.size()
 
@@ -96,7 +103,7 @@ func is_complete() -> bool:
 
 ## Host: tonight's rounds pay for one guard.
 func pay_for(peer_id: int, clocked_out: bool) -> int:
-	var pay: int = punches.get(peer_id, 0) * PUNCH_POINTS - missed_count() * MISSED_PENALTY
+	var pay: int = punches.get(peer_id, 0) * punch_points() - missed_count() * MISSED_PENALTY
 	if clocked_out and is_complete():
 		pay += ROUND_BONUS
 	return pay
@@ -136,7 +143,7 @@ func _request_punch(index: int) -> void:
 			if career:
 				career.award(living.name.to_int(), "FULL_ROUND")
 	else:
-		director.tell(peer, "Punched: %s. +%d.  %d left on the round." % [STATIONS[index]["area"], PUNCH_POINTS, left])
+		director.tell(peer, "Punched: %s. +%d.  %d left on the round." % [STATIONS[index]["area"], punch_points(), left])
 
 
 # --- Every computer ------------------------------------------------------------------------

@@ -266,6 +266,16 @@ func _ready() -> void:
 	add_child(power)
 	power.breaker_reset.connect(night.add_bonus)
 	night.power = power
+	var conditions := Conditions.new()
+	conditions.name = "Conditions"
+	conditions.lighting = lighting
+	conditions.players = players
+	conditions.hud = hud
+	add_child(conditions)
+	night.conditions = conditions
+	director.conditions = conditions
+	rounds.conditions = conditions
+	power.conditions = conditions
 	add_child(night)
 	shop.night = night
 	director.student_helped.connect(func(peer_id: int) -> void:
@@ -364,6 +374,9 @@ func _start_from_command_line() -> void:
 			# For testing the wings: --difficulty=3 opens both.
 			menu._difficulty.select(clampi(arg.get_slice("=", 1).to_int(), 0, Night.MAX_DIFFICULTY))
 			menu._continue.button_pressed = false
+		elif arg.begins_with("--conditions="):
+			# For testing a night's conditions, e.g. --conditions=fog,batteries
+			night.conditions.forced.assign(arg.get_slice("=", 1).split(","))
 		elif arg.begins_with("--night="):
 			# For testing later nights, e.g. --night=7 when monsters can enter the guard room.
 			night_number = clampi(arg.get_slice("=", 1).to_int(), 1, Night.LAST_NIGHT)
@@ -747,7 +760,11 @@ func _objective() -> String:
 		Shift.State.ON_SHIFT:
 			var text := "Survive until 6 AM. Watch the cameras and log anything odd (%s)." % Controls.key_name("clipboard")
 			var round_text := rounds.objective_text()
-			return text + "\n" + round_text if round_text != "" else text
+			if round_text != "":
+				text += "\n" + round_text
+			if not night.conditions.active.is_empty():
+				text += "\nTonight: " + ", ".join(night.conditions.names())
+			return text
 		Shift.State.MORNING:
 			return "It's 6 AM. Clock out at the time clock in the guard room to get paid."
 	return ""

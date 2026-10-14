@@ -243,9 +243,9 @@ func set_status(text: String) -> void:
 	_status.text = text
 
 
-func show_message(text: String) -> void:
+func show_message(text: String, seconds := MESSAGE_SECONDS) -> void:
 	_message.text = text
-	_message_time = MESSAGE_SECONDS
+	_message_time = seconds
 	_message.modulate.a = 1.0
 
 

@@ -31,6 +31,10 @@ var environment: Environment
 var school: SchoolBuilder
 ## The lights-out sequence and the dimming, so going bright can cut them short.
 var _tweens: Array[Tween] = []
+## Night values that differ tonight (e.g. thick fog), over NIGHT. Set by Conditions.
+var _night_overrides: Dictionary = {}
+## True once the night's dimming has finished (until the lights come back).
+var _dark := false
 
 
 func apply_pre_shift() -> void:
@@ -73,9 +77,22 @@ func _dim_everything() -> void:
 		if light.visible:
 			dim.tween_property(light, "light_energy", light.get_meta("night_energy"), DIM_SECONDS)
 	for property: String in NIGHT:
-		dim.tween_property(environment, property, NIGHT[property], DIM_SECONDS)
+		dim.tween_property(environment, property, _night_overrides.get(property, NIGHT[property]), DIM_SECONDS)
 	dim.tween_property(school.get_material("light_panel"), "emission_energy_multiplier", 1.0, DIM_SECONDS)
 	dim.chain().tween_callback(_start_flickering)
+	dim.chain().tween_callback(func() -> void: _dark = true)
+
+
+## Tonight's differences from an ordinary night. If the night has already gone dark, the
+## change fades in now.
+func set_night_overrides(overrides: Dictionary) -> void:
+	_night_overrides = overrides
+	if not _dark:
+		return
+	var fade := create_tween().set_parallel(true)
+	_tweens.append(fade)
+	for property: String in NIGHT:
+		fade.tween_property(environment, property, _night_overrides.get(property, NIGHT[property]), DIM_SECONDS)
 
 
 func _start_flickering() -> void:
@@ -87,6 +104,7 @@ func _start_flickering() -> void:
 ## 6 AM (or the team being caught): everything comes back on, ready for the next evening.
 ## Safe to call when the lights are already on.
 func go_bright() -> void:
+	_dark = false
 	for tween in _tweens:
 		if tween.is_valid():
 			tween.kill()

@@ -86,7 +86,7 @@ func _flicker_flashlights() -> void:
 	for guard: Guard in players.get_children():
 		if not guard.flashlight.visible:
 			continue
-		var base: float = guard.flashlight.get_meta("base_energy", 1.0) * (1.5 if guard.bright_flashlight else 1.0)
+		var base := guard.flashlight_energy()
 		var near := false
 		for monster in monsters:
 			if monster.global_position.distance_to(guard.global_position) < FLICKER_RANGE:

@@ -47,6 +47,7 @@ var doors: GuardRoomDoors
 var career: Career
 var rounds: Rounds
 var power: Power
+var conditions: Conditions
 
 var number := 1
 ## Tonight's map size (1-3), sent by the host when the night starts. 0 before the first night.
@@ -139,6 +140,7 @@ func _on_shift_started() -> void:
 	_logged.clear()
 	_deaths = 0
 	save_run(number, true)
+	conditions.pick(number)
 	director.plan_night(number)
 	rounds.plan(number, difficulty)
 	power.plan(number)
@@ -148,6 +150,8 @@ func _on_shift_started() -> void:
 	# Spread tonight's anomalies across the night, starting about 20 minutes in.
 	_schedule.clear()
 	var count := 4 + number * 2
+	if conditions.has("messy"):
+		count = int(count * 1.5)
 	for i in count:
 		_schedule.append(randf_range(20.0, SHIFT_MINUTES - 40.0))
 	_schedule.sort()
@@ -355,6 +359,7 @@ func fail_night() -> void:
 	_restart_run = true
 	var rows := _build_rows(false)
 	rounds.clear()
+	conditions.clear()
 	var summary := "The whole team was caught at %s.\nThe school keeps its secrets. The run starts over from night 1." % time_text()
 	if keep_gear:
 		summary += "\nYou keep your upgrades and whatever you're carrying. Points start again from zero."
@@ -387,6 +392,9 @@ func _end_night() -> void:
 	var summary := "%d anomal%s tonight, %d missed by everyone.   Guards lost: %d." % [
 		appeared, "y" if appeared == 1 else "ies", missed, _deaths]
 	summary += "\n" + round_text
+	if conditions.summary() != "":
+		summary += "\n" + conditions.summary()
+	conditions.clear()
 	if awards != "":
 		summary += "\n" + awards
 	summary += "\nPay: %d for clocking out, +%d per correct log, -%d per false report, -%d for each guard lost." % [
@@ -487,6 +495,8 @@ func _build_rows(keep_pay: bool) -> Array:
 		var round_points := rounds.pay_for(peer, clocked_out)
 		var pay: int = (SURVIVAL_PAY if clocked_out else 0) + correct_points - false_points + round_points \
 				- _deaths * DEATH_PENALTY
+		if pay > 0 and conditions.has("hazard_pay"):
+			pay = int(pay * 1.5)
 		if keep_pay:
 			# Points never go below zero.
 			_totals[peer] = maxi(_totals.get(peer, 0) + pay, 0)
@@ -495,6 +505,7 @@ func _build_rows(keep_pay: bool) -> Array:
 		var xp: int = (XP_CLOCKED_OUT + number * XP_PER_NIGHT if clocked_out else XP_CAUGHT) \
 				+ stats["correct"] * XP_PER_LOG + stats.get("named", 0) * XP_PER_NAME \
 				+ int(rounds.punches.get(peer, 0)) * XP_PER_PUNCH
+		xp = int(xp * conditions.xp_factor())
 		if career:
 			career.add_xp(peer, xp)
 		rows.append({

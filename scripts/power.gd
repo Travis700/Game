@@ -26,6 +26,7 @@ var school: SchoolBuilder
 var cameras: SecurityCameras
 var director: MonsterDirector
 var career: Career
+var conditions: Conditions
 
 ## False while the power is out. On every computer.
 var on := true
@@ -82,6 +83,8 @@ func _ready() -> void:
 func plan(night_number: int) -> void:
 	_schedule.clear()
 	var count := 0 if night_number < 2 else (1 if night_number < 5 else (2 if night_number < 8 else 3))
+	if conditions and conditions.has("wiring"):
+		count += 2
 	var tries := 0
 	while _schedule.size() < count and tries < 50:
 		tries += 1

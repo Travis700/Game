@@ -62,6 +62,8 @@ var input_blocked := false
 var boost_left := 0.0
 ## True once this guard has fitted the heavy-duty flashlight: a longer, wider beam.
 var bright_flashlight := false
+## How strong the flashlight's batteries are tonight (1 = fresh; less on an "Old batteries" night).
+var battery := 1.0
 ## True once this guard has clipped on a walkie-talkie: they can talk on it (B) and hear it.
 var has_radio := false
 
@@ -138,9 +140,20 @@ func apply_personal(upgrade: String, on: bool) -> void:
 ## Fits (or removes) the heavy-duty flashlight. Called on every computer, so everyone sees the beam.
 func set_bright_flashlight(on: bool) -> void:
 	bright_flashlight = on
-	flashlight.spot_range = 32.0 if on else 22.0
-	flashlight.spot_angle = 34.0 if on else 26.0
-	flashlight.light_energy = flashlight.get_meta("base_energy", flashlight.light_energy) * (1.5 if on else 1.0)
+	apply_flashlight()
+
+
+## Sets the beam from the flashlight upgrade and tonight's batteries.
+func apply_flashlight() -> void:
+	var reach := lerpf(0.6, 1.0, battery)
+	flashlight.spot_range = (32.0 if bright_flashlight else 22.0) * reach
+	flashlight.spot_angle = 34.0 if bright_flashlight else 26.0
+	flashlight.light_energy = flashlight_energy()
+
+
+## How bright the beam is right now, before any flicker.
+func flashlight_energy() -> float:
+	return flashlight.get_meta("base_energy", flashlight.light_energy) * (1.5 if bright_flashlight else 1.0) * battery
 
 
 func _process(_delta: float) -> void:
