@@ -184,6 +184,19 @@ What keeps a player coming back after the first run:
 - **XP by difficulty.** +25% XP per open wing.
 - **Performance.** Static school geometry is merged per material per 20 m cell (draw calls ~2000 → ~700).
 
+## 11f. Stakes and agency (from the design critique)
+
+- **Work target.** From night 2: (30 + 22 × night) points per guard from logs, named monsters and punched stations. Missing it is a write-up; three write-ups and the team is fired (back to the last checkpoint; night 1 on Hardcore; ends the run in Overtime).
+- **Checkpoints.** A team wipe (or being fired) goes back to night 1, 4 or 7 with gear kept and points halved. Hardcore restores the old back-to-night-1-with-nothing rule.
+- **First logger.** +25 to the first guard to log a thing; +10 to teammates confirming it.
+- **Subtler anomalies.** Moved props move `lerp(home, to, 1.12 - 0.085 × night ± 0.08)` (clamped 0.3–1), so later nights need a closer look.
+- **Pacing.** Monster arrivals spread over 12:25–3:40 AM; from night 2 one arrives around 4 AM with an announcement.
+- **Desk agency.** Q flags a camera for everyone (message + marker); F (full screen) sets off a camera speaker, drawing the Lunch Lady (40 m), Librarian and Hall Monitor (25 m), once a minute per guard.
+- **Stamina.** About 6 s of running from full; winded until 30%; energy drinks suspend it.
+- **Hiding costs nerve.** −1/s while hiding; at 0 the guard panics out, screaming (heard as a shout).
+- **Clutter.** 11 throwable props; a throw lands up to 12 m away and makes a 6 s noise; ghosts can knock one every 20 s.
+- **Learning loop.** Being caught shows that monster's rule (if it's in your guide); the guard room notice board lists tonight's notes, target, bonus and round.
+
 ## 12. Technical plan
 
 - **Godot 4**, scripts in GDScript.
