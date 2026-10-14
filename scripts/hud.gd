@@ -48,7 +48,11 @@ func _ready() -> void:
 	_hint = _make_label(18, HORIZONTAL_ALIGNMENT_LEFT, VERTICAL_ALIGNMENT_TOP)
 	_hint.offset_left = 20
 	_hint.offset_top = 16
-	_hint.text = "WASD  move\nShift  run\nF  flashlight\nE  use\nTab  clipboard\nG  use item\nEsc  menu"
+	var move := "%s%s%s%s" % [Controls.key_name("move_forward"), Controls.key_name("move_left"),
+			Controls.key_name("move_back"), Controls.key_name("move_right")]
+	_hint.text = "%s  move\n%s  run\n%s  flashlight\n%s  use\n%s  clipboard\n%s  use item\nEsc  menu" % [
+		move if move.length() == 4 else "Move keys", Controls.key_name("sprint"), Controls.key_name("flashlight"),
+		Controls.key_name("interact"), Controls.key_name("clipboard"), Controls.key_name("use_item")]
 
 	_status = _make_label(18, HORIZONTAL_ALIGNMENT_RIGHT, VERTICAL_ALIGNMENT_TOP)
 	_status.offset_right = -20

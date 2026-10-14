@@ -613,7 +613,7 @@ func _objective() -> String:
 				return "Waiting for the rest of the team to clock in."
 			return "Head through the front doors. The guard room is the door on the right of the lobby: clock in at the time clock."
 		Shift.State.ON_SHIFT:
-			return "Survive until 6 AM. Watch the cameras and log anything odd (Tab)."
+			return "Survive until 6 AM. Watch the cameras and log anything odd (%s)." % Controls.key_name("clipboard")
 		Shift.State.MORNING:
 			return "It's 6 AM. Clock out at the time clock in the guard room to get paid."
 	return ""

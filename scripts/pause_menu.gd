@@ -15,6 +15,11 @@ var _sensitivity: HSlider
 var _volume: HSlider
 var _fullscreen: CheckBox
 var _leave: Button
+var _main_column: VBoxContainer
+var _keys: VBoxContainer
+var _key_buttons: Dictionary = {}
+## The action waiting for a key press, or "".
+var _listening := ""
 
 
 func _ready() -> void:
@@ -39,6 +44,8 @@ func _ready() -> void:
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 12)
 	panel.add_child(column)
+	_main_column = column
+	_build_keys(panel)
 
 	_title = Label.new()
 	_title.add_theme_font_size_override("font_size", 30)
@@ -102,6 +109,9 @@ func _ready() -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED))
 	column.add_child(_fullscreen)
 
+	column.add_child(_button("Change keys...", func() -> void:
+		column.visible = false
+		_keys.visible = true))
 	column.add_child(_button("Resume", close))
 	_leave = _button("Leave to the main menu", func() -> void: leave_requested.emit())
 	column.add_child(_leave)
@@ -115,6 +125,7 @@ func open(solo: bool, hosting: bool) -> void:
 	get_tree().paused = solo
 	_fullscreen.set_pressed_no_signal(DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN)
 	_leave.text = "End the session (everyone leaves)" if hosting else "Leave to the main menu"
+	_show_main()
 	visible = true
 	is_open = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -132,9 +143,71 @@ func close() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if is_open and event.is_action_pressed("pause"):
+	if not is_open:
+		return
+	if _listening != "":
+		var key := event as InputEventKey
+		if key == null or not key.pressed or key.echo:
+			return
 		get_viewport().set_input_as_handled()
-		close()
+		if key.physical_keycode != KEY_ESCAPE:
+			Controls.rebind(_listening, key.physical_keycode)
+		_listening = ""
+		_refresh_keys()
+		return
+	if event.is_action_pressed("pause"):
+		get_viewport().set_input_as_handled()
+		if _keys.visible:
+			_show_main()
+		else:
+			close()
+
+
+## The "Change keys" page: one button per action; click it, then press the new key.
+func _build_keys(panel: PanelContainer) -> void:
+	_keys = VBoxContainer.new()
+	_keys.add_theme_constant_override("separation", 8)
+	_keys.visible = false
+	panel.add_child(_keys)
+	var title := Label.new()
+	title.text = "KEYS"
+	title.add_theme_font_size_override("font_size", 30)
+	_keys.add_child(title)
+	var help := _small("Click a key, then press the new one (Esc to cancel). Arrow keys and the mouse keep working too.")
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	help.custom_minimum_size = Vector2(400, 0)
+	_keys.add_child(help)
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 16)
+	grid.add_theme_constant_override("v_separation", 6)
+	_keys.add_child(grid)
+	for entry: Array in Controls.REBINDABLE:
+		var action: String = entry[0]
+		grid.add_child(_label(entry[1]))
+		var button := Button.new()
+		button.custom_minimum_size = Vector2(150, 34)
+		button.pressed.connect(func() -> void:
+			_listening = action
+			button.text = "Press a key...")
+		grid.add_child(button)
+		_key_buttons[action] = button
+	_keys.add_child(_button("Reset to defaults", func() -> void:
+		Controls.reset_all()
+		_refresh_keys()))
+	_keys.add_child(_button("Back", _show_main))
+	_refresh_keys()
+
+
+func _refresh_keys() -> void:
+	for action: String in _key_buttons:
+		(_key_buttons[action] as Button).text = Controls.key_name(action)
+
+
+func _show_main() -> void:
+	_listening = ""
+	_keys.visible = false
+	_main_column.visible = true
 
 
 func _label(text: String) -> Label:
