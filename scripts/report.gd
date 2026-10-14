@@ -85,6 +85,8 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, outcom
 	_waiting.visible = not is_host
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	if is_host and not Input.get_connected_joypads().is_empty():
+		_next_button.grab_focus.call_deferred()
 
 
 func hide_report() -> void:

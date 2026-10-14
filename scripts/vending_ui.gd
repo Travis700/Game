@@ -10,6 +10,7 @@ var _points: Label
 var _holding: Label
 ## Items only useful with teammates: item id -> its Buy button.
 var _coop_buttons: Dictionary = {}
+var _first_buy: Array = []
 ## The co-op-only items.
 const COOP_ONLY: Array[String] = ["lucky_charm"]
 
@@ -80,6 +81,8 @@ func _ready() -> void:
 		buy.text = "Buy"
 		buy.custom_minimum_size = Vector2(90, 44)
 		buy.pressed.connect(func() -> void: buy_requested.emit(item))
+		if _first_buy.is_empty():
+			_first_buy.append(buy)
 		if item in COOP_ONLY:
 			_coop_buttons[item] = buy
 		row.add_child(buy)
@@ -101,6 +104,8 @@ func open(points: int, holding: String, solo := false) -> void:
 	visible = true
 	is_open = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	if not Input.get_connected_joypads().is_empty() and not _first_buy.is_empty():
+		(_first_buy[0] as Button).grab_focus.call_deferred()
 
 
 func refresh(points: int, holding: String) -> void:
@@ -118,6 +123,9 @@ func close() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if is_open and (event.is_action_pressed("clipboard") or event.is_action_pressed("pause") or event.is_action_pressed("interact")):
+	# E closes it from the keyboard; on a controller A presses Buy, so B (or Start) closes it.
+	var interact_key := event is InputEventKey and event.is_action_pressed("interact")
+	var back := event is InputEventJoypadButton and event.is_action_pressed("ui_cancel")
+	if is_open and (event.is_action_pressed("clipboard") or event.is_action_pressed("pause") or interact_key or back):
 		get_viewport().set_input_as_handled()
 		close()

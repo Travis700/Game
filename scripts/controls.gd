@@ -21,6 +21,29 @@ const BINDINGS := {
 	"monitor_3": [KEY_3],
 	"monitor_4": [KEY_4],
 }
+## Controller buttons (Xbox layout names; Godot maps PlayStation and Switch pads the same).
+const JOY_BUTTONS := {
+	"interact": [JOY_BUTTON_A],
+	"flashlight": [JOY_BUTTON_Y],
+	"zoom": [JOY_BUTTON_X],
+	"sprint": [JOY_BUTTON_LEFT_STICK],
+	"clipboard": [JOY_BUTTON_BACK],
+	"use_item": [JOY_BUTTON_RIGHT_SHOULDER],
+	"push_to_talk": [JOY_BUTTON_LEFT_SHOULDER],
+	"pause": [JOY_BUTTON_START],
+	"move_left": [JOY_BUTTON_DPAD_LEFT],
+	"move_right": [JOY_BUTTON_DPAD_RIGHT],
+	"move_forward": [JOY_BUTTON_DPAD_UP],
+	"move_back": [JOY_BUTTON_DPAD_DOWN],
+}
+## Controller sticks and triggers: action -> [axis, direction].
+const JOY_AXES := {
+	"move_forward": [JOY_AXIS_LEFT_Y, -1.0],
+	"move_back": [JOY_AXIS_LEFT_Y, 1.0],
+	"move_left": [JOY_AXIS_LEFT_X, -1.0],
+	"move_right": [JOY_AXIS_LEFT_X, 1.0],
+	"radio_talk": [JOY_AXIS_TRIGGER_RIGHT, 1.0],
+}
 const MOUSE_BINDINGS := {
 	"zoom": [MOUSE_BUTTON_LEFT],
 }
@@ -136,3 +159,17 @@ func _register_defaults() -> void:
 			var click := InputEventMouseButton.new()
 			click.button_index = button
 			InputMap.action_add_event(action, click)
+	for action: String in JOY_BUTTONS:
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+		for button: int in JOY_BUTTONS[action]:
+			var press := InputEventJoypadButton.new()
+			press.button_index = button
+			InputMap.action_add_event(action, press)
+	for action: String in JOY_AXES:
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+		var stick := InputEventJoypadMotion.new()
+		stick.axis = JOY_AXES[action][0]
+		stick.axis_value = JOY_AXES[action][1]
+		InputMap.action_add_event(action, stick)

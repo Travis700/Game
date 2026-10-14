@@ -144,6 +144,9 @@ func _ready() -> void:
 	column.add_child(_status)
 
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	# With a controller, start on the first button so the D-pad can move around the menu.
+	if not Input.get_connected_joypads().is_empty():
+		_buttons[0].grab_focus.call_deferred()
 
 
 ## The host's choices for the run: {"difficulty": 0-3 (0 = auto), "keep_gear", "continue"}.

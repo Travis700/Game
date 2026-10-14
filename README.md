@@ -193,6 +193,10 @@ it runs; that's normal for games that aren't signed (Steam builds don't show it)
 | B | Talk on the walkie-talkie (once you have one) |
 | F11 | Switch between fullscreen and a window |
 
+**With a controller** (Xbox names; PlayStation and Switch pads work the same way): left stick move,
+right stick look, L3 run, A use, Y flashlight, X full-screen camera, Back clipboard, RB use item,
+LB push to talk, RT walkie-talkie, Start menu. In menus, the D-pad moves and A selects; B goes back.
+
 **At a guard room desk** (press E on a chair to sit):
 
 | Key | Action |

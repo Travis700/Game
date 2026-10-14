@@ -120,6 +120,8 @@ func open(area := "") -> void:
 	visible = true
 	is_open = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	if not Input.get_connected_joypads().is_empty():
+		_area.grab_focus.call_deferred()
 
 
 func close() -> void:
@@ -145,7 +147,8 @@ func clear_entries() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if is_open and (event.is_action_pressed("clipboard") or event.is_action_pressed("pause")):
+	var back := event is InputEventJoypadButton and event.is_action_pressed("ui_cancel")
+	if is_open and (event.is_action_pressed("clipboard") or event.is_action_pressed("pause") or back):
 		get_viewport().set_input_as_handled()
 		close()
 

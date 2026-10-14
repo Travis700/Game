@@ -18,6 +18,8 @@ signal item_use_requested
 
 const WALK_SPEED := 3.2
 const SPRINT_SPEED := 5.6
+## Right-stick look speed (in the same units as mouse movement, per second).
+const STICK_LOOK_SPEED := 1100.0
 ## Running speed while an energy drink lasts.
 const BOOSTED_SPRINT_SPEED := 7.2
 const ACCELERATION := 10.0
@@ -241,6 +243,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		item_use_requested.emit()
 
 
+## Looking around with a controller's right stick.
+func _stick_look(delta: float) -> void:
+	if input_blocked or look_locked:
+		return
+	var stick := Vector2(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X), Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y))
+	if stick.length() < 0.15:
+		return
+	# Curved so small pushes are fine aiming and a full push turns quickly.
+	stick = stick.normalized() * pow((stick.length() - 0.15) / 0.85, 1.6)
+	_look(stick * STICK_LOOK_SPEED * delta)
+
+
 func _look(relative: Vector2) -> void:
 	# The player's setting from the Esc menu (Profile is an autoload, looked up by path so this
 	# script also compiles where autoloads aren't loaded yet).
@@ -281,6 +295,7 @@ func _handle_desk_input(event: InputEvent) -> bool:
 
 
 func _physics_process(delta: float) -> void:
+	_stick_look(delta)
 	if seated_desk >= 0:
 		_update_prompt()
 		return

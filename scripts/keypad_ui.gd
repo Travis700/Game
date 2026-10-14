@@ -8,6 +8,7 @@ var is_open := false
 var _display: Label
 var _hint: Label
 var _typed := ""
+var _first_key: Button
 
 
 func _ready() -> void:
@@ -56,6 +57,8 @@ func _ready() -> void:
 		button.custom_minimum_size = Vector2(76, 52)
 		button.add_theme_font_size_override("font_size", 20)
 		button.pressed.connect(_press.bind(key))
+		if _first_key == null:
+			_first_key = button
 		grid.add_child(button)
 	column.add_child(grid)
 
@@ -73,6 +76,8 @@ func open(badge: String) -> void:
 	visible = true
 	is_open = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	if not Input.get_connected_joypads().is_empty():
+		_first_key.grab_focus.call_deferred()
 
 
 func close() -> void:
@@ -110,6 +115,10 @@ func _refresh() -> void:
 
 func _input(event: InputEvent) -> void:
 	if not is_open:
+		return
+	if event is InputEventJoypadButton and (event.is_action_pressed("ui_cancel") or event.is_action_pressed("pause")):
+		get_viewport().set_input_as_handled()
+		close()
 		return
 	var key := event as InputEventKey
 	if key == null or not key.pressed or key.echo:

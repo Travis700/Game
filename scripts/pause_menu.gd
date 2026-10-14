@@ -18,6 +18,7 @@ var _volume: HSlider
 var _fullscreen: CheckBox
 var _leave: Button
 var _invite: Button
+var _resume: Button
 ## Set by Main, for the microphone level meter and to apply the voice settings.
 var voice: VoiceChat
 var _mic_meter: ProgressBar
@@ -179,7 +180,8 @@ func _ready() -> void:
 	column.add_child(_button("Change keys...", func() -> void:
 		_scroll.visible = false
 		_keys.visible = true))
-	column.add_child(_button("Resume", close))
+	_resume = _button("Resume", close)
+	column.add_child(_resume)
 	_leave = _button("Leave to the main menu", func() -> void: leave_requested.emit())
 	column.add_child(_leave)
 	column.add_child(_button("Quit the game", func() -> void: get_tree().quit()))
@@ -196,6 +198,8 @@ func open(solo: bool, hosting: bool) -> void:
 	_show_main()
 	_invite.visible = SteamService.available and SteamService.lobby_id != 0
 	visible = true
+	if not Input.get_connected_joypads().is_empty():
+		_resume.grab_focus.call_deferred()
 	is_open = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
@@ -230,7 +234,7 @@ func _input(event: InputEvent) -> void:
 		_listening = ""
 		_refresh_keys()
 		return
-	if event.is_action_pressed("pause"):
+	if event.is_action_pressed("pause") or (event is InputEventJoypadButton and event.is_action_pressed("ui_cancel")):
 		get_viewport().set_input_as_handled()
 		if _keys.visible:
 			_show_main()
