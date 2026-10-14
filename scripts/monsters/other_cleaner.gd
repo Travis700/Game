@@ -23,18 +23,16 @@ func _init() -> void:
 func think(delta: float) -> void:
 	if _chase_left > 0.0:
 		_chase_left -= delta
-		if not is_instance_valid(_target) or _target.is_dead or not move_to(_target.global_position, CHASE_SPEED):
+		if not chase(_target, CHASE_SPEED, delta) or _chase_left <= 0.0:
 			_chase_left = 0.0
-		catch_nearby()
-		if _chase_left <= 0.0:
 			state = "walk"
 		return
-	for guard in director.targetable_guards():
-		if distance_to_guard(guard) < NOTICE_DISTANCE and director.can_see(eye_position(), guard):
-			_target = guard
-			_chase_left = CHASE_TIME
-			state = "reveal"
-			return
+	var guard := find_guard(NOTICE_DISTANCE)
+	if guard:
+		_target = guard
+		_chase_left = CHASE_TIME
+		state = "reveal"
+		return
 	_wander(delta)
 
 

@@ -19,8 +19,6 @@ const STOPS: Array[Vector3] = [
 	Vector3(-63, 0, 1.5), Vector3(-60, 0, 7), Vector3(-75, 0, 7),
 ]
 
-var _stop := 0
-var _pause := 0.0
 var _target: Guard
 var _warning_left := 0.0
 var _calm_for := 0.0
@@ -50,16 +48,7 @@ func _shelve(delta: float) -> void:
 		director.tell(offender.name.to_int(), "\"Shhh.\" Something in the stacks doesn't like your %s." % (
 				"light" if offender.flashlight.visible else "footsteps"))
 		return
-	if _pause > 0.0:
-		_pause -= delta
-		halt()
-		return
-	var spot := STOPS[_stop]
-	if Vector2(global_position.x - spot.x, global_position.z - spot.z).length() < 1.2:
-		_pause = randf_range(5.0, 10.0)
-		_stop = (_stop + 1 + randi() % 3) % STOPS.size()
-		return
-	move_to(spot, SHELVE_SPEED)
+	patrol_step(STOPS, delta, SHELVE_SPEED, Vector2(5.0, 10.0), 3)
 
 
 ## The nearest living guard it can see with their light on it, or hear running.
@@ -97,10 +86,8 @@ func _hunt(delta: float) -> void:
 	var distance := distance_to_guard(_target)
 	var loud := (_target.flashlight.visible and distance < LIGHT_RANGE * 1.5) or (_target.is_running and distance < HEAR_RUNNING)
 	_calm_for = 0.0 if loud else _calm_for + delta
-	if _calm_for > CALM_AFTER or not move_to(_target.global_position, HUNT_SPEED):
+	if _calm_for > CALM_AFTER or not chase(_target, HUNT_SPEED, delta):
 		state = "shelve"
-		return
-	catch_nearby()
 
 
 func _on_state_changed(new_state: String) -> void:

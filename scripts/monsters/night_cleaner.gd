@@ -12,8 +12,6 @@ const ROUTE: Array[Vector3] = [
 	Vector3(0, 0, -20), Vector3(25, 0, 7), Vector3(22, 0, -12), Vector3(0, 0, -5),
 ]
 
-var _stop := 0
-var _pause := 0.0
 
 
 func _init() -> void:
@@ -26,20 +24,12 @@ func think(delta: float) -> void:
 	_wander(delta)
 
 
+## Mops for a while in each room, then moves on to another.
 func _wander(delta: float) -> void:
-	if _pause > 0.0:
-		_pause -= delta
-		halt()
-		return
-	var spot := ROUTE[_stop]
-	if Vector2(global_position.x - spot.x, global_position.z - spot.z).length() < 1.2:
-		# Mop for a while, then move on to another room.
-		_pause = randf_range(6.0, 12.0)
-		_stop = (_stop + 1 + randi() % 3) % ROUTE.size()
+	if patrol_step(ROUTE, delta, WALK_SPEED, Vector2(6.0, 12.0), 3):
 		state = "mop"
-		return
-	state = "walk"
-	move_to(spot, WALK_SPEED)
+	elif _patrol_pause <= 0.0:
+		state = "walk"
 
 
 func _build_body() -> void:

@@ -20,8 +20,6 @@ const ROUNDS: Array[Vector3] = [
 	Vector3(-47, 0, 15), Vector3(-30, 0, 7), Vector3(-49, 0, -6),
 ]
 
-var _stop := 0
-var _pause := 0.0
 var _target: Guard
 var _follow_left := 0.0
 var _rest_left := 0.0
@@ -47,35 +45,21 @@ func think(delta: float) -> void:
 
 func _rounds(delta: float) -> void:
 	if _rest_left <= 0.0:
-		for guard in director.targetable_guards():
-			if distance_to_guard(guard) < NOTICE_RANGE and _is_alone(guard) \
-					and director.can_see(eye_position(), guard):
-				_target = guard
-				_follow_left = FOLLOW_SECONDS
-				state = "follow"
-				director.tell(guard.name.to_int(), "A heart monitor beeps somewhere behind you. \"You shouldn't be wandering about alone.\"")
-				return
-	if _pause > 0.0:
-		_pause -= delta
-		halt()
-		return
-	var spot := ROUNDS[_stop]
-	if Vector2(global_position.x - spot.x, global_position.z - spot.z).length() < 1.2:
-		_pause = randf_range(4.0, 8.0)
-		_stop = (_stop + 1) % ROUNDS.size()
-		return
-	move_to(spot, ROUNDS_SPEED)
+		var guard := find_guard(NOTICE_RANGE, true, _is_alone)
+		if guard:
+			_target = guard
+			_follow_left = FOLLOW_SECONDS
+			state = "follow"
+			director.tell(guard.name.to_int(), "A heart monitor beeps somewhere behind you. \"You shouldn't be wandering about alone.\"")
+			return
+	patrol_step(ROUNDS, delta, ROUNDS_SPEED, Vector2(4.0, 8.0))
 
 
 func _follow(delta: float) -> void:
 	_follow_left -= delta
-	if not is_instance_valid(_target) or _target.is_dead or _follow_left <= 0.0 or not _is_alone(_target):
+	if not is_instance_valid(_target) or _follow_left <= 0.0 or not _is_alone(_target) \
+			or not chase(_target, FOLLOW_SPEED, delta):
 		_stop_following()
-		return
-	if not move_to(_target.global_position, FOLLOW_SPEED):
-		_stop_following()
-		return
-	catch_nearby()
 
 
 func _stop_following() -> void:

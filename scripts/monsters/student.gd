@@ -70,13 +70,13 @@ func think(delta: float) -> void:
 			if _chase_left > CHASE_TIME - REVEAL_PAUSE:
 				# A moment to see its face, and to run.
 				halt()
-			elif is_instance_valid(_follower) and not _follower.is_dead:
-				move_to(_follower.global_position, CHASE_SPEED)
-				catch_nearby()
+			else:
+				chase(_follower, CHASE_SPEED, delta)
 			if _chase_left <= 0.0:
 				director.remove_monster(self)
 		"leave":
-			if global_position.distance_to(Vector3(0, 0, 40)) < 2.0:
+			# Out of the gate, or stuck on the way (gone home another way): either way, gone.
+			if global_position.distance_to(Vector3(0, 0, 40)) < 2.0 or is_stuck():
 				director.remove_monster(self)
 			else:
 				move_to(Vector3(0, 0, 40), LEAD_SPEED)

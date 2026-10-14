@@ -137,6 +137,70 @@ func move_to(target: Vector3, speed: float) -> bool:
 	return true
 
 
+# --- Shared behaviours (host) ----------------------------------------------------------
+
+var _patrol_index := 0
+var _patrol_pause := 0.0
+var _unseen_for := 0.0
+
+
+## Walks a round of `points`, pausing a while at each. Returns true on the frame it reaches
+## one (e.g. to switch to a "mopping" state). `skip` > 0 jumps ahead 1 to `skip` points at
+## random instead of going in order.
+func patrol_step(points: Array[Vector3], delta: float, speed: float, pause: Vector2, skip := 0) -> bool:
+	if _patrol_pause > 0.0:
+		_patrol_pause -= delta
+		halt()
+		return false
+	var spot := points[_patrol_index % points.size()]
+	if Vector2(global_position.x - spot.x, global_position.z - spot.z).length() < 1.2 or is_stuck():
+		_patrol_pause = randf_range(pause.x, pause.y)
+		var step := 1 + (randi() % skip if skip > 0 else 0)
+		_patrol_index = (_patrol_index + step) % points.size()
+		_stuck_for = 0.0
+		return true
+	move_to(spot, speed)
+	return false
+
+
+## The first guard within `reach` that it can go after: in its line of sight (unless `need_sight`
+## is false) and passing `test`, if given.
+func find_guard(reach: float, need_sight := true, test := Callable()) -> Guard:
+	for guard in director.targetable_guards():
+		if distance_to_guard(guard) > reach:
+			continue
+		if test.is_valid() and not test.call(guard):
+			continue
+		if need_sight and not director.can_see(eye_position(), guard):
+			continue
+		return guard
+	return null
+
+
+## Call when a chase begins, so `chase` starts with a fresh "lost sight" timer.
+func start_chase() -> void:
+	_unseen_for = 0.0
+
+
+## One frame of going after `target`, catching anyone in reach. Returns false when the chase
+## is over: the target is gone or caught, can't be reached (e.g. the guard room before night 7),
+## or has been out of sight for `give_up_after` seconds.
+func chase(target: Guard, speed: float, delta: float, give_up_after := INF) -> bool:
+	if not is_instance_valid(target) or target.is_dead:
+		return false
+	if give_up_after < INF:
+		if director.can_see(eye_position(), target):
+			_unseen_for = 0.0
+		else:
+			_unseen_for += delta
+		if _unseen_for > give_up_after:
+			return false
+	if not move_to(target.global_position, speed):
+		return false
+	catch_nearby()
+	return true
+
+
 ## True when it has been pushing against something for over a second (e.g. cutting a corner
 ## into furniture), so a behaviour can pick somewhere else to go.
 func is_stuck() -> bool:

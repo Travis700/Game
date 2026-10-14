@@ -11,9 +11,7 @@ const SIGHT_RANGE := 22.0
 const GIVE_UP_AFTER := 4.0
 const HALL_ENDS: Array[Vector3] = [Vector3(-36, 0, 7), Vector3(36, 0, 7)]
 
-var _patrol_end := 1
 var _target: Guard
-var _unseen_for := 0.0
 var _whistle: AudioStream
 
 
@@ -24,41 +22,16 @@ func _init() -> void:
 
 func think(delta: float) -> void:
 	if _target:
-		_chase(delta)
-	else:
-		_patrol()
-
-
-func _patrol() -> void:
-	var end := HALL_ENDS[_patrol_end]
-	if global_position.distance_to(end) < 1.5:
-		_patrol_end = 1 - _patrol_end
-	move_to(end, PATROL_SPEED)
-	for guard in director.targetable_guards():
-		if guard.is_running and distance_to_guard(guard) < SIGHT_RANGE and director.can_see(eye_position(), guard):
-			_target = guard
-			_unseen_for = 0.0
-			state = "chase"
-			return
-
-
-func _chase(delta: float) -> void:
-	if not is_instance_valid(_target) or _target.is_dead:
-		_stop_chase()
+		if not chase(_target, CHASE_SPEED, delta, GIVE_UP_AFTER):
+			_target = null
+			state = "patrol"
 		return
-	if director.can_see(eye_position(), _target):
-		_unseen_for = 0.0
-	else:
-		_unseen_for += delta
-	if _unseen_for > GIVE_UP_AFTER or not move_to(_target.global_position, CHASE_SPEED):
-		_stop_chase()
-		return
-	catch_nearby()
-
-
-func _stop_chase() -> void:
-	_target = null
-	state = "patrol"
+	patrol_step(HALL_ENDS, delta, PATROL_SPEED, Vector2.ZERO)
+	var runner := find_guard(SIGHT_RANGE, true, func(guard: Guard) -> bool: return guard.is_running)
+	if runner:
+		_target = runner
+		start_chase()
+		state = "chase"
 
 
 func _on_state_changed(new_state: String) -> void:

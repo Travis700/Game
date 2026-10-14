@@ -60,23 +60,19 @@ func _hold_sign(delta: float) -> void:
 		return
 	if _stop_left > STOP_SECONDS:
 		return
-	for guard in director.targetable_guards():
-		if director.guard_speed(guard) > MOVING_SPEED and distance_to_guard(guard) < SIGHT_RANGE \
-				and director.can_see(eye_position(), guard):
-			_target = guard
-			_charge_left = CHARGE_SECONDS
-			state = "charge"
-			return
+	var mover := find_guard(SIGHT_RANGE, true, func(guard: Guard) -> bool:
+		return director.guard_speed(guard) > MOVING_SPEED)
+	if mover:
+		_target = mover
+		_charge_left = CHARGE_SECONDS
+		state = "charge"
 
 
 func _charge(delta: float) -> void:
 	_charge_left -= delta
-	if not is_instance_valid(_target) or _target.is_dead or _charge_left <= 0.0 \
-			or not move_to(_target.global_position, CHARGE_SPEED):
+	if _charge_left <= 0.0 or not chase(_target, CHARGE_SPEED, delta):
 		_target = null
 		state = "walk"
-		return
-	catch_nearby()
 
 
 func _on_state_changed(new_state: String) -> void:

@@ -24,7 +24,6 @@ var _teach_left := 0.0
 var _target: Guard
 var _answer_left := 0.0
 var _chase_left := 0.0
-var _unseen_for := 0.0
 ## Peer id -> real seconds that guard is excused for.
 var _excused: Dictionary = {}
 var _talk: Interactable
@@ -74,15 +73,13 @@ func _go_about(delta: float) -> void:
 		if _teach_left <= 0.0:
 			_room = (_room + 1 + randi() % (CLASSROOMS.size() - 1)) % CLASSROOMS.size()
 			_teach_left = randf_range(40.0, 80.0)
-	for guard in director.targetable_guards():
-		if _excused.has(guard.name.to_int()) or distance_to_guard(guard) > NOTICE_RANGE:
-			continue
-		if director.can_see(eye_position(), guard):
-			_target = guard
-			_answer_left = ANSWER_SECONDS
-			state = "register"
-			director.tell(guard.name.to_int(), "The Substitute looks up from its register. \"Guard %d?\"\nLook at it and press E to answer." % guard.slot)
-			return
+	var guard := find_guard(NOTICE_RANGE, true, func(someone: Guard) -> bool:
+		return not _excused.has(someone.name.to_int()))
+	if guard:
+		_target = guard
+		_answer_left = ANSWER_SECONDS
+		state = "register"
+		director.tell(guard.name.to_int(), "The Substitute looks up from its register. \"Guard %d?\"\nLook at it and press E to answer." % guard.slot)
 
 
 func _take_register(delta: float) -> void:
@@ -95,7 +92,7 @@ func _take_register(delta: float) -> void:
 	if _answer_left <= 0.0:
 		state = "detention"
 		_chase_left = CHASE_SECONDS
-		_unseen_for = 0.0
+		start_chase()
 		director.tell(_target.name.to_int(), "\"Absent.\" The Substitute closes the register. \"Detention.\"")
 
 
@@ -120,19 +117,9 @@ func _answer() -> void:
 
 func _chase(delta: float) -> void:
 	_chase_left -= delta
-	if not is_instance_valid(_target) or _target.is_dead or _chase_left <= 0.0:
+	if _chase_left <= 0.0 or not chase(_target, CHASE_SPEED, delta, GIVE_UP_AFTER):
 		_target = null
 		state = "walk"
-		return
-	if director.can_see(eye_position(), _target):
-		_unseen_for = 0.0
-	else:
-		_unseen_for += delta
-	if _unseen_for > GIVE_UP_AFTER or not move_to(_target.global_position, CHASE_SPEED):
-		_target = null
-		state = "walk"
-		return
-	catch_nearby()
 
 
 func _on_state_changed(new_state: String) -> void:
