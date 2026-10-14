@@ -49,6 +49,8 @@ var player_name := ""
 ## The player's rank (1 = Trainee), from their career. Shown on their name tag; some vending
 ## machine items need a higher rank.
 var rank := 1
+## The hat this guard wears (see Hats).
+var hat := "cap"
 ## The guard room desk this guard is sitting at, or -1 when standing.
 var seated_desk := -1
 ## Mouse look is paused while a camera feed fills the screen.
@@ -114,6 +116,9 @@ func _ready() -> void:
 		# The living can't see the Ghost with their own eyes.
 		camera.cull_mask &= ~SecurityCameras.SPECTRAL_LAYER
 	name_tag.visible = not local
+	# Your own hat is hidden from your eyes like your body, but the others and the cameras see it.
+	head.add_child(Hats.build(hat, SELF_LAYER if local else 1))
+	name_tag.position.y += Hats.height(hat)
 	if local:
 		# Your own steps, quieter: you mostly hear everyone else's.
 		_footsteps.volume_db = -14.0

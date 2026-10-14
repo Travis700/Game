@@ -23,6 +23,7 @@ var _credits: CanvasLayer
 var _steam_label: Label
 var _rank_label: Label
 var _rank_bar: ProgressBar
+var _hat: OptionButton
 var _status: Label
 var _address: LineEdit
 var _password: LineEdit
@@ -84,6 +85,19 @@ func _ready() -> void:
 	_rank_bar.show_percentage = false
 	_rank_bar.custom_minimum_size = Vector2(0, 8)
 	column.add_child(_rank_bar)
+	var hat_row := HBoxContainer.new()
+	hat_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	hat_row.add_theme_constant_override("separation", 10)
+	var hat_label := Label.new()
+	hat_label.text = "Hat"
+	hat_row.add_child(hat_label)
+	_hat = OptionButton.new()
+	_hat.custom_minimum_size = Vector2(320, 0)
+	_hat.item_selected.connect(func(index: int) -> void:
+		Profile.hat = _hat.get_item_metadata(index)
+		Profile.save_settings())
+	hat_row.add_child(_hat)
+	column.add_child(hat_row)
 	_show_rank()
 	visibility_changed.connect(func() -> void:
 		if visible:
@@ -273,8 +287,9 @@ func _spacer(height: float) -> Control:
 	return spacer
 
 
-## "Rank 3 · Patrol Officer · 1,450 / 2,500 XP", with a bar to the next rank.
+## "Rank 3 · Patrol Officer · 1,450 / 2,500 XP", with a bar to the next rank, and the hats.
 func _show_rank() -> void:
+	_fill_hats()
 	var xp := Career.xp()
 	var rank := Career.rank()
 	var floor_xp: int = Career.RANKS[rank - 1][0]
@@ -286,3 +301,16 @@ func _show_rank() -> void:
 		_rank_label.text = "Rank %d · %s · %d / %d XP" % [rank, Career.rank_title(rank), xp, next]
 		_rank_bar.max_value = next - floor_xp
 		_rank_bar.value = xp - floor_xp
+
+
+## Every hat: unlocked ones to pick, locked ones greyed out with what unlocks them.
+func _fill_hats() -> void:
+	_hat.clear()
+	for hat: String in Hats.HATS:
+		var unlocked := Hats.is_unlocked(hat)
+		_hat.add_item(Hats.HATS[hat]["name"] if unlocked else "%s  (%s)" % [Hats.HATS[hat]["name"], Hats.requirement(hat)])
+		var index := _hat.item_count - 1
+		_hat.set_item_metadata(index, hat)
+		_hat.set_item_disabled(index, not unlocked)
+		if hat == Profile.hat and unlocked:
+			_hat.select(index)

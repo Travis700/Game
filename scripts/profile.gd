@@ -24,6 +24,8 @@ var mic_threshold := 0.12
 var voice_volume := 1.0
 ## Which microphone ("" for the system default).
 var mic_device := ""
+## The hat your guard wears (see Hats).
+var hat := "cap"
 ## Whether the Understudy may say back things you said (kept only in the host's memory).
 var voice_mimic := true
 
@@ -47,6 +49,7 @@ func _enter_tree() -> void:
 		voice_volume = config.get_value("voice", "volume", 1.0)
 		mic_device = config.get_value("voice", "device", "")
 		voice_mimic = config.get_value("voice", "mimic", true)
+		hat = config.get_value("look", "hat", "cap")
 	apply_volume()
 	if employee_number < 1000:
 		employee_number = randi_range(1000, 9999)
@@ -77,6 +80,7 @@ func save_settings() -> void:
 	config.set_value("voice", "volume", voice_volume)
 	config.set_value("voice", "device", mic_device)
 	config.set_value("voice", "mimic", voice_mimic)
+	config.set_value("look", "hat", hat)
 	config.save(PATH)
 
 

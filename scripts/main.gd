@@ -426,7 +426,7 @@ func _play_solo() -> void:
 	director.bake_navigation()
 	_start_run()
 	_enter_school()
-	_spawn_guard(1, Profile.employee_number, _player_name(), Career.rank())
+	_spawn_guard(1, Profile.employee_number, _player_name(), Career.rank(), _hat())
 
 
 func _host() -> void:
@@ -454,7 +454,7 @@ func _begin_hosting() -> void:
 	director.bake_navigation()
 	_start_run()
 	_enter_school()
-	_spawn_guard(1, Profile.employee_number, _player_name(), Career.rank())
+	_spawn_guard(1, Profile.employee_number, _player_name(), Career.rank(), _hat())
 
 
 func _join(typed: String) -> void:
@@ -516,6 +516,11 @@ func _start_run() -> void:
 
 
 ## The name shown over your guard: your Steam name, or nothing (it then shows "Guard 2").
+## The hat this player picked, if they've still got it unlocked.
+func _hat() -> String:
+	return Profile.hat if Hats.is_unlocked(Profile.hat) else "cap"
+
+
 func _player_name() -> String:
 	return SteamService.user_name if SteamService.available else ""
 
@@ -553,7 +558,7 @@ func _on_steam_invite(lobby_id: int) -> void:
 func _on_connected_to_server() -> void:
 	_mode = "Connected"
 	_enter_school()
-	_register_employee.rpc_id(1, Profile.employee_number, _password, _player_name(), Career.rank())
+	_register_employee.rpc_id(1, Profile.employee_number, _password, _player_name(), Career.rank(), _hat())
 	print("[net] Joined as peer %d" % multiplayer.get_unique_id())
 
 
@@ -597,7 +602,7 @@ func _on_peer_connected(peer_id: int) -> void:
 
 ## Host: a player who just joined shows their badge. Their guard spawns with it.
 @rpc("any_peer", "call_remote", "reliable")
-func _register_employee(badge: int, password: String, player_name := "", rank := 1) -> void:
+func _register_employee(badge: int, password: String, player_name := "", rank := 1, hat := "cap") -> void:
 	var peer_id := multiplayer.get_remote_sender_id()
 	if not multiplayer.is_server() or players.has_node(str(peer_id)):
 		return
@@ -613,7 +618,7 @@ func _register_employee(badge: int, password: String, player_name := "", rank :=
 	# Two copies of the game on one computer share a badge. Lend the second one a spare.
 	while badge < 1000 or _badge_in_use(badge):
 		badge = randi_range(1000, 9999)
-	_spawn_guard(peer_id, badge, player_name, rank)
+	_spawn_guard(peer_id, badge, player_name, rank, hat)
 	# Spawn data is replayed as it was first sent: tell them about anyone promoted since.
 	for guard: Guard in players.get_children():
 		if guard.name.to_int() != peer_id:
@@ -647,11 +652,12 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 ## Host only. The spawner runs _create_guard with the same data on every computer,
 ## including players who join later.
-func _spawn_guard(peer_id: int, badge: int, player_name := "", rank := 1) -> void:
+func _spawn_guard(peer_id: int, badge: int, player_name := "", rank := 1, hat := "cap") -> void:
 	# Personal upgrades go in the spawn data so every computer builds the guard with them.
 	var personal: Array = night.saved_personal.get(str(badge), [])
 	spawner.spawn({"peer_id": peer_id, "slot": _free_slot(), "badge": badge, "personal": personal,
-			"name": player_name.left(24), "rank": clampi(rank, 1, Career.RANKS.size())})
+			"name": player_name.left(24), "rank": clampi(rank, 1, Career.RANKS.size()),
+			"hat": hat if Hats.HATS.has(hat) else "cap"})
 	night.restore_guard(peer_id, badge)
 
 
@@ -662,6 +668,7 @@ func _create_guard(data: Dictionary) -> Node:
 	guard.employee_number = data.get("badge", 0)
 	guard.player_name = data.get("name", "")
 	guard.rank = data.get("rank", 1)
+	guard.hat = data.get("hat", "cap")
 	guard.bright_flashlight = "flashlight" in data.get("personal", [])
 	guard.has_radio = "radio" in data.get("personal", [])
 	guard.position = SPAWN_POINT + Vector3((guard.slot - 2.5) * 1.4, 0, 0)
@@ -1064,6 +1071,9 @@ func on_rank_up(rank: int, title: String) -> void:
 			unlocked.append(Shop.item_name(item))
 	if not unlocked.is_empty():
 		night.report.promotion += " New at the vending machine: " + ", ".join(unlocked) + "."
+	for hat: String in Hats.HATS:
+		if int(Hats.HATS[hat].get("rank", 0)) == rank:
+			night.report.promotion += " New hat: %s (pick it on the menu)." % Hats.HATS[hat]["name"]
 	Sfx.play_flat(self, Sfx.notes([523.0, 659.0, 784.0, 1047.0], 0.14, 0.3, "triangle"))
 	if _local_guard:
 		_local_guard.rank = rank
