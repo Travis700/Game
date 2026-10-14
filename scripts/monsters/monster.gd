@@ -13,6 +13,8 @@ const GRAVITY := 9.8
 ## The Bell never pushes a monster faster than this (just under a guard's running speed),
 ## so every chase can still be outrun.
 const BELL_SPEED_CAP := 5.4
+## How fast monsters go during a lockdown (guards can outrun it, just).
+const LOCKDOWN_HUNT_SPEED := 3.6
 
 var director: MonsterDirector
 ## Shown in death messages, e.g. "Caught by the Hall Monitor."
@@ -37,6 +39,8 @@ var footstep_pitch := 1.0
 var footstep_stride := 0.8
 var footstep_volume := -2.0
 var silent := false
+## Joins in when the lockdown alarm goes (the Ghost and the Shade have their own ways).
+var hunts_in_lockdown := true
 ## Pushes an EMF reader to its top level (EMF 5) up close. Evidence for the field guide.
 var emf5 := false
 
@@ -89,7 +93,21 @@ func _physics_process(delta: float) -> void:
 		stuck_in_trap -= delta
 		halt()
 		return
+	if director.lockdown_left > 0.0 and hunts_in_lockdown and not harmless:
+		_lockdown_hunt()
+		return
 	think(delta)
+
+
+## Lockdown: straight for the nearest guard it can reach.
+func _lockdown_hunt() -> void:
+	var guard := director.nearest_living_guard(global_position)
+	if guard == null:
+		halt()
+		return
+	state = "hunt"
+	move_to(guard.global_position, LOCKDOWN_HUNT_SPEED)
+	catch_nearby()
 
 
 ## The monster's behaviour, run on the host every physics frame. Override this.

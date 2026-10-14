@@ -10,6 +10,7 @@ const BLACKOUT_DISTANCE := 9.0
 
 
 func _init() -> void:
+	hunts_in_lockdown = false
 	emf5 = true
 	display_name = "something you couldn't see"
 	# It floats: no footsteps.

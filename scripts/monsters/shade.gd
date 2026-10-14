@@ -12,6 +12,7 @@ var _age := 0.0
 
 
 func _init() -> void:
+	hunts_in_lockdown = false
 	display_name = "the shade from the totem"
 	state = "hunt"
 

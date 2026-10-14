@@ -56,6 +56,7 @@ var voice: VoiceChat
 var career: Career
 var dread: Dread
 var rounds: Rounds
+var _siren: AudioStreamPlayer
 var hiding: Hiding
 ## Host: when each ghost may next leave a cold spot.
 var _ghost_ping_at: Dictionary = {}
@@ -174,6 +175,7 @@ func _ready() -> void:
 	director.announcement.connect(func(text: String, sound: String) -> void: _announce.rpc(text, sound))
 	director.camera_signal_changed.connect(func(index: int, working: bool) -> void: _camera_signal.rpc(index, working))
 	director.bell_changed.connect(func(ringing: bool) -> void: _set_bell.rpc(ringing))
+	director.lockdown_changed.connect(func(on: bool) -> void: _set_lockdown.rpc(on))
 	school.bell_panel.used.connect(func(by: Node) -> void:
 		if by != _local_guard or _local_guard.is_dead:
 			return
@@ -995,6 +997,24 @@ func _ghost_ping(at: Vector3, slot: int) -> void:
 	fade.tween_callback(spot.queue_free)
 	if _local_guard and not _local_guard.is_dead and _local_guard.global_position.distance_to(at) < 25.0:
 		hud.show_message("A cold spot. Guard %d is trying to tell you something." % slot)
+
+
+## Every computer: the lockdown alarm wails (or stops).
+@rpc("authority", "call_local", "reliable")
+func _set_lockdown(on: bool) -> void:
+	if on:
+		if _siren == null:
+			_siren = AudioStreamPlayer.new()
+			var freqs: Array = []
+			for i in 16:
+				freqs.append(520.0 + 380.0 * sin(i / 16.0 * PI))
+			_siren.stream = Sfx.notes(freqs, 0.08, 0.22, "saw", true)
+			_siren.volume_db = -8.0
+			add_child(_siren)
+		_siren.play()
+		hud.flash(Color(0.8, 0.0, 0.0, 0.45), 1.5)
+	elif _siren:
+		_siren.stop()
 
 
 @rpc("authority", "call_remote", "reliable")

@@ -8,6 +8,8 @@ extends Node3D
 ## are spawned on every computer through the MonsterSpawner.
 
 ## A guard's screen flashes (e.g. the Photographer's flash). Main shows it on their computer.
+## A lockdown started or ended (everyone hears the alarm).
+signal lockdown_changed(on: bool)
 signal screen_flashed(peer_id: int, color: Color, seconds: float)
 signal guard_caught(peer_id: int, by: String, from: Vector3)
 signal message_for(peer_id: int, text: String)
@@ -44,6 +46,11 @@ const ROSTER := {
 	"photographer": {"name": "The Photographer", "home": "Lobby", "night": 3},
 	"twins": {"name": "The Twins", "home": "Room 101", "night": 2},
 }
+## Lockdown: from this night the alarm can go, and for LOCKDOWN_SECONDS (real) every monster
+## hunts the nearest guard it can reach, wherever they are. Hide, or get to the guard room.
+const LOCKDOWN_FROM_NIGHT := 6
+const LOCKDOWN_SECONDS := 40.0
+const LOCKDOWN_SPEED := 3.6
 ## The intercom: in-game minutes between the Principal's summonses, and real seconds to answer.
 const SUMMON_EVERY := Vector2(60.0, 100.0)
 const SUMMON_SECONDS := 45.0
@@ -70,6 +77,9 @@ var career: Career
 var voice: VoiceChat
 ## Tonight's conditions (a full moon, sound carrying...). Host only.
 var conditions: Conditions
+## Real seconds of lockdown left (0 when there isn't one). Host only.
+var lockdown_left := 0.0
+var _lockdown_times: Array[float] = []
 ## Everyone's nerve. Host only.
 var nerve: Nerve
 
@@ -172,6 +182,13 @@ func plan_night(number: int) -> void:
 		for i in (1 if number < 7 else 2):
 			_bell_times.append(randf_range(60.0, 300.0))
 		_bell_times.sort()
+	# Lockdowns: once a night from night 6, twice from night 9 (and Overtime).
+	_lockdown_times.clear()
+	lockdown_left = 0.0
+	if number >= LOCKDOWN_FROM_NIGHT:
+		for i in (1 if number < 9 else 2):
+			_lockdown_times.append(randf_range(90.0, 320.0))
+		_lockdown_times.sort()
 	# The real night cleaner works every night, unless they've called in sick.
 	if not (conditions and conditions.has("messy")):
 		tonight.append({"kind": "cleaner", "at": 10.0})
@@ -190,6 +207,7 @@ func update(minutes: float, delta: float) -> void:
 	lockers.update(minutes)
 	portrait.update(minutes)
 	_update_bell(minutes, delta)
+	_update_lockdown(minutes, delta)
 	_update_principal(minutes, delta)
 	for camera_index: int in _blackouts.keys():
 		if minutes >= _blackouts[camera_index]:
@@ -264,6 +282,10 @@ func remove_monster(monster: Monster) -> void:
 
 ## Host: 6 AM, everything goes back where it came from.
 func end_night() -> void:
+	if lockdown_left > 0.0:
+		lockdown_left = 0.0
+		lockdown_changed.emit(false)
+	_lockdown_times.clear()
 	for monster in _container.get_children():
 		monster.queue_free()
 	tonight.clear()
@@ -482,6 +504,21 @@ func _update_bell(minutes: float, delta: float) -> void:
 		_bell_left = BELL_MAX_SECONDS
 		bell_changed.emit(true)
 		announcement.emit("The school bell is ringing, and everything out there just got faster. The bell panel is in the front office.", "")
+
+
+func _update_lockdown(minutes: float, delta: float) -> void:
+	if lockdown_left > 0.0:
+		lockdown_left -= delta
+		if lockdown_left <= 0.0:
+			lockdown_left = 0.0
+			lockdown_changed.emit(false)
+			announcement.emit("The alarm stops. Whatever was hunting goes back to what it was doing.", "")
+		return
+	if not _lockdown_times.is_empty() and minutes >= _lockdown_times[0]:
+		_lockdown_times.pop_front()
+		lockdown_left = LOCKDOWN_SECONDS
+		lockdown_changed.emit(true)
+		announcement.emit("LOCKDOWN. Every one of them is hunting. Hide in a cupboard or get to the guard room.", "")
 
 
 ## Host: someone shut the bell off at the panel (or it stopped by itself).
