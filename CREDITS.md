@@ -45,6 +45,11 @@ then the style reference for two 3x3 sheets made with Google Nano Banana 2 throu
 cut into the other 17 monsters and the 0451 badge. Check each provider's current terms for
 commercial use before release.
 
+## Icon, key art and store capsules
+
+`icon.png` / `icon.ico` and `steam/art/keyart_raw.png` (also the boot splash) were made with
+SpriteCook (see `spritecook-assets.json`). Capsule titles are set in Inter (SIL Open Font Licence).
+
 ## Generated in code
 
 `floor`, `ceiling`, `metal`, `locker`, `cork`, `board` textures: `tools/gen_textures.py`. Fallback sounds (used where

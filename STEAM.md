@@ -1,6 +1,8 @@
 # Getting Night Shift onto Steam
 
-Everything in the game is done except the art and audio pass (textures, models, sounds).
+Everything in the game is done. Textures, sounds, field guide sketches, the icon and the store
+capsules are in (see CREDITS.md); the monsters and props are still built from simple shapes, so a
+models pass is what's left on the art side.
 This page is the checklist for the Steam side: what's already built in, and the steps only
 you can do (they need your Steamworks account).
 
@@ -126,7 +128,9 @@ root-overrides/paths for the save folder:
 ## 7. Before release
 
 - Play a full run solo, and a full run with 2-4 people over Steam.
-- Store page: capsule art, screenshots, trailer and description (after the art pass).
+- Store page: capsule art is ready in `steam/art/` (header 920×430, small 462×174, main 1232×706,
+  library 600×900, all from `keyart_raw.png`, title in Inter). Still to make: the library hero
+  (3840×1240, needs a wider/higher-res key art), screenshots and a trailer.
 - Content survey: mild horror, no gore. Multiplayer: online co-op 1-4, voice chat.
 - Price: about US$5 as planned.
 
