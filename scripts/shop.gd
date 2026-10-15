@@ -12,7 +12,7 @@ signal holding_changed(item: String)
 
 const ITEMS := {
 	"camera_kit": {
-		"name": "Spectral camera kit", "price": 150, "rank": 2,
+		"name": "Spectral camera kit", "price": 220, "rank": 2,
 		"about": "Install it at a guard room desk: stand by the desk's chair and press {item} (it takes 10 seconds). That desk's monitors then show what ordinary cameras can't.",
 	},
 	"lucky_charm": {
@@ -20,11 +20,11 @@ const ITEMS := {
 		"about": "Carry it to a revive totem. Your roll brings a teammate back on 5 in 6 instead of 4 in 6.",
 	},
 	"door_kit": {
-		"name": "Guard room door kit", "price": 120,
+		"name": "Guard room door kit", "price": 180,
 		"about": "A heavy door for one of the guard room's two doorways: press {use} in the doorway to fit it, then {use} to open and shut it. Monsters can get in from night 7. A shut door holds them for a while before it gives.",
 	},
 	"motion_sensor": {
-		"name": "Motion sensor", "price": 40,
+		"name": "Motion sensor", "price": 25,
 		"about": "Press {item} to put it down. When something walks past tonight, everyone hears where.",
 	},
 	"glue_trap": {
@@ -32,11 +32,11 @@ const ITEMS := {
 		"about": "Press {item} to put it down. The first monster to step on it is stuck there for 20 seconds.",
 	},
 	"portable_camera": {
-		"name": "Portable camera", "price": 100, "rank": 3,
+		"name": "Portable camera", "price": 140, "rank": 3,
 		"about": "Press {item} to set it up where you stand, pointing the way you're facing. It shows up on the guard room monitors ({left} / {right} to find it) until morning. Two at most.",
 	},
 	"radio": {
-		"name": "Walkie-talkie", "price": 90,
+		"name": "Walkie-talkie", "price": 130,
 		"about": "Press {item} to clip it on (it's yours for the run). Hold {radio} to talk to everyone else with one, wherever they are. Careful: a radio blares when someone calls in, and monsters hear it.",
 	},
 	"energy_drink": {
@@ -44,11 +44,11 @@ const ITEMS := {
 		"about": "Press {item} to drink it: you run faster for 30 seconds.",
 	},
 	"flashlight": {
-		"name": "Heavy-duty flashlight", "price": 80, "rank": 3,
+		"name": "Heavy-duty flashlight", "price": 140, "rank": 3,
 		"about": "Press {item} to swap it for your flashlight. A longer, wider beam, for good. (The Librarian will notice it from further away too.)",
 	},
 	"emf": {
-		"name": "Pocket EMF reader", "price": 70, "rank": 2,
+		"name": "Pocket EMF reader", "price": 150, "rank": 2,
 		"about": "Press {item} to clip it on (it's yours for the run). Its lights climb as a monster gets close, even one you can't see. A few kinds push it all the way to EMF 5 (see the field guide).",
 	},
 	"coffee": {
@@ -76,9 +76,9 @@ const USED_WITH_G: Array[String] = ["camera_kit", "portable_camera", "radio", "m
 const DECOY_DELAY := 8.0
 const DECOY_SECONDS := 20.0
 ## How far a motion sensor notices things, and how long it stays quiet after going off.
-const SENSOR_RANGE := 5.0
+const SENSOR_RANGE := 10.0
 const SENSOR_COOLDOWN := 30.0
-const TRAP_RANGE := 0.9
+const TRAP_RANGE := 1.5
 ## How long a vending tray item is kept for whoever bought it.
 const DROP_RESERVED_SECONDS := 30.0
 const TRAP_SECONDS := 20.0
@@ -226,8 +226,13 @@ func _request_use() -> void:
 					if monster.global_position.distance_to(guard.global_position) < HORN_RANGE:
 						monster.stuck_in_trap = maxf(monster.stuck_in_trap, HORN_SECONDS)
 						frozen += 1
-				# As loud as it gets: everything listening for voices hears it.
-				director.report_voice(peer, 1.0)
+				# As loud as it gets: everything listening hears it, from far off, and the ones it froze
+				# come to look once they can move again.
+				director.report_voice(peer, 1.0, false)
+				var at := guard.global_position
+				director.make_noise(at, 4.0, 60.0)
+				get_tree().create_timer(HORN_SECONDS).timeout.connect(func() -> void:
+					director.make_noise(at, 10.0, 60.0))
 				_horn.rpc(peer)
 				_tell(peer, "HOOOONK. Everything nearby freezes." if frozen > 0 else "HOOOONK. Nothing nearby, but everything heard that.")
 		"energy_drink":
@@ -423,6 +428,9 @@ func _request_buy(item: String) -> void:
 	if buyer == null or buyer.is_dead:
 		return
 	var price: int = ITEMS[item]["price"]
+	if director.is_dark():
+		_tell(peer, "The vending machine is dead. No power.")
+		return
 	if buyer.rank < rank_needed(item):
 		_tell(peer, "That's for a %s or above." % Career.rank_title(rank_needed(item)))
 		return

@@ -131,7 +131,7 @@ func _request_punch(index: int) -> void:
 	now_punched.append(index)
 	punches[peer] = punches.get(peer, 0) + 1
 	# The bell carries: anything that listens for loud voices hears it.
-	director.report_voice(peer, BELL_LOUDNESS)
+	director.report_voice(peer, BELL_LOUDNESS, false)
 	_set_state.rpc(PackedInt32Array(order), PackedInt32Array(now_punched), true)
 	_rang.rpc(index)
 	if career:

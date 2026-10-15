@@ -60,7 +60,7 @@ const LOCKDOWN_SECONDS := 30.0
 const DRILLS := {
 	"still": "Walk, don't run: they only hunt a guard who runs or shouts.",
 	"quiet": "Freeze when they're near: they hear footsteps within 12 m, and running or talking from 30 m.",
-	"watched": "Keep your eyes on them: nothing moves while someone's looking, in person or on a monitor.",
+	"watched": "Keep your eyes on them: nothing moves while someone's looking, in person or on the monitor they're looking at.",
 }
 const DRILL_OF := {"HallMonitor": "still", "LunchLady": "quiet", "Mascot": "watched", "Twin": "watched"}
 const LOCKDOWN_SPEED := 3.6
@@ -87,6 +87,12 @@ var cameras: SecurityCameras
 var anomalies: Anomalies
 var lockers: Lockers
 var school: SchoolBuilder
+## Set by Main: in a power cut, things that like the dark get bolder.
+var power: Power
+
+
+func is_dark() -> bool:
+	return power != null and not power.on
 var portrait: SelfPortrait
 var career: Career
 ## Voice chat, so the Understudy can copy what guards said. Host only.
@@ -117,6 +123,10 @@ var handled_tonight: Array[String] = []
 ## Understudy). When (in-game minutes; -1 for not tonight), and the line for the report.
 var _echo_at := -1.0
 var _first_contact_done := false
+## Host: the last correct check_log found a monster this guard had already logged in another
+## form (the other Twin): right, but not worth anything.
+var last_log_repeat := false
+var _bell_noise := 0.0
 var _echo_note := ""
 const ECHO_SPOTS: Array[Vector3] = [Vector3(-30, 0, 7), Vector3(30, 0, 7), Vector3(0, 0, -2), Vector3(-58, 0, 7), Vector3(60, 0, 7), Vector3(-21, 0, -11)]
 ## The finale's gate is open: guards out in the street are out of reach.
@@ -318,7 +328,7 @@ func plan_night(number: int) -> void:
 				and (randf() < MOOD_CHANCE or Memos.has(number, "moods")):
 			plan["mood"] = Monster.MOODS.keys().pick_random()
 		if plan["kind"] == "student":
-			plan["real"] = randf() < 0.2
+			plan["real"] = randf() < 0.35
 	# The real night cleaner works every night, unless they've called in sick.
 	if not (conditions and conditions.has("messy")):
 		tonight.append({"kind": "cleaner", "at": 10.0})
@@ -765,6 +775,11 @@ func speed_multiplier() -> float:
 
 func _update_bell(minutes: float, delta: float) -> void:
 	if bell_ringing:
+		# The sound-hunters home in on the panel while it rings: shutting it off is a race.
+		_bell_noise -= delta
+		if _bell_noise <= 0.0 and school and school.bell_panel:
+			_bell_noise = 2.0
+			make_noise(school.bell_panel.global_position, 2.5, 45.0)
 		_bell_left -= delta
 		if _bell_left <= 0.0:
 			stop_bell()
@@ -929,15 +944,28 @@ func check_mascot_missing(peer_id: int, area: String) -> bool:
 
 
 ## Host: a guard's voice packet arrived (or the host is talking). `loudness` is 0-1.
-func report_voice(peer_id: int, loudness: float) -> void:
+## `spoken` false: a loud noise the guard made (a punch-station bell), not their voice. Monsters
+## react the same, but "nobody raises their voice" doesn't count it.
+func report_voice(peer_id: int, loudness: float, spoken := true) -> void:
 	var guard := guard_by_peer(peer_id)
 	if guard == null or guard.is_dead:
 		return
 	var now := Time.get_ticks_msec() / 1000.0
-	var entry: Dictionary = _voices.get_or_add(peer_id, {"until": 0.0, "level": 0.0})
+	var entry: Dictionary = _voices.get_or_add(peer_id, {"until": 0.0, "level": 0.0, "spoken": 0.0})
 	# Remember the loudest bit of the last moment, not just the latest packet.
 	entry["level"] = loudness if now > entry["until"] else maxf(entry["level"] * 0.9, loudness)
 	entry["until"] = now + VOICE_LINGER
+	if spoken:
+		entry["spoken"] = loudness if now > float(entry.get("spoken_until", 0.0)) else maxf(float(entry["spoken"]) * 0.9, loudness)
+		entry["spoken_until"] = now + VOICE_LINGER
+
+
+## How loud a guard's actual voice is right now (no bells or horns). Host only.
+func spoken_level(guard: Guard) -> float:
+	var entry: Dictionary = _voices.get(guard.name.to_int(), {})
+	if entry.is_empty() or Time.get_ticks_msec() / 1000.0 > float(entry.get("spoken_until", 0.0)):
+		return 0.0
+	return float(entry["spoken"])
 
 
 ## How loud a guard is talking right now: 0 when they're quiet. Host only.
@@ -975,8 +1003,9 @@ func nerve_reach(guard: Guard) -> float:
 
 
 ## Host: a loud noise somewhere (e.g. a camera speaker), for monsters that hunt by sound.
-func make_noise(at: Vector3, seconds := 6.0) -> void:
-	_noises.append([at, _minutes_clock() + seconds])
+## `reach`: how far this noise carries, if further than a monster would usually hear.
+func make_noise(at: Vector3, seconds := 6.0, reach := 0.0) -> void:
+	_noises.append([at, _minutes_clock() + seconds, reach])
 
 
 ## Host: the newest noise still going within `reach` of `from`, or Vector3.INF.
@@ -984,7 +1013,7 @@ func noise_near(from: Vector3, reach: float) -> Vector3:
 	var now := _minutes_clock()
 	var found := Vector3.INF
 	for noise: Array in _noises:
-		if float(noise[1]) >= now and (noise[0] as Vector3).distance_to(from) < reach:
+		if float(noise[1]) >= now and (noise[0] as Vector3).distance_to(from) < maxf(reach, float(noise[2]) if noise.size() > 2 else 0.0):
 			found = noise[0]
 	_noises = _noises.filter(func(noise: Array) -> bool: return float(noise[1]) >= now)
 	return found
@@ -1006,6 +1035,7 @@ func tell(peer_id: int, text: String) -> void:
 ## guard hasn't logged yet that's in that area right now, or "" if there isn't one. If several
 ## are there, the one the guard `named` counts first.
 func check_log(peer_id: int, area: String, named := "") -> String:
+	last_log_repeat = false
 	var found: Array[Monster] = []
 	for node: Node in _container.get_children():
 		var monster := node as Monster
@@ -1026,6 +1056,12 @@ func check_log(peer_id: int, area: String, named := "") -> String:
 			var mood_line: String = Monster.MOODS[monster.mood]["tell"] % (monster.display_name.left(1).to_upper() + monster.display_name.substr(1))
 			get_tree().create_timer(1.5).timeout.connect(func() -> void: tell(peer_id, mood_line))
 		_credited[monster.name].append(peer_id)
+		# The Twins are one monster in two rooms: the second room isn't a second monster.
+		last_log_repeat = false
+		if monster is Twin:
+			for other: Node in _container.get_children():
+				if other is Twin and other != monster and peer_id in (_credited.get(other.name, []) as Array):
+					last_log_repeat = true
 		if career:
 			career.logged_monster(peer_id, kind)
 		if monster.leaves_when_logged:

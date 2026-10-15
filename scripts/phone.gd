@@ -21,6 +21,7 @@ const TIPS := {
 }
 
 var director: MonsterDirector
+var _ring_noise := 0.0
 var anomalies: Anomalies
 var power: Power
 
@@ -75,13 +76,18 @@ func plan(night_number: int, ends_by := WINDOW.y) -> void:
 
 func update(minutes: float, delta: float) -> void:
 	if ringing:
+		# The ringing carries: anything that hunts by sound drifts toward the office.
+		_ring_noise -= delta
+		if _ring_noise <= 0.0:
+			_ring_noise = 1.0
+			director.make_noise(AT, 1.5, 30.0)
 		_ring_left -= delta
 		if _ring_left <= 0.0:
 			_set_ringing.rpc(false)
 			for guard in director.living_guards():
 				director.tell(guard.name.to_int(), "The phone stops ringing. Then the lights go out." if power.on
 						else "The phone in the front office stops ringing.")
-			power.cut()
+			power.cut(true)
 		return
 	if not _schedule.is_empty() and minutes >= _schedule[0]:
 		_schedule.pop_front()

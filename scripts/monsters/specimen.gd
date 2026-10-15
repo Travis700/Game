@@ -51,7 +51,7 @@ func think(delta: float) -> void:
 	match state:
 		"flee":
 			if not move_to(_flee_to, FLEE_SPEED) or arrived() or is_stuck():
-				_hide_left = randf_range(HIDE_SECONDS.x, HIDE_SECONDS.y)
+				_hide_left = randf_range(HIDE_SECONDS.x, HIDE_SECONDS.y) * (0.5 if director.is_dark() else 1.0)
 				state = "hidden"
 		"hidden":
 			halt()
@@ -72,7 +72,7 @@ func think(delta: float) -> void:
 			if guard == null:
 				halt()
 				return
-			move_to(guard.global_position, CRAWL_SPEED)
+			move_to(guard.global_position, CRAWL_SPEED * (1.25 if director.is_dark() else 1.0))
 			catch_nearby()
 
 

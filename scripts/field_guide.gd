@@ -18,7 +18,7 @@ const ENTRIES := {
 	"Mascot": {
 		"name": "the Mascot", "where": "Gym",
 		"signs": "The bulldog costume that should be on its stand by the gym doors.",
-		"rule": "It only moves while nobody is watching it. Keep it on a monitor, or keep your eyes on it.",
+		"rule": "It only moves while nobody is watching it. Keep it on the monitor you are looking at, or keep your eyes on it.",
 		"rumour": "The school mascot never seems to be quite where they left it.",
 		"lore": "Sept 9. Somebody keeps moving the bulldog. I put a sticker on its foot by the stand. Next night the sticker was on the gym door, two metres up.",
 	},
@@ -116,7 +116,7 @@ const ENTRIES := {
 	"Twin": {
 		"name": "the Twins", "where": "Classroom wing",
 		"signs": "Two girls in matching dresses, one in Room 101 and one in Room 102. A giggle when they move.",
-		"rule": "They only move when neither is watched. Keep one of them on a monitor, or in sight, at all times.",
+		"rule": "They only move when neither is watched. Keep one of them on the monitor you are looking at, or in sight, at all times.",
 		"rumour": "Two girls are waiting in the classrooms. They never come one at a time.",
 		"lore": "Dec 2. Two girls in 101 and 102. Same dress. I keep one on the monitor at all times. I don't know what happens if I don't, and I'm not finding out.",
 	},

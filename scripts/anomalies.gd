@@ -125,6 +125,9 @@ var _missed_names: Array[String] = []
 var _pool: Array[int] = []
 ## Host: tonight's spot for each anomaly (0 = its usual one, n = alts[n - 1]). See plan.
 var _spots: Dictionary = {}
+## Host, set by Main: MonsterDirector.make_noise.
+var director_noise := Callable()
+var _noise_call_at := -100.0
 
 
 func build(school_builder: SchoolBuilder) -> void:
@@ -293,6 +296,13 @@ func start(index: int, minutes: float, night := 1) -> void:
 
 ## Host, every frame: figures vanish when approached; reported anomalies get cleared up.
 func update(minutes: float) -> void:
+	# A noise draws the sound-hunters over every so often: the desk sees the Lunch Lady wander
+	# into a corner and can send someone to listen.
+	if minutes - _noise_call_at >= 15.0:
+		_noise_call_at = minutes
+		for i in _active:
+			if DEFINITIONS[i]["kind"] == "noise" and director_noise.is_valid():
+				director_noise.call(_props[DEFINITIONS[i]["prop"]].global_position, 4.0, 30.0)
 	for i in _active.duplicate():
 		if not records.has(i):
 			continue
@@ -378,6 +388,7 @@ func send_state_to(peer_id: int) -> void:
 
 ## Host: puts everything back for the next night.
 func reset_all() -> void:
+	_noise_call_at = -100.0
 	for i in _active.duplicate():
 		_set_active.rpc(i, false)
 	records.clear()

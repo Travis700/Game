@@ -74,7 +74,7 @@ func update(minutes: float, delta: float) -> void:
 					return
 		"quiet":
 			for guard in director.living_guards():
-				if director.voice_level(guard) > SHOUT:
+				if director.spoken_level(guard) > SHOUT:
 					_fail("%s raised their voice." % _who(guard))
 					return
 		"early_round":

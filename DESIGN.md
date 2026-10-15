@@ -134,18 +134,20 @@ Which monsters are unlocked on which night is still to be set (section 14).
 
 | Item | Price | Effect |
 |---|---|---|
-| Spectral camera kit | 150 | Installed at a desk with G (10 s): that desk's monitors show the Ghost. |
+| Spectral camera kit | 220 | Installed at a desk with G (10 s): that desk's monitors show the Ghost. |
 | Lucky rabbit's foot | 60 | Revive totems succeed on 5 in 6 (co-op only; solo has no totems). |
-| Guard room door kit | 120 | A door for one of the two doorways; holds monsters about 15 s of banging. |
-| Motion sensor | 40 | Put down with G; announces which area a monster passed. |
+| Guard room door kit | 180 | A door for one of the two doorways; holds monsters about 15 s of banging. |
+| Motion sensor | 25 | Put down with G; announces which area a monster passed within 10 m. Can't be bought in a power cut (the machine is dark). |
 | Industrial glue trap | 60 | Put down with G; holds the first monster for 20 s. |
-| Portable camera | 100 | Set up anywhere with G; an extra monitor feed until morning (two at most). |
-| Walkie-talkie | 90 | Personal, for the run. Hold B to talk to every radio; receiving radios are loud enough for monsters to hear. |
+| Portable camera | 140 | Set up anywhere with G; an extra monitor feed until morning (two at most). |
+| Walkie-talkie | 130 | Personal, for the run. Hold B to talk to every radio; receiving radios are loud enough for monsters to hear. |
 | Energy drink | 25 | Faster running for 30 s. |
-| Heavy-duty flashlight | 80 | Longer, wider beam for the rest of the run. |
-| Air horn | 70 | Freezes monsters within 15 m for 6 s; everything hears it. |
+| Heavy-duty flashlight | 140 | Longer, wider beam for the rest of the run. |
+| Air horn | 70 | Freezes monsters within 15 m for 6 s; it's a loud noise everything within 60 m comes to check once the freeze ends. |
 | Decoy radio | 60 | Put down; 8 s later it plays music for 20 s, a noise sound-hunters go to. |
 | Box of donuts for the district | 300 | Removes one of the team's write-ups. |
+| Pocket EMF reader | 150 | Personal, for the run: 1–4 by distance to the nearest monster, 5 for the evidence monsters. |
+| Thermos of coffee | 30 | +40 nerve. |
 
 **Rank locks:** spectral camera kit, glue trap and decoy radio need rank 2, portable camera, heavy-duty flashlight and donuts rank 3, air horn rank 4.
 
@@ -181,7 +183,7 @@ What keeps a player coming back after the first run:
 - **Anomaly variety.** Most anomalies have 2–3 alternative spots (where a moved thing ends up, where an extra thing or figure appears), picked at random each time (never within 12 m of a guard), all checked to be on their area's camera. Each night only a random 70% of the possible anomalies (at least 6) are in play.
 - **Custom shift.** The menu's shift-notes picker (saved in the profile) forces the ticked notes every night of a solo or hosted run (not the daily shift).
 - **Joining mid-shift.** A player who connects during a shift spawns as a ghost: the host replays the night's start, clock, conditions, round, power, hiding, lockdown/bell and finale state to them, marks the already-caught as ghosts, and leaves them out of the work target. Also replayed: camera blackouts, totems, open lockers, placed sensors/traps and portable cameras, the phone, the Self-Portrait's progress, the Mascot's empty stand, the bonus line and the bodies of the caught (late joiners take no reference photos). A late joiner earns nothing that night ("Joined late" on the report), can't be revived by a totem, and doesn't count towards the team size (so a solo host keeps their second wind and solo awards). Someone who leaves a shift alive and rejoins it counts as caught. Ghost cooldowns are kept by badge, so reconnecting doesn't reset them. They play normally from the next night. Joining during the morning or the report is refused with "try again in a minute".
-- **Base station.** A guard seated at a desk can hold the walkie-talkie key without owning one: everyone alive hears it as a radio call (field guards still need a walkie to answer). The Mascot and Twins only count as watched on a monitor while someone occupies a desk.
+- **Base station.** A guard seated at a desk can hold the walkie-talkie key without owning one: everyone alive hears it as a radio call (field guards still need a walkie to answer). The Mascot and Twins only count as watched on the monitor a seated guard is actually looking at (full screen, the one under the cursor, or the last one they looked at).
 - **Monster deck.** Each night's pool is weighted: monsters this run hasn't shown come first, and one that came the last two nights goes to the back. Solo guards' nerve drains 0.06/s on top of the base rate (the guard room still restores it).
 - **Evidence for confirmations.** A teammate's confirmation of something already logged pays (+10) only if they could see it themselves: in that area within the last 90 s, or seated at a desk with that area's camera on one of their own four monitors. Otherwise it's noted with no pay. Likewise only the monitors of occupied desks count as watching the Mascot and Twins.
 - **Monster fairness pass.** The Lunch Lady stops 2 m short of a sound and only catches guards she can hear (standing still really is silent). The Other Cleaner's reveal has a sound and a 0.8 s pause, then chases at 4.5 for 7 s (giving up 3 s out of sight), with 20 s before it can do it again. The Understudy resets its step-in on a new target and excuses totems and desks as well as stations and the breaker. The Coach doesn't count standing still for the Crossing Guard's sign as slacking. A totem's Shade appears 8 m away and takes 1.5 s to rise. Hidden guards are only pulled out by monsters that could have seen them go in (not the Lunch Lady, Nurse, Substitute, Twins or Mascot). The Photographer won't line up the same guard for 30 s. The Principal reminds you with 15 s left, and stops hunting a guard who makes it to the office. The Self-Portrait's last stage is announced to everyone and it rests 45–70 minutes between paintings. The Nurse speeds up from 1.7 to 2.9 m/s the longer she follows (and follows a solo guard half as long). Cues: the Crossing Guard's all-clear whistles, locker creaks and Understudy step-ins are captioned, the Ghost breathes within 8 m, the Twins giggle at most every 4 s, the Specimen is louder, and the Librarian names what actually gave you away.

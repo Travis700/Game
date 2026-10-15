@@ -36,6 +36,9 @@ var _screens: Array[Interactable] = []
 var _materials: Array[ShaderMaterial] = []
 var _chairs: Array[Interactable] = []
 var _chair_positions: Array[Vector3] = []
+## Host: peer -> the monitor they're looking at (see watched_feeds). Local: what we last sent.
+var _looking: Dictionary = {}
+var _reported_look := -2
 var _zoomed := -1
 ## True while the full-screen view shows the early-night photo instead of the live feed.
 var _comparing := false
@@ -121,6 +124,20 @@ func _process(delta: float) -> void:
 		if focused >= 0:
 			_materials[focused].set_shader_parameter("highlight", 1.0)
 		_focused = focused
+	# The host needs to know which monitor you're actually looking at: only that one counts as
+	# "watching" (it's what keeps the Mascot still).
+	# (Glancing away at the room keeps the last monitor you looked at; you start on your desk's first.)
+	var look := -1
+	if local_guard.seated_desk >= 0:
+		look = _zoomed if _zoomed >= 0 else (_focused if _focused >= 0 else _reported_look)
+		if look < local_guard.seated_desk * 4 or look >= local_guard.seated_desk * 4 + 4:
+			look = local_guard.seated_desk * 4
+	if look != _reported_look:
+		_reported_look = look
+		if multiplayer.is_server():
+			_report_look(look)
+		else:
+			_report_look.rpc_id(1, look)
 	_update_controls_hint()
 
 
@@ -472,15 +489,29 @@ func _refresh_screen(monitor: int) -> void:
 
 
 ## The feeds on the monitors of desks someone is sitting at (what's actually being watched).
+## Host: the feeds someone at a desk is looking at right now (one per seated guard: the monitor
+## they've picked out, or have full screen).
 func watched_feeds() -> Array[int]:
 	var feeds: Array[int] = []
 	for monitor in assignments.size():
-		if occupants[monitor / 4] == 0:
+		var occupant: int = occupants[monitor / 4]
+		if occupant == 0 or int(_looking.get(occupant, -1)) != monitor:
 			continue
 		var feed_key := SecurityCameras.key(assignments[monitor], _is_spectral(monitor))
 		if feed_key not in feeds:
 			feeds.append(feed_key)
 	return feeds
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _report_look(monitor: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer := multiplayer.get_remote_sender_id()
+	if peer == 0:
+		peer = multiplayer.get_unique_id()
+	var desk := occupants.find(peer)
+	_looking[peer] = monitor if desk >= 0 and monitor >= desk * 4 and monitor < desk * 4 + 4 else -1
 
 
 func _update_shown() -> void:

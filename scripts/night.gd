@@ -362,6 +362,10 @@ func _receive_log(area: String, type: String, named := "") -> void:
 		var logger := director.guard_by_peer(peer)
 		if logger and found != "" and found not in logger.known_monsters:
 			logger.known_monsters.append(found)
+	if correct and type == "Monster" and director.last_log_repeat:
+		logged.append(entry)
+		_log_result(peer, true, "Noted: the other Twin, in %s. Same monster: you've logged it already." % area)
+		return
 	var first := (director.last_log_was_first if type == "Monster" else anomalies.last_was_first) or not correct
 	var caller := _caller_for(area, peer) if correct else 0
 	if correct and first and caller != 0:
@@ -904,7 +908,8 @@ func _award_night() -> void:
 				career.award(peer, "GRADE_ONE")
 			if grade >= Grades.MAX:
 				career.award(peer, "TOP_GRADE")
-			career.record_score(peer, points_of(peer), difficulty, team)
+			var who := guard.player_name if guard.player_name != "" else "Guard %d" % guard.slot
+			career.record_score(peer, maxi(int(_run_stats.get(who, {}).get("earned", 0)), points_of(peer)), difficulty, team)
 			if team == 1:
 				career.award(peer, "RUN_WON_SOLO")
 			if difficulty >= MAX_DIFFICULTY:
@@ -1015,6 +1020,8 @@ func _build_rows(keep_pay: bool) -> Array:
 		run["named"] += int(stats.get("named", 0))
 		run["stations"] += int(rounds.punches.get(peer, 0))
 		run["caught"] += 1 if guard.is_dead and not late else 0
+		# Everything earned this run, spent or not (the leaderboard score: buying gear shouldn't cost it).
+		run["earned"] = int(run.get("earned", 0)) + maxi(pay, 0)
 		rows.append({
 			"xp": xp, "late": late,
 			"name": "Guard %d  #%04d" % [guard.slot, guard.employee_number], "clocked_out": clocked_out, "died": guard.is_dead and not late,

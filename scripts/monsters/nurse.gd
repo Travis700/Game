@@ -50,7 +50,7 @@ func _rounds(delta: float) -> void:
 		if guard:
 			_target = guard
 			# A guard on their own all night gets shorter visits.
-			_follow_left = FOLLOW_SECONDS * (0.5 if director.team_size <= 1 else 1.0)
+			_follow_left = FOLLOW_SECONDS * (0.7 if director.team_size <= 1 else 1.0)
 			state = "follow"
 			director.tell(guard.name.to_int(), "A heart monitor beeps somewhere behind you. \"You shouldn't be wandering about alone.\"")
 			return
@@ -60,8 +60,9 @@ func _rounds(delta: float) -> void:
 func _follow(delta: float) -> void:
 	_follow_left -= delta
 	# She walks faster the longer she follows: it won't do to just stroll ahead of her.
-	var followed := FOLLOW_SECONDS * (0.5 if director.team_size <= 1 else 1.0) - _follow_left
-	var speed := minf(FOLLOW_SPEED + 0.02 * followed, 2.9)
+	var followed := FOLLOW_SECONDS * (0.7 if director.team_size <= 1 else 1.0) - _follow_left
+	# Slow at first, then faster than walking: you can't just stroll away from her for long.
+	var speed := minf(FOLLOW_SPEED + 0.04 * followed, 3.6)
 	if not is_instance_valid(_target) or _follow_left <= 0.0 or not _is_alone(_target) \
 			or not chase(_target, speed, delta):
 		_stop_following()

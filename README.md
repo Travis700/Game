@@ -182,29 +182,29 @@ Press E on the vending machine in the guard room to spend points. Purchases drop
 to pick them up. You can carry one thing at a time (shown in the bottom-right corner). Some items need
 a rank (in brackets); the machine shows which.
 
-- **Spectral camera kit (150, rank 2):** stand by a desk's chair with it and press G, then stay there for 10
+- **Spectral camera kit (220, rank 2):** stand by a desk's chair with it and press G, then stay there for 10
   seconds. That desk's monitors switch to spectral feeds, which show the Ghost.
 - **Lucky rabbit's foot (60):** carry it to a revive totem. Your roll revives on 5 in 6 instead of 4 in 6.
-- **Guard room door kit (120):** stand in one of the guard room's two doorways and press E to fit a door,
+- **Guard room door kit (180):** stand in one of the guard room's two doorways and press E to fit a door,
   then E to open and shut it. From night 7 monsters can come into the guard room: a shut door holds
   them for about 15 seconds of banging, then gives way and hangs open for a minute.
-- **Motion sensor (40):** press G to put it down. When a monster walks past, everyone hears which area.
+- **Motion sensor (25):** press G to put it down. When a monster walks within 10 metres of it, everyone hears which area. The machine can't sell anything during a power cut.
 - **Industrial glue trap (60, rank 2):** press G to put it down. The first monster to step on it is stuck for 20 seconds.
-- **Portable camera (100, rank 3):** press G to set it up where you stand, facing the way you look. It appears on
+- **Portable camera (140, rank 3):** press G to set it up where you stand, facing the way you look. It appears on
   the guard room monitors (A / D to find it) until morning. Two at most per night.
-- **Walkie-talkie (90):** press G to clip it on; it's yours for the run. Hold **B** to talk to everyone
+- **Walkie-talkie (130):** press G to clip it on; it's yours for the run. Hold **B** to talk to everyone
   else with a radio, wherever they are (it sounds like a radio, with a click when a call comes in).
   But a radio blares when a call comes in: monsters near the guard *receiving* the call hear it as
   if that guard were talking. Think before you call someone who's hiding.
-- **Pocket EMF reader (70, rank 2):** press G to clip it on; it's yours for the run. Its five lights (bottom
+- **Pocket EMF reader (150, rank 2):** press G to clip it on; it's yours for the run. Its five lights (bottom
   left) climb as monsters get close, even ones you can't see. Most top out at 4 (harmless ones at 3), but
   the Ghost, the Specimen, the Understudy and the Other Cleaner push it to **EMF 5** up close: evidence,
   and the surest way to tell the Other Cleaner from the real one.
 - **Thermos of coffee (30):** press G to drink it: +40 nerve.
 - **Energy drink (25):** press G to drink it and run faster for 30 seconds.
-- **Heavy-duty flashlight (80, rank 3):** press G to fit it. A longer, wider beam for the rest of the run.
+- **Heavy-duty flashlight (140, rank 3):** press G to fit it. A longer, wider beam for the rest of the run.
 - **Air horn (70, rank 4):** press G to blast it. Every monster within 15 metres freezes for 6 seconds,
-  but everything in the school hears it.
+  but everything in the school hears it, and comes to look once the freeze wears off.
 - **Decoy radio (60, rank 2):** press G to put it down. Eight seconds later it blares music for twenty, and
   everything that hunts by sound goes to look.
 - **Box of donuts for the district (300, rank 3):** press G to send it: the district forgets one write-up.
@@ -263,7 +263,7 @@ on your clipboard as "Monster" in that area for points.
 | Monster | From night | Where | How it works |
 |---|---|---|---|
 | Hall Monitor | 1 | Main hallway | Walks the hallway. Leaves walkers alone, but chases anyone it sees running. |
-| The Mascot | 1 | Gym | Steps off its stand. Only moves while nobody is looking at it, in person or on a monitor. |
+| The Mascot | 1 | Gym | Steps off its stand. Only moves while nobody is looking at it, in person or on the monitor you're looking at. |
 | Lunch Lady | 2 | Cafeteria, kitchen | Blind and humming. Hears running from far away, walking only up close. |
 | Locker Thing | 3 | Main hallway | Locker doors swing open. Walk past an open one and you're pulled in. Press E to shut them. |
 | The Principal | 3 | Front office | Calls one guard to the office over the intercom. Get there within 45 seconds, or it comes to find you. |

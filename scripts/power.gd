@@ -8,6 +8,10 @@ extends Node3D
 ## The host decides when the power goes; every computer shows it.
 
 signal breaker_reset(peer_id: int)
+## Host: this cut came from an unanswered phone.
+var cut_by_phone := false
+## Host, set by Main: takes points off a guard's pay tonight (Night.dock).
+var night_dock := Callable()
 
 const BREAKER_AT := Vector3(4.8, 1.5, -4.0)
 const BREAKER_HOLD := 3.0
@@ -107,9 +111,12 @@ func update(minutes: float) -> void:
 
 
 ## Host: the power goes out now.
-func cut() -> void:
+## `from_phone`: the phone was left to ring out. Resetting that cut pays less: ignoring the
+## phone shouldn't be a way to earn.
+func cut(from_phone := false) -> void:
 	if not on:
 		return
+	cut_by_phone = from_phone
 	_set_power.rpc(false, true)
 	for guard in director.living_guards():
 		director.tell(guard.name.to_int(), "The power's gone out. The breaker panel is in the custodian's closet, across the main hallway.")
@@ -137,6 +144,9 @@ func _request_reset() -> void:
 		return
 	_set_power.rpc(true, true)
 	breaker_reset.emit(peer)
+	if cut_by_phone and night_dock.is_valid():
+		night_dock.call(peer, 15)
+	cut_by_phone = false
 	if career:
 		career.award(peer, "LIGHTS_ON")
 	for living in director.living_guards():

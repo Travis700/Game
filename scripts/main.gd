@@ -360,6 +360,9 @@ func _ready() -> void:
 	power.career = career
 	add_child(power)
 	power.breaker_reset.connect(night.add_bonus)
+	power.night_dock = night.dock
+	director.power = power
+	anomalies.director_noise = director.make_noise
 	night.power = power
 	var conditions := Conditions.new()
 	conditions.name = "Conditions"
@@ -427,6 +430,7 @@ func _ready() -> void:
 	shop.night = night
 	director.student_helped.connect(func(peer_id: int) -> void:
 		night.add_bonus(peer_id)
+		night.pay_extra(peer_id, 50)
 		career.award(peer_id, "GOOD_SAMARITAN"))
 	_refresh_inventory()
 
