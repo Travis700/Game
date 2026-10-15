@@ -41,6 +41,7 @@ var _difficulty: OptionButton
 var _difficulty_about: Label
 var _keep_gear: CheckBox
 var _night_length: OptionButton
+var _notes: MenuButton
 var _continue: CheckBox
 var _warned_about_save := false
 
@@ -249,7 +250,16 @@ func options() -> Dictionary:
 		"continue": _continue.visible and _continue.button_pressed,
 		"password": _password.text,
 		"seconds_per_minute": float(NIGHT_LENGTHS[maxi(_night_length.selected, 0)][1]),
+		"notes": Profile.custom_notes.filter(func(key: Variant) -> bool: return Conditions.CATALOGUE.has(key)),
 	}
+
+
+func _show_notes() -> void:
+	var names: Array[String] = []
+	for key: Variant in Profile.custom_notes:
+		if Conditions.CATALOGUE.has(key):
+			names.append(Conditions.CATALOGUE[key]["name"])
+	_notes.text = "Shift notes: random each night" if names.is_empty() else "Custom shift, every night: " + ", ".join(names)
 
 
 func _add_run_options(column: VBoxContainer) -> void:
@@ -294,6 +304,27 @@ func _add_run_options(column: VBoxContainer) -> void:
 		Profile.save_settings())
 	row.add_child(_night_length)
 	column.add_child(row)
+	# Custom shift: pick the shift notes for every night of the run.
+	_notes = MenuButton.new()
+	_notes.flat = false
+	_notes.tooltip_text = "Pick shift notes to have every night (each one is still worth +15% XP). Nothing ticked: random notes, as usual."
+	var popup := _notes.get_popup()
+	popup.hide_on_checkable_item_selection = false
+	for key: String in Conditions.CATALOGUE:
+		popup.add_check_item(Conditions.CATALOGUE[key]["name"])
+		popup.set_item_metadata(popup.item_count - 1, key)
+		popup.set_item_checked(popup.item_count - 1, key in Profile.custom_notes)
+	popup.index_pressed.connect(func(index: int) -> void:
+		popup.set_item_checked(index, not popup.is_item_checked(index))
+		var picked: Array = []
+		for i in popup.item_count:
+			if popup.is_item_checked(i):
+				picked.append(popup.get_item_metadata(i))
+		Profile.custom_notes = picked
+		Profile.save_settings()
+		_show_notes())
+	column.add_child(_notes)
+	_show_notes()
 
 	_continue = CheckBox.new()
 	_continue.text = "Continue saved run: %s" % RunSave.describe(saved)

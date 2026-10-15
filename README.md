@@ -92,6 +92,9 @@ padlock key turns up deep in the school (the intercom says where): fetch it and 
 gate opens. Anyone standing out in the street is safe. Whoever's still inside at 6 AM is caught; one guard out
 wins the run. If the key's carrier is caught, the key lies where they fell.
 
+**Custom shift:** on the menu, tick shift notes (fog, full moon, camera faults...) to have every night of the
+run, for your own challenge runs. Each still adds 15% XP.
+
 **Joining late:** you can join a team mid-shift. You come in as a ghost (watch, leave cold spots, knock things
 over; a revive totem can bring you back) and clock in properly from the next night.
 
