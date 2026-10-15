@@ -113,6 +113,11 @@ var grade := 0
 var _out_tonight: Dictionary = {}
 var _caught_by_kind: Dictionary = {}
 var handled_tonight: Array[String] = []
+## Host, night 3 with a team: once, a teammate's voice from an empty hallway (a taste of the
+## Understudy). When (in-game minutes; -1 for not tonight), and the line for the report.
+var _echo_at := -1.0
+var _echo_note := ""
+const ECHO_SPOTS: Array[Vector3] = [Vector3(-30, 0, 7), Vector3(30, 0, 7), Vector3(0, 0, -2), Vector3(-58, 0, 7), Vector3(60, 0, 7), Vector3(-21, 0, -11)]
 ## The finale's gate is open: guards out in the street are out of reach.
 var gate_open := false
 ## Host: peer id -> when their close-call grace runs out (real seconds).
@@ -223,6 +228,8 @@ func plan_night(number: int) -> void:
 	_credited.clear()
 	_out_tonight.clear()
 	_caught_by_kind.clear()
+	_echo_note = ""
+	_echo_at = randf_range(80.0, 220.0) if number == 3 and team_size >= 2 else -1.0
 	var pool: Array = []
 	for kind: String in ROSTER:
 		var home: String = ROSTER[kind]["home"]
@@ -341,10 +348,36 @@ func update(minutes: float, delta: float) -> void:
 		_camera_stares()
 	_update_lockdown(minutes, delta)
 	_update_principal(minutes, delta)
+	if _echo_at >= 0.0 and minutes >= _echo_at:
+		_echo_at = -1.0
+		_echo()
 	for camera_index: int in _blackouts.keys():
 		if minutes >= _blackouts[camera_index]:
 			_blackouts.erase(camera_index)
 			camera_signal_changed.emit(camera_index, true)
+
+
+## Host: a teammate's voice from an empty hallway: at least 15 m from every living guard, but
+## close enough (under 28 m) for someone to hear it.
+func _echo() -> void:
+	if voice == null:
+		return
+	var speakers := living_guards().filter(func(guard: Guard) -> bool: return voice.has_lines(guard.name.to_int()))
+	if speakers.is_empty():
+		# Nobody's said anything yet.
+		_echo_at = _minutes + 20.0 if _minutes < 280.0 else -1.0
+		return
+	var spots := ECHO_SPOTS.filter(func(at: Vector3) -> bool:
+		return SchoolBuilder.area_difficulty(SchoolBuilder.area_at(at)) <= difficulty \
+				and living_guards().all(func(guard: Guard) -> bool: return guard.global_position.distance_to(at) > 15.0) \
+				and living_guards().any(func(guard: Guard) -> bool: return guard.global_position.distance_to(at) < 28.0))
+	if spots.is_empty():
+		# Nowhere right now (everyone's together in the wrong place): try again in a while.
+		_echo_at = _minutes + 20.0 if _minutes < 280.0 else -1.0
+		return
+	var speaker: Guard = speakers.pick_random()
+	if voice.echo_at(spots.pick_random(), speaker.name.to_int()):
+		_echo_note = "Somebody heard Guard %d's voice tonight, from a hallway with nobody in it. Guard %d says they never said that." % [speaker.slot, speaker.slot]
 
 
 ## Host, night 1: the first monster just came in. The camera that sees it best blacks out for a
@@ -484,6 +517,9 @@ func end_night() -> void:
 		monster.queue_free()
 	# Kept for the night report, which comes after.
 	tonight_report = tonight_summary()
+	if _echo_note != "":
+		tonight_report += ("\n" if tonight_report != "" else "") + _echo_note
+		_echo_note = ""
 	tonight.clear()
 	_bell_times.clear()
 	if bell_ringing:

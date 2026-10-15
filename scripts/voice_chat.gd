@@ -416,6 +416,31 @@ func _mimic(path: NodePath, line: PackedByteArray) -> void:
 	var speaker := get_node_or_null(path) as Node3D
 	if speaker == null:
 		return
+	_play_line(speaker, line)
+
+
+## Host: something a guard said earlier comes from an empty spot, once, with nothing there.
+func echo_at(at: Vector3, peer_id: int) -> bool:
+	var line := line_of(peer_id)
+	if line.is_empty():
+		return false
+	_echo.rpc(at, line)
+	return true
+
+
+@rpc("authority", "call_local", "reliable", MIMIC_CHANNEL)
+func _echo(at: Vector3, line: PackedByteArray) -> void:
+	var spot := Node3D.new()
+	get_tree().root.add_child(spot)
+	spot.global_position = at
+	_play_line(spot, line)
+	get_tree().create_timer(15.0).timeout.connect(spot.queue_free)
+	var captions := get_tree().get_first_node_in_group("captions") as Captions
+	if captions:
+		captions.heard("Echo", "voice", at)
+
+
+func _play_line(speaker: Node3D, line: PackedByteArray) -> void:
 	var samples := _decode(line)
 	var data := PackedByteArray()
 	data.resize(samples.size() * 2)
