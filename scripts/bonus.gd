@@ -38,7 +38,8 @@ var _running_for: Dictionary = {}
 func pick(night_number: int) -> void:
 	kind = KINDS.pick_random()
 	# Naming needs a field guide with something in it.
-	while kind == "name" and night_number < 3:
+	# ...and "keep it down" needs someone to talk to (alone it'd be free).
+	while (kind == "name" and night_number < 3) or (kind == "quiet" and director.team_size <= 1):
 		kind = KINDS.pick_random()
 	if kind == "early_round" and rounds.order.is_empty():
 		kind = "logs"

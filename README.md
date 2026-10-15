@@ -99,7 +99,7 @@ wins the run. If the key's carrier is caught, the key lies where they fell.
 run, for your own challenge runs. Each still adds 15% XP.
 
 **Joining late:** you can join a team mid-shift. You come in as a ghost (watch, leave cold spots, knock things
-over; a revive totem can bring you back) and clock in properly from the next night.
+over; a revive totem can't bring back someone who never clocked in) and clock in properly from the next night.
 
 **Base station:** sitting at a guard room desk, hold the walkie-talkie key (B) to call the whole team over the
 radio, no walkie needed. Field guards need a walkie-talkie to call back. Careful: the call comes out loud wherever

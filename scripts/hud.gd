@@ -29,11 +29,13 @@ var _feed_view: Control
 var _feed_picture: TextureRect
 var _feed_title: Label
 var _message_time := 0.0
-## Messages waiting their turn: [text, seconds, sticky].
+## Messages waiting their turn: [text, seconds, sticky, queued at (msec)].
 var _queue: Array = []
 ## Whether the message showing is a teaching message (holds the screen while it's read).
 var _message_sticky := false
 const STICKY_SECONDS := 8.0
+## Ordinary messages that waited longer than this are out of date ("A phone is ringing") and dropped.
+const STALE_MSEC := 8000
 var _hint_time := HINT_SECONDS
 ## Playing alone (no voice chat lines in the key list).
 var solo := false
@@ -182,9 +184,13 @@ func _process(delta: float) -> void:
 	if _message_time > 0.0:
 		_message_time -= delta
 		_message.modulate.a = clampf(_message_time, 0.0, 1.0)
-	if _message_time <= 0.25 and not _queue.is_empty():
+	while _message_time <= 0.25 and not _queue.is_empty():
 		var next: Array = _queue.pop_front()
-		_display(next[0], next[1], next[2])
+		if next[2]:
+			_display(next[0], next[1], true)
+		elif Time.get_ticks_msec() - int(next[3]) < STALE_MSEC:
+			# Ordinary news that waited is shown briefly; news too old to matter is skipped.
+			_display(next[0], minf(next[1], 3.0), false)
 	if _hint_time > 0.0:
 		_hint_time -= delta
 		_hint.modulate.a = clampf(_hint_time, 0.0, 1.0)
@@ -358,11 +364,16 @@ func show_message(text: String, seconds := -1.0, urgent := false) -> void:
 		_message_time = maxf(_message_time, seconds)
 		return
 	var holding := _message_sticky and _message_time > 1.0
-	if not urgent and (holding or not _queue.is_empty()):
-		# One waiting message per kind ("Watching...", "...flagged"): the latest wins.
-		var prefix := text.substr(0, 12)
-		_queue = _queue.filter(func(queued: Array) -> bool: return queued[0] != text and (queued[0] as String).substr(0, 12) != prefix)
-		_queue.append([text, seconds, sticky])
+	if not urgent and holding:
+		if sticky:
+			_queue = _queue.filter(func(queued: Array) -> bool: return queued[0] != text)
+		else:
+			# One waiting ordinary message per kind ("Watching...", "...flagged"): the latest wins.
+			# Teaching messages never collapse: each is a different rule to read.
+			var prefix := text.substr(0, 12)
+			_queue = _queue.filter(func(queued: Array) -> bool:
+				return queued[2] or (queued[0] != text and (queued[0] as String).substr(0, 12) != prefix))
+		_queue.append([text, seconds, sticky, Time.get_ticks_msec()])
 		if _queue.size() > 6:
 			# Drop the oldest ordinary one, never a teaching message.
 			for i in _queue.size():
@@ -370,8 +381,11 @@ func show_message(text: String, seconds := -1.0, urgent := false) -> void:
 					_queue.remove_at(i)
 					break
 		return
+	if not sticky:
+		# Nothing's being read: fresh news replaces any older ordinary news still waiting.
+		_queue = _queue.filter(func(queued: Array) -> bool: return queued[2])
 	if urgent and _message_sticky and _message_time > 2.0:
-		_queue.push_front([_message.text, _message_time, true])
+		_queue.push_front([_message.text, _message_time, true, Time.get_ticks_msec()])
 	_display(text, seconds, sticky)
 
 

@@ -80,7 +80,8 @@ func _ready() -> void:
 # --- Host --------------------------------------------------------------------------------
 
 ## The night is starting: picks tonight's cuts. None on night 1, more as the run goes on.
-func plan(night_number: int) -> void:
+## `ends_by` (in-game minutes) keeps every cut before then: the finale wants the lights on.
+func plan(night_number: int, ends_by := CUT_WINDOW.y) -> void:
 	_schedule.clear()
 	var count := 0 if night_number < 2 else (1 if night_number < 5 else (2 if night_number < 8 else 3))
 	if conditions and conditions.has("wiring"):
@@ -88,7 +89,7 @@ func plan(night_number: int) -> void:
 	var tries := 0
 	while _schedule.size() < count and tries < 50:
 		tries += 1
-		var at := randf_range(CUT_WINDOW.x, CUT_WINDOW.y)
+		var at := randf_range(CUT_WINDOW.x, minf(CUT_WINDOW.y, ends_by))
 		if _schedule.all(func(other: float) -> bool: return absf(other - at) >= CUT_GAP):
 			_schedule.append(at)
 	_schedule.sort()

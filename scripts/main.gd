@@ -1233,7 +1233,9 @@ func _start_night(number: int, difficulty: int, late := false) -> void:
 				cameras.capture_references(night.time_text()))
 	SteamService.set_presence("Overtime: night %d" % number if number > Night.LAST_NIGHT
 			else "Night %d of %d" % [number, Night.LAST_NIGHT])
-	if number == 1 and night.training == null:
+	if late:
+		pass
+	elif number == 1 and night.training == null:
 		_show_first_night_tips()
 	elif number == 2:
 		# Night 2 brings two new things: say both, once, and give it time to be read.
@@ -1551,8 +1553,8 @@ func _flash_screen(color: Color, seconds: float) -> void:
 
 
 @rpc("authority", "call_remote", "reliable")
-func _receive_message(message: String) -> void:
-	_show_local_message(message)
+func _receive_message(message: String, seconds := -1.0) -> void:
+	_show_local_message(message, seconds)
 
 
 func _open_clipboard() -> void:
@@ -1637,7 +1639,7 @@ func _close_call(guard: Guard, by: String) -> bool:
 		_wake_in_guard_room()
 	else:
 		_wake_in_guard_room.rpc_id(peer)
-	get_tree().create_timer(1.5).timeout.connect(func() -> void: _tell(peer, text))
+	get_tree().create_timer(1.5).timeout.connect(func() -> void: _tell(peer, text, 12.0))
 	return true
 
 
@@ -1784,11 +1786,12 @@ func _refresh_inventory() -> void:
 
 
 ## Host: sends a message to one player's screen.
-func _tell(peer_id: int, text: String) -> void:
+## `seconds` of 8 or more makes it a teaching message that holds the screen until read.
+func _tell(peer_id: int, text: String, seconds := -1.0) -> void:
 	if peer_id == multiplayer.get_unique_id():
-		_show_local_message(text)
+		_show_local_message(text, seconds)
 	else:
-		_receive_message.rpc_id(peer_id, text)
+		_receive_message.rpc_id(peer_id, text, seconds)
 
 
 func _refresh_guard_visibility() -> void:
@@ -1885,9 +1888,9 @@ func on_next_night() -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
-func _show_local_message(message: String) -> void:
+func _show_local_message(message: String, seconds := -1.0) -> void:
 	if _local_guard:
-		_local_guard.show_message(message)
+		_local_guard.show_message(message, seconds)
 
 
 # --- World ---------------------------------------------------------------------

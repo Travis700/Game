@@ -205,8 +205,10 @@ func _on_shift_started() -> void:
 		bonus.pick(number)
 	nerve.reset()
 	quota_target = 0 if number < 2 or daily != "" else quota_for(players.get_child_count())
-	power.plan(number)
-	phone.plan(number)
+	# The finale is a chase to the gate: no phone to answer or breaker to reset during it.
+	var quiet_from := Finale.STARTS_AT - 15.0 if finale.planned else 999.0
+	power.plan(number, quiet_from)
+	phone.plan(number, quiet_from)
 	# Totems only matter with teammates to bring back; alone, being caught ends the run.
 	if players.get_child_count() > 1:
 		totems.place_random()

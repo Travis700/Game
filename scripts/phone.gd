@@ -62,11 +62,12 @@ func _ready() -> void:
 
 # --- Host --------------------------------------------------------------------------------
 
-func plan(night_number: int) -> void:
+## `ends_by` (in-game minutes) keeps every ring before then: the finale wants the phone quiet.
+func plan(night_number: int, ends_by := WINDOW.y) -> void:
 	_schedule.clear()
 	var count := 0 if night_number < 3 else (1 if night_number < 6 else 2)
 	for i in count:
-		_schedule.append(randf_range(WINDOW.x, WINDOW.y))
+		_schedule.append(randf_range(WINDOW.x, minf(WINDOW.y, ends_by)))
 	_schedule.sort()
 
 

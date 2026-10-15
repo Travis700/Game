@@ -875,10 +875,14 @@ func check_log(peer_id: int, area: String, named := "") -> String:
 func _update_principal(minutes: float, delta: float) -> void:
 	if not _principal_on or _principal_out:
 		return
+	# A lockdown or the finale outranks the office: the summons waits (its clock stopped).
+	if finale or lockdown_left > 0.0:
+		return
 	if _summoned == 0:
 		if minutes < _next_summon:
 			return
-		var guard: Guard = living_guards().pick_random() if not living_guards().is_empty() else null
+		var free := living_guards().filter(func(guard: Guard) -> bool: return not guard.hiding)
+		var guard: Guard = free.pick_random() if not free.is_empty() else null
 		if guard == null:
 			return
 		_summoned = guard.name.to_int()
