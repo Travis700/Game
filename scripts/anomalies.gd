@@ -294,8 +294,9 @@ func _prop_busy(prop: String) -> bool:
 func _guard_within(spot: Vector3, distance: float) -> bool:
 	if players == null:
 		return false
-	for guard: Node3D in players.get_children():
-		if guard.global_position.distance_to(spot) < distance:
+	for guard: Guard in players.get_children():
+		# Ghosts drift about unseen: they don't scare anything off or keep it there.
+		if not guard.is_dead and guard.global_position.distance_to(spot) < distance:
 			return true
 	return false
 

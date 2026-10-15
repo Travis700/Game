@@ -21,6 +21,8 @@ signal student_helped(peer_id: int)
 signal camera_signal_changed(camera_index: int, working: bool)
 ## The school bell started or stopped ringing.
 signal bell_changed(ringing: bool)
+## The Principal gave up on a guard who never came to the office (and is still alive).
+signal principal_ignored(peer_id: int)
 
 ## How many monsters each night (1-9) can bring.
 const MONSTERS_PER_NIGHT: Array[int] = [1, 1, 2, 2, 3, 3, 4, 4, 5]
@@ -440,7 +442,7 @@ func nearest_living_guard(from: Vector3) -> Guard:
 
 func guard_near(point: Vector3, distance: float) -> bool:
 	for guard: Guard in players.get_children():
-		if guard.global_position.distance_to(point) < distance:
+		if not guard.is_dead and guard.global_position.distance_to(point) < distance:
 			return true
 	return false
 
@@ -488,7 +490,8 @@ func is_watched(monster: Monster) -> bool:
 		if to_monster.length() < 40.0 and (-guard.camera.global_basis.z).angle_to(to_monster) < deg_to_rad(50) \
 				and _clear_line(eye, target, null):
 			return true
-	if not _anyone_in_guard_room():
+	# The monitors only watch anything if someone's sitting at them.
+	if not living_guards().any(func(guard: Guard) -> bool: return guard.seated_desk >= 0):
 		return false
 	for feed_key in cameras.shown:
 		var camera_index := feed_key / 2
@@ -755,7 +758,9 @@ func _update_principal(minutes: float, delta: float) -> void:
 
 
 ## Called by the Principal when it gives up and goes back to its office.
-func principal_done(principal: Monster) -> void:
+func principal_done(principal: Monster, ignored_by := 0) -> void:
+	if ignored_by != 0:
+		principal_ignored.emit(ignored_by)
 	remove_monster(principal)
 	_principal_out = false
 	_next_summon = _minutes + randf_range(SUMMON_EVERY.x, SUMMON_EVERY.y)

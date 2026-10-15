@@ -14,6 +14,10 @@ const CLOCK_OUT_SECONDS := 90.0
 
 const SURVIVAL_PAY := 100
 const CORRECT_LOG_POINTS := 25
+## A correct Monster log with the wrong name pays this much less.
+const MISNAME_POINTS := 10
+## Docked from a guard who ignored the Principal's summons.
+const IGNORED_SUMMONS_POINTS := 40
 ## A teammate logging something someone else already logged: confirming it pays less.
 const CONFIRM_POINTS := 10
 ## Extra pay for naming the monster in a correct Monster log.
@@ -196,7 +200,7 @@ func _on_shift_started() -> void:
 	rounds.plan(number, difficulty)
 	bonus.pick(number)
 	nerve.reset()
-	quota_target = 0 if number < 2 or daily != "" else (QUOTA_BASE + QUOTA_PER_NIGHT * number) * players.get_child_count()
+	quota_target = 0 if number < 2 or daily != "" else quota_for(players.get_child_count())
 	power.plan(number)
 	phone.plan(number)
 	# Totems only matter with teammates to bring back; alone, being caught ends the run.
@@ -204,7 +208,8 @@ func _on_shift_started() -> void:
 		totems.place_random()
 	# Spread tonight's anomalies across the night, starting about 20 minutes in.
 	_schedule.clear()
-	var count := 4 + number * 2
+	# More guards, more to find.
+	var count := 4 + number * 2 + 2 * (players.get_child_count() - 1)
 	if conditions.has("messy"):
 		count = int(count * 1.5)
 	for i in count:
@@ -315,16 +320,18 @@ func _receive_log(area: String, type: String, named := "") -> void:
 				FieldGuide.display_name(found), area, CORRECT_LOG_POINTS + NAME_POINTS])
 	elif correct and named != "":
 		stats["correct"] += 1
+		stats["misnamed"] = int(stats.get("misnamed", 0)) + 1
 		logged.append(entry)
 		_log_result(peer, true, "Confirmed: a monster in %s, but it wasn't %s.  +%d" % [
-				area, FieldGuide.display_name(named), CORRECT_LOG_POINTS])
+				area, FieldGuide.display_name(named), CORRECT_LOG_POINTS - MISNAME_POINTS])
 	elif correct:
 		stats["correct"] += 1
 		logged.append(entry)
 		_log_result(peer, true, "Confirmed: %s, %s.  +%d" % [area, type.to_lower(), CORRECT_LOG_POINTS])
-	elif entry in logged:
-		# Already logged and paid for; a repeat isn't a false report.
-		director.tell(peer, "You've already logged that one.")
+	elif entry in logged and entry not in stats.get("warned", []):
+		# Already logged and paid for; the first repeat is just a reminder...
+		stats.get_or_add("warned", []).append(entry)
+		director.tell(peer, "You've already logged that one. Log it again with nothing new there and it counts as a false report.")
 	else:
 		stats["false"] += 1
 		_log_result(peer, false, "Nothing like that in %s.  -%d" % [area, FALSE_REPORT_POINTS])
@@ -494,13 +501,29 @@ func fail_night() -> void:
 	save_run(1)
 
 
+## The team's work target tonight: each extra guard adds 60% of one guard's share, since a
+## team shares one school's worth of anomalies.
+func quota_for(team: int) -> int:
+	return int((QUOTA_BASE + QUOTA_PER_NIGHT * number) * (1.0 + 0.6 * (maxi(team, 1) - 1)))
+
+
+## Host: a guard never answered the Principal's summons. It's noted on their pay.
+func on_principal_ignored(peer: int) -> void:
+	if shift.state != Shift.State.ON_SHIFT:
+		return
+	var stats: Dictionary = _stats.get_or_add(peer, {"correct": 0, "false": 0})
+	stats["docked"] = int(stats.get("docked", 0)) + IGNORED_SUMMONS_POINTS
+	director.tell(peer, "The intercom crackles: \"Guard, you did not come when called. That will be noted on your pay.\"  -%d" % IGNORED_SUMMONS_POINTS)
+
+
 ## Host: points the team has earned tonight from work (not from clocking out).
 func _team_work() -> int:
 	var total := 0
 	for peer: int in _stats:
 		var stats: Dictionary = _stats[peer]
 		total += int(stats["correct"]) * CORRECT_LOG_POINTS + int(stats.get("named", 0)) * NAME_POINTS \
-				+ int(stats.get("confirmed", 0)) * CONFIRM_POINTS
+				+ int(stats.get("confirmed", 0)) * CONFIRM_POINTS - int(stats.get("misnamed", 0)) * MISNAME_POINTS \
+				- int(stats["false"]) * FALSE_REPORT_POINTS
 	for peer: int in rounds.punches:
 		total += int(rounds.punches[peer]) * rounds.punch_points()
 	return total
@@ -509,7 +532,7 @@ func _team_work() -> int:
 func _send_quota() -> void:
 	# Sized to whoever's still here (someone leaving mid-shift shouldn't sink the team).
 	if quota_target > 0:
-		quota_target = (QUOTA_BASE + QUOTA_PER_NIGHT * number) * maxi(players.get_child_count(), 1)
+		quota_target = quota_for(players.get_child_count())
 	var text := ""
 	if quota_target > 0:
 		text = "Work target: %d / %d" % [mini(_team_work(), quota_target), quota_target]
@@ -740,7 +763,8 @@ func _build_rows(keep_pay: bool) -> Array:
 		var clocked_out := shift.has_clocked_out(peer)
 		var correct_points: int = stats["correct"] * CORRECT_LOG_POINTS + stats.get("named", 0) * NAME_POINTS \
 				+ int(stats.get("confirmed", 0)) * CONFIRM_POINTS
-		var false_points: int = stats["false"] * FALSE_REPORT_POINTS
+		var false_points: int = stats["false"] * FALSE_REPORT_POINTS + int(stats.get("misnamed", 0)) * MISNAME_POINTS \
+				+ int(stats.get("docked", 0))
 		var round_points := rounds.pay_for(peer, clocked_out)
 		var pay: int = (SURVIVAL_PAY if clocked_out else 0) + correct_points - false_points + round_points \
 				- _deaths * DEATH_PENALTY

@@ -282,6 +282,7 @@ func _ready() -> void:
 	night.report = report
 	night.players = players
 	night.director = director
+	director.principal_ignored.connect(night.on_principal_ignored)
 	night.totems = totems
 	night.shop = shop
 	night.guard_room = guard_room

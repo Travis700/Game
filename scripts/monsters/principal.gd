@@ -19,8 +19,11 @@ func _init() -> void:
 func think(delta: float) -> void:
 	_left -= delta
 	var target := director.guard_by_peer(target_peer)
-	if _left <= 0.0 or target == null or target.is_dead:
+	if target == null or target.is_dead:
 		director.principal_done(self)
+		return
+	if _left <= 0.0:
+		director.principal_done(self, target_peer)
 		return
 	move_to(target.global_position, SPEED)
 	catch_nearby()
