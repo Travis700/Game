@@ -468,6 +468,16 @@ func _on_ui_closed() -> void:
 	_local_guard.input_blocked = false
 
 
+## Solo: tabbing away mid-shift pauses the game, rather than leaving the guard standing there.
+func _notification(what: int) -> void:
+	if what != NOTIFICATION_APPLICATION_FOCUS_OUT or _mode != "solo" or shift.state != Shift.State.ON_SHIFT:
+		return
+	if _local_guard == null or _local_guard.is_dead or _local_guard.input_blocked or pause_menu.is_open:
+		return
+	_local_guard.input_blocked = true
+	pause_menu.open(true, false)
+
+
 ## Closes every menu, e.g. when your guard is caught or the night report comes up.
 func _close_all_ui() -> void:
 	clipboard.close()
