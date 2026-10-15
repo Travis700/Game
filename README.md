@@ -7,11 +7,14 @@ The full plan is in [DESIGN.md](DESIGN.md).
 
 Version 1.0.0. The game is complete apart from the art and audio pass: every model is a
 placeholder made of boxes, and every sound is generated in code. Everything else is in:
-nine nights, three difficulties (main building, classroom wing, science wing), 18 monsters,
-the guard room and its 16 cameras, watchman rounds, power cuts, the field guide, ranks with hats
-and perks, the vending machine, saving, achievements and records, proximity voice chat and walkie-talkies
-(and a monster that copies your voice), controller support, settings, and Steam lobbies and
-invites (see [STEAM.md](STEAM.md) for the Steamworks steps that need your account).
+nine nights with a last-bell finale, then Overtime; three difficulties (main building, classroom
+wing, science wing); 18 monsters with moods, a field guide and R. Hale's notebook; the guard room
+and its 16 cameras; watchman rounds, power cuts, shift notes and nightly bonuses; a training shift,
+close calls and incident photos; ranks with hats and perks; the vending machine; saving and
+checkpoints; a daily shift (solo or as a team); achievements and records; proximity voice chat,
+walkie-talkies and the desk's base station (and a monster that copies your voice); marks; joining
+mid-shift; captions, controller support and settings; and Steam lobbies, invites and leaderboards
+(see [STEAM.md](STEAM.md) for the Steamworks steps that need your account).
 
 ## Running it
 
