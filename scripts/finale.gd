@@ -255,6 +255,11 @@ func _begin() -> void:
 		if not station.get("post", false) and SchoolBuilder.AREA_DIFFICULTY.get(station["area"], 1) <= difficulty \
 				and (station["at"].z < 0.0 or absf(station["at"].x) > 40.0):
 			spots.append(station)
+	# Overtime's finales go further: the key is as far from the gate as the open wings allow.
+	if director.night_number > Night.LAST_NIGHT:
+		spots.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return (a["at"] as Vector3).distance_to(Vector3(0, 0, GATE_Z)) > (b["at"] as Vector3).distance_to(Vector3(0, 0, GATE_Z)))
+		spots = spots.slice(0, maxi(2, spots.size() / 3))
 	var spot: Dictionary = spots.pick_random()
 	var at: Vector3 = spot["at"] + (spot["facing"] as Vector3) * 0.8
 	_set_key.rpc(spot["area"], 0, Vector3(at.x, 0.05, at.z), false)
