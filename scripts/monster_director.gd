@@ -231,7 +231,8 @@ func plan_night(number: int) -> void:
 	# The Bell rings once or twice a night from night 4.
 	_bell_times.clear()
 	if number >= BELL_FROM_NIGHT:
-		for i in (1 if number < 7 else 2):
+		# Twice a night from night 8 (not 7, when the guard room opens: one new thing at a time).
+		for i in (1 if number < 8 else 2):
 			_bell_times.append(randf_range(60.0, 300.0))
 		_bell_times.sort()
 	# Lockdowns: once a night from night 6, twice from night 9 (and Overtime).

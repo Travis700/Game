@@ -110,7 +110,7 @@ Monsters per night: 1, 1, 2, 2, 3, 3, 4, 4, 5, plus one for each open wing. The 
 
 **Voice mimicry.** The host keeps each guard's last few spoken lines in memory; the Understudy replays them in that guard's voice from where it stands. Opt out in the Esc menu.
 
-**Hazard: the Bell.** From night 4 the school bell rings at the wrong time (twice a night from night 7) and every monster moves 35% faster until someone shuts it off at the panel in the front office, or a minute passes.
+**Hazard: the Bell.** From night 4 the school bell rings at the wrong time (twice a night from night 8) and every monster moves 35% faster until someone shuts it off at the panel in the front office, or a minute passes.
 
 ## 10. Night progression
 

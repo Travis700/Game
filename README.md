@@ -236,7 +236,7 @@ night with the odd creak or thump, plus each monster's own noises. Real recordin
 
 ## The Bell
 
-From night 4 the school bell sometimes rings in the middle of the night (twice a night from night 7).
+From night 4 the school bell sometimes rings in the middle of the night (twice a night from night 8).
 While it rings, every monster moves faster. Shut it off at the bell panel in the front office (press E),
 or wait about a minute for it to stop.
 
