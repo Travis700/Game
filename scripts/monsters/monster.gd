@@ -53,6 +53,10 @@ var hunts_in_lockdown := true
 var _pre_lockdown_state := ""
 ## Pushes an EMF reader to its top level (EMF 5) up close. Evidence for the field guide.
 var emf5 := false
+## Host: staring into a camera (see stare_at), and whether it already has tonight.
+var stared := false
+var _stare_at := Vector3.ZERO
+var _stare_left := 0.0
 ## Tonight's mood ("" for none; see MOODS).
 var mood := ""
 var pace := 1.0
@@ -107,6 +111,12 @@ func _physics_process(delta: float) -> void:
 		stuck_in_trap -= delta
 		halt()
 		return
+	# Caught on camera, it stops and looks straight back down the lens.
+	if _stare_left > 0.0:
+		_stare_left -= delta
+		halt()
+		face(_stare_at - global_position)
+		return
 	if director.lockdown_left > 0.0 and hunts_in_lockdown and not harmless:
 		if _pre_lockdown_state == "":
 			_pre_lockdown_state = state
@@ -145,6 +155,13 @@ func _on_state_changed(_new_state: String) -> void:
 
 
 # --- Helpers for behaviours (host) ----------------------------------------------------
+
+## Host: stops for `seconds` and looks at `point` (a camera someone's watching).
+func stare_at(point: Vector3, seconds: float) -> void:
+	stared = true
+	_stare_at = point
+	_stare_left = seconds
+
 
 func set_mood(new_mood: String) -> void:
 	mood = new_mood if MOODS.has(new_mood) else ""

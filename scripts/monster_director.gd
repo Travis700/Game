@@ -97,6 +97,10 @@ var _grace: Dictionary = {}
 var tonight_report := ""
 ## Host: monster kinds someone logged tonight (for the report).
 var _logged_tonight: Dictionary = {}
+var _stare_timer := 1.0
+## Each second a watched monster is on a monitor, the chance it looks into the camera.
+const STARE_CHANCE := 0.04
+const STARE_SECONDS := 2.5
 ## Host: the monsters each night of this run brought, by night number (see plan_night).
 var _run_history: Dictionary = {}
 ## Host: the mood of the monster being started right now (see update and spawn).
@@ -289,6 +293,10 @@ func update(minutes: float, delta: float) -> void:
 	lockers.update(minutes)
 	portrait.update(minutes)
 	_update_bell(minutes, delta)
+	_stare_timer -= delta
+	if _stare_timer <= 0.0:
+		_stare_timer = 1.0
+		_camera_stares()
 	_update_lockdown(minutes, delta)
 	_update_principal(minutes, delta)
 	for camera_index: int in _blackouts.keys():
@@ -674,6 +682,28 @@ func _update_lockdown(minutes: float, delta: float) -> void:
 		lockdown_left = LOCKDOWN_SECONDS
 		lockdown_changed.emit(true)
 		announcement.emit("LOCKDOWN. Every one of them is hunting. Hide in a cupboard or get to the guard room.", "")
+
+
+## Host: now and then, a monster on a monitor someone's watching stops and looks straight into
+## the camera. Once a night each, never mid-chase.
+func _camera_stares() -> void:
+	if guard_room == null:
+		return
+	for feed_key in guard_room.watched_feeds():
+		var camera_index: int = feed_key / 2
+		if not cameras.is_working(camera_index):
+			continue
+		var lens := cameras.camera(camera_index)
+		for monster in active_monsters():
+			if monster.stared or monster is Mascot or monster is Twin or "chase" in monster.state \
+					or "hunt" in monster.state or monster.stuck_in_trap > 0.0:
+				continue
+			var head := monster.global_position + Vector3(0, 1.4, 0)
+			if head.distance_to(lens.global_position) > 20.0 or not lens.is_position_in_frustum(head) \
+					or not _clear_line(lens.global_position, head, null):
+				continue
+			if randf() < STARE_CHANCE:
+				monster.stare_at(lens.global_position, STARE_SECONDS)
 
 
 ## Host: someone shut the bell off at the panel (or it stopped by itself).
