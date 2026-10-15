@@ -436,6 +436,7 @@ func _set_active(index: int, on: bool, amount := 1.0, variant := 0) -> void:
 						prop.rotate_y(PI)
 			_set_visible(prop, on)
 		"noise":
+			prop.transform = _home[def["prop"]]
 			if on and spot != null:
 				prop.position = spot
 			var sound: AudioStreamPlayer3D = prop.get_node("Sound")

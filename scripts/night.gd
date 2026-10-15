@@ -72,7 +72,8 @@ var finale: Finale
 var nerve: Nerve
 ## The date of the daily shift being played (see Daily), or "" for an ordinary run.
 var daily := ""
-## Host: area -> {"peer", "at" (s)}: the latest call-out (camera flag or mark) in each area.
+## Host: peer -> {"area", "at" (s)}: each guard's latest call-out (a camera flag or a mark of
+## somewhere they could see). One each, so nobody can keep every area "called out" at once.
 var _callouts: Dictionary = {}
 ## The training shift, when that's what's being played (see Training), or null.
 var training: Training
@@ -196,6 +197,7 @@ func _on_shift_started() -> void:
 	_shift_team = players.get_child_count()
 	_stats.clear()
 	_logged.clear()
+	_callouts.clear()
 	_deaths = 0
 	save_run(number, true)
 	if training:
@@ -219,7 +221,7 @@ func _on_shift_started() -> void:
 	nerve.reset()
 	quota_target = 0 if number < 2 or daily != "" else quota_for(players.get_child_count())
 	# The finale is a chase to the gate: no phone to answer or breaker to reset during it.
-	var quiet_from := Finale.STARTS_AT - 15.0 if finale.planned else 999.0
+	var quiet_from := Finale.STARTS_AT - 5.0 - Phone.RING_SECONDS / seconds_per_minute if finale.planned else 999.0
 	power.plan(number, quiet_from)
 	phone.plan(number, quiet_from)
 	# Totems only matter with teammates to bring back; alone, being caught ends the run.
@@ -266,6 +268,10 @@ func _run_shift(delta: float) -> void:
 	shop.update(delta)
 	doors.update(delta)
 	finale.update(minutes)
+	if finale.active and (phone.ringing or not power.on):
+		# The last bell: the phone goes dead and the emergency lighting comes on.
+		phone.end_night()
+		power.end_night()
 	if finale.everyone_out() and minutes < SHIFT_MINUTES:
 		# Everyone still standing got out: no need to wait for six.
 		minutes = SHIFT_MINUTES
@@ -339,7 +345,7 @@ func _receive_log(area: String, type: String, named := "") -> void:
 		if correct and director.guard_by_peer(peer) and "Mascot" not in director.guard_by_peer(peer).known_monsters:
 			director.guard_by_peer(peer).known_monsters.append("Mascot")
 		anomalies.last_was_first = director.last_log_was_first
-	var first_or_seen := (director.last_log_was_first if type == "Monster" else anomalies.last_was_first) or _could_see(peer, area)
+	var first_or_seen := (director.last_log_was_first if type == "Monster" else anomalies.last_was_first) or _could_see(peer, area, type)
 	if correct and first_or_seen:
 		bonus.on_correct_log(named != "" and named == found)
 		var logger := director.guard_by_peer(peer)
@@ -356,7 +362,7 @@ func _receive_log(area: String, type: String, named := "") -> void:
 				logger_guard.player_name if logger_guard and logger_guard.player_name != "" else "Guard %d" % (logger_guard.slot if logger_guard else 0),
 				area, SPOTTER_POINTS])
 		bonus.on_callout()
-	if correct and not first and not _could_see(peer, area) and caller == 0:
+	if correct and not first and not _could_see(peer, area, type):
 		# Only passed on by a teammate: noted, but nobody pays for hearsay.
 		logged.append(entry)
 		_log_result(peer, true, "Noted: %s, %s. A teammate logged it first, and you didn't see it yourself: no pay." % [area, type.to_lower()])
@@ -497,18 +503,24 @@ func give_everyone(amount: int) -> void:
 
 ## Host: a guard pointed the team at an area (flagged its camera, or marked a spot in it).
 func note_callout(peer_id: int, area: String) -> void:
-	if area != "":
-		_callouts[area] = {"peer": peer_id, "at": Time.get_ticks_msec() / 1000.0}
+	if area != "" and _could_see(peer_id, area):
+		_callouts[peer_id] = {"area": area, "at": Time.get_ticks_msec() / 1000.0}
 
 
 ## Host: who called out this area in the last minute, other than `logger` (0 if nobody).
 func _caller_for(area: String, logger: int) -> int:
-	var call: Dictionary = _callouts.get(area, {})
-	if call.is_empty() or int(call["peer"]) == logger \
-			or Time.get_ticks_msec() / 1000.0 - float(call["at"]) > CALLOUT_SECONDS:
-		return 0
-	var caller := director.guard_by_peer(int(call["peer"]))
-	return int(call["peer"]) if caller != null and not late_joiners.has(int(call["peer"])) else 0
+	var now := Time.get_ticks_msec() / 1000.0
+	var best := 0
+	var latest := -INF
+	for peer: int in _callouts:
+		var call: Dictionary = _callouts[peer]
+		if peer == logger or call["area"] != area or now - float(call["at"]) > CALLOUT_SECONDS \
+				or director.guard_by_peer(peer) == null or late_joiners.has(peer):
+			continue
+		if float(call["at"]) > latest:
+			best = peer
+			latest = float(call["at"])
+	return best
 
 
 ## Host: extra pay for tonight (e.g. getting out in an Overtime finale).
@@ -619,7 +631,8 @@ func on_principal_ignored(peer: int) -> void:
 
 ## Host: could this guard see `area` for themselves: standing in it, or sitting at a desk with
 ## one of its cameras on their own monitors?
-func _could_see(peer: int, area: String) -> bool:
+## (A Noise isn't on any camera: only being there counts.)
+func _could_see(peer: int, area: String, type := "") -> bool:
 	var guard := director.guard_by_peer(peer)
 	if guard == null:
 		return false
@@ -630,7 +643,7 @@ func _could_see(peer: int, area: String) -> bool:
 	if visits.has(area) and Time.get_ticks_msec() / 1000.0 - float(visits[area]) < SEEN_SECONDS:
 		return true
 	var desk := guard_room.occupants.find(peer)
-	if desk < 0:
+	if desk < 0 or type == "Noise":
 		return false
 	for monitor in range(desk * 4, desk * 4 + 4):
 		if cameras.area_of(guard_room.assignments[monitor]) == area:
@@ -786,7 +799,7 @@ func _end_night() -> void:
 		_finish_daily(rows, score, summary)
 		return
 	var fired := false
-	if quota_target > 0 and number != LAST_NIGHT:
+	if quota_target > 0 and not Memos.has_finale(number):
 		if work >= quota_target:
 			summary = "Work target met: %d / %d.\n" % [work, quota_target] + summary
 		else:
