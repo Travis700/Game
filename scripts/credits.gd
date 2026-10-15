@@ -10,6 +10,7 @@ const CREDITS := """NIGHT SHIFT
 A game by %s.
 
 Made with Godot Engine.
+Textures from Poly Haven (polyhaven.com, CC0) by Charlotte Baglioni, Dimitrios Savva, Rob Tuytel and Dario Barresi.
 Steam features use GodotSteam (MIT licence) and the Steamworks SDK (Valve Corporation)."""
 
 const GODOTSTEAM_LICENSE := """GodotSteam

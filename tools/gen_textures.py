@@ -1,7 +1,7 @@
 """Generates Night Shift's tileable surface textures (albedo + normal map), all original.
 
 Run from the project root:  python3 tools/gen_textures.py
-Writes assets/textures/<name>.png and <name>_n.png. Every texture tiles seamlessly (all noise
+Writes assets/textures/<name>.png and <name>_n.png for the surfaces without a photo texture. Every texture tiles seamlessly (all noise
 is built in the frequency domain or with wrap-around rolls), so the game maps them triplanar
 in world space.
 """
@@ -73,13 +73,13 @@ def floor_tiles():
     # Vinyl composition tile: 8 x 8 tiles per texture, alternating slightly, with flecks and scuffs.
     cells = 8
     r = rng(1)
-    shade = r.uniform(0.9, 1.05, (cells, cells))
-    shade[::2, ::2] *= 0.94
+    shade = r.uniform(0.95, 1.03, (cells, cells))
+    shade[::2, ::2] *= 0.97
     per = np.kron(shade, np.ones((N // cells, N // cells)))
     fleck = (rng(2).random((N, N)) > 0.985) * rng(3).uniform(-0.25, 0.2, (N, N))
     scuff = noise(N, 1.6, 4) * 0.08
     joint = blur(grid_mask(N, cells, 2), 1)
-    value = per * (1 + scuff) + fleck * 0.5 - joint * 0.35 + grain(N, 5, 0.015)
+    value = per * (1 + scuff) + fleck * 0.4 - joint * 0.22 + grain(N, 5, 0.012)
     rgb = tint(value, (0.62, 0.6, 0.53))
     save("floor", rgb, -joint * 0.6 + noise(N, 2.0, 6) * 0.05, 1.5)
 
@@ -109,11 +109,11 @@ def ceiling_tiles():
     holes = (rng(11).random((N, N)) > 0.93).astype(float)
     holes = blur(holes, 1) * 1.5
     grid = grid_mask(N, cells, 6)
-    stain = np.clip(noise(N, 2.4, 12), 0.4, 1) - 0.4
-    value = 0.95 - holes * 0.25 - stain * 0.35 + grain(N, 13, 0.02)
+    # (No water stains: on a tile that repeats every metre they'd read as a pattern.)
+    value = 0.97 - holes * 0.18 + noise(N, 1.2, 12) * 0.02 + grain(N, 13, 0.015)
     value = value * (1 - grid) + grid * 0.8
-    rgb = tint(value, (0.62, 0.61, 0.56))
-    rgb[grid > 0] = (0.55, 0.55, 0.55)
+    rgb = tint(value, (0.72, 0.71, 0.66))
+    rgb[grid > 0] = (0.6, 0.6, 0.6)
     save("ceiling", rgb, -holes * 0.6 + grid * 0.8, 2.0)
 
 
@@ -227,7 +227,8 @@ def board():
 
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    for make in (floor_tiles, wall_blocks, ceiling_tiles, brick, concrete, asphalt, grass, wood_strips,
-                 wood, metal, locker, cork, board):
+    # (Walls, brick, concrete, asphalt, grass and wood use CC0 photo textures from Poly
+    # Haven instead: see CREDITS.md. Their generators are kept for reference.)
+    for make in (floor_tiles, ceiling_tiles, metal, locker, cork, board):
         make()
     print("textures written to", os.path.abspath(OUT))

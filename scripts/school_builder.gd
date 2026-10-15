@@ -213,11 +213,12 @@ func _make_materials() -> void:
 	_add_mat("jar", Color(0.55, 0.75, 0.45), 0.1, Color(0.3, 0.5, 0.2), 0.6, 0.55)
 
 
-## Surfaces with a texture (assets/textures, made by tools/gen_textures.py), and how many metres
-## one copy of it covers. They're mapped in world space, so every box tiles at the same scale.
+## Surfaces with a texture in assets/textures, and how many metres one copy of it covers. They're
+## mapped in world space, so every box tiles at the same scale. The .jpg ones are CC0 photo
+## textures from Poly Haven (see CREDITS.md); the .png ones are made by tools/gen_textures.py.
 const TEXTURE_METRES := {
-	"floor": 2.4, "wall": 1.6, "ceiling": 1.2, "brick": 1.2, "concrete": 2.0, "asphalt": 3.0,
-	"grass": 4.0, "gym_floor": 1.0, "wood": 1.0, "desk": 1.0, "metal": 1.0, "locker": 1.2,
+	"floor": 2.4, "wall": 1.8, "ceiling": 1.2, "brick": 1.0, "concrete": 2.5, "asphalt": 2.1,
+	"grass": 2.5, "gym_floor": 1.7, "wood": 1.7, "desk": 0.6, "metal": 1.0, "locker": 1.2,
 	"cork": 1.0, "board": 2.0,
 }
 
@@ -227,13 +228,14 @@ func _add_mat(mat_name: String, color: Color, roughness := 0.9, emission := Colo
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mat.roughness = roughness
-	var path := "res://assets/textures/%s.png" % mat_name
+	var ext := "jpg" if ResourceLoader.exists("res://assets/textures/%s.jpg" % mat_name) else "png"
+	var path := "res://assets/textures/%s.%s" % [mat_name, ext]
 	if TEXTURE_METRES.has(mat_name) and ResourceLoader.exists(path):
 		# The texture carries the colour itself.
 		mat.albedo_color = Color.WHITE
 		mat.albedo_texture = load(path)
 		mat.normal_enabled = true
-		mat.normal_texture = load("res://assets/textures/%s_n.png" % mat_name)
+		mat.normal_texture = load("res://assets/textures/%s_n.%s" % [mat_name, ext])
 		mat.uv1_triplanar = true
 		mat.uv1_world_triplanar = true
 		mat.uv1_triplanar_sharpness = 8.0
