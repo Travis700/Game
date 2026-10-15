@@ -26,6 +26,12 @@ const CATALOGUE := {
 		"about": "Everything in this school is restless. Monsters move faster."},
 	"hazard_pay": {"name": "Hazard pay", "night": 3,
 		"about": "One more monster than usual tonight, but everyone's pay is half as much again."},
+	"camera_fault": {"name": "Camera faults", "night": 3,
+		"about": "A third of the cameras are down until the engineer comes in the morning. Some things you'll have to check in person."},
+	"drill": {"name": "Lockdown drill", "night": 4,
+		"about": "There's a lockdown drill tonight. When the alarm goes, everything in here takes it seriously."},
+	"early_start": {"name": "Early start", "night": 3,
+		"about": "Nothing's waiting for the small hours tonight: everything will be out by 2 AM."},
 }
 ## How much faster monsters move under a full moon.
 const FULL_MOON_SPEED := 1.15

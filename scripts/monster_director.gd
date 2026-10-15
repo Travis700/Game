@@ -235,7 +235,24 @@ func plan_night(number: int) -> void:
 	if number >= LOCKDOWN_FROM_NIGHT:
 		for i in (1 if number < 9 else 2):
 			_lockdown_times.append(randf_range(90.0, 320.0))
-		_lockdown_times.sort()
+	if conditions and conditions.has("drill"):
+		_lockdown_times.append(randf_range(60.0, 300.0))
+	_lockdown_times.sort()
+	# An early start: everything's out by about 2 AM, the latecomer included.
+	if conditions and conditions.has("early_start"):
+		for plan in tonight:
+			plan["at"] = minf(float(plan["at"]) * 0.5, 115.0)
+			plan.erase("late")
+	# Camera faults: a third of the open cameras are dead all night.
+	if conditions and conditions.has("camera_fault"):
+		var open: Array[int] = []
+		for i in cameras.count():
+			if cameras.is_open(i):
+				open.append(i)
+		open.shuffle()
+		for i in open.slice(0, open.size() / 3):
+			_blackouts[i] = INF
+			camera_signal_changed.emit(i, false)
 	_run_history[number] = tonight.map(func(plan: Dictionary) -> String: return plan["kind"])
 	# Moods (and whether a student is real) are settled now, while a daily shift's dice are
 	# still the same for everyone.
