@@ -1,7 +1,9 @@
 class_name NightCleaner
 extends Monster
 ## The night cleaner: a harmless school employee pushing a mop cart from room to room.
-## Things they move around are just cleaning, not anomalies.
+## Wherever they mop they put down a yellow WET FLOOR sign, and it stays there until their next
+## stop: something extra on the cameras that is just cleaning, not an anomaly. Log it and it's a
+## false report. (The Other Cleaner never puts one down.)
 ##
 ## From night 5 a second "cleaner" can turn up (OtherCleaner). Telling them apart on the
 ## cameras is the point: the real one always has their cart.
@@ -34,6 +36,56 @@ func _wander(delta: float) -> void:
 
 func _build_body() -> void:
 	_build_person(true)
+
+
+var _sign: Node3D
+
+
+## Every computer: mopping starts, and the sign goes down beside the cleaner.
+func _on_state_changed(new_state: String) -> void:
+	if new_state != "mop" or not is_inside_tree():
+		return
+	if _sign == null:
+		_sign = _build_sign()
+		director.add_child.call_deferred(_sign)
+		_sign.tree_entered.connect(func() -> void: _place_sign(), CONNECT_ONE_SHOT)
+	else:
+		_place_sign()
+
+
+func _place_sign() -> void:
+	if not is_instance_valid(_sign) or not _sign.is_inside_tree():
+		return
+	_sign.global_position = global_position + global_basis.x * 0.9
+	_sign.rotation.y = rotation.y + 0.4
+
+
+func _exit_tree() -> void:
+	if is_instance_valid(_sign):
+		_sign.queue_free()
+
+
+func _build_sign() -> Node3D:
+	var stand := Node3D.new()
+	stand.name = "WetFloorSign"
+	var yellow := StandardMaterial3D.new()
+	yellow.albedo_color = Color(1.0, 0.85, 0.05)
+	for side: float in [-1.0, 1.0]:
+		var board := MeshInstance3D.new()
+		board.mesh = Monster.box(Vector3(0.32, 0.62, 0.02))
+		board.material_override = yellow
+		board.position = Vector3(0, 0.3, side * 0.09)
+		board.rotation.x = side * 0.28
+		stand.add_child(board)
+	var words := Label3D.new()
+	words.text = "WET\nFLOOR"
+	words.font_size = 20
+	words.pixel_size = 0.004
+	words.modulate = Color(0.05, 0.05, 0.05)
+	words.position = Vector3(0, 0.36, 0.2)
+	words.rotation.x = -0.28
+	stand.add_child(words)
+	return stand
 
 
 func _build_person(with_cart: bool) -> void:

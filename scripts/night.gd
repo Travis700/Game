@@ -215,6 +215,9 @@ func _on_shift_started() -> void:
 	for i in count:
 		_schedule.append(randf_range(20.0, SHIFT_MINUTES - 40.0))
 	_schedule.sort()
+	# Something to find early, so the first minutes of a shift aren't empty.
+	if not _schedule.is_empty():
+		_schedule[0] = minf(_schedule[0], 20.0 + randf() * 5.0)
 
 
 func _run_shift(delta: float) -> void:
@@ -307,6 +310,9 @@ func _receive_log(area: String, type: String, named := "") -> void:
 		anomalies.last_was_first = director.last_log_was_first
 	if correct:
 		bonus.on_correct_log(named != "" and named == found)
+		var logger := director.guard_by_peer(peer)
+		if logger and found != "" and found not in logger.known_monsters:
+			logger.known_monsters.append(found)
 	var first := (director.last_log_was_first if type == "Monster" else anomalies.last_was_first) or not correct
 	if correct and not first:
 		stats["confirmed"] = int(stats.get("confirmed", 0)) + 1
@@ -511,9 +517,14 @@ func quota_for(team: int) -> int:
 func on_principal_ignored(peer: int) -> void:
 	if shift.state != Shift.State.ON_SHIFT:
 		return
-	var stats: Dictionary = _stats.get_or_add(peer, {"correct": 0, "false": 0})
-	stats["docked"] = int(stats.get("docked", 0)) + IGNORED_SUMMONS_POINTS
+	dock(peer, IGNORED_SUMMONS_POINTS)
 	director.tell(peer, "The intercom crackles: \"Guard, you did not come when called. That will be noted on your pay.\"  -%d" % IGNORED_SUMMONS_POINTS)
+
+
+## Host: takes points off a guard's pay tonight.
+func dock(peer: int, amount: int) -> void:
+	var stats: Dictionary = _stats.get_or_add(peer, {"correct": 0, "false": 0})
+	stats["docked"] = int(stats.get("docked", 0)) + amount
 
 
 ## Host: points the team has earned tonight from work (not from clocking out).
@@ -591,6 +602,11 @@ func _end_night() -> void:
 	var missed := anomalies.missed_count()
 	var summary := "%d anomal%s tonight, %d missed by everyone.   Guards lost: %d." % [
 		appeared, "y" if appeared == 1 else "ies", missed, _deaths]
+	var missed_list := anomalies.missed_list()
+	if not missed_list.is_empty():
+		summary += "\nMissed: " + ", ".join(missed_list.slice(0, 8)) + (" and %d more" % (missed_list.size() - 8) if missed_list.size() > 8 else "") + "."
+	if director.tonight_report != "":
+		summary += "\n" + director.tonight_report
 	summary += "\n" + round_text
 	if conditions.summary() != "":
 		summary += "\n" + conditions.summary()

@@ -69,6 +69,8 @@ var rank := 1
 var hat := "cap"
 ## The perk this guard brought (see Perks).
 var perk := "thermos"
+## The monsters in this player's field guide (see FieldGuide), sent when they join.
+var known_monsters: Array[String] = []
 ## The guard room desk this guard is sitting at, or -1 when standing.
 var seated_desk := -1
 ## Mouse look is paused while a camera feed fills the screen.

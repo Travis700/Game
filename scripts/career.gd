@@ -79,6 +79,10 @@ func add_stat(peer_id: int, stat: String, amount := 1) -> void:
 		_add_stat.rpc_id(peer_id, stat, amount)
 
 
+## This player logged a monster for the first time ever: its page in the guide just filled in.
+signal guide_entry_added(kind: String)
+
+
 func logged_monster(peer_id: int, kind: String) -> void:
 	add_stat(peer_id, "monsters_logged")
 	if peer_id == multiplayer.get_unique_id():
@@ -163,6 +167,7 @@ func _saw_monster(kind: String) -> void:
 		seen.append(kind)
 		config.set_value("career", "monsters_seen", seen)
 		_save(config)
+		guide_entry_added.emit(kind)
 	if MONSTER_KINDS.all(func(each: String) -> bool: return each in seen):
 		_unlock("MONSTER_EXPERT")
 

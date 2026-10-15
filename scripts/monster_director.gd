@@ -91,6 +91,12 @@ var hunt_speed := LOCKDOWN_SPEED
 var finale := false
 ## The finale's gate is open: guards out in the street are out of reach.
 var gate_open := false
+## Host: peer id -> when their close-call grace runs out (real seconds).
+var _grace: Dictionary = {}
+## Host: tonight_summary() as it was at the end of the night.
+var tonight_report := ""
+## Host: monster kinds someone logged tonight (for the report).
+var _logged_tonight: Dictionary = {}
 var _lockdown_times: Array[float] = []
 ## Everyone's nerve. Host only.
 var nerve: Nerve
@@ -192,6 +198,9 @@ func plan_night(number: int) -> void:
 		tonight.append({"kind": pool[i], "at": randf_range(25.0, 220.0)})
 		if pool[i] == "mascot":
 			anomalies.reserved_props.append("mascot")
+	# Night 1: the first monster turns up early, so a new guard meets one before they've settled in.
+	if number == 1 and count >= 1:
+		tonight[0]["at"] = randf_range(30.0, 60.0)
 	# From night 2, one of them comes in late (around 4 AM), so the night builds to the end.
 	if number >= 2 and count >= 2:
 		tonight[count - 1]["at"] = randf_range(235.0, 255.0)
@@ -204,6 +213,7 @@ func plan_night(number: int) -> void:
 		_bell_times.sort()
 	# Lockdowns: once a night from night 6, twice from night 9 (and Overtime).
 	_lockdown_times.clear()
+	_logged_tonight.clear()
 	lockdown_left = 0.0
 	hunt_speed = LOCKDOWN_SPEED
 	finale = false
@@ -238,6 +248,29 @@ func update(minutes: float, delta: float) -> void:
 		if minutes >= _blackouts[camera_index]:
 			_blackouts.erase(camera_index)
 			camera_signal_changed.emit(camera_index, true)
+
+
+## The field guide kind for each planned monster.
+const GUIDE_KINDS := {
+	"hall_monitor": "HallMonitor", "mascot": "Mascot", "lunch_lady": "LunchLady", "locker_thing": "Lockers",
+	"principal": "Principal", "other_cleaner": "OtherCleaner", "student": "Student", "ghost": "SchoolGhost",
+	"substitute": "Substitute", "librarian": "Librarian", "nurse": "Nurse", "crossing_guard": "CrossingGuard",
+	"self_portrait": "SelfPortrait", "specimen": "Specimen", "understudy": "Understudy",
+	"photographer": "Photographer", "twins": "Twin", "coach": "Coach",
+}
+
+
+## Host: for the night report. Which monsters came out tonight, and whether anyone logged each:
+## "the Hall Monitor (logged)", "the Mascot (nobody logged it)".
+func tonight_summary() -> String:
+	var lines: Array[String] = []
+	for plan in tonight:
+		# (The Principal is mostly a voice: not something you could have logged.)
+		if not plan.get("started", false) or not GUIDE_KINDS.has(plan["kind"]) or plan["kind"] == "principal":
+			continue
+		var kind: String = GUIDE_KINDS[plan["kind"]]
+		lines.append("%s (%s)" % [FieldGuide.display_name(kind), "logged" if kind in _logged_tonight else "nobody logged it"])
+	return "" if lines.is_empty() else "Out tonight: " + ", ".join(lines) + "."
 
 
 func _start(kind: String, minutes: float) -> void:
@@ -322,6 +355,8 @@ func end_night() -> void:
 	_lockdown_times.clear()
 	for monster in _container.get_children():
 		monster.queue_free()
+	# Kept for the night report, which comes after.
+	tonight_report = tonight_summary()
 	tonight.clear()
 	_bell_times.clear()
 	if bell_ringing:
@@ -412,8 +447,15 @@ func targetable_guards() -> Array[Guard]:
 	return result
 
 
+## Host: a guard who just had a close call can't be gone after for a few seconds.
+func give_grace(peer_id: int, seconds: float) -> void:
+	_grace[peer_id] = Time.get_ticks_msec() / 1000.0 + seconds
+
+
 ## Out through the gate in the finale: out of reach.
 func is_gone(guard: Guard) -> bool:
+	if _grace.has(guard.name.to_int()) and Time.get_ticks_msec() / 1000.0 < float(_grace[guard.name.to_int()]):
+		return true
 	return gate_open and Finale.is_out(guard.global_position)
 
 
@@ -697,6 +739,7 @@ func check_log(peer_id: int, area: String, named := "") -> String:
 				monster = each
 		var kind: String = monster.get_script().get_global_name()
 		last_log_was_first = (_credited[monster.name] as Array).is_empty()
+		_logged_tonight[kind] = true
 		if monster.mood != "":
 			var mood_line: String = Monster.MOODS[monster.mood]["tell"] % (monster.display_name.left(1).to_upper() + monster.display_name.substr(1))
 			get_tree().create_timer(1.5).timeout.connect(func() -> void: tell(peer_id, mood_line))
@@ -711,12 +754,14 @@ func check_log(peer_id: int, area: String, named := "") -> String:
 		return kind
 	if portrait.active and portrait.stage > 0 and area == "Art Room" and peer_id not in portrait.credited:
 		last_log_was_first = portrait.credited.is_empty()
+		_logged_tonight["SelfPortrait"] = true
 		portrait.credited.append(peer_id)
 		if career:
 			career.logged_monster(peer_id, "SelfPortrait")
 		return "SelfPortrait"
 	if lockers.active and peer_id not in lockers.credited and lockers.has_open_in(area):
 		last_log_was_first = lockers.credited.is_empty()
+		_logged_tonight["Lockers"] = true
 		lockers.credited.append(peer_id)
 		if career:
 			career.logged_monster(peer_id, "Lockers")

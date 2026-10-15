@@ -19,6 +19,12 @@ const GHOST_PING_EVERY := 4.0
 const GHOST_PING_SECONDS := 6.0
 ## Marks: a living guard's "look here" for the team (Q), how often, and how long one shows.
 const MARK_EVERY := 1.5
+## Close calls (see _close_call): the nerve they cost, seconds before anything can come for the
+## guard again, a solo second wind's cost, and where they wake up.
+const CLOSE_CALL_NERVE := 40.0
+const CLOSE_CALL_GRACE := 8.0
+const SECOND_WIND_POINTS := 50
+const CLOSE_CALL_WAKE := Vector3(13, 0.1, 16)
 const MARK_SECONDS := 8.0
 ## How close a monster has to be to a mark for it to read "MONSTER!".
 const MARK_MONSTER_RANGE := 2.5
@@ -79,6 +85,10 @@ var clutter: Clutter
 var finale: Finale
 ## Host: when each ghost may next leave a cold spot.
 var _ghost_ping_at: Dictionary = {}
+## Host: the monster kinds each guard has had a close call with this session (peer -> kinds).
+var _close_calls: Dictionary = {}
+## Host: a solo guard's second wind, once a night.
+var _second_wind_used := false
 var power: Power
 var pause_menu: CanvasLayer
 var spawner: MultiplayerSpawner
@@ -115,6 +125,7 @@ func _ready() -> void:
 	add_child(lighting)
 	lighting.apply_pre_shift()
 	shift.started.connect(lighting.go_dark)
+	shift.started.connect(func() -> void: _second_wind_used = false)
 	ambience = Ambience.new()
 	ambience.name = "Ambience"
 	add_child(ambience)
@@ -283,6 +294,11 @@ func _ready() -> void:
 	night.players = players
 	night.director = director
 	director.principal_ignored.connect(night.on_principal_ignored)
+	career.guide_entry_added.connect(func(kind: String) -> void:
+		var entry: Dictionary = FieldGuide.ENTRIES.get(kind, {})
+		if not entry.is_empty():
+			Sfx.play_flat(self, Sfx.notes([523.0, 784.0, 1047.0], 0.1, 0.25, "triangle"))
+			hud.show_message("NEW IN YOUR FIELD GUIDE: %s\nHow to survive it: %s" % [(entry["name"] as String).to_upper(), entry["rule"]], 12.0))
 	night.totems = totems
 	night.shop = shop
 	night.guard_room = guard_room
@@ -522,7 +538,7 @@ func _play_solo() -> void:
 	director.bake_navigation()
 	_start_run()
 	_enter_school()
-	_spawn_guard(1, Profile.employee_number, _player_name(), Career.rank(), _hat(), _perk())
+	_spawn_guard(1, Profile.employee_number, _player_name(), Career.rank(), _hat(), _perk(), Career.monsters_seen())
 
 
 ## Today's daily shift: one solo night, the same for everyone today. Never touches the saved run.
@@ -575,7 +591,7 @@ func _begin_hosting() -> void:
 	director.bake_navigation()
 	_start_run()
 	_enter_school()
-	_spawn_guard(1, Profile.employee_number, _player_name(), Career.rank(), _hat(), _perk())
+	_spawn_guard(1, Profile.employee_number, _player_name(), Career.rank(), _hat(), _perk(), Career.monsters_seen())
 
 
 func _join(typed: String) -> void:
@@ -689,7 +705,7 @@ func _on_steam_invite(lobby_id: int) -> void:
 func _on_connected_to_server() -> void:
 	_mode = "Connected"
 	_enter_school()
-	_register_employee.rpc_id(1, Profile.employee_number, _password, _player_name(), Career.rank(), _hat(), _perk())
+	_register_employee.rpc_id(1, Profile.employee_number, _password, _player_name(), Career.rank(), _hat(), _perk(), Career.monsters_seen())
 	print("[net] Joined as peer %d" % multiplayer.get_unique_id())
 
 
@@ -734,7 +750,7 @@ func _on_peer_connected(peer_id: int) -> void:
 
 ## Host: a player who just joined shows their badge. Their guard spawns with it.
 @rpc("any_peer", "call_remote", "reliable")
-func _register_employee(badge: int, password: String, player_name := "", rank := 1, hat := "cap", perk := "thermos") -> void:
+func _register_employee(badge: int, password: String, player_name := "", rank := 1, hat := "cap", perk := "thermos", known := []) -> void:
 	var peer_id := multiplayer.get_remote_sender_id()
 	if not multiplayer.is_server() or players.has_node(str(peer_id)):
 		return
@@ -750,7 +766,7 @@ func _register_employee(badge: int, password: String, player_name := "", rank :=
 	# Two copies of the game on one computer share a badge. Lend the second one a spare.
 	while badge < 1000 or _badge_in_use(badge):
 		badge = randi_range(1000, 9999)
-	_spawn_guard(peer_id, badge, player_name, rank, hat, perk)
+	_spawn_guard(peer_id, badge, player_name, rank, hat, perk, known)
 	# Spawn data is replayed as it was first sent: tell them about anyone promoted since.
 	for guard: Guard in players.get_children():
 		if guard.name.to_int() != peer_id:
@@ -789,12 +805,13 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 ## Host only. The spawner runs _create_guard with the same data on every computer,
 ## including players who join later.
-func _spawn_guard(peer_id: int, badge: int, player_name := "", rank := 1, hat := "cap", perk := "thermos") -> void:
+func _spawn_guard(peer_id: int, badge: int, player_name := "", rank := 1, hat := "cap", perk := "thermos", known := []) -> void:
 	# Personal upgrades go in the spawn data so every computer builds the guard with them.
 	var personal: Array = night.saved_personal.get(str(badge), [])
 	spawner.spawn({"peer_id": peer_id, "slot": _free_slot(), "badge": badge, "personal": personal,
 			"name": player_name.left(24), "rank": clampi(rank, 1, Career.RANKS.size()),
-			"hat": hat if Hats.HATS.has(hat) else "cap", "perk": Perks.valid(perk, clampi(rank, 1, Career.RANKS.size()))})
+			"hat": hat if Hats.HATS.has(hat) else "cap", "perk": Perks.valid(perk, clampi(rank, 1, Career.RANKS.size())),
+			"known": known.filter(func(kind: Variant) -> bool: return kind is String and FieldGuide.ENTRIES.has(kind))})
 	night.restore_guard(peer_id, badge)
 
 
@@ -807,6 +824,7 @@ func _create_guard(data: Dictionary) -> Node:
 	guard.rank = data.get("rank", 1)
 	guard.hat = data.get("hat", "cap")
 	guard.perk = data.get("perk", "thermos")
+	guard.known_monsters.assign(data.get("known", []))
 	guard.bright_flashlight = "flashlight" in data.get("personal", [])
 	guard.has_radio = "radio" in data.get("personal", [])
 	guard.has_emf = "emf" in data.get("personal", []) or guard.perk == "lookout"
@@ -1044,7 +1062,7 @@ func _show_first_night_tips() -> void:
 	var tips: Array[String] = [
 		"Tip: sit at a desk (E on a chair) to watch the cameras. A / D changes a monitor's camera.",
 		"Tip: something moved, missing, or there that shouldn't be? Press Tab and log where and what. Wrong guesses cost points.",
-		"Tip: the real night cleaner moves things too. Learn what's normal.",
+		"Tip: the real night cleaner leaves WET FLOOR signs where they've mopped. That's just cleaning: learn what's normal.",
 		"Tip: tonight's round is at the top of the screen. Find the amber lamps and hold E to punch them. The bell is loud.",
 		"Tip: at 6 AM, clock out at the time clock or you don't get paid.",
 	]
@@ -1371,6 +1389,8 @@ func _on_guard_caught(peer_id: int, by: String, from := Vector3.INF) -> void:
 	var guard := players.get_node_or_null(str(peer_id)) as Guard
 	if guard == null or guard.is_dead:
 		return
+	if _close_call(guard, by):
+		return
 	night.record_death()
 	clutter.drop(peer_id, guard.global_position)
 	finale.drop(peer_id, guard.global_position)
@@ -1386,6 +1406,55 @@ func _on_guard_caught(peer_id: int, by: String, from := Vector3.INF) -> void:
 		get_tree().create_timer(SCARE_SECONDS).timeout.connect(func() -> void:
 			if director.living_guards().is_empty():
 				night.fail_night())
+
+
+## Host: just before a catch lands. The first time a guard meets a monster that isn't in their
+## field guide (once per kind, per run), or once a night for a guard on their own, they're
+## knocked out instead: they wake in the guard room, shaken, and know the rule now.
+## Returns true if that's what happened.
+func _close_call(guard: Guard, by: String) -> bool:
+	if night.hardcore or night.training or finale.active or shift.state != Shift.State.ON_SHIFT:
+		return false
+	var peer := guard.name.to_int()
+	var kind := FieldGuide.kind_for_name(by)
+	var used: Array = _close_calls.get_or_add(peer, [])
+	var text := ""
+	if kind != "" and kind not in guard.known_monsters and kind not in used:
+		used.append(kind)
+		text = "Everything goes black. You come to in the guard room, shaking. That was %s, and you got lucky. You won't next time.\nHow to survive it: %s" % [
+				FieldGuide.display_name(kind), FieldGuide.ENTRIES[kind]["rule"]]
+	elif players.get_child_count() == 1 and not _second_wind_used:
+		_second_wind_used = true
+		night.dock(peer, SECOND_WIND_POINTS)
+		text = "Everything goes black. You come to in the guard room, head pounding. Second wind: it won't happen twice tonight.  -%d" % SECOND_WIND_POINTS
+		if kind != "":
+			text += "\n" + FieldGuide.caught_tip(by)
+	else:
+		return false
+	clutter.drop(peer, guard.global_position)
+	finale.drop(peer, guard.global_position)
+	if hiding.hidden.has(peer):
+		hiding._set_hidden.rpc(peer, -1)
+	night.nerve.add(peer, -CLOSE_CALL_NERVE)
+	director.give_grace(peer, CLOSE_CALL_GRACE)
+	director.flash_screen(peer, Color.BLACK, 2.5)
+	if peer == multiplayer.get_unique_id():
+		_wake_in_guard_room()
+	else:
+		_wake_in_guard_room.rpc_id(peer)
+	get_tree().create_timer(1.5).timeout.connect(func() -> void: _tell(peer, text))
+	return true
+
+
+## The guard who was knocked out wakes up in the guard room.
+@rpc("authority", "call_remote", "reliable")
+func _wake_in_guard_room() -> void:
+	if _local_guard == null or _local_guard.is_dead:
+		return
+	guard_room.leave_desk()
+	_local_guard.global_position = CLOSE_CALL_WAKE + Vector3((_local_guard.slot - 2.5) * 0.9, 0, 0)
+	_local_guard.velocity = Vector3.ZERO
+	Sfx.play_flat(self, Sfx.thud(0.5, 0.3, 1.0))
 
 
 @rpc("authority", "call_local", "reliable")

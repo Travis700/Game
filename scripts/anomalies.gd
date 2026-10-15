@@ -91,6 +91,7 @@ var last_was_first := true
 ## missed ones whose record was replaced when they came back.
 var _appeared := 0
 var _missed_earlier := 0
+var _missed_names: Array[String] = []
 
 
 func build(school_builder: SchoolBuilder) -> void:
@@ -202,6 +203,7 @@ func spawn_random(night: int, minutes: float) -> bool:
 func start(index: int, minutes: float, night := 1) -> void:
 	if records.has(index) and records[index]["credited"].is_empty():
 		_missed_earlier += 1
+		_missed_names.append(_describe(index))
 	_appeared += 1
 	var amount := clampf(1.12 - 0.085 * night + randf_range(-0.08, 0.08), 0.3, 1.0)
 	records[index] = {"credited": [], "clear_at": -1.0, "ended_at": -1.0, "started_at": minutes, "amount": amount}
@@ -260,6 +262,20 @@ func missed_count() -> int:
 	return missed
 
 
+## Host: what nobody logged tonight, as "Lobby: moved object".
+func missed_list() -> Array[String]:
+	var missed: Array[String] = _missed_names.duplicate()
+	for i: int in records:
+		if records[i]["credited"].is_empty():
+			missed.append(_describe(i))
+	return missed
+
+
+func _describe(index: int) -> String:
+	var def: Dictionary = DEFINITIONS[index]
+	return "%s: %s" % [def["area"], (def["type"] as String).to_lower()]
+
+
 func appeared_count() -> int:
 	return _appeared
 
@@ -277,6 +293,7 @@ func reset_all() -> void:
 	records.clear()
 	_appeared = 0
 	_missed_earlier = 0
+	_missed_names.clear()
 
 
 func _end(index: int, minutes: float) -> void:
