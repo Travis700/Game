@@ -517,6 +517,7 @@ func _spawn_drop(drop_id: int, item: String) -> void:
 			_request_pickup.rpc_id(1, drop_id))
 	add_child(pickup)
 	_drops[drop_id] = {"item": item, "node": pickup}
+	SoundBank.play_at(pickup, "vend", 0.0, 20.0)
 
 
 @rpc("authority", "call_local", "reliable")

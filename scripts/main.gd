@@ -1636,6 +1636,7 @@ func _open_clipboard() -> void:
 	if area == "":
 		area = SchoolBuilder.area_at(_local_guard.global_position)
 	clipboard.open(area)
+	SoundBank.play_flat(self, "paper_open", -8.0)
 
 
 # --- Caught, ghosts and totems ---------------------------------------------------------------
@@ -1828,6 +1829,9 @@ func _sender_id() -> int:
 @rpc("authority", "call_local", "reliable")
 func _camera_signal(camera_index: int, working: bool) -> void:
 	cameras.set_signal(camera_index, working)
+	# A crackle from the desk when a feed someone's watching cuts out.
+	if not working and _local_guard and _local_guard.seated_desk >= 0:
+		SoundBank.play_flat(self, "glitch", -6.0)
 
 
 func _on_vending_used(by: Node) -> void:

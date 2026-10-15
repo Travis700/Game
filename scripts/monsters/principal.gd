@@ -14,6 +14,11 @@ var _left := HUNT_TIME
 func _init() -> void:
 	display_name = "the Principal"
 	state = "out"
+	# Its own heavy footsteps (a recording), not the generic ones.
+	silent = true
+
+
+var _steps: AudioStreamPlayer3D
 
 
 func think(delta: float) -> void:
@@ -43,3 +48,11 @@ func _build_body() -> void:
 	part(box(Vector3(0.22, 0.18, 0.04)), Color(0.9, 0.9, 0.9), Vector3(0, 1.62, -0.27))
 	part(sphere(0.16), Color(0.7, 0.62, 0.55), Vector3(0, 2.08, 0))
 	part(box(Vector3(0.26, 0.05, 0.02)), Color(0.02, 0.02, 0.02), Vector3(0, 2.1, -0.15))
+
+
+## Heavy, purposeful steps on every computer while it's out hunting.
+func _on_state_changed(new_state: String) -> void:
+	if new_state == "hunt" and _steps == null:
+		var stream := SoundBank.get_sound("principal_steps", null, true)
+		if stream:
+			_steps = Sfx.play_at(self, stream, 2.0, 35.0)
