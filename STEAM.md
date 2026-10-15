@@ -88,7 +88,8 @@ Create these with exactly these API names. Mark them as set by the client.
 Stats (type INT, set by client): `nights_survived`, `runs_won`, `correct_logs`, `times_caught`,
 `monsters_logged`, `stations_punched`.
 
-Achievement icons are part of the art pass (64×64 locked and unlocked versions each).
+Achievement icons are ready in `steam/achievements/`: `<API_NAME>.png` (unlocked) and
+`<API_NAME>_locked.png`, 64×64 each, drawn in code (DejaVu Sans symbols, free licence).
 
 ## 3b. Leaderboards
 
