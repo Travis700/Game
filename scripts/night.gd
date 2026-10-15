@@ -241,6 +241,11 @@ func _run_shift(delta: float) -> void:
 	if _quota_timer <= 0.0:
 		_quota_timer = 1.0
 		_send_quota()
+		var now := Time.get_ticks_msec() / 1000.0
+		for guard in director.living_guards():
+			var area := SchoolBuilder.area_at(guard.global_position)
+			if area != "":
+				(_visits.get_or_add(guard.name.to_int(), {}) as Dictionary)[area] = now
 	shop.update(delta)
 	doors.update(delta)
 	finale.update(minutes)
@@ -524,6 +529,9 @@ func fail_night() -> void:
 ## team shares one school's worth of anomalies.
 ## Host: how many guards clocked in for tonight's shift.
 var _shift_team := 1
+## Host: when each guard was last in each area (real seconds), for confirmations.
+var _visits: Dictionary = {}
+const SEEN_SECONDS := 90.0
 ## Host: today's daily, hosted for a team (scores go on the team boards, by team size).
 var team_daily := false
 ## Host: whether this run has had its one retry of the last night.
@@ -560,6 +568,10 @@ func _could_see(peer: int, area: String) -> bool:
 	if guard == null:
 		return false
 	if SchoolBuilder.area_at(guard.global_position) == area:
+		return true
+	# Or was there a moment ago (saw it, then stepped out to log it).
+	var visits: Dictionary = _visits.get(peer, {})
+	if visits.has(area) and Time.get_ticks_msec() / 1000.0 - float(visits[area]) < SEEN_SECONDS:
 		return true
 	var desk := guard_room.occupants.find(peer)
 	if desk < 0:
