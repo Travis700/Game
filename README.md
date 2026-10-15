@@ -36,8 +36,9 @@ invite or the Steam overlay instead, with no ports to forward.
 
 ### The menu
 
-- **Training** walks a new guard through one guided shift: the cameras, logging, the round, the breaker and
-  hiding. It never touches the saved run.
+- **Training** walks a new guard through one guided shift: the cameras, comparing with the midnight photo,
+  logging, the round, the breaker and hiding, then goes straight into night 1. It never touches the saved
+  run. Until it's done, the menu shows just the essentials and the daily shift stays locked.
 
 - **How to play**, **Records** (career stats, best scores, achievements) and **Credits** (with the
   software licences) are along the bottom.
