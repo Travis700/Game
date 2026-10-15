@@ -89,7 +89,7 @@ func _process(delta: float) -> void:
 		_beep_left = 1.1
 		if _beep == null:
 			_beep = Sfx.notes([1760.0], 0.09, 0.22, "sine")
-		Sfx.play_at(self, _beep, -2.0, 22.0)
+		SoundBank.play_at(self, "monitor_beep", -2.0, 22.0, _beep)
 
 
 func _build_body() -> void:

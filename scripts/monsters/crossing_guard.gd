@@ -82,11 +82,13 @@ func _on_state_changed(new_state: String) -> void:
 		_sign.position = Vector3(0.35, 1.9, -0.2) if raised else Vector3(0.35, 0.9, -0.1)
 		_sign.rotation_degrees.x = 0.0 if raised else -70.0
 	if new_state == "stop":
-		Sfx.play_at(self, Sfx.notes([2800.0, 2800.0], 0.25, 0.3, "square"), 3.0, 45.0)
+		SoundBank.play_at(self, "whistle_crossing", 3.0, 45.0, Sfx.notes([2800.0, 2800.0], 0.25, 0.3, "square"))
 	elif new_state == "clear":
-		Sfx.play_at(self, Sfx.notes([2400.0, 0.0, 3000.0], 0.07, 0.3, "square"), 0.0, 45.0)
+		SoundBank.play_at(self, "rush_steps", 0.0, 45.0, Sfx.notes([2400.0, 0.0, 3000.0], 0.07, 0.3, "square"))
 	elif new_state == "charge":
-		Sfx.play_at(self, Sfx.notes([2800.0, 0.0, 2800.0, 0.0, 2800.0], 0.08, 0.35, "square"), 4.0, 45.0)
+		var clear := SoundBank.play_at(self, "whistle_crossing", 4.0, 45.0, Sfx.notes([2800.0, 0.0, 2800.0, 0.0, 2800.0], 0.08, 0.35, "square"))
+		if clear:
+			clear.pitch_scale = 1.15
 
 
 func _build_body() -> void:

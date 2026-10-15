@@ -113,9 +113,9 @@ func _hunt(delta: float) -> void:
 
 func _on_state_changed(new_state: String) -> void:
 	if new_state == "shush":
-		Sfx.play_at(self, Sfx.notes([1.0, 1.0, 1.0], 0.35, 0.18, "noise"), 4.0, 25.0)
+		SoundBank.play_at(self, "shush", 4.0, 25.0, Sfx.notes([1.0, 1.0, 1.0], 0.35, 0.18, "noise"))
 	elif new_state == "hunt":
-		Sfx.play_at(self, Sfx.notes([1.0, 1.0, 1.0, 1.0], 0.2, 0.35, "noise"), 6.0, 35.0)
+		SoundBank.play_at(self, "hiss", 6.0, 35.0, Sfx.notes([1.0, 1.0, 1.0, 1.0], 0.2, 0.35, "noise"))
 
 
 func _build_body() -> void:

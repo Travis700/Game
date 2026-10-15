@@ -204,12 +204,12 @@ func _set_state(doorway: int, is_installed: bool, is_closed: bool, is_broken: bo
 	_show(doorway)
 	if is_installed and was_closed != is_closed:
 		var sound := Sfx.notes([140.0, 90.0], 0.08, 0.35, "square") if is_closed else Sfx.notes([300.0, 380.0], 0.06, 0.15, "saw")
-		Sfx.play_at(_hinges[doorway], sound, 0.0, 25.0)
+		SoundBank.play_at(_hinges[doorway], "door_close" if is_closed else "door_open", 0.0, 25.0, sound)
 
 
 @rpc("authority", "call_local", "reliable")
 func _bang(doorway: int) -> void:
-	Sfx.play_at(_hinges[doorway], Sfx.notes([70.0, 55.0], 0.09, 0.6, "square"), 6.0, 40.0)
+	SoundBank.play_at(_hinges[doorway], "door_bang", 6.0, 40.0, Sfx.notes([70.0, 55.0], 0.09, 0.6, "square"))
 
 
 func _show(doorway: int) -> void:

@@ -167,7 +167,7 @@ func _set_power(power_on: bool, loud: bool) -> void:
 		_panel_glow = panel_material.emission_energy_multiplier
 		panel_material.emission_energy_multiplier = 0.0
 		if loud:
-			Sfx.play_flat(self, Sfx.notes([140.0, 110.0, 85.0, 60.0, 45.0], 0.18, 0.45, "saw"), -2.0)
+			SoundBank.play_flat(self, "power_down", -2.0, Sfx.notes([140.0, 110.0, 85.0, 60.0, 45.0], 0.18, 0.45, "saw"))
 	else:
 		for light in _hidden:
 			if is_instance_valid(light):
@@ -179,8 +179,7 @@ func _set_power(power_on: bool, loud: bool) -> void:
 		_flickering.clear()
 		panel_material.emission_energy_multiplier = _panel_glow
 		if loud:
-			Sfx.play_flat(self, Sfx.thud(0.6, 0.15, 0.6), 0.0)
-			Sfx.play_flat(self, Sfx.notes([55.0, 80.0, 110.0, 140.0], 0.12, 0.3, "saw"), -6.0)
+			SoundBank.play_flat(self, "power_up", 0.0, Sfx.thud(0.6, 0.15, 0.6))
 	for light in _emergency:
 		light.visible = not on
 	cameras.set_power(on)

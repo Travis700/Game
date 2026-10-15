@@ -202,7 +202,7 @@ func _show_figure(spot: Vector3, viewer: Vector3) -> void:
 		eye.material_override = glow
 		_figure.add_child(eye)
 	_figure.look_at(Vector3(viewer.x, 0.0, viewer.z), Vector3.UP, true)
-	Sfx.play_flat(self, Sfx.notes([62.0, 58.0, 55.0], 0.45, 0.5, "saw"), -4.0)
+	SoundBank.play_flat(self, "stinger", -6.0, Sfx.notes([62.0, 58.0, 55.0], 0.45, 0.5, "saw"))
 	# The lights near it stutter, and when they come back it's gone.
 	var lights: Array[Light3D] = []
 	for node in get_tree().get_nodes_in_group(ShiftLighting.SCHOOL_LIGHTS):
@@ -241,7 +241,7 @@ func jumpscare(from: Vector3) -> void:
 		if camera.global_position.distance_to(look) > 0.3:
 			camera.look_at(look, Vector3.UP)
 	var start_fov := camera.fov
-	Sfx.play_flat(self, _make_scream(), 4.0)
+	SoundBank.play_flat(self, "scream", 2.0, _make_scream())
 	var shake := create_tween()
 	for i in 10:
 		shake.tween_property(camera, "h_offset", randf_range(-0.06, 0.06), 0.04)

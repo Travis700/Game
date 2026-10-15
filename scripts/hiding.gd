@@ -131,7 +131,8 @@ func _set_hidden(peer: int, spot: int) -> void:
 		if spot >= 0:
 			guard.set_meta("hid_in", spot)
 		_slats.visible = spot >= 0
-		Sfx.play_flat(self, Sfx.creak(0.5, 0.25))
+		SoundBank.play_flat(self, "creak", -2.0, Sfx.creak(0.5, 0.25))
+		SoundBank.play_flat(self, "cloth", -6.0)
 	for i in _doors.size():
 		_doors[i].prompt = "Climb out" if hidden.get(multiplayer.get_unique_id(), -1) == i else "Hide in the cupboard"
 

@@ -302,7 +302,7 @@ func _set_key(area: String, holder: int, at: Vector3, open_gate: bool) -> void:
 		_key.global_position = at
 	if open_gate and not unlocked:
 		unlocked = true
-		Sfx.play_at(_leaves[0], Sfx.notes([140.0, 120.0, 95.0], 0.25, 0.6, "square"), 6.0, 60.0)
+		SoundBank.play_at(_leaves[0], "gate", 6.0, 60.0, Sfx.notes([140.0, 120.0, 95.0], 0.25, 0.6, "square"))
 	key_changed.emit()
 
 

@@ -114,7 +114,7 @@ func _on_state_changed(new_state: String) -> void:
 		if child is MeshInstance3D:
 			(child as MeshInstance3D).visible = new_state != "hidden"
 	if new_state == "flee":
-		Sfx.play_at(self, Sfx.notes([900.0, 1400.0, 700.0], 0.07, 0.25, "saw"), 0.0, 25.0)
+		SoundBank.play_at(self, "skitter", 0.0, 25.0, Sfx.notes([900.0, 1400.0, 700.0], 0.07, 0.25, "saw"))
 
 
 func _build_body() -> void:

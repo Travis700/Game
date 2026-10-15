@@ -74,6 +74,6 @@ func _on_state_changed(new_state: String) -> void:
 		eye.visible = new_state == "reveal"
 	if new_state == "reveal":
 		# A wet, wrong gurgle as it drops the act.
-		var voice := Sfx.play_at(self, Sfx.notes([140.0, 120.0, 96.0, 80.0], 0.18, 0.5, "saw"), 4.0, 30.0)
+		var voice := Sfx.play_at(self, SoundBank.get_sound("wet_voice", Sfx.notes([140.0, 120.0, 96.0, 80.0], 0.18, 0.5, "saw")), 4.0, 30.0)
 		if voice:
 			voice.pitch_scale = 0.6

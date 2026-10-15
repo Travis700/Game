@@ -450,7 +450,7 @@ static func rank_needed(item: String) -> int:
 func _horn(peer_id: int) -> void:
 	var guard := director.guard_by_peer(peer_id)
 	if guard:
-		Sfx.play_at(guard, Sfx.notes([233.0, 233.0, 233.0, 233.0, 233.0, 233.0], 0.14, 0.6, "saw"), 8.0, 80.0)
+		SoundBank.play_at(guard, "air_horn", 8.0, 80.0, Sfx.notes([233.0, 233.0, 233.0, 233.0, 233.0, 233.0], 0.14, 0.6, "saw"))
 
 
 ## Every computer: a decoy radio starts blaring.
@@ -459,6 +459,13 @@ func _decoy_plays(id: int) -> void:
 	if not _placed.has(id):
 		return
 	var node: Node3D = _placed[id]["node"]
+	var recorded := SoundBank.get_sound("radio", null, true)
+	if recorded:
+		var player := Sfx.play_at(node, recorded, 8.0, 60.0)
+		get_tree().create_timer(DECOY_SECONDS).timeout.connect(func() -> void:
+			if is_instance_valid(player):
+				player.queue_free())
+		return
 	var tune := [392.0, 440.0, 494.0, 523.0, 494.0, 440.0, 392.0, 330.0]
 	var music := create_tween().set_loops(int(DECOY_SECONDS / (tune.size() * 0.25)))
 	music.tween_callback(func() -> void:

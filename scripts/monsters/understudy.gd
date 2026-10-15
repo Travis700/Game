@@ -125,7 +125,7 @@ func _on_state_changed(new_state: String) -> void:
 	if slot >= 1:
 		_uniform.albedo_color = Guard.UNIFORM_COLORS[(slot - 1) % Guard.UNIFORM_COLORS.size()]
 	if new_state.begins_with("step"):
-		Sfx.play_at(self, Sfx.notes([196.0, 0.0, 196.0, 0.0, 196.0], 0.1, 0.3, "saw"), 0.0, 25.0)
+		SoundBank.play_at(self, "rush_steps", 0.0, 25.0, Sfx.notes([196.0, 0.0, 196.0, 0.0, 196.0], 0.1, 0.3, "saw"))
 
 
 func _build_body() -> void:

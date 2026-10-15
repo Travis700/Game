@@ -1207,12 +1207,12 @@ func _objective() -> String:
 func _on_keypad_submitted(number: int) -> void:
 	if _local_guard == null or number != _local_guard.employee_number:
 		keypad.flash_display("UNKNOWN")
-		Sfx.play_flat(self, Sfx.notes([220.0, 180.0], 0.15, 0.25, "square"))
+		SoundBank.play_flat(self, "ui_error", 0.0, Sfx.notes([220.0, 180.0], 0.15, 0.25, "square"))
 		return
 	keypad.close()
 	_clocked_in = true
 	_badge_typed = true
-	Sfx.play_flat(self, Sfx.notes([880.0, 1320.0], 0.08, 0.25, "square"))
+	SoundBank.play_flat(self, "punch_clock", 0.0, Sfx.notes([880.0, 1320.0], 0.08, 0.25, "square"))
 	_request_time_clock()
 
 
@@ -1383,7 +1383,7 @@ func _mark(at: Vector3, slot: int, monster: bool) -> void:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	add_child(label)
 	label.global_position = at + Vector3(0, 0.3, 0)
-	Sfx.play_flat(self, Sfx.notes([880.0, 1320.0] if not monster else [990.0, 660.0, 990.0], 0.07, 0.18, "triangle"))
+	SoundBank.play_flat(self, "ping", -4.0 if not monster else 0.0, Sfx.notes([880.0, 1320.0] if not monster else [990.0, 660.0, 990.0], 0.07, 0.18, "triangle"))
 	var fade := create_tween()
 	fade.tween_interval(MARK_SECONDS - 1.5)
 	fade.tween_property(label, "modulate:a", 0.0, 1.5)
@@ -1516,7 +1516,7 @@ func _flag(area: String, who: String) -> void:
 	fade.tween_property(marker, "modulate:a", 0.0, 1.0)
 	fade.tween_callback(marker.queue_free)
 	hud.show_message("%s flagged the %s camera." % [who, area])
-	Sfx.play_flat(self, Sfx.notes([1046.0, 1318.0], 0.08, 0.2, "triangle"), -6.0)
+	SoundBank.play_flat(self, "ping", -6.0, Sfx.notes([1046.0, 1318.0], 0.08, 0.2, "triangle"))
 
 
 ## Host: a guard at the monitors set off a camera's speaker. Monsters that listen come running.
@@ -1603,7 +1603,7 @@ func _set_lockdown(on: bool, rule := "") -> void:
 			var freqs: Array = []
 			for i in 16:
 				freqs.append(520.0 + 380.0 * sin(i / 16.0 * PI))
-			_siren.stream = Sfx.notes(freqs, 0.08, 0.22, "saw", true)
+			_siren.stream = SoundBank.get_sound("siren", Sfx.notes(freqs, 0.08, 0.22, "saw", true), true)
 			_siren.volume_db = -8.0
 			add_child(_siren)
 		_siren.play()
@@ -1716,7 +1716,7 @@ func _wake_in_guard_room() -> void:
 	guard_room.leave_desk()
 	_local_guard.global_position = CLOSE_CALL_WAKE + Vector3((_local_guard.slot - 2.5) * 0.9, 0, 0)
 	_local_guard.velocity = Vector3.ZERO
-	Sfx.play_flat(self, Sfx.thud(0.5, 0.3, 1.0))
+	SoundBank.play_flat(self, "stinger", -4.0, Sfx.thud(0.5, 0.3, 1.0))
 
 
 @rpc("authority", "call_local", "reliable")
@@ -1738,7 +1738,7 @@ func _guard_died(peer_id: int, by: String, at: Vector3, from := Vector3.INF) -> 
 		if players.get_child_count() > 1 and not hud.solo:
 			tip += ("\n" if tip != "" else "") + "As a ghost: %s leaves a cold spot. Stand right by a teammate carrying a walkie-talkie and talk: they'll hear you through the static, a few seconds at a time." % Controls.key_name("interact")
 		hud.show_message("You were caught by %s.%s" % [by, "\n" + tip if tip != "" else ""], 9.0 if tip != "" else 4.0)
-		Sfx.play_flat(self, Sfx.notes([110.0, 104.0, 98.0, 92.0], 0.35, 0.4, "saw"))
+		SoundBank.play_flat(self, "stinger", 0.0, Sfx.notes([110.0, 104.0, 98.0, 92.0], 0.35, 0.4, "saw"))
 	else:
 		hud.show_message("Guard %d was caught by %s." % [guard.slot, by])
 	_refresh_guard_visibility()
@@ -1782,7 +1782,7 @@ func _guard_revived(peer_id: int, at: Vector3) -> void:
 func _announce(text: String, sound := "") -> void:
 	hud.show_message(text)
 	if sound == "intercom":
-		Sfx.play_flat(self, Sfx.notes([660.0, 523.0, 0.0], 0.35, 0.3, "sine"))
+		SoundBank.play_flat(self, "intercom", -2.0, Sfx.notes([660.0, 523.0, 0.0], 0.35, 0.3, "sine"))
 	elif sound == "sensor":
 		Sfx.play_flat(self, Sfx.notes([1320.0, 0.0, 1320.0], 0.1, 0.2, "square"))
 
@@ -1803,7 +1803,7 @@ func _set_bell(ringing: bool) -> void:
 		for i in 24:
 			ring.append(1100.0 if i % 2 == 0 else 1180.0)
 		ring.append_array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-		_bell_sound = Sfx.play_at(school, Sfx.notes(ring, 0.04, 0.25, "square", true), -4.0, 200.0)
+		_bell_sound = Sfx.play_at(school, SoundBank.get_sound("school_bell", Sfx.notes(ring, 0.04, 0.25, "square", true), true), -4.0, 200.0)
 		_bell_sound.position = Vector3(0, 3.0, 7.0)
 		_bell_sound.attenuation_model = AudioStreamPlayer3D.ATTENUATION_DISABLED
 	elif multiplayer.is_server() and shift.state == Shift.State.ON_SHIFT:

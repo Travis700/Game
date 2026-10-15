@@ -50,7 +50,7 @@ func _on_state_changed(new_state: String) -> void:
 	if new_state == "chase":
 		if _whistle == null:
 			_whistle = Sfx.notes([2400.0, 0.0, 2400.0, 2900.0], 0.12, 0.3, "square")
-		Sfx.play_at(self, _whistle, 2.0, 45.0)
+		SoundBank.play_at(self, "whistle_monitor", 2.0, 45.0, _whistle)
 
 
 func _build_body() -> void:

@@ -92,7 +92,7 @@ func _pick_wander_target() -> void:
 func _on_state_changed(new_state: String) -> void:
 	if _hum == null:
 		var tune := Sfx.notes([220.0, 247.0, 262.0, 247.0, 220.0, 196.0, 220.0, 0.0, 0.0], 0.45, 0.25, "sine", true)
-		_hum = Sfx.play_at(self, tune, -2.0, 22.0)
+		_hum = Sfx.play_at(self, SoundBank.get_sound("lunch_hum", tune, true), -2.0, 22.0)
 	# She stops humming when she's heard something.
 	_hum.stream_paused = new_state == "hunt"
 

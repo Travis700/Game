@@ -42,5 +42,16 @@ func _process(delta: float) -> void:
 	if _walked >= stride * (1.35 if running else 1.0):
 		_walked = 0.0
 		var loudness := volume_db + (5.0 if running else 0.0)
-		var player := Sfx.play_at(body, Sfx.thud(pitch), loudness, reach * (1.5 if running else 1.0))
-		player.pitch_scale = randf_range(0.92, 1.08)
+		var player := Sfx.play_at(body, SoundBank.get_sound(_surface(now), Sfx.thud(pitch)), loudness, reach * (1.5 if running else 1.0))
+		player.pitch_scale = pitch * randf_range(0.92, 1.08)
+
+
+## What's underfoot here: the gym's wooden floor, the grass outside (or the path through it),
+## or the school's hard floors.
+static func _surface(at: Vector3) -> String:
+	var area := SchoolBuilder.area_at(at)
+	if area == "Gym":
+		return "step_wood"
+	if at.z > 20.6 and absf(at.x) < 41.0:
+		return "step_concrete" if absf(at.x) < 2.2 or at.z > 60.0 else "step_grass"
+	return "step_concrete"

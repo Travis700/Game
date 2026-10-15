@@ -195,8 +195,7 @@ func _fly(index: int, from: Vector3, to: Vector3) -> void:
 		prop.global_position = from.lerp(top, t).lerp(top.lerp(to, t), t), 0.0, 1.0, 0.6)
 	arc.tween_callback(func() -> void:
 		prop.collision_layer = Interactable.TALK_LAYER
-		Sfx.play_at(prop, Sfx.thud(1.3, 0.12, 0.8), 4.0, 40.0)
-		Sfx.play_at(prop, Sfx.thud(0.9, 0.08, 0.6), 0.0, 40.0)
+		SoundBank.play_at(prop, ["land_wood", "land_metal", "land_plate", "land_soft"].pick_random(), 6.0, 40.0, Sfx.thud(1.3, 0.12, 0.8))
 		get_tree().call_group("captions", "heard", "Clutter", "landed", to))
 
 

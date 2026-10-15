@@ -73,9 +73,9 @@ func think(delta: float) -> void:
 
 func _on_state_changed(new_state: String) -> void:
 	if new_state == "whistle":
-		Sfx.play_at(self, Sfx.notes([2600.0, 2600.0, 0.0, 2600.0], 0.15, 0.35, "square"), 3.0, 45.0)
+		SoundBank.play_at(self, "whistle_coach", 3.0, 45.0, Sfx.notes([2600.0, 2600.0, 0.0, 2600.0], 0.15, 0.35, "square"))
 	elif new_state == "chase":
-		Sfx.play_at(self, Sfx.notes([2600.0, 2900.0, 2600.0, 2900.0, 2600.0], 0.08, 0.35, "square"), 4.0, 45.0)
+		SoundBank.play_at(self, "whistle_coach", 4.0, 45.0, Sfx.notes([2600.0, 2900.0, 2600.0, 2900.0, 2600.0], 0.08, 0.35, "square"))
 
 
 func _build_body() -> void:

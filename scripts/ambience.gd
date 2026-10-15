@@ -16,7 +16,7 @@ var _playing := false
 
 func _ready() -> void:
 	_hum = AudioStreamPlayer.new()
-	_hum.stream = Sfx.hum()
+	_hum.stream = SoundBank.get_sound("ambience", Sfx.hum(), true)
 	_hum.volume_db = -18.0
 	add_child(_hum)
 
@@ -45,7 +45,7 @@ func _process(delta: float) -> void:
 	var angle := randf() * TAU
 	var spot := listener.global_position + Vector3(cos(angle), 0, sin(angle)) * randf_range(8.0, 20.0)
 	spot.y = 2.0
-	var stream: AudioStream = Sfx.creak() if randf() < 0.65 else Sfx.thud(0.45, 0.35, 0.9)
+	var stream: AudioStream = SoundBank.get_sound("creak", Sfx.creak()) if randf() < 0.65 else Sfx.thud(0.45, 0.35, 0.9)
 	var player := AudioStreamPlayer3D.new()
 	player.stream = stream
 	player.volume_db = -4.0

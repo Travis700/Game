@@ -420,7 +420,7 @@ func _log_result(peer: int, correct: bool, text: String) -> void:
 func _show_log_result(correct: bool, text: String) -> void:
 	hud.show_message(("✓ " if correct else "✗ ") + text)
 	var tune: Array = [880.0, 1320.0] if correct else [220.0, 165.0]
-	Sfx.play_flat(self, Sfx.notes(tune, 0.1, 0.25, "sine" if correct else "square"))
+	SoundBank.play_flat(self, "ui_confirm" if correct else "ui_error", -2.0, Sfx.notes(tune, 0.1, 0.25, "sine" if correct else "square"))
 
 
 ## Host: tonight's difficulty, from the menu choice or the number of guards.

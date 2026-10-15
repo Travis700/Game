@@ -273,7 +273,7 @@ func _play_radio(speaker: int, packet: PackedByteArray) -> void:
 ## The radio's click and hiss, when you key up (`from` null) or a call comes in.
 func _squelch(_from: Node) -> void:
 	var click := AudioStreamPlayer.new()
-	click.stream = Sfx.notes([1.0, 1.0], 0.06, 0.25, "noise")
+	click.stream = SoundBank.get_sound("squelch", Sfx.notes([1.0, 1.0], 0.06, 0.25, "noise"))
 	click.bus = "Radio"
 	click.volume_db = -6.0
 	add_child(click)

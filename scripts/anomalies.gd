@@ -511,7 +511,11 @@ func _noise(prop_name: String, pos: Vector3, sound: String) -> void:
 	_home[prop_name] = spot.transform
 
 
-static func _noise_stream(sound: String) -> AudioStreamWAV:
+static func _noise_stream(sound: String) -> AudioStream:
+	var recorded: AudioStream = SoundBank.get_sound({"radio": "radio", "static": "tv_static", "whisper": "whispers",
+			"ball": "ball_bounce"}.get(sound, ""), null, true)
+	if recorded:
+		return recorded
 	match sound:
 		"radio":
 			return Sfx.notes([392.0, 0.0, 330.0, 349.0, 0.0, 294.0, 262.0, 0.0, 0.0, 0.0], 0.3, 0.12, "square", true)

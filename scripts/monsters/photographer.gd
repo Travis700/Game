@@ -96,7 +96,7 @@ func _rest() -> void:
 func _on_state_changed(new_state: String) -> void:
 	match new_state:
 		"charging":
-			Sfx.play_at(self, _whine(), -2.0, 25.0)
+			SoundBank.play_at(self, "flash_charge", -2.0, 25.0, _whine())
 		"rush", "missed":
 			# Whether or not it caught anyone, the flash goes off for everyone nearby to see.
 			_pop()
@@ -115,7 +115,7 @@ func _pop() -> void:
 	var fade := create_tween()
 	fade.tween_property(_flash_light, "light_energy", 0.0, 0.35)
 	fade.tween_callback(func() -> void: _flash_light.visible = false)
-	Sfx.play_at(self, Sfx.thud(2.2, 0.06, 0.6), 2.0, 30.0)
+	SoundBank.play_at(self, "flash_pop", 2.0, 30.0, Sfx.thud(2.2, 0.06, 0.6))
 
 
 func _whine() -> AudioStreamWAV:

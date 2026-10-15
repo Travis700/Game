@@ -59,7 +59,7 @@ func _process(delta: float) -> void:
 	var listener := get_viewport().get_camera_3d()
 	if listener == null or listener.global_position.distance_to(global_position) > 8.0:
 		return
-	var breath := Sfx.play_at(self, Sfx.notes([1.0, 1.0], 0.5, 0.25, "noise"), -6.0, 8.0)
+	var breath := Sfx.play_at(self, SoundBank.get_sound("ghost_breath", Sfx.notes([1.0, 1.0], 0.5, 0.25, "noise")), -6.0, 8.0)
 	if breath:
 		breath.pitch_scale = 0.4
 	get_tree().call_group("captions", "heard", "SchoolGhost", "breath", global_position)

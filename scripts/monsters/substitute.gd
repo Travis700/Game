@@ -128,7 +128,7 @@ func _on_state_changed(new_state: String) -> void:
 	if new_state == "register":
 		Sfx.play_at(self, Sfx.notes([330.0, 0.0, 294.0], 0.18, 0.25, "square"), 0.0, 20.0)
 	elif new_state == "detention":
-		Sfx.play_at(self, Sfx.notes([1200.0, 1200.0, 0.0, 1200.0, 1200.0], 0.12, 0.3, "square"), 2.0, 40.0)
+		SoundBank.play_at(self, "hand_bell", 2.0, 40.0, Sfx.notes([1200.0, 1200.0, 0.0, 1200.0, 1200.0], 0.12, 0.3, "square"))
 
 
 func _build_body() -> void:

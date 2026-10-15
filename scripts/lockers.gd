@@ -35,8 +35,8 @@ var _slam: AudioStream
 
 
 func build(locker_material: Material, dark_material: Material) -> void:
-	_creak = Sfx.notes([140.0, 150.0, 160.0, 150.0], 0.12, 0.2, "saw")
-	_slam = Sfx.notes([90.0, 60.0], 0.08, 0.6, "noise")
+	_creak = SoundBank.get_sound("creak", Sfx.notes([140.0, 150.0, 160.0, 150.0], 0.12, 0.2, "saw"))
+	_slam = SoundBank.get_sound("slam_metal", Sfx.notes([90.0, 60.0], 0.08, 0.6, "noise"))
 	for i in DOORS.size():
 		var door: Array = DOORS[i]
 		var facing: float = door[2]

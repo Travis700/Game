@@ -159,8 +159,7 @@ func _set_state(new_order: PackedInt32Array, new_punched: PackedInt32Array, is_o
 @rpc("authority", "call_local", "reliable")
 func _rang(index: int) -> void:
 	var station := _stations[index]
-	Sfx.play_at(station, Sfx.thud(0.7, 0.12, 0.6), 2.0, 25.0)
-	Sfx.play_at(station, Sfx.notes([1568.0, 0.0, 1568.0, 0.0, 1568.0], 0.09, 0.3, "triangle"), 0.0, 45.0)
+	SoundBank.play_at(station, "punch_clock", 4.0, 45.0, Sfx.notes([1568.0, 0.0, 1568.0, 0.0, 1568.0], 0.09, 0.3, "triangle"))
 
 
 ## The HUD's line: what's left on tonight's round.
