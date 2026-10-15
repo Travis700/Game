@@ -96,6 +96,8 @@ var _missed_earlier := 0
 var _missed_names: Array[String] = []
 ## Host: tonight's anomalies in play (see plan). Empty means all of them.
 var _pool: Array[int] = []
+## Host: tonight's spot for each anomaly (0 = its usual one, n = alts[n - 1]). See plan.
+var _spots: Dictionary = {}
 
 
 func build(school_builder: SchoolBuilder) -> void:
@@ -216,6 +218,10 @@ func plan(night: int) -> void:
 		if DEFINITIONS[i]["night"] <= night and SchoolBuilder.area_difficulty(DEFINITIONS[i]["area"]) <= difficulty:
 			_pool.append(i)
 	_pool.shuffle()
+	# Where each one happens tonight, settled now (so a daily shift is the same for everyone).
+	_spots.clear()
+	for i in DEFINITIONS.size():
+		_spots[i] = randi() % (DEFINITIONS[i].get("alts", []).size() + 1)
 	_pool.resize(maxi(6, ceili(_pool.size() * 0.7)) if _pool.size() > 6 else _pool.size())
 
 
@@ -229,7 +235,7 @@ func start(index: int, minutes: float, night := 1) -> void:
 	_appeared += 1
 	var amount := clampf(1.12 - 0.085 * night + randf_range(-0.08, 0.08), 0.3, 1.0)
 	var alts: Array = DEFINITIONS[index].get("alts", [])
-	var variant := randi() % (alts.size() + 1)
+	var variant: int = _spots.get(index, 0)
 	# Never right in front of somebody.
 	if variant > 0 and _guard_within(alts[variant - 1], UNSEEN_DISTANCE):
 		variant = 0

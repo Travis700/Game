@@ -538,7 +538,7 @@ func _team_work() -> int:
 				- int(stats["false"]) * FALSE_REPORT_POINTS
 	for peer: int in rounds.punches:
 		total += int(rounds.punches[peer]) * rounds.punch_points()
-	return total
+	return maxi(total, 0)
 
 
 func _send_quota() -> void:

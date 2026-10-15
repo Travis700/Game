@@ -97,8 +97,10 @@ var _grace: Dictionary = {}
 var tonight_report := ""
 ## Host: monster kinds someone logged tonight (for the report).
 var _logged_tonight: Dictionary = {}
-## Host: the monsters each night of this run brought, oldest first (see plan_night).
-var _run_history: Array[Array] = []
+## Host: the monsters each night of this run brought, by night number (see plan_night).
+var _run_history: Dictionary = {}
+## Host: the mood of the monster being started right now (see update and spawn).
+var _starting_mood := ""
 var _lockdown_times: Array[float] = []
 ## Everyone's nerve. Host only.
 var nerve: Nerve
@@ -195,8 +197,8 @@ func plan_night(number: int) -> void:
 		_run_history.clear()
 	var weight := {}
 	for kind: String in pool:
-		var seen := _run_history.any(func(night: Array) -> bool: return kind in night)
-		var twice := _run_history.size() >= 2 and kind in _run_history[-1] and kind in _run_history[-2]
+		var seen: bool = _run_history.keys().any(func(night: int) -> bool: return night < number and kind in _run_history[night])
+		var twice: bool = kind in _run_history.get(number - 1, []) and kind in _run_history.get(number - 2, [])
 		weight[kind] = randf() + (3.0 if twice else 0.0) - (0.6 if not seen else 0.0)
 	pool.sort_custom(func(a: String, b: String) -> bool: return weight[a] < weight[b])
 	# Bigger maps (for bigger teams) bring one more monster per open wing.
@@ -234,9 +236,15 @@ func plan_night(number: int) -> void:
 		for i in (1 if number < 9 else 2):
 			_lockdown_times.append(randf_range(90.0, 320.0))
 		_lockdown_times.sort()
-	_run_history.append(tonight.map(func(plan: Dictionary) -> String: return plan["kind"]))
-	if _run_history.size() > 12:
-		_run_history.pop_front()
+	_run_history[number] = tonight.map(func(plan: Dictionary) -> String: return plan["kind"])
+	# Moods (and whether a student is real) are settled now, while a daily shift's dice are
+	# still the same for everyone.
+	for plan in tonight:
+		if number >= MOODS_FROM_NIGHT and plan["kind"] not in ["student", "ghost", "locker_thing", "self_portrait", "principal"] \
+				and randf() < MOOD_CHANCE:
+			plan["mood"] = Monster.MOODS.keys().pick_random()
+		if plan["kind"] == "student":
+			plan["real"] = randf() < 0.2
 	# The real night cleaner works every night, unless they've called in sick.
 	if not (conditions and conditions.has("messy")):
 		tonight.append({"kind": "cleaner", "at": 10.0})
@@ -251,7 +259,9 @@ func update(minutes: float, delta: float) -> void:
 		if plan.get("started", false) or minutes < plan["at"]:
 			continue
 		plan["started"] = true
-		_start(plan["kind"], minutes)
+		_starting_mood = plan.get("mood", "")
+		_start(plan["kind"], minutes, plan)
+		_starting_mood = ""
 		if plan.get("late", false):
 			announcement.emit("Something else just came into the building. It's not on anyone's rota.", "")
 	lockers.update(minutes)
@@ -288,7 +298,7 @@ func tonight_summary() -> String:
 	return "" if lines.is_empty() else "Out tonight: " + ", ".join(lines) + "."
 
 
-func _start(kind: String, minutes: float) -> void:
+func _start(kind: String, minutes: float, plan := {}) -> void:
 	match kind:
 		"hall_monitor":
 			spawn("hall_monitor", Vector3(-36, 0, 7))
@@ -307,7 +317,7 @@ func _start(kind: String, minutes: float) -> void:
 		"other_cleaner":
 			spawn("other_cleaner", NightCleaner.ROUTE.pick_random())
 		"student":
-			spawn("student", Vector3(randf_range(-30.0, 30.0), 0, 7), {"real": randf() < 0.2})
+			spawn("student", Vector3(randf_range(-30.0, 30.0), 0, 7), {"real": plan.get("real", false)})
 		"ghost":
 			ghost_active = true
 			spawn("ghost", Vector3(-35, 0, -25))
@@ -342,10 +352,9 @@ func _start(kind: String, minutes: float) -> void:
 func spawn(kind: String, at: Vector3, extra := {}) -> void:
 	var data := {"kind": kind, "id": _next_id, "position": at}
 	data.merge(extra)
-	# From night 3 some come in out of sorts (not the real cleaner or students, or the unseen).
-	if night_number >= MOODS_FROM_NIGHT and not data.has("mood") and kind not in ["cleaner", "student", "ghost", "shade"] \
-			and randf() < MOOD_CHANCE:
-		data["mood"] = Monster.MOODS.keys().pick_random()
+	# Planned in plan_night: some come in out of sorts.
+	if _starting_mood != "" and not data.has("mood"):
+		data["mood"] = _starting_mood
 	_next_id += 1
 	_spawner.spawn(data)
 

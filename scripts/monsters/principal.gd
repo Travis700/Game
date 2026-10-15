@@ -19,7 +19,8 @@ func _init() -> void:
 func think(delta: float) -> void:
 	_left -= delta
 	var target := director.guard_by_peer(target_peer)
-	if target == null or target.is_dead:
+	# Gone (or knocked out and carried off: a close call): it's over, and nobody's docked.
+	if target == null or target.is_dead or director.is_gone(target):
 		director.principal_done(self)
 		return
 	if _left <= 0.0:
