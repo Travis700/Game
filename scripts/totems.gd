@@ -16,6 +16,8 @@ const SPOTS: Array[Vector3] = [
 ]
 
 var director: MonsterDirector
+## Host: peers a totem can't bring back (tonight's late-joining ghosts). Shared with Night.
+var late_joiners: Dictionary = {}
 var shop: Shop
 var _stones: Dictionary = {}
 const PROMPT := "Use the revive totem  (%d in 6: revive a teammate · %d in 6: something gets out)"
@@ -120,7 +122,7 @@ func _request_use(index: int) -> void:
 	var user := multiplayer.get_remote_sender_id()
 	if user == 0:
 		user = multiplayer.get_unique_id()
-	var dead := director.dead_guards()
+	var dead := director.dead_guards().filter(func(guard: Guard) -> bool: return not late_joiners.has(guard.name.to_int()))
 	if dead.is_empty():
 		director.tell(user, "The totem stays cold. There's nobody to bring back.")
 		return

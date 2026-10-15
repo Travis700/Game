@@ -61,7 +61,8 @@ func pick(night_number: int) -> void:
 	pool.shuffle()
 	var picked := pool.slice(0, mini(count, pool.size()))
 	if not forced.is_empty():
-		picked = forced.filter(func(key: String) -> bool: return CATALOGUE.has(key))
+		# (Each still waits for its own first night, even in a custom shift.)
+		picked = forced.filter(func(key: String) -> bool: return CATALOGUE.has(key) and CATALOGUE[key]["night"] <= night_number)
 	_set_conditions.rpc(PackedStringArray(picked), night_number)
 
 

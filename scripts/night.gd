@@ -513,6 +513,17 @@ func fail_night() -> void:
 ## team shares one school's worth of anomalies.
 ## Host: how many guards clocked in for tonight's shift.
 var _shift_team := 1
+## Host: peers who joined mid-shift as ghosts tonight. Not in tonight's counts, pay or credit.
+var late_joiners: Dictionary = {}
+
+
+## Host: the guards working tonight's shift who are still here (not late-joining ghosts).
+func shift_team() -> int:
+	var present := 0
+	for peer in shift.clocked_in_peers():
+		if players.has_node(str(peer)) and not late_joiners.has(peer):
+			present += 1
+	return maxi(present, 1)
 
 
 func quota_for(team: int) -> int:
@@ -550,7 +561,7 @@ func _send_quota() -> void:
 	# Sized to whoever's still here (someone leaving mid-shift shouldn't sink the team).
 	if quota_target > 0:
 		# (Not counting anyone who joined mid-shift as a ghost.)
-		quota_target = quota_for(mini(players.get_child_count(), _shift_team))
+		quota_target = quota_for(shift_team())
 	var text := ""
 	if quota_target > 0:
 		text = "Work target: %d / %d" % [mini(_team_work(), quota_target), quota_target]
@@ -682,9 +693,12 @@ func _award_night() -> void:
 	if career == null:
 		return
 	var won := number == LAST_NIGHT
-	var team := maxi(run_team, players.get_child_count())
+	var team := maxi(run_team, shift_team())
 	for guard: Guard in players.get_children():
 		var peer := guard.name.to_int()
+		# Joined as a ghost tonight: no credit for a night they didn't work.
+		if late_joiners.has(peer):
+			continue
 		var stats: Dictionary = _stats.get(peer, {"correct": 0, "false": 0})
 		if stats["correct"] > 0:
 			career.add_stat(peer, "correct_logs", stats["correct"])
@@ -751,7 +765,7 @@ func _forget_run() -> void:
 
 ## Co-op only: who did best tonight, e.g. "Sharpest eyes: Sam (4 logs)  ·  Night watchman: Guard 2 (3 stations)".
 func _awards() -> String:
-	if players.get_child_count() < 2:
+	if shift_team() < 2:
 		return ""
 	var awards: Array[String] = []
 	var categories := [
@@ -800,7 +814,12 @@ func _build_rows(keep_pay: bool) -> Array:
 			_totals[peer] = maxi(_totals.get(peer, 0) + pay, 0)
 		else:
 			_totals[peer] = 0
-		var xp: int = (XP_CLOCKED_OUT + number * XP_PER_NIGHT if clocked_out else XP_CAUGHT) \
+		var late := late_joiners.has(peer)
+		if late:
+			clocked_out = false
+			pay = 0
+			_totals[peer] = maxi(int(_totals.get(peer, 0)), 0)
+		var xp: int = 0 if late else (XP_CLOCKED_OUT + number * XP_PER_NIGHT if clocked_out else XP_CAUGHT) \
 				+ stats["correct"] * XP_PER_LOG + stats.get("named", 0) * XP_PER_NAME \
 				+ int(stats.get("confirmed", 0)) * int(XP_PER_LOG / 2) \
 				+ int(rounds.punches.get(peer, 0)) * XP_PER_PUNCH
@@ -815,10 +834,10 @@ func _build_rows(keep_pay: bool) -> Array:
 		run["logs"] += int(stats["correct"])
 		run["named"] += int(stats.get("named", 0))
 		run["stations"] += int(rounds.punches.get(peer, 0))
-		run["caught"] += 1 if guard.is_dead else 0
+		run["caught"] += 1 if guard.is_dead and not late else 0
 		rows.append({
-			"xp": xp,
-			"name": "Guard %d  #%04d" % [guard.slot, guard.employee_number], "clocked_out": clocked_out, "died": guard.is_dead,
+			"xp": xp, "late": late,
+			"name": "Guard %d  #%04d" % [guard.slot, guard.employee_number], "clocked_out": clocked_out, "died": guard.is_dead and not late,
 			"correct": stats["correct"] + int(stats.get("confirmed", 0)), "correct_points": correct_points,
 			"false": stats["false"], "false_points": false_points,
 			"punched": rounds.punches.get(peer, 0), "round_points": round_points,

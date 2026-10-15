@@ -89,6 +89,10 @@ var _ghost_ping_at: Dictionary = {}
 var _close_calls: Dictionary = {}
 ## Host: a solo guard's second wind, once a night.
 var _second_wind_used := false
+## Host: badges of the guards who started tonight's shift, and of those who left it still alive
+## (if they come back tonight, it counts as being caught: no dodging a catch by quitting).
+var _shift_badges: Dictionary = {}
+var _left_alive: Dictionary = {}
 var power: Power
 var pause_menu: CanvasLayer
 var spawner: MultiplayerSpawner
@@ -125,7 +129,13 @@ func _ready() -> void:
 	add_child(lighting)
 	lighting.apply_pre_shift()
 	shift.started.connect(lighting.go_dark)
-	shift.started.connect(func() -> void: _second_wind_used = false)
+	shift.started.connect(func() -> void:
+		_second_wind_used = false
+		_left_alive.clear()
+		night.late_joiners.clear()
+		_shift_badges.clear()
+		for guard: Guard in players.get_children():
+			_shift_badges[guard.employee_number] = true)
 	ambience = Ambience.new()
 	ambience.name = "Ambience"
 	add_child(ambience)
@@ -301,6 +311,7 @@ func _ready() -> void:
 			Sfx.play_flat(self, Sfx.notes([523.0, 784.0, 1047.0], 0.1, 0.25, "triangle"))
 			hud.show_message("NEW IN YOUR FIELD GUIDE: %s\nHow to survive it: %s" % [(entry["name"] as String).to_upper(), entry["rule"]], 12.0))
 	night.totems = totems
+	totems.late_joiners = night.late_joiners
 	night.shop = shop
 	night.guard_room = guard_room
 	night.doors = doors
@@ -756,7 +767,18 @@ func _on_peer_connected(peer_id: int) -> void:
 ## cold spots and knock things over, and a totem can bring them back), and clock in properly
 ## from the next night. Their computer is brought up to date with the night so far.
 func _catch_up_late_joiner(peer_id: int) -> void:
-	_start_night.rpc_id(peer_id, night.number, night.difficulty)
+	var joiner := players.get_node_or_null(str(peer_id)) as Guard
+	var badge := joiner.employee_number if joiner else 0
+	if _left_alive.has(badge):
+		# They left the shift alive and came back: that counts as being caught.
+		_left_alive.erase(badge)
+		night.record_death()
+		career.add_stat(peer_id, "times_caught")
+		if joiner:
+			night.bonus.on_caught(joiner)
+	elif not _shift_badges.has(badge):
+		night.late_joiners[peer_id] = true
+	_start_night.rpc_id(peer_id, night.number, night.difficulty, true)
 	night._sync_clock.rpc_id(peer_id, night.minutes, night.seconds_per_minute)
 	night.conditions._set_conditions.rpc_id(peer_id, PackedStringArray(night.conditions.active), night.number)
 	rounds._set_state.rpc_id(peer_id, PackedInt32Array(rounds.order), PackedInt32Array(rounds.punched), rounds.open)
@@ -771,10 +793,38 @@ func _catch_up_late_joiner(peer_id: int) -> void:
 	if finale.active:
 		finale._set_active.rpc_id(peer_id, true)
 		finale._set_key.rpc_id(peer_id, finale.key_area, finale.key_holder, finale._key.global_position, finale.unlocked)
+	for camera_index: int in director._blackouts:
+		_camera_signal.rpc_id(peer_id, camera_index, false)
+	totems.send_state_to(peer_id)
+	director.lockers.send_state_to(peer_id)
+	for id: int in shop._placed:
+		shop._place.rpc_id(peer_id, id, shop._placed[id]["item"], shop._placed[id]["position"])
+	for slot: int in cameras.portable_spots:
+		cameras.place_portable.rpc_id(peer_id, slot, cameras.portable_spots[slot][0], cameras.portable_spots[slot][1])
+	if night.phone.ringing:
+		night.phone._set_ringing.rpc_id(peer_id, true)
+	if director.portrait.stage > 0:
+		var subject := director.guard_by_peer(director.portrait._subject)
+		director.portrait._show.rpc_id(peer_id, director.portrait.stage, subject.slot if subject else 1)
+	if director._container.get_children().any(func(monster: Node) -> bool: return monster is Mascot):
+		anomalies.set_prop_shown.rpc_id(peer_id, "mascot", false)
+	if night.bonus.status != "":
+		night.bonus._show.rpc_id(peer_id, night.bonus.status)
 	for guard: Guard in players.get_children():
 		if guard.is_dead:
 			_show_ghost.rpc_id(peer_id, guard.name.to_int(), false)
+			var body: Node3D = director._corpses.get(guard.name.to_int())
+			if is_instance_valid(body):
+				_show_corpse.rpc_id(peer_id, guard.name.to_int(), body.global_position - Vector3(0, 0.3, 0))
 	_show_ghost.rpc(peer_id, true)
+
+
+## A body where a guard was caught, for a computer that joined after it happened.
+@rpc("authority", "call_remote", "reliable")
+func _show_corpse(peer_id: int, at: Vector3) -> void:
+	var guard := players.get_node_or_null(str(peer_id)) as Guard
+	if guard:
+		director.place_corpse(peer_id, at, guard.uniform_color())
 
 
 ## Every computer: a guard is a ghost (a late joiner, or someone who was already caught when
@@ -787,7 +837,7 @@ func _show_ghost(peer_id: int, joined: bool) -> void:
 	guard.set_dead(true)
 	if guard == _local_guard:
 		hud.set_ghost(true)
-		hud.show_message("The shift had already started, so you've come in as a ghost: watch, leave cold spots (E), knock things over, and help where you can. A totem can bring you back. You'll clock in properly from the next night.", 12.0)
+		hud.show_message("The shift had already started, so you've come in as a ghost: watch, leave cold spots (E), knock things over, and help where you can. You'll clock in properly from the next night.", 12.0)
 	elif joined:
 		hud.show_message("Guard %d joined mid-shift. They're a ghost until the next night." % guard.slot)
 	_refresh_guard_visibility()
@@ -837,6 +887,8 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	print("[net] Guard left (peer %d)" % peer_id)
 	var guard := players.get_node_or_null(str(peer_id)) as Guard
 	if guard:
+		if shift.state == Shift.State.ON_SHIFT and not guard.is_dead:
+			_left_alive[guard.employee_number] = true
 		# Keep what they had, by badge, so they get exactly that back if they rejoin.
 		night.remember_guard(guard)
 		guard.queue_free()
@@ -1084,7 +1136,7 @@ func _handle_clock_in(peer_id: int) -> void:
 
 
 @rpc("authority", "call_local", "reliable")
-func _start_night(number: int, difficulty: int) -> void:
+func _start_night(number: int, difficulty: int, late := false) -> void:
 	print("[net] Night %d started at difficulty %d" % [number, difficulty])
 	night.number = number
 	night.difficulty = difficulty
@@ -1092,10 +1144,12 @@ func _start_night(number: int, difficulty: int) -> void:
 	_apply_difficulty(difficulty)
 	shift.begin()
 	_clocked_in = false
-	# A few minutes in, every camera takes a photo to compare against later.
-	get_tree().create_timer(night.seconds_per_minute * 5.0).timeout.connect(func() -> void:
-		if shift.state == Shift.State.ON_SHIFT:
-			cameras.capture_references(night.time_text()))
+	# A few minutes in, every camera takes a photo to compare against later. (Not for someone
+	# joining late: by now the photos would have tonight's anomalies in them.)
+	if not late:
+		get_tree().create_timer(night.seconds_per_minute * 5.0).timeout.connect(func() -> void:
+			if shift.state == Shift.State.ON_SHIFT:
+				cameras.capture_references(night.time_text()))
 	SteamService.set_presence("Overtime: night %d" % number if number > Night.LAST_NIGHT
 			else "Night %d of %d" % [number, Night.LAST_NIGHT])
 	if number == 1 and night.training == null:
@@ -1195,11 +1249,11 @@ func _request_ghost_ping(at: Vector3) -> void:
 		peer = multiplayer.get_unique_id()
 	var guard := players.get_node_or_null(str(peer)) as Guard
 	var now := Time.get_ticks_msec() / 1000.0
-	if guard == null or not guard.is_dead or now < float(_ghost_ping_at.get(peer, 0.0)):
+	if guard == null or not guard.is_dead or now < float(_ghost_ping_at.get(guard.employee_number, 0.0)):
 		return
 	if shift.state != Shift.State.ON_SHIFT or at.distance_to(guard.global_position) > 30.0:
 		return
-	_ghost_ping_at[peer] = now + GHOST_PING_EVERY
+	_ghost_ping_at[guard.employee_number] = now + GHOST_PING_EVERY
 	_ghost_ping.rpc(at, guard.slot)
 
 
@@ -1470,7 +1524,7 @@ func _close_call(guard: Guard, by: String) -> bool:
 		used.append(kind)
 		text = "Everything goes black. You come to in the guard room, shaking. That was %s, and you got lucky. You won't next time.\nHow to survive it: %s" % [
 				FieldGuide.display_name(kind), FieldGuide.ENTRIES[kind]["rule"]]
-	elif players.get_child_count() == 1 and not _second_wind_used:
+	elif night.shift_team() == 1 and not _second_wind_used:
 		_second_wind_used = true
 		night.dock(peer, SECOND_WIND_POINTS)
 		text = "Everything goes black. You come to in the guard room, head pounding. Second wind: it won't happen twice tonight.  -%d" % SECOND_WIND_POINTS

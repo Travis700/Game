@@ -102,10 +102,11 @@ func request_knock(index: int) -> void:
 	if guard == null or not guard.is_dead or index < 0 or index >= _props.size() or index in carried.values():
 		return
 	var now := Time.get_ticks_msec() / 1000.0
-	if now < float(_knock_ready.get(peer, 0.0)):
+	# Keyed by badge, so leaving and rejoining doesn't reset it.
+	if now < float(_knock_ready.get(guard.employee_number, 0.0)):
 		director.tell(peer, "You haven't the strength yet. Try again in a moment.")
 		return
-	_knock_ready[peer] = now + KNOCK_EVERY
+	_knock_ready[guard.employee_number] = now + KNOCK_EVERY
 	var at := _props[index].global_position
 	var hop := at + Vector3(randf_range(-1.2, 1.2), 0, randf_range(-1.2, 1.2))
 	_fly.rpc(index, at, Vector3(hop.x, _floor_under(hop), hop.z))

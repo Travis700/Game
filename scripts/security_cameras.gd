@@ -34,6 +34,8 @@ var shown: Array[int] = []
 ## Index of the first portable camera (they come after the school's own).
 var first_portable := 0
 var _portable_on: Array[bool] = []
+## Where each set-up portable camera stands and looks: slot -> [at, target]. For late joiners.
+var portable_spots: Dictionary = {}
 ## A photo from each camera early in the night, to compare the live picture with
 ## ("spot the difference"). Camera index -> ImageTexture, or missing before it's taken.
 var _references: Dictionary = {}
@@ -144,6 +146,7 @@ func area_of(camera_index: int) -> String:
 @rpc("authority", "call_local", "reliable")
 func place_portable(slot: int, at: Vector3, target: Vector3) -> void:
 	_portable_on[slot] = true
+	portable_spots[slot] = [at, target]
 	var index := first_portable + slot
 	var area := SchoolBuilder.area_at(target)
 	names[index] = "Portable %d%s" % [slot + 1, (" · " + area) if area != "" else ""]
@@ -161,6 +164,7 @@ func place_portable(slot: int, at: Vector3, target: Vector3) -> void:
 ## Every computer, in the morning: the portable cameras are packed away.
 @rpc("authority", "call_local", "reliable")
 func clear_portables() -> void:
+	portable_spots.clear()
 	for slot in PORTABLE_COUNT:
 		_portable_on[slot] = false
 		_tripods[slot].visible = false

@@ -51,6 +51,10 @@ var _boards: Dictionary = {}
 var _waiting_uploads: Dictionary = {}
 var _waiting_downloads: Array[String] = []
 var _finding: Array[String] = []
+## Friends'-scores requests go one at a time (some GodotSteam versions can't tell overlapping
+## answers apart): the one in progress, and the ones waiting.
+var _requesting := ""
+var _queued_requests: Array[String] = []
 
 
 ## Tests only: uses `fake` as if it were GodotSteam's Steam singleton.
@@ -327,6 +331,15 @@ func submit_score(board: String, score: int) -> void:
 func request_friends_scores(board: String) -> void:
 	if not available:
 		return
+	if _requesting != "" and _requesting != board:
+		if board not in _queued_requests:
+			_queued_requests.append(board)
+		return
+	_requesting = board
+	# Don't wait forever on an answer that never comes.
+	get_tree().create_timer(10.0).timeout.connect(func() -> void:
+		if _requesting == board:
+			_next_request())
 	if _boards.has(board):
 		# 2: the player's friends (and the player).
 		_call("downloadLeaderboardEntries", [1, 100, 2, _boards[board]])
@@ -344,10 +357,20 @@ func _find_board(board: String) -> void:
 	_call("findOrCreateLeaderboard", [board, 2, 1])
 
 
+func _next_request() -> void:
+	_requesting = ""
+	if not _queued_requests.is_empty():
+		request_friends_scores(_queued_requests.pop_front())
+
+
 ## GodotSteam: (handle, found). Which board it was is asked of Steam, as finds can overlap.
 func _on_leaderboard_found(handle: Variant, found: Variant = 1) -> void:
 	var board_handle := _int(handle)
 	if board_handle == 0 or _int(found) == 0:
+		if _requesting != "" and _requesting in _finding:
+			_finding.erase(_requesting)
+			_waiting_downloads.erase(_requesting)
+			_next_request()
 		return
 	var board := str(_call("getLeaderboardName", [board_handle]))
 	if board == "" or board == "<null>":
@@ -379,6 +402,9 @@ func _on_leaderboard_downloaded(a: Variant = null, b: Variant = null, c: Variant
 			board = name
 	if board == "" and _boards.size() == 1:
 		board = _boards.keys()[0]
+	# Requests go one at a time, so an unnamed answer is for the one asked.
+	if board == "":
+		board = _requesting
 	var entries: Array = []
 	for row: Variant in rows:
 		if not row is Dictionary:
@@ -389,6 +415,8 @@ func _on_leaderboard_downloaded(a: Variant = null, b: Variant = null, c: Variant
 				"me": id == steam_id})
 	entries.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return x["score"] > y["score"])
 	leaderboard_loaded.emit(board, entries)
+	if board == _requesting:
+		_next_request()
 
 
 ## A day's daily shift board, e.g. "daily_20261014".

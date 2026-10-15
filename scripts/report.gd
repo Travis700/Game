@@ -95,7 +95,7 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, outcom
 		_table.add_child(_cell(heading, 18, 0.6))
 	for row: Dictionary in rows:
 		_table.add_child(_cell(row["name"], 22))
-		_table.add_child(_cell("Caught" if row.get("died", false) else ("Yes" if row["clocked_out"] else "No"), 22))
+		_table.add_child(_cell("Joined late" if row.get("late", false) else "Caught" if row.get("died", false) else ("Yes" if row["clocked_out"] else "No"), 22))
 		_table.add_child(_cell("%d  (+%d)" % [row["correct"], row["correct_points"]], 22))
 		_table.add_child(_cell("%d  (-%d)" % [row["false"], row["false_points"]], 22))
 		_table.add_child(_cell("%d  (%+d)" % [row.get("punched", 0), row.get("round_points", 0)], 22))

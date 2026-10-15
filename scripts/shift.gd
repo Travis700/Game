@@ -56,6 +56,11 @@ func clocked_in_count() -> int:
 	return _clocked_in.size()
 
 
+## The peers who clocked in for tonight.
+func clocked_in_peers() -> Array[int]:
+	return _clocked_in.duplicate()
+
+
 func has_clocked_out(peer_id: int) -> bool:
 	return peer_id in _clocked_out
 

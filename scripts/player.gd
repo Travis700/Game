@@ -250,7 +250,7 @@ func update_visibility(viewer_is_dead: bool) -> void:
 		body_mesh.visible = not is_dead
 		visor.visible = not is_dead
 		return
-	var shown := not is_dead or viewer_is_dead
+	var shown := (not is_dead or viewer_is_dead) and not hiding
 	body_mesh.visible = shown
 	visor.visible = shown
 	name_tag.visible = shown
