@@ -12,6 +12,10 @@ const SOUNDS := {
 	"Coach:chase": "Whistle blasts",
 	"CrossingGuard:stop": "Whistle, and a sign going up",
 	"CrossingGuard:charge": "Running footsteps",
+	"CrossingGuard:clear": "Two short whistles: all clear",
+	"Understudy:step": "Footsteps rushing up behind you",
+	"Lockers:open": "A locker door creaking open",
+	"SchoolGhost:breath": "A cold breath, close by",
 	"Librarian:shush": "\"Shhh.\"",
 	"Librarian:hunt": "Hissing",
 	"LunchLady:hunt": "The humming stops",
@@ -61,6 +65,8 @@ func _ready() -> void:
 
 ## Called (through the "captions" group) by a monster whose state just changed.
 func heard(kind: String, new_state: String, at: Vector3) -> void:
+	# "step2" (the Understudy, after guard 2) reads as "step".
+	new_state = new_state.rstrip("0123456789")
 	var text: String = SOUNDS.get(kind + ":" + new_state, SOUNDS.get(":" + new_state, "") if new_state == "hunt" else "")
 	if text == "" or not _enabled() or local_guard == null or not is_instance_valid(local_guard):
 		return

@@ -40,8 +40,13 @@ func think(delta: float) -> void:
 	catch_nearby()
 
 
+var _last_giggle := -100.0
+
+
 func _on_state_changed(new_state: String) -> void:
-	if new_state == "moving":
+	var now := Time.get_ticks_msec() / 1000.0
+	if new_state == "moving" and now - _last_giggle > 4.0:
+		_last_giggle = now
 		# A giggle, from both of them, as they set off.
 		Sfx.play_at(self, Sfx.notes([880.0, 988.0, 880.0, 1046.0], 0.07, 0.15, "triangle"), -6.0, 18.0)
 

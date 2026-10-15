@@ -42,6 +42,9 @@ func think(delta: float) -> void:
 		_target = _pick_target()
 		_still_for = 0.0
 		_warned = false
+		# A new guard to follow starts from scratch: no carrying on a step-in meant for someone else.
+		if _target != null and state.begins_with("step"):
+			state = "follow%d" % _target.slot
 		if _target == null:
 			halt()
 			state = "wait"

@@ -28,7 +28,7 @@ func _init() -> void:
 	# Lots of small, quick, scratchy steps.
 	footstep_pitch = 2.6
 	footstep_stride = 0.3
-	footstep_volume = -8.0
+	footstep_volume = -4.0
 	state = "crawl"
 
 

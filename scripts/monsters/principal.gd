@@ -13,10 +13,12 @@ var _left := HUNT_TIME
 
 func _init() -> void:
 	display_name = "the Principal"
-	state = "hunt"
+	state = "out"
 
 
 func think(delta: float) -> void:
+	# (Set here, in the tree, so everyone hears and the caption shows.)
+	state = "hunt"
 	_left -= delta
 	var target := director.guard_by_peer(target_peer)
 	# Gone (or knocked out and carried off: a close call): it's over, and nobody's docked.
@@ -25,6 +27,11 @@ func think(delta: float) -> void:
 		return
 	if _left <= 0.0:
 		director.principal_done(self, target_peer)
+		return
+	# Late, but they came: that'll do.
+	if SchoolBuilder.area_at(target.global_position) == "Front Office" and distance_to_guard(target) > 3.0:
+		director.tell(target_peer, "\"You're late, Guard. Don't let it happen again.\"")
+		director.principal_done(self)
 		return
 	move_to(target.global_position, SPEED)
 	catch_nearby()

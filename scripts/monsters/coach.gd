@@ -41,7 +41,7 @@ func think(delta: float) -> void:
 	patrol_step(SPOTS, delta, PACE_SPEED, Vector2(1.0, 3.0))
 	if _watching:
 		if not is_instance_valid(_watching) or _watching.is_dead or _watching.hiding \
-				or distance_to_guard(_watching) > SIGHT_RANGE * director.nerve_reach(_watching) \
+				or distance_to_guard(_watching) > SIGHT_RANGE * senses * director.nerve_reach(_watching) \
 				or not director.can_see(eye_position(), _watching):
 			# Out of its sight: off the hook (until it spots them again).
 			if is_instance_valid(_watching):
@@ -52,7 +52,8 @@ func think(delta: float) -> void:
 		face(_watching.global_position - global_position)
 		_grace -= delta
 		# A moment of slacking, not a single slow reading.
-		_slacking = _slacking + delta if director.guard_speed(_watching) < HUSTLE_SPEED else 0.0
+		# (Standing still for the Crossing Guard's sign doesn't count: one rule at a time.)
+		_slacking = _slacking + delta if director.guard_speed(_watching) < HUSTLE_SPEED and not director.stop_sign_up() else 0.0
 		if _grace <= 0.0 and _slacking > SLACK_SECONDS:
 			director.tell(_watching.name.to_int(), "\"DID I SAY STOP?\"")
 			_target = _watching

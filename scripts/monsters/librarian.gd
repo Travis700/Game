@@ -48,9 +48,7 @@ func _shelve(delta: float) -> void:
 		_target = offender
 		_warning_left = WARNING_SECONDS
 		state = "shush"
-		var what := "light" if offender.flashlight.visible else "footsteps"
-		if director.voice_level(offender) > 0.0:
-			what = "voice"
+		var what := _reason(offender)
 		director.tell(offender.name.to_int(), "\"Shhh.\" Something in the stacks doesn't like your %s." % what)
 		return
 	# A noise in the stacks: she goes to see who's making it.
@@ -72,6 +70,16 @@ func _offender() -> Guard:
 		if guard.flashlight.visible and distance < LIGHT_RANGE and director.lit_by_flashlight(eye_position(), LIGHT_RANGE, guard):
 			return guard
 	return null
+
+
+## What gave this guard away, in the order _offender checks it.
+func _reason(guard: Guard) -> String:
+	var distance := distance_to_guard(guard)
+	if guard.is_running and distance < HEAR_RUNNING:
+		return "footsteps"
+	if distance < director.voice_reach(guard, HEAR_WHISPER, HEAR_SHOUT):
+		return "voice"
+	return "light"
 
 
 func _shush(delta: float) -> void:

@@ -46,6 +46,25 @@ func think(delta: float) -> void:
 	catch_nearby()
 
 
+var _breath_left := 4.0
+
+
+## Every computer: a cold breath now and then, only heard up close. (Nothing else gives it away
+## without a spectral camera or an EMF reader.)
+func _process(delta: float) -> void:
+	_breath_left -= delta
+	if _breath_left > 0.0:
+		return
+	_breath_left = randf_range(3.5, 5.0)
+	var listener := get_viewport().get_camera_3d()
+	if listener == null or listener.global_position.distance_to(global_position) > 8.0:
+		return
+	var breath := Sfx.play_at(self, Sfx.notes([1.0, 1.0], 0.5, 0.25, "noise"), -6.0, 8.0)
+	if breath:
+		breath.pitch_scale = 0.4
+	get_tree().call_group("captions", "heard", "SchoolGhost", "breath", global_position)
+
+
 func _build_body() -> void:
 	var pale := Color(0.75, 0.85, 1.0)
 	part(capsule(0.33, 1.75), pale, Vector3(0, 0.88, 0), 1.2, 0.55)

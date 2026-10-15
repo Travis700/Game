@@ -342,6 +342,10 @@ func _ready() -> void:
 	for station: Dictionary in Rounds.STATIONS:
 		director.work_spots.append(station["at"])
 	(func() -> void: director.work_spots.append(power._breaker.global_position)).call_deferred()
+	# Other places the job means holding still: the revive totems, and the desks (fitting a kit).
+	for spot: Vector3 in Totems.SPOTS:
+		director.work_spots.append(spot)
+	(func() -> void: director.work_spots.append_array(guard_room._chair_positions)).call_deferred()
 	power.career = career
 	add_child(power)
 	power.breaker_reset.connect(night.add_bonus)

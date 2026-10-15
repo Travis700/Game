@@ -5,6 +5,7 @@ extends Monster
 
 const SPEED := 4.4
 const LIFETIME := 25.0
+const RISE_SECONDS := 1.5
 
 ## Network ID of the guard it's after.
 var target_peer := 0
@@ -14,7 +15,7 @@ var _age := 0.0
 func _init() -> void:
 	hunts_in_lockdown = false
 	display_name = "the shade from the totem"
-	state = "hunt"
+	state = "rise"
 
 
 ## Something let out of a totem isn't one of the school's monsters, so it can't be logged.
@@ -27,6 +28,11 @@ func think(delta: float) -> void:
 	if _age > LIFETIME:
 		director.remove_monster(self)
 		return
+	# It takes a moment to pull itself together: a head start to run.
+	if _age < RISE_SECONDS:
+		halt()
+		return
+	state = "hunt"
 	var target := director.guard_by_peer(target_peer)
 	if target == null or target.is_dead:
 		target = director.nearest_living_guard(global_position)

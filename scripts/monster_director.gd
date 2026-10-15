@@ -392,6 +392,11 @@ func spawn(kind: String, at: Vector3, extra := {}) -> void:
 
 ## Host: a bad roll at a totem lets a shade out to hunt whoever rolled.
 func summon_shade(at: Vector3, target_peer: int) -> void:
+	# A little way off, not right on top of whoever rolled.
+	var away := Vector3.FORWARD.rotated(Vector3.UP, randf() * TAU) * 8.0
+	var map := get_world_3d().navigation_map
+	if NavigationServer3D.map_get_iteration_id(map) > 0:
+		at = NavigationServer3D.map_get_closest_point(map, at + away)
 	spawn("shade", at, {"target": target_peer})
 
 
@@ -880,7 +885,10 @@ func _update_principal(minutes: float, delta: float) -> void:
 		_summoned = 0
 		_next_summon = minutes + randf_range(SUMMON_EVERY.x, SUMMON_EVERY.y)
 		return
+	var before := _summon_left
 	_summon_left -= delta
+	if before > 15.0 and _summon_left <= 15.0:
+		announcement.emit("The intercom crackles: \"Guard %d. I'm waiting.\"" % summoned.slot, "intercom")
 	if _summon_left <= 0.0:
 		announcement.emit("The intercom crackles: \"Then I'll come to you, Guard %d.\"" % summoned.slot, "intercom")
 		_principal_out = true

@@ -11,7 +11,7 @@ extends Node3D
 const FINISHED := 5
 ## In-game minutes per stage, and the rest after the canvas is turned around.
 const STAGE_MINUTES := 22.0
-const REST_MINUTES := Vector2(30.0, 50.0)
+const REST_MINUTES := Vector2(45.0, 70.0)
 
 var director: MonsterDirector
 ## Host: true while it's part of tonight.
@@ -98,6 +98,7 @@ func update(minutes: float) -> void:
 			director.tell(_subject, "Your face feels stiff, like drying paint. Something in the art room is nearly done with you.")
 		4:
 			director.tell(_subject, "Somewhere in the art room, a portrait of Guard %d is almost finished." % subject.slot)
+			director.announcement.emit("A smell of fresh paint drifts through the school. In the art room, a portrait of Guard %d is almost finished." % subject.slot, "")
 		FINISHED:
 			director.kill(subject, "the Self-Portrait")
 			_next_at = minutes + randf_range(REST_MINUTES.x, REST_MINUTES.y)

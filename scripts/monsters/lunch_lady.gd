@@ -13,6 +13,8 @@ const HEAR_WHISPER := 5.0
 const HEAR_SHOUT := 22.0
 ## Seconds of silence at the place she heard something before she goes back to wandering.
 const LOSE_INTEREST_AFTER := 6.0
+## How far short of the sound she stops to listen.
+const STOP_SHORT := 2.0
 const HOME: Array[AABB] = [
 	AABB(Vector3(-39, 0, -29), Vector3(33, 1, 32)),
 	AABB(Vector3(-4, 0, -29), Vector3(8, 1, 16)),
@@ -40,15 +42,28 @@ func think(delta: float) -> void:
 		_silence = 0.0
 	if state == "hunt":
 		_silence += delta
-		if _silence > LOSE_INTEREST_AFTER or not move_to(_heard_at, HUNT_SPEED):
+		# She stops a step short of where the sound was and listens: a guard who keeps still
+		# right there is never found.
+		var reached := Vector2(global_position.x - _heard_at.x, global_position.z - _heard_at.z).length() < STOP_SHORT
+		if _silence > LOSE_INTEREST_AFTER or (not reached and not move_to(_heard_at, HUNT_SPEED)):
 			state = "wander"
 			_wander_timer = 0.0
+		elif reached:
+			halt()
 	else:
 		_wander_timer -= delta
 		if _wander_timer <= 0.0 or global_position.distance_to(_wander_target) < 1.0:
 			_pick_wander_target()
 		move_to(_wander_target, WANDER_SPEED)
-	catch_nearby()
+	_catch_audible()
+
+
+## She only catches what she can hear: a guard standing still beside her is safe.
+func _catch_audible() -> void:
+	for guard in director.targetable_guards():
+		if distance_to_guard(guard) < KILL_DISTANCE and (director.guard_speed(guard) > 0.8 or director.voice_reach(guard, HEAR_WHISPER, HEAR_SHOUT) > 0.0):
+			director.kill(guard, display_name, global_position)
+			return
 
 
 func _listen() -> bool:

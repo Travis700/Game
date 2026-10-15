@@ -56,7 +56,8 @@ func _hold_sign(delta: float) -> void:
 	_stop_left -= delta
 	if _stop_left <= 0.0:
 		_crossing = (_crossing + 1 + randi() % (CROSSINGS.size() - 1)) % CROSSINGS.size()
-		state = "walk"
+		# The sign comes down: "clear" (walking on, with an all-clear whistle).
+		state = "clear"
 		return
 	if _stop_left > STOP_SECONDS:
 		return
@@ -77,11 +78,13 @@ func _charge(delta: float) -> void:
 
 func _on_state_changed(new_state: String) -> void:
 	if _sign:
-		var raised := new_state != "walk"
+		var raised := new_state == "stop" or new_state == "charge"
 		_sign.position = Vector3(0.35, 1.9, -0.2) if raised else Vector3(0.35, 0.9, -0.1)
 		_sign.rotation_degrees.x = 0.0 if raised else -70.0
 	if new_state == "stop":
 		Sfx.play_at(self, Sfx.notes([2800.0, 2800.0], 0.25, 0.3, "square"), 3.0, 45.0)
+	elif new_state == "clear":
+		Sfx.play_at(self, Sfx.notes([2400.0, 0.0, 3000.0], 0.07, 0.3, "square"), 0.0, 45.0)
 	elif new_state == "charge":
 		Sfx.play_at(self, Sfx.notes([2800.0, 0.0, 2800.0, 0.0, 2800.0], 0.08, 0.35, "square"), 4.0, 45.0)
 

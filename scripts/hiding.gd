@@ -87,6 +87,9 @@ func _request(spot: int) -> void:
 ## A monster that saw this guard climb in, or null.
 func _watcher(guard: Guard) -> Monster:
 	for monster in director.active_monsters():
+		# Not the blind, and not the ones minding their own business.
+		if monster is LunchLady or monster is Nurse or monster is Substitute or monster is Twin or monster is Mascot:
+			continue
 		if monster.global_position.distance_to(guard.global_position) < SEEN_RANGE \
 				and director.can_see(monster.eye_position(), guard):
 			return monster

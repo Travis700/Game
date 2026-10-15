@@ -83,9 +83,9 @@ func update(minutes: float) -> void:
 	for i in _open.size():
 		if not _open[i]:
 			continue
-		for guard in director.living_guards():
+		for guard in director.targetable_guards():
 			if guard.global_position.distance_to(_front(i)) < GRAB_DISTANCE:
-				director.kill(guard, "something in the lockers")
+				director.kill(guard, "something in the lockers", _front(i) + Vector3(0, 1.2, 0))
 				_set_open.rpc(i, false)
 				break
 
@@ -141,6 +141,8 @@ func _set_open(index: int, open: bool) -> void:
 	tween.tween_property(_hinges[index], "rotation_degrees:y", -100.0 if open else 0.0, 0.6 if open else 0.12)
 	(_handles[index].get_child(0) as CollisionShape3D).disabled = not open
 	Sfx.play_at(_hinges[index], _creak if open else _slam, 0.0, 25.0)
+	if open:
+		get_tree().call_group("captions", "heard", "Lockers", "open", _front(index))
 	# A faint red glow from inside an open one, so you can see it coming even in the dark.
 	if open and not _glows.has(index):
 		var glow := OmniLight3D.new()

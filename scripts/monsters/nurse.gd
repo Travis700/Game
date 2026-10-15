@@ -5,7 +5,8 @@ extends Monster
 ##
 ## She looks after guards who are on their own. Anyone with nobody else within 8 metres gets her
 ## attention, and she walks after them, slowly but without stopping. Stick together (or keep
-## moving) and she leaves you be. She gives up after a while, or at the guard room door.
+## moving) and she leaves you be. She walks faster the longer she follows, and gives up after a
+## while (or at the guard room door, before night 7).
 
 const ROUNDS_SPEED := 1.3
 const FOLLOW_SPEED := 1.7
@@ -48,7 +49,8 @@ func _rounds(delta: float) -> void:
 		var guard := find_guard(NOTICE_RANGE, true, _is_alone)
 		if guard:
 			_target = guard
-			_follow_left = FOLLOW_SECONDS
+			# A guard on their own all night gets shorter visits.
+			_follow_left = FOLLOW_SECONDS * (0.5 if director.team_size <= 1 else 1.0)
 			state = "follow"
 			director.tell(guard.name.to_int(), "A heart monitor beeps somewhere behind you. \"You shouldn't be wandering about alone.\"")
 			return
@@ -57,8 +59,11 @@ func _rounds(delta: float) -> void:
 
 func _follow(delta: float) -> void:
 	_follow_left -= delta
+	# She walks faster the longer she follows: it won't do to just stroll ahead of her.
+	var followed := FOLLOW_SECONDS * (0.5 if director.team_size <= 1 else 1.0) - _follow_left
+	var speed := minf(FOLLOW_SPEED + 0.02 * followed, 2.9)
 	if not is_instance_valid(_target) or _follow_left <= 0.0 or not _is_alone(_target) \
-			or not chase(_target, FOLLOW_SPEED, delta):
+			or not chase(_target, speed, delta):
 		_stop_following()
 
 

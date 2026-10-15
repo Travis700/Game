@@ -33,6 +33,11 @@ func _init() -> void:
 	state = "wander"
 
 
+## Seconds before it can line up the same guard again, and when each guard is next fair game.
+const RETARGET_SECONDS := 30.0
+var _next_shot: Dictionary = {}
+
+
 func think(delta: float) -> void:
 	_left -= delta
 	match state:
@@ -53,8 +58,12 @@ func think(delta: float) -> void:
 				state = "wander"
 		_:
 			patrol_step(SPOTS, delta, WANDER_SPEED, Vector2(2.0, 5.0))
-			var guard := find_guard(SIGHT_RANGE, true)
+			var now := Time.get_ticks_msec() / 1000.0
+			# Not the same guard again straight away.
+			var guard := find_guard(SIGHT_RANGE, true, func(someone: Guard) -> bool:
+				return now >= float(_next_shot.get(someone.name, 0.0)))
 			if guard:
+				_next_shot[guard.name] = now + RETARGET_SECONDS
 				_target = guard
 				_left = CHARGE_SECONDS
 				state = "charging"

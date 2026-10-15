@@ -5,10 +5,17 @@ extends NightCleaner
 ## Log it as a Monster where you see it and it leaves.
 
 const NOTICE_DISTANCE := 6.0
-const CHASE_SPEED := 5.0
-const CHASE_TIME := 10.0
+const CHASE_SPEED := 4.5
+const CHASE_TIME := 7.0
+## The moment it drops the act (a beat to react), how soon it gives up once it can't see you,
+## and how long before it can do it again.
+const REVEAL_SECONDS := 0.8
+const LOSE_SIGHT_AFTER := 3.0
+const REVEAL_COOLDOWN := 20.0
 
 var _chase_left := 0.0
+var _reveal_left := 0.0
+var _cooldown := 0.0
 var _target: Guard
 var _eyes: Array[MeshInstance3D] = []
 
@@ -22,16 +29,27 @@ func _init() -> void:
 
 
 func think(delta: float) -> void:
+	_cooldown -= delta
+	if _reveal_left > 0.0:
+		_reveal_left -= delta
+		halt()
+		if is_instance_valid(_target):
+			face(_target.global_position - global_position)
+		if _reveal_left <= 0.0:
+			start_chase()
+		return
 	if _chase_left > 0.0:
 		_chase_left -= delta
-		if not chase(_target, CHASE_SPEED, delta) or _chase_left <= 0.0:
+		if not chase(_target, CHASE_SPEED, delta, LOSE_SIGHT_AFTER) or _chase_left <= 0.0:
 			_chase_left = 0.0
+			_cooldown = REVEAL_COOLDOWN
 			state = "walk"
 		return
-	var guard := find_guard(NOTICE_DISTANCE)
+	var guard := find_guard(NOTICE_DISTANCE) if _cooldown <= 0.0 else null
 	if guard:
 		_target = guard
 		_chase_left = CHASE_TIME
+		_reveal_left = REVEAL_SECONDS
 		state = "reveal"
 		return
 	_wander(delta)
@@ -52,3 +70,8 @@ func _build_body() -> void:
 func _on_state_changed(new_state: String) -> void:
 	for eye in _eyes:
 		eye.visible = new_state == "reveal"
+	if new_state == "reveal":
+		# A wet, wrong gurgle as it drops the act.
+		var voice := Sfx.play_at(self, Sfx.notes([140.0, 120.0, 96.0, 80.0], 0.18, 0.5, "saw"), 4.0, 30.0)
+		if voice:
+			voice.pitch_scale = 0.6
