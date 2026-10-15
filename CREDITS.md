@@ -35,7 +35,7 @@ current terms for commercial use before release. In `assets/sounds/`: whistles (
 `wet_voice`, `ghost_breath`, `phone_ring`, `school_bell`, `siren`, `intercom`, `punch_clock`,
 `power_down`, `power_up`, `scream`, `stinger`, `ambience`, `heartbeat`, `door_bang`, `gate`,
 `air_horn`, `hand_bell`, `radio`, `whispers`, `ball_bounce`, `principal_steps`, `rush_steps`,
-`squelch`, `vend`.
+`squelch`, `vend`, `menu_theme` (title music), `chase` (chase music).
 
 ## Field guide illustrations: generated for this game
 

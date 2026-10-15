@@ -283,6 +283,19 @@ func _ready() -> void:
 	column.add_child(_status)
 
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	# The title theme, while the menu is up.
+	var theme := SoundBank.get_sound("menu_theme", null, true)
+	if theme:
+		var music := AudioStreamPlayer.new()
+		music.stream = theme
+		music.volume_db = -12.0
+		add_child(music)
+		music.play()
+		visibility_changed.connect(func() -> void:
+			if visible and not music.playing:
+				music.play()
+			elif not visible:
+				music.stop())
 	# With a controller, start on the first button so the D-pad can move around the menu.
 	if not Input.get_connected_joypads().is_empty():
 		var first := _buttons[0]

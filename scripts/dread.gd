@@ -42,7 +42,7 @@ func _ready() -> void:
 	_heart.stream = Sfx.thud(0.55, 0.16, 0.9)
 	add_child(_heart)
 	_drone = AudioStreamPlayer.new()
-	_drone.stream = _make_drone()
+	_drone.stream = SoundBank.get_sound("chase", _make_drone(), true)
 	_drone.volume_db = -80.0
 	add_child(_drone)
 
