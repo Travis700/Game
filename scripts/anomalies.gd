@@ -26,48 +26,50 @@ const FADE_AFTER := 90.0
 const REAPPEAR_AFTER := 60.0
 
 ## Each anomaly: area (a camera name), type, first night it can happen, what it does to which prop.
+## "alts" are other places it can happen (where a moved thing ends up, where an extra thing or a
+## figure appears), picked at random each time, so nobody can learn them all by heart.
 const DEFINITIONS: Array[Dictionary] = [
 	{"area": "Lobby", "type": "Missing object", "night": 1, "kind": "hide", "prop": "plant"},
-	{"area": "Lobby", "type": "Moved object", "night": 1, "kind": "move", "prop": "bench",
+	{"area": "Lobby", "type": "Moved object", "night": 1, "kind": "move", "prop": "bench", "alts": [Vector3(-3.5, 0, 15.5), Vector3(3.0, 0, 12.0)],
 		"to": Vector3(1.5, 0, 14.0), "turn": 70.0},
 	{"area": "Gym", "type": "Missing object", "night": 1, "kind": "hide", "prop": "mascot"},
-	{"area": "Gym", "type": "Moved object", "night": 2, "kind": "move", "prop": "mascot",
+	{"area": "Gym", "type": "Moved object", "night": 2, "kind": "move", "prop": "mascot", "alts": [Vector3(16.0, 0, -20.0), Vector3(30.0, 0, -6.0)],
 		"to": Vector3(22.5, 0, -12.0), "turn": 200.0},
-	{"area": "Main Hall East", "type": "Moved object", "night": 1, "kind": "move", "prop": "mop_bucket",
+	{"area": "Main Hall East", "type": "Moved object", "night": 1, "kind": "move", "prop": "mop_bucket", "alts": [Vector3(14.0, 0, 8.5), Vector3(34.0, 0, 5.5)],
 		"to": Vector3(26.0, 0, 6.5), "turn": 0.0},
-	{"area": "Cafeteria", "type": "Moved object", "night": 1, "kind": "move", "prop": "trash_can",
+	{"area": "Cafeteria", "type": "Moved object", "night": 1, "kind": "move", "prop": "trash_can", "alts": [Vector3(-30.0, 0, -18.0), Vector3(-12.0, 0, -4.0)],
 		"to": Vector3(-21.0, 0, -11.0), "turn": 0.0},
-	{"area": "Front Office", "type": "Moved object", "night": 1, "kind": "move", "prop": "office_chair",
+	{"area": "Front Office", "type": "Moved object", "night": 1, "kind": "move", "prop": "office_chair", "alts": [Vector3(-17.0, 0.3, 17.0), Vector3(-8.0, 0.3, 12.0)],
 		"to": Vector3(-10.5, 0.3, 16.0), "turn": 40.0, "tip": 90.0},
-	{"area": "Main Hall West", "type": "Extra object", "night": 1, "kind": "show", "prop": "hall_box"},
-	{"area": "Front Gate", "type": "Extra object", "night": 1, "kind": "show", "prop": "cone"},
-	{"area": "Gym", "type": "Extra object", "night": 1, "kind": "show", "prop": "ball_cart"},
-	{"area": "Kitchen", "type": "Extra object", "night": 1, "kind": "show", "prop": "kitchen_crate"},
+	{"area": "Main Hall West", "type": "Extra object", "night": 1, "kind": "show", "prop": "hall_box", "alts": [Vector3(-12.0, 0, 8.5), Vector3(-34.0, 0, 5.5)]},
+	{"area": "Front Gate", "type": "Extra object", "night": 1, "kind": "show", "prop": "cone", "alts": [Vector3(-8.0, 0, 30.0), Vector3(9.0, 0, 40.0)]},
+	{"area": "Gym", "type": "Extra object", "night": 1, "kind": "show", "prop": "ball_cart", "alts": [Vector3(12.0, 0, -24.0), Vector3(32.0, 0, -4.0)]},
+	{"area": "Kitchen", "type": "Extra object", "night": 1, "kind": "show", "prop": "kitchen_crate", "alts": [Vector3(-3.0, 0, -16.0), Vector3(2.5, 0, -27.5)]},
 	{"area": "Front Office", "type": "Extra object", "night": 1, "kind": "show", "prop": "counter_box"},
-	{"area": "Main Hall East", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_hall"},
-	{"area": "Cafeteria", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_cafeteria"},
-	{"area": "Front Gate", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_gate"},
+	{"area": "Main Hall East", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_hall", "alts": [Vector3(20.0, 0, 8.0), Vector3(35.5, 0, 5.5)]},
+	{"area": "Cafeteria", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_cafeteria", "alts": [Vector3(-20.0, 0, -5.0), Vector3(-35.0, 0, -12.0)]},
+	{"area": "Front Gate", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_gate", "alts": [Vector3(-12.5, 0, 45.5)]},
 	{"area": "Gym", "type": "Figure", "night": 3, "kind": "figure", "prop": "figure_bleachers"},
 	# Classroom wing (difficulty 2).
-	{"area": "Room 101", "type": "Extra object", "night": 1, "kind": "show", "prop": "backpack"},
-	{"area": "Room 103", "type": "Moved object", "night": 1, "kind": "move", "prop": "globe",
+	{"area": "Room 101", "type": "Extra object", "night": 1, "kind": "show", "prop": "backpack", "alts": [Vector3(-44.0, 0, 16.0), Vector3(-50.0, 0, 18.0)]},
+	{"area": "Room 103", "type": "Moved object", "night": 1, "kind": "move", "prop": "globe", "alts": [Vector3(-55.0, 0, -10.0), Vector3(-44.0, 0, -2.0)],
 		"to": Vector3(-52.0, 0, -4.0), "turn": 0.0},
-	{"area": "Room 103", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_classroom"},
-	{"area": "Library", "type": "Moved object", "night": 1, "kind": "move", "prop": "book_cart",
+	{"area": "Room 103", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_classroom", "alts": [Vector3(-55.0, 0, -1.0)]},
+	{"area": "Library", "type": "Moved object", "night": 1, "kind": "move", "prop": "book_cart", "alts": [Vector3(-74.5, 0, -7.5), Vector3(-66.5, 0, -9.5)],
 		"to": Vector3(-72.0, 0, -2.5), "turn": 60.0},
-	{"area": "Library", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_library"},
+	{"area": "Library", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_library", "alts": [Vector3(-60.0, 0, -12.0)]},
 	{"area": "Nurse's Office", "type": "Missing object", "night": 1, "kind": "hide", "prop": "wheelchair"},
-	{"area": "West Hall", "type": "Extra object", "night": 1, "kind": "show", "prop": "wet_floor_sign"},
+	{"area": "West Hall", "type": "Extra object", "night": 1, "kind": "show", "prop": "wet_floor_sign", "alts": [Vector3(-48.0, 0, 7.0), Vector3(-70.0, 0, 8.0)]},
 	# Science wing (difficulty 3).
 	{"area": "Science Lab", "type": "Missing object", "night": 1, "kind": "hide", "prop": "skeleton"},
-	{"area": "Science Lab", "type": "Moved object", "night": 2, "kind": "move", "prop": "skeleton",
+	{"area": "Science Lab", "type": "Moved object", "night": 2, "kind": "move", "prop": "skeleton", "alts": [Vector3(57.5, 0, -9.5), Vector3(45.5, 0, -0.5)],
 		"to": Vector3(50.0, 0, -3.0), "turn": 120.0},
 	{"area": "Art Room", "type": "Extra object", "night": 1, "kind": "show", "prop": "clay_bust"},
-	{"area": "Locker Rooms", "type": "Extra object", "night": 1, "kind": "show", "prop": "duffel_bag"},
-	{"area": "Locker Rooms", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_showers"},
-	{"area": "East Hall", "type": "Moved object", "night": 1, "kind": "move", "prop": "hall_bin",
+	{"area": "Locker Rooms", "type": "Extra object", "night": 1, "kind": "show", "prop": "duffel_bag", "alts": [Vector3(48.0, 0, 12.0), Vector3(69.5, 0, 13.5)]},
+	{"area": "Locker Rooms", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_showers", "alts": [Vector3(48.5, 0, 17.5)]},
+	{"area": "East Hall", "type": "Moved object", "night": 1, "kind": "move", "prop": "hall_bin", "alts": [Vector3(50.0, 0, 5.5), Vector3(72.0, 0, 8.5)],
 		"to": Vector3(63.0, 0, 6.8), "turn": 30.0},
-	{"area": "East Hall", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_east_hall"},
+	{"area": "East Hall", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_east_hall", "alts": [Vector3(46.0, 0, 8.5), Vector3(76.0, 0, 6.0)]},
 ]
 
 var school: SchoolBuilder
@@ -92,6 +94,8 @@ var last_was_first := true
 var _appeared := 0
 var _missed_earlier := 0
 var _missed_names: Array[String] = []
+## Host: tonight's anomalies in play (see plan). Empty means all of them.
+var _pool: Array[int] = []
 
 
 func build(school_builder: SchoolBuilder) -> void:
@@ -150,7 +154,13 @@ func _build_wing_props() -> void:
 		[Vector3(0, 0.8, 0), Vector3(0.32, 0.12, 0.15), "bone"]])
 	_prop("hall_bin", Vector3(58.0, 0, 9.4), [[Vector3(0, 0.45, 0), Vector3(0.6, 0.9, 0.6), "dark"]])
 	_prop("backpack", Vector3(-52.8, 0, 13.0), [[Vector3(0, 0.25, 0), Vector3(0.4, 0.5, 0.25), "red"]], false)
-	_prop("wet_floor_sign", Vector3(-58.0, 0, 6.0), [[Vector3(0, 0.35, 0), Vector3(0.35, 0.7, 0.25), "yellow"]], false)
+	# A stack of classroom chairs that nobody put there (named for what it used to be).
+	_prop("wet_floor_sign", Vector3(-58.0, 0, 6.0), [
+		[Vector3(0, 0.23, 0), Vector3(0.45, 0.06, 0.45), "wood"],
+		[Vector3(0, 0.4, 0), Vector3(0.45, 0.06, 0.45), "wood"],
+		[Vector3(0, 0.57, 0), Vector3(0.45, 0.06, 0.45), "wood"],
+		[Vector3(0, 0.3, 0.2), Vector3(0.45, 0.6, 0.05), "metal"],
+		[Vector3(0, 0.75, 0.2), Vector3(0.45, 0.4, 0.05), "wood"]], false)
 	_prop("clay_bust", Vector3(66.0, 0.77, -12.0), [
 		[Vector3(0, 0.15, 0), Vector3(0.3, 0.3, 0.25), "clay"],
 		[Vector3(0, 0.45, 0), Vector3(0.2, 0.3, 0.22), "clay"]], false)
@@ -186,6 +196,7 @@ func spawn_random(night: int, minutes: float) -> bool:
 		var ended: float = records[i]["ended_at"] if records.has(i) else -1.0
 		var used := records.has(i) and (ended < 0.0 or minutes - ended < REAPPEAR_AFTER)
 		if def["night"] > night or used or _prop_busy(def["prop"]) or def["prop"] in reserved_props \
+				or (not _pool.is_empty() and i not in _pool) \
 				or SchoolBuilder.area_difficulty(def["area"]) > difficulty:
 			continue
 		if _guard_within(_props[def["prop"]].global_position, UNSEEN_DISTANCE):
@@ -197,6 +208,17 @@ func spawn_random(night: int, minutes: float) -> bool:
 	return true
 
 
+## Host, as the shift starts: tonight only some of the anomalies are in play (about 70%), so no
+## two nights look alike.
+func plan(night: int) -> void:
+	_pool.clear()
+	for i in DEFINITIONS.size():
+		if DEFINITIONS[i]["night"] <= night and SchoolBuilder.area_difficulty(DEFINITIONS[i]["area"]) <= difficulty:
+			_pool.append(i)
+	_pool.shuffle()
+	_pool.resize(maxi(6, ceili(_pool.size() * 0.7)) if _pool.size() > 6 else _pool.size())
+
+
 ## Host: starts one particular anomaly (by its place in DEFINITIONS), e.g. for training.
 ## Later in the run, moved things move less (a nudge instead of across the room), so the
 ## cameras need a closer look: from all the way on night 1 to about a third by night 9.
@@ -206,8 +228,13 @@ func start(index: int, minutes: float, night := 1) -> void:
 		_missed_names.append(_describe(index))
 	_appeared += 1
 	var amount := clampf(1.12 - 0.085 * night + randf_range(-0.08, 0.08), 0.3, 1.0)
-	records[index] = {"credited": [], "clear_at": -1.0, "ended_at": -1.0, "started_at": minutes, "amount": amount}
-	_set_active.rpc(index, true, amount)
+	var alts: Array = DEFINITIONS[index].get("alts", [])
+	var variant := randi() % (alts.size() + 1)
+	# Never right in front of somebody.
+	if variant > 0 and _guard_within(alts[variant - 1], UNSEEN_DISTANCE):
+		variant = 0
+	records[index] = {"credited": [], "clear_at": -1.0, "ended_at": -1.0, "started_at": minutes, "amount": amount, "variant": variant}
+	_set_active.rpc(index, true, amount, variant)
 
 
 ## Host, every frame: figures vanish when approached; reported anomalies get cleared up.
@@ -283,7 +310,7 @@ func appeared_count() -> int:
 ## Host: for a player who joins mid-evening.
 func send_state_to(peer_id: int) -> void:
 	for i in _active:
-		_set_active.rpc_id(peer_id, i, true, float(records.get(i, {}).get("amount", 1.0)))
+		_set_active.rpc_id(peer_id, i, true, float(records.get(i, {}).get("amount", 1.0)), int(records.get(i, {}).get("variant", 0)))
 
 
 ## Host: puts everything back for the next night.
@@ -321,9 +348,11 @@ func _guard_within(spot: Vector3, distance: float) -> bool:
 # --- Every computer: showing it ------------------------------------------------------
 
 @rpc("authority", "call_local", "reliable")
-func _set_active(index: int, on: bool, amount := 1.0) -> void:
+func _set_active(index: int, on: bool, amount := 1.0, variant := 0) -> void:
 	var def := DEFINITIONS[index]
 	var prop: Node3D = _props[def["prop"]]
+	var alts: Array = def.get("alts", [])
+	var spot: Variant = alts[variant - 1] if variant > 0 and variant <= alts.size() else null
 	if on and index not in _active:
 		_active.append(index)
 	elif not on:
@@ -332,11 +361,14 @@ func _set_active(index: int, on: bool, amount := 1.0) -> void:
 		"hide":
 			_set_visible(prop, not on)
 		"show", "figure":
+			prop.transform = _home[def["prop"]]
+			if on and spot != null:
+				prop.position = spot
 			_set_visible(prop, on)
 		"move":
 			if on:
 				var home: Transform3D = _home[def["prop"]]
-				prop.position = home.origin.lerp(def["to"], amount)
+				prop.position = home.origin.lerp(def["to"] if spot == null else spot, amount)
 				prop.rotation_degrees = home.basis.get_euler() * (180.0 / PI) * (1.0 - amount) \
 						+ Vector3(0, def["turn"], def.get("tip", 0.0)) * amount
 			else:

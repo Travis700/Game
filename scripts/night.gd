@@ -206,6 +206,7 @@ func _on_shift_started() -> void:
 	# Totems only matter with teammates to bring back; alone, being caught ends the run.
 	if players.get_child_count() > 1:
 		totems.place_random()
+	anomalies.plan(number)
 	# Spread tonight's anomalies across the night, starting about 20 minutes in.
 	_schedule.clear()
 	# More guards, more to find.
