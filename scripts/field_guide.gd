@@ -190,6 +190,9 @@ static func build_page(ink: Color, width: float) -> VBoxContainer:
 	for kind: String in ENTRIES:
 		var entry: Dictionary = ENTRIES[kind]
 		if kind in known:
+			var portrait := _portrait(kind, width)
+			if portrait:
+				page.add_child(portrait)
 			page.add_child(_text("%s  ·  %s" % ["T" + entry["name"].substr(1), entry["where"]], 19, ink, width))
 			page.add_child(_text("Signs: " + entry["signs"], 15, ink, width))
 			page.add_child(_text("Survive: " + entry["rule"], 15, ink, width))
@@ -210,9 +213,25 @@ static func build_page(ink: Color, width: float) -> VBoxContainer:
 			page.add_child(unknown)
 	# Every page found: the last thing R. Hale wrote.
 	if known.size() == ENTRIES.size():
+		var badge := _portrait("Hale0451", width)
+		if badge:
+			page.add_child(badge)
 		page.add_child(_text("R. Hale, employee #0451, last entry", 19, ink, width))
 		page.add_child(_text(LAST_ENTRY, 15, ink, width))
 	return page
+
+
+## R. Hale's sketch of a monster (assets/guide/<kind>.png), if there is one.
+static func _portrait(kind: String, width: float) -> TextureRect:
+	var path := "res://assets/guide/%s.png" % kind
+	if not ResourceLoader.exists(path):
+		return null
+	var picture := TextureRect.new()
+	picture.texture = load(path)
+	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	picture.custom_minimum_size = Vector2(width, minf(220.0, width * 0.7))
+	return picture
 
 
 static func _text(text: String, size: int, ink: Color, width: float) -> Label:

@@ -12,6 +12,7 @@ A game by %s.
 Made with Godot Engine.
 Textures from Poly Haven (polyhaven.com, CC0) by Charlotte Baglioni, Dimitrios Savva, Rob Tuytel and Dario Barresi.
 Sound effects from Kenney (kenney.nl, CC0), and made with ElevenLabs.
+Field guide sketches made with SpriteCook and Nano Banana.
 Steam features use GodotSteam (MIT licence) and the Steamworks SDK (Valve Corporation)."""
 
 const GODOTSTEAM_LICENSE := """GodotSteam

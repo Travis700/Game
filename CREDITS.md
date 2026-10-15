@@ -37,6 +37,14 @@ current terms for commercial use before release. In `assets/sounds/`: whistles (
 `air_horn`, `hand_bell`, `radio`, `whispers`, `ball_bounce`, `principal_steps`, `rush_steps`,
 `squelch`, `vend`.
 
+## Field guide illustrations: generated for this game
+
+`assets/guide/`: R. Hale's notebook sketches. The Hall Monitor was made with SpriteCook
+(spritecook.ai, asset 081469bf-dbaa-47a1-ae73-027395576c47, see `spritecook-assets.json`); it was
+then the style reference for two 3x3 sheets made with Google Nano Banana 2 through Creative Claw,
+cut into the other 17 monsters and the 0451 badge. Check each provider's current terms for
+commercial use before release.
+
 ## Generated in code
 
 `floor`, `ceiling`, `metal`, `locker`, `cork`, `board` textures: `tools/gen_textures.py`. Fallback sounds (used where

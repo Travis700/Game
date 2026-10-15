@@ -221,6 +221,28 @@ func set_ghost(on: bool) -> void:
 
 
 ## A quick full-screen flash of colour that fades out, e.g. red when you're caught.
+## A sketch from the field guide, pinned at the top right for a while (a new page in the guide).
+func show_sketch(texture: Texture2D, seconds := 10.0) -> void:
+	var sketch := TextureRect.new()
+	sketch.texture = texture
+	sketch.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sketch.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+	sketch.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	sketch.offset_left = -250
+	sketch.offset_right = -20
+	sketch.offset_top = 60
+	sketch.offset_bottom = 290
+	sketch.rotation_degrees = 2.0
+	sketch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(sketch)
+	var fade := sketch.create_tween()
+	sketch.modulate.a = 0.0
+	fade.tween_property(sketch, "modulate:a", 1.0, 0.4)
+	fade.tween_interval(seconds)
+	fade.tween_property(sketch, "modulate:a", 0.0, 0.8)
+	fade.tween_callback(sketch.queue_free)
+
+
 func flash(color: Color, seconds := 1.2) -> void:
 	_flash.color = color
 	create_tween().tween_property(_flash, "color:a", 0.0, seconds)

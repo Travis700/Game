@@ -323,7 +323,9 @@ func _ready() -> void:
 		var entry: Dictionary = FieldGuide.ENTRIES.get(kind, {})
 		if not entry.is_empty():
 			Sfx.play_flat(self, Sfx.notes([523.0, 784.0, 1047.0], 0.1, 0.25, "triangle"))
-			hud.show_message("NEW IN YOUR FIELD GUIDE: %s\nHow to survive it: %s" % [(entry["name"] as String).to_upper(), entry["rule"]], 12.0))
+			hud.show_message("NEW IN YOUR FIELD GUIDE: %s\nHow to survive it: %s" % [(entry["name"] as String).to_upper(), entry["rule"]], 12.0)
+			if ResourceLoader.exists("res://assets/guide/%s.png" % kind):
+				hud.show_sketch(load("res://assets/guide/%s.png" % kind)))
 	career.stamp_added.connect(func(kind: String, which: String) -> void:
 		# (The 6 AM "handled" stamps come in a bunch with the report: the field guide shows those.)
 		# (After the log's own result, which would otherwise replace it.)

@@ -1,0 +1,9 @@
+{
+  "assets": [
+    {"asset_id": "081469bf-dbaa-47a1-ae73-027395576c47", "label": "field guide: Hall Monitor (style reference)", "file": "assets/guide/HallMonitor.png"}
+  ],
+  "creative_claw": [
+    {"asset_id": "c473414e-9c29-455b-b3fa-0ad8b05c1cf2", "label": "field guide sheet 1 (Mascot..Librarian)"},
+    {"asset_id": "e9b8afa5-90d1-4dcf-9a23-094235107969", "label": "field guide sheet 2 (Nurse..Understudy, 0451 badge)"}
+  ]
+}
