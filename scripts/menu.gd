@@ -144,7 +144,27 @@ func _ready() -> void:
 	column.add_child(_steam_label)
 
 	column.add_child(_spacer(10))
-	_add_run_options(column)
+	var run_box := VBoxContainer.new()
+	run_box.add_theme_constant_override("separation", 12)
+	_add_run_options(run_box)
+	column.add_child(run_box)
+	# A brand-new guard sees the essentials: the run settings (and the hat and perk, which have
+	# only one choice so far) wait behind a button until the training's done.
+	if not Profile.training_done:
+		run_box.visible = false
+		hat_row.visible = false
+		perk_row.visible = false
+		_perk_text.visible = false
+		var more := Button.new()
+		more.text = "Run settings..."
+		more.flat = true
+		more.pressed.connect(func() -> void:
+			run_box.visible = true
+			hat_row.visible = true
+			perk_row.visible = true
+			_perk_text.visible = true
+			more.visible = false)
+		column.add_child(more)
 	column.add_child(_spacer(6))
 	var play_row := HBoxContainer.new()
 	play_row.add_theme_constant_override("separation", 8)
