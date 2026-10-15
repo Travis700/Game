@@ -88,7 +88,7 @@ not "trusted"):
 - `daily_YYYYMMDD`: one per day, the daily shift's score (higher is better). The menu shows the
   player's friends' scores for today.
 - `furthest_night`: the furthest Overtime night a player has clocked out of.
-- `daily_YYYYMMDD_team`: a team's daily shift score (everyone's pay added up), when the daily is hosted.
+- `daily_YYYYMMDD_teamN`: a team of N's daily shift score (everyone's pay added up), when the daily is hosted.
 
 ## 4. Rich presence
 

@@ -313,7 +313,8 @@ func _receive_log(area: String, type: String, named := "") -> void:
 		if correct and director.guard_by_peer(peer) and "Mascot" not in director.guard_by_peer(peer).known_monsters:
 			director.guard_by_peer(peer).known_monsters.append("Mascot")
 		anomalies.last_was_first = director.last_log_was_first
-	if correct:
+	var first_or_seen := (director.last_log_was_first if type == "Monster" else anomalies.last_was_first) or _could_see(peer, area)
+	if correct and first_or_seen:
 		bonus.on_correct_log(named != "" and named == found)
 		var logger := director.guard_by_peer(peer)
 		if logger and found != "" and found not in logger.known_monsters:
@@ -434,7 +435,7 @@ func save_run(next_night: int, in_progress := false) -> void:
 		"points": saved_points, "items": saved_items, "upgrades": guard_room.upgraded.duplicate(),
 		"run_stats": _run_stats, "run_nights": _run_nights, "write_ups": write_ups,
 		"doors": doors.installed.duplicate(), "personal": saved_personal, "in_progress": in_progress,
-		"spent": shop.spent, "team": run_team,
+		"spent": shop.spent, "team": run_team, "last_retried": _last_night_retried,
 	})
 
 
@@ -523,6 +524,8 @@ func fail_night() -> void:
 ## team shares one school's worth of anomalies.
 ## Host: how many guards clocked in for tonight's shift.
 var _shift_team := 1
+## Host: today's daily, hosted for a team (scores go on the team boards, by team size).
+var team_daily := false
 ## Host: whether this run has had its one retry of the last night.
 var _last_night_retried := false
 ## Host: peers who joined mid-shift as ghosts tonight. Not in tonight's counts, pay or credit.
@@ -573,6 +576,13 @@ func dock(peer: int, amount: int) -> void:
 	stats["docked"] = int(stats.get("docked", 0)) + amount
 
 
+## Host: the team's work so far, less what the stations still unpunched would cost at 6 AM
+## (a station's pay, scaled like the target is for the team's size).
+func _work_after_round() -> int:
+	var team_factor := 1.0 + 0.6 * (shift_team() - 1)
+	return maxi(_team_work() - int(rounds.missed_count() * rounds.punch_points() * team_factor), 0)
+
+
 ## Host: points the team has earned tonight from work (not from clocking out).
 func _team_work() -> int:
 	var total := 0
@@ -593,11 +603,10 @@ func _send_quota() -> void:
 		quota_target = quota_for(shift_team())
 	var text := ""
 	if quota_target > 0:
-		text = "Work target: %d / %d" % [mini(_team_work(), quota_target), quota_target]
-		var unpunched := rounds.missed_count()
-		if _team_work() - unpunched * Rounds.PUNCH_POINTS * shift_team() >= quota_target:
+		text = "Work target: %d / %d" % [mini(_work_after_round(), quota_target), quota_target]
+		if _work_after_round() >= quota_target:
 			text += " (met)"
-		elif unpunched > 0:
+		elif rounds.missed_count() > 0:
 			text += " (unpunched stations count against it at 6)"
 		if write_ups > 0:
 			text += "   ·   write-ups %d of %d" % [write_ups, WRITE_UPS_TO_FIRE]
@@ -650,7 +659,7 @@ func _end_night() -> void:
 		return
 	var rows := _build_rows(true)
 	# Stations nobody punched count against the work target, for every guard on shift.
-	var work := maxi(_team_work() - rounds.missed_count() * Rounds.PUNCH_POINTS * shift_team(), 0)
+	var work := _work_after_round()
 	_run_nights += 1
 	_award_night()
 	var round_text := "Round: %d of %d stations punched%s." % [rounds.punched.size(), rounds.order.size(),
@@ -896,11 +905,20 @@ func _build_rows(keep_pay: bool) -> Array:
 func _finish_daily(rows: Array, score: int, summary: String) -> void:
 	score = maxi(score, 0)
 	randomize()
-	var team := shift_team()
-	var best_before := Career.daily_best(daily)
+	var team := maxi(run_team, _shift_team) if team_daily else 0
+	var best_before := Career.daily_best(daily, team)
 	var new_best := score > best_before
-	_daily_result.rpc(daily, score, team)
-	var headline := ("Daily shift for %s: you scored %d." if team == 1 else "Team daily shift for %s: the team scored %d.") % [daily, score]
+	# To everyone who worked tonight's shift (not anyone who joined it late as a ghost).
+	for guard: Guard in players.get_children():
+		var peer := guard.name.to_int()
+		if late_joiners.has(peer):
+			continue
+		if peer == multiplayer.get_unique_id():
+			_daily_result(daily, score, team)
+		else:
+			_daily_result.rpc_id(peer, daily, score, team)
+	var headline := ("Daily shift for %s: you scored %d." if team == 0 else "Team daily shift for %s (%d guards): the team scored %d.") % (
+			[daily, score] if team == 0 else [daily, team, score])
 	if new_best and best_before >= 0:
 		headline += " A new best for today (was %d)." % best_before
 	elif not new_best:
@@ -909,15 +927,15 @@ func _finish_daily(rows: Array, score: int, summary: String) -> void:
 	_show_report.rpc(number, rows, headline + "\n" + summary, "daily")
 
 
-## Every computer: today's daily score goes in each player's records, and on Steam (solo and
-## team scores on separate boards).
-@rpc("authority", "call_local", "reliable")
+## Each computer that worked the shift: today's daily score goes in that player's records, and on
+## Steam. Solo scores and each team size have their own board ("daily_20261015_team3").
+@rpc("authority", "call_remote", "reliable")
 func _daily_result(date: String, score: int, team: int) -> void:
 	if career:
-		career.record_daily(date, score)
+		career.record_daily(date, score, team)
 	var steam := get_node_or_null("/root/SteamService")
 	if steam:
-		steam.submit_score(steam.daily_board(date) + ("" if team <= 1 else "_team"), score)
+		steam.submit_score(steam.daily_board(date) + ("" if team == 0 else "_team%d" % team), score)
 
 
 ## Host, after the ninth night: the team stays on. Points, gear and upgrades carry on.

@@ -140,7 +140,7 @@ furthest night is kept on the Records screen.
 everyone that day (night, conditions, round, bonus objective and monster plan are all seeded from the
 date). Score is that night's pay. Your best per day and your streak of days are kept; the saved run
 isn't touched. **Host today's daily** plays it as a team: friends join as usual, the score is everyone's
-pay added up, and it goes on a separate team board on Steam.
+pay added up, and it goes on a Steam board for teams that size (team bests are kept apart from solo ones).
 
 **Shift notes and bonus objectives:** from night 2 each night has one or two conditions (fog, faulty
 wiring, old batteries, a full moon, an inspector's visit, sound carrying, a messy school, hazard pay,

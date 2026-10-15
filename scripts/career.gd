@@ -100,12 +100,20 @@ func record_night(peer_id: int, night: int) -> void:
 
 
 ## This player's daily shift score for `date`. Keeps the best one. True if it's a new best.
-func record_daily(date: String, score: int) -> bool:
+func record_daily(date: String, score: int, team := 0) -> bool:
 	var config := _load()
-	var best := int(config.get_value("daily", date, -1))
+	var section := "daily" if team == 0 else "daily_team%d" % team
+	# Any daily played counts towards the streak.
+	if not config.has_section_key("daily_played", date):
+		config.set_value("daily_played", date, true)
+		_save(config)
+	var best := int(config.get_value(section, date, -1))
 	if score <= best:
+		if daily_streak() >= 5:
+			_unlock("DAILY_STREAK")
+		_unlock("DAILY")
 		return false
-	config.set_value("daily", date, score)
+	config.set_value(section, date, score)
 	_save(config)
 	_unlock("DAILY")
 	if daily_streak() >= 5:
@@ -229,8 +237,8 @@ static func best_scores() -> Array:
 
 
 ## Best daily shift score for a date, or -1 if it hasn't been played.
-static func daily_best(date: String) -> int:
-	return int(_load().get_value("daily", date, -1))
+static func daily_best(date: String, team := 0) -> int:
+	return int(_load().get_value("daily" if team == 0 else "daily_team%d" % team, date, -1))
 
 
 ## Days in a row the daily shift has been played, up to today (or yesterday, if today's
@@ -238,10 +246,12 @@ static func daily_best(date: String) -> int:
 static func daily_streak() -> int:
 	var config := _load()
 	var day := Time.get_unix_time_from_datetime_string(Time.get_date_string_from_system(true))
-	if not config.has_section_key("daily", Time.get_date_string_from_unix_time(day)):
+	var played := func(date: String) -> bool:
+		return config.has_section_key("daily", date) or config.has_section_key("daily_played", date)
+	if not played.call(Time.get_date_string_from_unix_time(day)):
 		day -= 86400
 	var streak := 0
-	while config.has_section_key("daily", Time.get_date_string_from_unix_time(day)):
+	while played.call(Time.get_date_string_from_unix_time(day)):
 		streak += 1
 		day -= 86400
 	return streak

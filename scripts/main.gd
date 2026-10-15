@@ -87,6 +87,10 @@ var finale: Finale
 var _ghost_ping_at: Dictionary = {}
 ## Host: the monster kinds each guard has had a close call with this run (badge -> kinds).
 var _close_calls: Dictionary = {}
+## Host: hosting today's daily for a team (set from the menu; the daily starts once hosting
+## does), and the badges already given today's starting points.
+var _team_daily := false
+var _daily_paid: Dictionary = {}
 ## Host: a solo guard's second wind, once a night.
 var _second_wind_used := false
 ## Host: badges of the guards who started tonight's shift, and of those who left it still alive
@@ -414,13 +418,15 @@ func _ready() -> void:
 		if menu.confirm_new_run():
 			_play_solo())
 	menu.host_requested.connect(func() -> void:
+		_team_daily = false
 		if menu.confirm_new_run():
 			_host())
 	menu.join_requested.connect(_join)
 	menu.daily_requested.connect(_play_daily)
 	menu.team_daily_requested.connect(func() -> void:
 		menu._continue.button_pressed = false
-		night.daily = Daily.today()
+		# Made a daily only once hosting has actually started (it can fail).
+		_team_daily = true
 		_host())
 	menu.training_requested.connect(_play_training)
 	night.daily_finished.connect(func() -> void: _back_to_menu(""))
@@ -598,6 +604,7 @@ func _host() -> void:
 	var peer := ENetMultiplayerPeer.new()
 	var error := peer.create_server(PORT, MAX_GUARDS - 1)
 	if error != OK:
+		_team_daily = false
 		menu.show_status("Couldn't host on port %d. Is another copy of the game already hosting?" % PORT)
 		return
 	multiplayer.multiplayer_peer = peer
@@ -614,8 +621,11 @@ func _begin_hosting() -> void:
 	_start_run()
 	_enter_school()
 	_spawn_guard(1, Profile.employee_number, _player_name(), Career.rank(), _hat(), _perk(), Career.monsters_seen())
+	_daily_paid[Profile.employee_number] = true
 	# A team daily shift: today's night, today's notes, today's starting points.
-	if night.daily != "":
+	if _team_daily:
+		night.daily = Daily.today()
+		night.team_daily = true
 		night.hardcore = false
 		night.number = Daily.night_of(night.daily)
 		night.give_everyone(Daily.STARTING_POINTS)
@@ -679,6 +689,7 @@ func _start_run() -> void:
 	night._run_stats = saved.get("run_stats", {})
 	night._run_nights = int(saved.get("run_nights", 0))
 	night.write_ups = int(saved.get("write_ups", 0))
+	night._last_night_retried = bool(saved.get("last_retried", false))
 	# Saves from before the walkie-talkie listed flashlights on their own.
 	for badge: String in saved.get("bright", []):
 		var list: Array = night.saved_personal.get_or_add(badge, [])
@@ -714,6 +725,7 @@ func _on_steam_lobby_ready(peer: MultiplayerPeer, is_host: bool) -> void:
 
 
 func _on_steam_lobby_failed(reason: String) -> void:
+	_team_daily = false
 	SteamService.leave_lobby()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	menu.set_busy(false)
@@ -884,7 +896,9 @@ func _register_employee(badge: int, password: String, player_name := "", rank :=
 	while badge < 1000 or _badge_in_use(badge):
 		badge = randi_range(1000, 9999)
 	_spawn_guard(peer_id, badge, player_name, rank, hat, perk, known)
-	if night.daily != "" and shift.state == Shift.State.PRE_SHIFT:
+	# Today's starting points, once per guard (leaving and rejoining doesn't top them up).
+	if night.daily != "" and shift.state == Shift.State.PRE_SHIFT and not _daily_paid.has(badge):
+		_daily_paid[badge] = true
 		night._totals[peer_id] = Daily.STARTING_POINTS
 		shop.push_wallets()
 	# Spawn data is replayed as it was first sent: tell them about anyone promoted since.
