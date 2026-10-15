@@ -32,6 +32,13 @@ const PAGES := [
 	["Controls", "WASD move · Shift run (it tires you out) · Mouse look · F flashlight · E use (hold it on punch stations and the breaker; E on clutter to pick it up, E again to throw) · Tab clipboard and field guide · G use the item you're carrying · V push to talk · B walkie-talkie · Esc menu (keys can be changed there) · F11 fullscreen\n\nAt a desk: A / D change a monitor's camera · Space or click for full screen · 1-4 a monitor full screen · R compare with tonight's photo · Q flag the camera for the team · F (full screen) set off its speaker · S stand up\n\nAs a ghost: E leave a cold spot, or knock over the clutter you're looking at · G watch through a teammate's eyes"],
 ]
 
+## Topics about things that start later in a run: shown as "from night N" until this player has
+## got that far (their furthest night), so the guide teases what's coming instead of front-loading it.
+const FROM_NIGHT := {
+	"The work target": 2, "Power cuts": 2, "Bonus objectives": 2, "The phone": 3, "Shift notes": 3,
+	"Moods": 5, "Lockdown": 6, "The last bell": 9, "Overtime": 9, "Grades": 9,
+}
+
 signal closed
 
 var _heading: Label
@@ -89,6 +96,9 @@ func _ready() -> void:
 	for index in PAGES.size():
 		var topic := Button.new()
 		topic.text = PAGES[index][0]
+		if int(FROM_NIGHT.get(PAGES[index][0], 0)) > Career.best_night() + 1:
+			topic.text += "  (night %d)" % FROM_NIGHT[PAGES[index][0]]
+			topic.modulate.a = 0.5
 		topic.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		topic.custom_minimum_size = Vector2(230, 34)
 		topic.pressed.connect(_show_page.bind(index))
@@ -113,6 +123,10 @@ func open() -> void:
 
 func _show_page(index: int) -> void:
 	_heading.text = PAGES[index][0]
+	var from: int = FROM_NIGHT.get(PAGES[index][0], 0)
+	if from > Career.best_night() + 1:
+		_body.text = "Something for later: this starts on night %d. Get that far and it'll be explained here." % from
+		return
 	_body.text = Controls.fill(PAGES[index][1]) if PAGES[index][0] != "Controls" else _controls_text()
 	for i in _topics.size():
 		_topics[i].modulate = Color(1.0, 0.9, 0.6) if i == index else Color(1, 1, 1, 0.8)

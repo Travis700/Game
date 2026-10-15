@@ -122,10 +122,13 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, outcom
 		_table.add_child(_cell("+%d" % row.get("xp", 0), 22))
 	_show_incidents()
 	_summary.text = summary
+	if outcome != "training":
+		_summary.text += "\nYour field guide: %d of %d monsters   ·   case file stamps: %d of %d" % [FieldGuide.discovered().size(),
+				FieldGuide.ENTRIES.size(), Career.stamp_count(), Career.MONSTER_KINDS.size() * Career.STAMPS.size()]
 	if promotion != "":
 		_summary.text += "\n\n★ " + promotion + " ★"
 		promotion = ""
-	_next_button.text = "Back to night %d" % outcome.get_slice(":", 1).to_int() if ":" in outcome else {"caught": "Start over from night 1", "won": "Start a new run", "daily": "Back to the menu", "training": "Back to the menu"}.get(outcome, "Start night %d" % (night + 1))
+	_next_button.text = "Back to night %d" % outcome.get_slice(":", 1).to_int() if ":" in outcome else {"caught": "Start over from night 1", "won": "Start a new run", "daily": "Back to the menu", "training": "Start night 1"}.get(outcome, "Start night %d" % (night + 1))
 	_next_button.visible = is_host
 	_overtime_button.visible = is_host and outcome == "won"
 	_overtime_button.text = "Keep going: Overtime (night %d)" % (night + 1)

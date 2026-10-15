@@ -42,6 +42,8 @@ const SPAWN_POINT := Vector3(0, 0.1, 54)
 
 ## Shown on the menu after returning to it, e.g. "The host ended the session."
 static var _menu_message := ""
+## Set when training ends with "Start night 1": the menu comes back and goes straight into a solo night.
+static var _play_after_reload := false
 
 ## Host: the password joiners must give ("" for none). Joiner: the password to send.
 var _password := ""
@@ -445,7 +447,9 @@ func _ready() -> void:
 		_team_daily = true
 		_host())
 	menu.training_requested.connect(_play_training)
-	night.daily_finished.connect(func() -> void: _back_to_menu(""))
+	night.daily_finished.connect(func() -> void:
+		_play_after_reload = night.training != null
+		_back_to_menu(""))
 	SteamService.lobby_ready.connect(_on_steam_lobby_ready)
 	SteamService.lobby_failed.connect(_on_steam_lobby_failed)
 	SteamService.invite_accepted.connect(_on_steam_invite)
@@ -455,6 +459,9 @@ func _ready() -> void:
 		_on_steam_invite.call_deferred(SteamService.pending_lobby)
 	menu.show_status(_menu_message)
 	_menu_message = ""
+	if _play_after_reload:
+		_play_after_reload = false
+		_play_solo.call_deferred()
 
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
@@ -1289,9 +1296,19 @@ func _show_first_night_tips() -> void:
 		"Tip: tonight's round is under the clock. Find the amber lamps and hold %s to punch them. Each punch rings out, and monsters hear it." % use,
 		"Tip: at 6 AM, clock out at the time clock or you don't get paid.",
 	]
-	# Someone who did the training knows the desks, the clipboard and the round already.
+	# Someone who did the training knows the desks, the clipboard and the round already, and
+	# after a couple of runs nobody needs telling.
 	if Profile.training_done:
 		tips = [tips[2], tips[4]]
+	if Profile.tips_shown >= 2:
+		tips.clear()
+	# With a team, the most useful thing to know: call things out.
+	if not hud.solo and Profile.tips_shown < 4:
+		tips.push_front("Tip: spotted something? Look at it and press %s: your team sees a marker. If one of them logs it within a minute, you get +%d too." % [Controls.key_name("ping"), Night.SPOTTER_POINTS])
+	if tips.is_empty():
+		return
+	Profile.tips_shown += 1
+	Profile.save_settings()
 	for i in tips.size():
 		get_tree().create_timer(10.0 + i * 16.0).timeout.connect(func() -> void:
 			if shift.state == Shift.State.ON_SHIFT and night.number == 1:

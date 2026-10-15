@@ -152,6 +152,10 @@ func _ready() -> void:
 	solo.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	play_row.add_child(solo)
 	var daily := _button("Daily shift", func() -> void: daily_requested.emit())
+	# The daily is a later night (4-8): no tips, so it waits until the training's done.
+	if not Profile.training_done:
+		daily.disabled = true
+		daily.tooltip_text = "Finish the training to unlock the daily shift."
 	daily.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	play_row.add_child(daily)
 	var training := _button("Training" if Profile.training_done else "Training (start here)", func() -> void: training_requested.emit())
@@ -183,6 +187,9 @@ func _ready() -> void:
 	host.size_flags_stretch_ratio = 2.0
 	host_row.add_child(host)
 	var team_daily := _button("Host today's daily", func() -> void: team_daily_requested.emit())
+	if not Profile.training_done:
+		team_daily.disabled = true
+		team_daily.tooltip_text = "Finish the training to unlock the daily shift."
 	team_daily.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	team_daily.tooltip_text = "Today's daily shift for a team: friends join as usual, and the team's score goes on its own board."
 	host_row.add_child(team_daily)
@@ -198,7 +205,8 @@ func _ready() -> void:
 	var join_row := HBoxContainer.new()
 	join_row.add_theme_constant_override("separation", 8)
 	_address = LineEdit.new()
-	_address.text = "127.0.0.1"
+	_address.text = ""
+	_address.placeholder_text = "Room code (or address)"
 	_address.placeholder_text = "Room code or host's address"
 	_address.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_address.custom_minimum_size = Vector2(0, 44)
