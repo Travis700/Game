@@ -119,3 +119,37 @@ root-overrides/paths for the save folder:
 - Store page: capsule art, screenshots, trailer and description (after the art pass).
 - Content survey: mild horror, no gore. Multiplayer: online co-op 1-4, voice chat.
 - Price: about US$5 as planned.
+
+## 8. Store page copy (draft)
+
+**Short description** (under 300 characters):
+
+> Night security at Westfield High. Watch the cameras, log what's changed, punch your rounds,
+> and learn the rules of eighteen things that walk the halls after dark. Nine nights. Up to four
+> guards. Proximity voice chat, and one of them can copy your voice.
+
+**About this game:**
+
+> Your shift starts at midnight. The school is empty. Mostly.
+>
+> Sit at the guard room monitors and spot what's different: a bench that's moved, a box that
+> wasn't there, a figure that's gone when you look again. Log it on your clipboard. Walk your
+> round and punch the stations. Reset the breaker when the lights die. And learn the rules,
+> because every monster in Westfield High has one. The Hall Monitor hates running. The Mascot
+> only moves when nobody's watching. The Lunch Lady is blind, but she can hear you breathe.
+>
+> Survive nine nights, then get out through the front gate before the last bell.
+
+**Features:**
+
+- 1–4 player online co-op (Steam invites or room codes), or solo.
+- Proximity voice chat and walkie-talkies, and a monster that mimics your teammates' voices.
+- 18 monsters across three wings, each with its own rule, a field guide to fill in, and moods
+  that change how hard they bite.
+- A different night every time: random anomalies and places, shift notes (fog, a full moon,
+  camera faults...), nightly bonus objectives and a work target from the district.
+- A nine-night run with checkpoints and a finale, then endless Overtime. Hardcore if you dare.
+- A daily shift that's the same for everyone, with friends' scores.
+- Ranks, perks and hats to unlock, 27 achievements and career records.
+- A guided training shift, close calls that teach you a monster's rule the first time, sound
+  captions, controller support and rebindable keys.
