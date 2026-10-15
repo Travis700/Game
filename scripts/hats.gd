@@ -55,6 +55,19 @@ const HATS := {
 		[Vector3(0.08, 0.08, 0.12), Vector3(0.07, 0.2, -0.24), Color(0.15, 0.17, 0.12), 0.0],
 		[Vector3(0.05, 0.05, 0.02), Vector3(-0.07, 0.2, -0.31), Color(0.3, 1.0, 0.3), 3.0],
 		[Vector3(0.05, 0.05, 0.02), Vector3(0.07, 0.2, -0.31), Color(0.3, 1.0, 0.3), 3.0]]},
+	"deerstalker": {"name": "Deerstalker", "achievement": "CASE_FILES", "parts": [
+		[Vector3(0.42, 0.14, 0.44), Vector3(0, 0.21, 0), Color(0.45, 0.36, 0.22), 0.0],
+		[Vector3(0.3, 0.03, 0.14), Vector3(0, 0.15, -0.27), Color(0.4, 0.32, 0.2), 0.0],
+		[Vector3(0.3, 0.03, 0.14), Vector3(0, 0.15, 0.27), Color(0.4, 0.32, 0.2), 0.0]]},
+	"fedora": {"name": "Detective's fedora", "achievement": "CASE_WORK", "parts": [
+		[Vector3(0.54, 0.03, 0.54), Vector3(0, 0.16, 0), Color(0.18, 0.16, 0.14), 0.0],
+		[Vector3(0.34, 0.16, 0.34), Vector3(0, 0.25, 0), Color(0.18, 0.16, 0.14), 0.0],
+		[Vector3(0.35, 0.04, 0.35), Vector3(0, 0.19, 0), Color(0.08, 0.08, 0.08), 0.0]]},
+	"badge_cap": {"name": "Chief's cap", "achievement": "CASE_CLOSED", "parts": [
+		[Vector3(0.42, 0.13, 0.42), Vector3(0, 0.2, 0), Color(0.05, 0.06, 0.1), 0.0],
+		[Vector3(0.38, 0.03, 0.22), Vector3(0, 0.15, -0.27), Color(0.03, 0.03, 0.05), 0.0],
+		[Vector3(0.38, 0.03, 0.03), Vector3(0, 0.27, -0.2), Color(0.95, 0.8, 0.3), 1.0],
+		[Vector3(0.12, 0.1, 0.02), Vector3(0, 0.23, -0.21), Color(0.95, 0.8, 0.3), 2.0]]},
 }
 
 

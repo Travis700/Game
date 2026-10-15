@@ -44,6 +44,9 @@ const ACHIEVEMENTS := {
 	"WORKAHOLIC": ["Workaholic", "Survive night 15."],
 	"GRADE_ONE": ["Making the grade", "Win a run at Grade 1 or higher."],
 	"TOP_GRADE": ["Top of the class", "Win a run at Grade 5."],
+	"CASE_FILES": ["Case files", "Collect 18 case file stamps."],
+	"CASE_WORK": ["Detective work", "Collect 36 case file stamps."],
+	"CASE_CLOSED": ["Case closed", "Collect every case file stamp (54)."],
 }
 ## Every kind of monster, for the Field guide achievement.
 const MONSTER_KINDS: Array[String] = [
@@ -72,6 +75,9 @@ const RANKS := [
 # --- Host: things happening to a guard ----------------------------------------------------
 
 func award(peer_id: int, achievement: String) -> void:
+	for kind: String in HANDLED:
+		if HANDLED[kind][0] == achievement:
+			stamp(peer_id, kind, "handled")
 	if peer_id == multiplayer.get_unique_id():
 		_unlock(achievement)
 	elif peer_id in multiplayer.get_peers():
@@ -87,6 +93,20 @@ func add_stat(peer_id: int, stat: String, amount := 1) -> void:
 
 ## This player logged a monster for the first time ever: its page in the guide just filled in.
 signal guide_entry_added(kind: String)
+## This player just earned a case file stamp ("named" or "handled") for a monster.
+signal stamp_added(kind: String, which: String)
+
+## Case files: three stamps for each monster. Spotted (logged it: the field guide page),
+## named (named it right in a log) and handled (dealt with it: see HANDLED).
+const STAMPS: Array[String] = ["spotted", "named", "handled"]
+## How a monster's "handled" stamp is earned, where it's more than surviving it. Otherwise:
+## clock out of a night it was out without it catching anyone.
+const HANDLED := {
+	"Substitute": ["PRESENT", "Answer its register."],
+	"SelfPortrait": ["ART_CRITIC", "Turn it to the wall."],
+	"Student": ["GOOD_SAMARITAN", "Walk a real student to safety."],
+}
+const HANDLED_DEFAULT := "Clock out of a night it was out, with nobody caught by it."
 
 
 func logged_monster(peer_id: int, kind: String) -> void:
@@ -103,6 +123,53 @@ func record_night(peer_id: int, night: int) -> void:
 		_record_night(night)
 	elif peer_id in multiplayer.get_peers():
 		_record_night.rpc_id(peer_id, night)
+
+
+## Host: a case file stamp for this player ("named" or "handled"; "spotted" is the guide page).
+func stamp(peer_id: int, kind: String, which: String) -> void:
+	if peer_id == multiplayer.get_unique_id():
+		_stamp(kind, which)
+	elif peer_id in multiplayer.get_peers():
+		_stamp.rpc_id(peer_id, kind, which)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _stamp(kind: String, which: String) -> void:
+	if kind not in MONSTER_KINDS or which not in STAMPS:
+		return
+	var config := _load()
+	var got: Array = config.get_value("stamps", kind, [])
+	if which in got:
+		return
+	got.append(which)
+	config.set_value("stamps", kind, got)
+	_save(config)
+	stamp_added.emit(kind, which)
+	var count := stamp_count()
+	if count >= 18:
+		_unlock("CASE_FILES")
+	if count >= 36:
+		_unlock("CASE_WORK")
+	if count >= MONSTER_KINDS.size() * STAMPS.size():
+		_unlock("CASE_CLOSED")
+
+
+## This player's stamps for a monster, in STAMPS order.
+static func stamps_of(kind: String) -> Array[String]:
+	var config := _load()
+	var got: Array = config.get_value("stamps", kind, [])
+	var result: Array[String] = []
+	for which in STAMPS:
+		if (which == "spotted" and kind in (config.get_value("career", "monsters_seen", []) as Array)) or which in got:
+			result.append(which)
+	return result
+
+
+static func stamp_count() -> int:
+	var total := 0
+	for kind in MONSTER_KINDS:
+		total += stamps_of(kind).size()
+	return total
 
 
 ## Host: this player won a run at `grade` (0 = no grade): the next grade unlocks.
@@ -205,6 +272,10 @@ func _saw_monster(kind: String) -> void:
 		config.set_value("career", "monsters_seen", seen)
 		_save(config)
 		guide_entry_added.emit(kind)
+		if stamp_count() >= 18:
+			_unlock("CASE_FILES")
+		if stamp_count() >= 36:
+			_unlock("CASE_WORK")
 	if MONSTER_KINDS.all(func(each: String) -> bool: return each in seen):
 		_unlock("MONSTER_EXPERT")
 

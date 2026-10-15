@@ -137,6 +137,10 @@ your clipboard, and on the Records screen): what it looks like and how to surviv
 haven't found yet show only a rumour. Once a monster is in your guide, you can name it in a Monster log
 for +25 more. The guide is kept on your computer across runs.
 
+**Case files:** every monster has three stamps in your field guide: spotted (logged it), named (named it right)
+and handled (survived a night of it with nobody caught, or its own trick: answering the Substitute, turning the
+Self-Portrait round, walking a real student out). 54 in all, with hats at 18, 36 and 54.
+
 **Grades:** win a run and Grade 1 opens on the menu; win at a grade to open the next, up to Grade 5. Each adds
 to the ones below (moods and lockdowns early, mistakes cost double, fired at two write-ups, faster monsters,
 no second chances) and is worth +20% XP.
@@ -161,7 +165,7 @@ with `--conditions=fog,batteries`.
 
 **Ranks:** every night earns XP (even one where you're caught), kept across runs. There are eight ranks,
 from Trainee to Legend of Westfield. Your rank is on your name tag and the menu, and some vending
-machine items need a rank. Ranks and some achievements unlock hats (12 of them), picked on the menu
+machine items need a rank. Ranks and some achievements unlock hats (15 of them), picked on the menu
 and worn for everyone, and the cameras, to see.
 
 **Being scared:** when a monster is close, you hear your heartbeat speed up; a low drone comes in when

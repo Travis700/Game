@@ -365,6 +365,8 @@ func _receive_log(area: String, type: String, named := "") -> void:
 		logged.append(entry)
 		_log_result(peer, true, "Confirmed: %s, %s. A teammate logged it first.  +%d" % [area, type.to_lower(), CONFIRM_POINTS])
 	elif correct and named != "" and named == found:
+		if career:
+			career.stamp(peer, found, "named")
 		stats["correct"] += 1
 		stats["named"] = stats.get("named", 0) + 1
 		logged.append(entry)
@@ -850,6 +852,9 @@ func _award_night() -> void:
 			career.award(peer, "BY_THE_BOOK")
 		if not shift.has_clocked_out(peer):
 			continue
+		for kind: String in director.handled_tonight:
+			if not Career.HANDLED.has(kind):
+				career.stamp(peer, kind, "handled")
 		career.add_stat(peer, "nights_survived")
 		career.award(peer, "FIRST_SHIFT")
 		if number >= 5:

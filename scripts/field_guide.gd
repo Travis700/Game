@@ -183,8 +183,8 @@ static func build_page(ink: Color, width: float) -> VBoxContainer:
 	var page := VBoxContainer.new()
 	page.add_theme_constant_override("separation", 12)
 	var known := discovered()
-	var intro := _text("%d of %d monsters in your guide. Log a monster correctly to fill in its page; then you can name it in a Monster log for +%d more." % [
-			known.size(), ENTRIES.size(), Night.NAME_POINTS], 15, ink, width)
+	var intro := _text("%d of %d monsters in your guide. Log a monster correctly to fill in its page; then you can name it in a Monster log for +%d more.\nCase file stamps: %d of %d. Each monster has three: spotted (logged), named (named right in a log) and handled." % [
+			known.size(), ENTRIES.size(), Night.NAME_POINTS, Career.stamp_count(), Career.MONSTER_KINDS.size() * Career.STAMPS.size()], 15, ink, width)
 	intro.modulate.a = 0.75
 	page.add_child(intro)
 	for kind: String in ENTRIES:
@@ -193,6 +193,14 @@ static func build_page(ink: Color, width: float) -> VBoxContainer:
 			page.add_child(_text("%s  ·  %s" % ["T" + entry["name"].substr(1), entry["where"]], 19, ink, width))
 			page.add_child(_text("Signs: " + entry["signs"], 15, ink, width))
 			page.add_child(_text("Survive: " + entry["rule"], 15, ink, width))
+			var got := Career.stamps_of(kind)
+			var marks: Array[String] = []
+			for which in Career.STAMPS:
+				marks.append(("■ " if which in got else "□ ") + which.capitalize())
+			var how: String = Career.HANDLED[kind][1] if Career.HANDLED.has(kind) else Career.HANDLED_DEFAULT
+			var stamps := _text("Case file:  %s   (handled: %s)" % ["   ".join(marks), how.trim_suffix(".").to_lower()], 14, ink, width)
+			stamps.modulate.a = 0.85
+			page.add_child(stamps)
 			var note := _text("From R. Hale's notebook: \"%s\"" % entry["lore"], 14, ink, width)
 			note.modulate.a = 0.7
 			page.add_child(note)

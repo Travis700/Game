@@ -108,6 +108,11 @@ var hunt_speed := LOCKDOWN_SPEED
 var finale := false
 ## This run's grade (see Grades). Host.
 var grade := 0
+## Host: monster kinds (class names) out tonight, and those that caught someone. At 6 AM,
+## handled_tonight = out and caught nobody (for the case files' "handled" stamp).
+var _out_tonight: Dictionary = {}
+var _caught_by_kind: Dictionary = {}
+var handled_tonight: Array[String] = []
 ## The finale's gate is open: guards out in the street are out of reach.
 var gate_open := false
 ## Host: peer id -> when their close-call grace runs out (real seconds).
@@ -173,6 +178,10 @@ const VOICE_LINGER := 0.4
 func build() -> void:
 	_container = Node3D.new()
 	_container.name = "Live"
+	_container.child_entered_tree.connect(func(node: Node) -> void:
+		var monster := node as Monster
+		if monster and multiplayer.is_server() and not monster.harmless:
+			_out_tonight[monster.get_script().get_global_name()] = true)
 	add_child(_container)
 	_spawner = MultiplayerSpawner.new()
 	_spawner.name = "MonsterSpawner"
@@ -212,6 +221,8 @@ func plan_night(number: int) -> void:
 	night_number = number
 	tonight.clear()
 	_credited.clear()
+	_out_tonight.clear()
+	_caught_by_kind.clear()
 	var pool: Array = []
 	for kind: String in ROSTER:
 		var home: String = ROSTER[kind]["home"]
@@ -438,6 +449,16 @@ func end_night() -> void:
 		_end_drill()
 		lockdown_changed.emit(false, "")
 	_lockdown_times.clear()
+	if portrait.active:
+		_out_tonight["SelfPortrait"] = true
+	if lockers.active:
+		_out_tonight["Lockers"] = true
+	handled_tonight.clear()
+	for kind: String in _out_tonight:
+		if kind in Career.MONSTER_KINDS and not _caught_by_kind.has(kind):
+			handled_tonight.append(kind)
+	_out_tonight.clear()
+	_caught_by_kind.clear()
 	for monster in _container.get_children():
 		monster.queue_free()
 	# Kept for the night report, which comes after.
@@ -883,6 +904,7 @@ func minutes() -> float:
 ## `from` is where the thing that caught them is (for the jumpscare), or Vector3.INF.
 func kill(guard: Guard, by: String, from := Vector3.INF) -> void:
 	if not guard.is_dead:
+		_caught_by_kind[FieldGuide.kind_for_name(by)] = true
 		guard_caught.emit(guard.name.to_int(), by, from)
 
 
