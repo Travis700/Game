@@ -13,8 +13,6 @@ const GRAVITY := 9.8
 ## The Bell never pushes a monster faster than this (just under a guard's running speed),
 ## so every chase can still be outrun.
 const BELL_SPEED_CAP := 5.4
-## How fast monsters go during a lockdown (guards can outrun it, just).
-const LOCKDOWN_HUNT_SPEED := 3.6
 
 var director: MonsterDirector
 ## Shown in death messages, e.g. "Caught by the Hall Monitor."
@@ -114,7 +112,7 @@ func _lockdown_hunt() -> void:
 		halt()
 		return
 	state = "hunt"
-	move_to(guard.global_position, LOCKDOWN_HUNT_SPEED)
+	move_to(guard.global_position, director.hunt_speed)
 	catch_nearby()
 
 

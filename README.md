@@ -28,7 +28,8 @@ The game opens on a menu: **Play solo**, **Host a game**, or **Join**.
 The host clicks **Host a game**. Their **room code** (like `DALS-AJW`) shows in the top-right corner.
 Everyone else types that code (or the host's address) next to **Join**. If the host typed a room
 password before hosting, joiners type the same password. Room codes work on the same network, or over
-the internet if the host forwards port 7777 on their router. Steam lobbies will make this easier later.
+the internet if the host forwards port 7777 on their router. On Steam, friends can join through the
+invite or the Steam overlay instead, with no ports to forward.
 
 ### The menu
 
@@ -84,6 +85,12 @@ isn't full). Run out and you're winded until it comes back up; an energy drink m
 
 **Lockdown:** from night 6 (once a night; twice from night 9 and in Overtime) an alarm wails and for 30 seconds
 every monster hunts the nearest guard it can reach. Hide, get to the guard room (before night 7), or outrun them.
+
+**The last bell:** the front gate is chained shut all shift. At 5 AM on night 9 the intercom calls an
+assembly, the alarm goes and doesn't stop, and every monster hunts, faster as six gets closer. The gate's
+padlock key turns up deep in the school (the intercom says where): fetch it and bring it to the gate, and the
+gate opens. Anyone standing out in the street is safe. Whoever's still inside at 6 AM is caught; one guard out
+wins the run. If the key's carrier is caught, the key lies where they fell.
 
 **Throwing things:** eleven bits of clutter (a traffic cone, a basketball, a lunch tray, books...) lie about the
 school. E picks one up, E again throws it; it clatters where it lands and draws the sound-hunting monsters. Ghosts

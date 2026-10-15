@@ -71,6 +71,7 @@ var _board_timer := 0.0
 var _lure_ready: Dictionary = {}
 var hiding: Hiding
 var clutter: Clutter
+var finale: Finale
 ## Host: when each ghost may next leave a cold spot.
 var _ghost_ping_at: Dictionary = {}
 var power: Power
@@ -334,6 +335,14 @@ func _ready() -> void:
 	add_child(clutter)
 	clutter.carried_changed.connect(_refresh_inventory)
 	night.clutter = clutter
+	finale = Finale.new()
+	finale.name = "Finale"
+	finale.director = director
+	finale.shift = shift
+	finale.hud = hud
+	finale.players = players
+	add_child(finale)
+	night.finale = finale
 	var nerve := Nerve.new()
 	nerve.name = "Nerve"
 	nerve.director = director
@@ -760,6 +769,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	guard_room.on_peer_left(peer_id)
 	if guard:
 		clutter.drop(peer_id, guard.global_position)
+		finale.drop(peer_id, guard.global_position)
 	if hiding.hidden.has(peer_id):
 		hiding._set_hidden.rpc(peer_id, -1)
 	_update_guards_required()
@@ -933,6 +943,8 @@ func _objective() -> String:
 		Shift.State.ON_SHIFT:
 			if night.training:
 				return night.training.objective
+			if finale.active:
+				return finale.objective_for(_local_guard)
 			var text := "Survive until 6 AM. Watch the cameras and log anything odd (%s)." % Controls.key_name("clipboard")
 			var round_text := rounds.objective_text()
 			if round_text != "":
@@ -1297,6 +1309,7 @@ func _on_guard_caught(peer_id: int, by: String, from := Vector3.INF) -> void:
 		return
 	night.record_death()
 	clutter.drop(peer_id, guard.global_position)
+	finale.drop(peer_id, guard.global_position)
 	# Caught in a cupboard (e.g. by the Self-Portrait): the ghost climbs out.
 	if hiding.hidden.has(peer_id):
 		hiding._set_hidden.rpc(peer_id, -1)

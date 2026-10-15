@@ -10,7 +10,7 @@ you can do (they need your Steamworks account).
   code; friends type the code or accept an invite (Esc menu → *Invite Steam friends*, or
   Steam's own *Join game*). Networking uses Steam's relay, so nobody forwards ports.
 - **Steam names** over each guard, **rich presence** ("Night 4 of 9") in the friends list.
-- **15 achievements** and **5 stats**, mirrored to Steam (list below).
+- **27 achievements** and **6 stats**, mirrored to Steam (list below).
 - **Falls back** to direct connections and room codes when Steam isn't running, so the
   game also works outside Steam (handy for testing).
 - Settings (keys, mouse, FOV, volume, voice chat, graphics), a pause menu, How to play,
@@ -69,6 +69,7 @@ Create these with exactly these API names. Mark them as set by the client.
 | `EMF_FIVE` | Five lights | See an EMF reader hit 5. |
 | `TRAINED` | Fully trained | Finish the training shift. |
 | `LEGEND` | Legend of Westfield | Reach the top rank. |
+| `LAST_BELL` | Last bell | Get out through the front gate in the final night's finale. |
 | `OVERTIME` | Overtime | Survive a night of Overtime, after the ninth. |
 | `WORKAHOLIC` | Workaholic | Survive night 15. |
 | `LIGHTS_ON` | Who turned out the lights? | Reset the breaker after a power cut. |

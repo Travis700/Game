@@ -151,8 +151,6 @@ Which monsters are unlocked on which night is still to be set (section 14).
 
 XP per night: 100 + 10 × night number for clocking out (25 if caught), +20 per correct log, +20 per named monster, +10 per punched station. Ranks at 0, 400, 1200, 2500, 4500, 7500, 12000 and 20000 XP: Trainee, Night Watch, Patrol Officer, Senior Guard, Shift Supervisor, Head of Security, Night Warden, Legend of Westfield. Promotions show on the night report with what they unlock.
 
-**Ideas not built yet:** coffee.
-
 ## 11c. Replayability and long-term goals
 
 What keeps a player coming back after the first run:
@@ -169,6 +167,7 @@ What keeps a player coming back after the first run:
 
 - **Hiding.** 13 slatted cupboards (one per main area, one in the guard room). Inside, a guard isn't a target and any chase on them ends; a monster within 10 m that saw them climb in pulls them out after 1.4 s.
 - **Lockdown (the hunt).** From night 6 (1 a night, 2 from night 9): an alarm, then 30 s in which every monster (except the Ghost and the Shade) heads for the nearest reachable guard at 3.6 m/s, faster than walking and slower than running.
+- **The last bell (finale).** Night 9 of a run (not dailies or Overtime), 5 AM: a permanent lockdown at 3.0 m/s rising to 3.8 m/s by 6 AM, plus a Hall Monitor and a Lunch Lady. The gate (chained shut every shift, so nobody camps the street) opens when the padlock key, placed at a round station deep in the school or in tonight's wings, is carried to within 3.5 m of it. Guards in the street (z > 45.6) aren't targets; once everyone living is out the night ends early. At 6 AM anyone inside is caught ("the school"). Escapees get the Last bell achievement.
 - **Nerve (sanity).** 0–100 per guard, kept by the host. Drains: base 0.04/s, alone (in a team) 0.12/s, dark (power cut) 0.5/s, monster within 12 m 0.7/s, teammate caught −15. Gains: lit guard room 0.5/s, teammate within 8 m 0.08/s, coffee +40. Monsters notice a guard from up to 1.3× further as nerve falls; below 40, local hallucinations (footsteps, whispers, knocks, a figure at the edge of vision) every 8–30 s.
 - **Evidence.** The pocket EMF reader (rank 2) shows 1–4 by distance to the nearest monster (harmless ones cap at 3); the Ghost, Specimen, Understudy and Other Cleaner read EMF 5 within 6 m.
 - **Ghost agency.** Caught guards can leave a cold spot (E) every 4 s: a blue glow and a chill the living see, with a message if they're near.

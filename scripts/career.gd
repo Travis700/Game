@@ -35,6 +35,7 @@ const ACHIEVEMENTS := {
 	"EMF_FIVE": ["Five lights", "See an EMF reader hit 5."],
 	"TRAINED": ["Fully trained", "Finish the training shift."],
 	"LEGEND": ["Legend of Westfield", "Reach the top rank."],
+	"LAST_BELL": ["Last bell", "Get out through the front gate in the final night's finale."],
 	"OVERTIME": ["Overtime", "Survive a night of Overtime, after the ninth."],
 	"WORKAHOLIC": ["Workaholic", "Survive night 15."],
 }

@@ -57,6 +57,7 @@ var bonus: Bonus
 var phone: Phone
 var hiding: Hiding
 var clutter: Clutter
+var finale: Finale
 var nerve: Nerve
 ## The date of the daily shift being played (see Daily), or "" for an ordinary run.
 var daily := ""
@@ -190,6 +191,8 @@ func _on_shift_started() -> void:
 		conditions.forced = Daily.conditions_of(daily)
 	conditions.pick(number)
 	director.plan_night(number)
+	finale.planned = number == LAST_NIGHT and daily == ""
+	finale.difficulty = difficulty
 	rounds.plan(number, difficulty)
 	bonus.pick(number)
 	nerve.reset()
@@ -229,6 +232,10 @@ func _run_shift(delta: float) -> void:
 		_send_quota()
 	shop.update(delta)
 	doors.update(delta)
+	finale.update(minutes)
+	if finale.everyone_out() and minutes < SHIFT_MINUTES:
+		# Everyone still standing got out: no need to wait for six.
+		minutes = SHIFT_MINUTES
 
 	_sync_timer -= delta
 	if _sync_timer <= 0.0:
@@ -236,6 +243,9 @@ func _run_shift(delta: float) -> void:
 		_sync_clock.rpc(minutes, seconds_per_minute)
 
 	if minutes >= SHIFT_MINUTES:
+		# The finale: the gate shuts on anyone still inside, and whoever got out is done.
+		var got_out := finale.lock_in()
+		finale.reset()
 		# Morning: the monsters are gone, and only the living have to clock out.
 		director.end_night()
 		totems.clear_all()
@@ -250,6 +260,14 @@ func _run_shift(delta: float) -> void:
 		nerve.reset()
 		shift.guards_required = director.living_guards().size()
 		_start_morning.rpc()
+		for guard in got_out:
+			var peer := guard.name.to_int()
+			shift.clock_out(peer)
+			if career:
+				career.award(peer, "LAST_BELL")
+			director.tell(peer, "You're out. Behind you the gate swings shut, and the school goes quiet. Clocked out.")
+		if not got_out.is_empty() and shift.everyone_clocked_out():
+			_end_night.call_deferred()
 
 
 func _on_log_submitted(area: String, type: String, named := "") -> void:
@@ -435,6 +453,7 @@ func fail_night() -> void:
 	if shift.state != Shift.State.ON_SHIFT and not (shift.state == Shift.State.MORNING and director.living_guards().is_empty()):
 		return
 	director.end_night()
+	finale.reset()
 	totems.clear_all()
 	shop.clear_placed()
 	power.end_night()

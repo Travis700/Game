@@ -80,6 +80,10 @@ var voice: VoiceChat
 var conditions: Conditions
 ## Real seconds of lockdown left (0 when there isn't one). Host only.
 var lockdown_left := 0.0
+## How fast monsters hunt in a lockdown (the finale speeds it up). Host only.
+var hunt_speed := LOCKDOWN_SPEED
+## The last night's last hour: one long lockdown, and guards out through the gate are out of reach.
+var finale := false
 var _lockdown_times: Array[float] = []
 ## Everyone's nerve. Host only.
 var nerve: Nerve
@@ -194,6 +198,8 @@ func plan_night(number: int) -> void:
 	# Lockdowns: once a night from night 6, twice from night 9 (and Overtime).
 	_lockdown_times.clear()
 	lockdown_left = 0.0
+	hunt_speed = LOCKDOWN_SPEED
+	finale = false
 	if number >= LOCKDOWN_FROM_NIGHT:
 		for i in (1 if number < 9 else 2):
 			_lockdown_times.append(randf_range(90.0, 320.0))
@@ -295,6 +301,8 @@ func remove_monster(monster: Monster) -> void:
 
 ## Host: 6 AM, everything goes back where it came from.
 func end_night() -> void:
+	finale = false
+	hunt_speed = LOCKDOWN_SPEED
 	if lockdown_left > 0.0:
 		lockdown_left = 0.0
 		lockdown_changed.emit(false)
@@ -385,9 +393,14 @@ func living_guards() -> Array[Guard]:
 func targetable_guards() -> Array[Guard]:
 	var result: Array[Guard] = []
 	for guard in living_guards():
-		if may_enter(guard.global_position) and not guard.hiding:
+		if may_enter(guard.global_position) and not guard.hiding and not _gone(guard):
 			result.append(guard)
 	return result
+
+
+## Out through the gate in the finale: out of reach.
+func _gone(guard: Guard) -> bool:
+	return finale and Finale.is_out(guard.global_position)
 
 
 func dead_guards() -> Array[Guard]:
@@ -407,7 +420,7 @@ func nearest_living_guard(from: Vector3) -> Guard:
 	var best_distance := INF
 	for guard in living_guards():
 		var distance := from.distance_to(guard.global_position)
-		if distance < best_distance and may_enter(guard.global_position) and not guard.hiding:
+		if distance < best_distance and may_enter(guard.global_position) and not guard.hiding and not _gone(guard):
 			best = guard
 			best_distance = distance
 	return best
@@ -521,7 +534,18 @@ func _update_bell(minutes: float, delta: float) -> void:
 		announcement.emit("The school bell is ringing, and everything out there just got faster. The bell panel is in the front office.", "")
 
 
+## Host: the finale. The alarm goes and doesn't stop until 6 AM.
+func start_finale() -> void:
+	finale = true
+	_lockdown_times.clear()
+	if lockdown_left <= 0.0:
+		lockdown_changed.emit(true)
+	lockdown_left = INF
+
+
 func _update_lockdown(minutes: float, delta: float) -> void:
+	if finale:
+		return
 	if lockdown_left > 0.0:
 		lockdown_left -= delta
 		if lockdown_left <= 0.0:

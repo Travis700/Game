@@ -409,10 +409,7 @@ func _build_fence() -> void:
 		var x_mid := side * (40.0 + GATE_HALF) * 0.5
 		_box(Vector3(x_mid, FENCE_H * 0.5, FENCE_Z), Vector3(40.0 - GATE_HALF, FENCE_H, 0.05), "fence")
 		_box(Vector3(side * 40.0, FENCE_H * 0.5, 32.5), Vector3(0.05, FENCE_H, 25.0), "fence")
-		# Gate leaves, swung open into the yard.
-		var leaf := _box(Vector3(side * (GATE_HALF + 0.2), FENCE_H * 0.5, FENCE_Z - 1.2),
-				Vector3(0.05, FENCE_H, 2.4), "fence")
-		leaf.rotation.y = side * 0.35
+		# The gate's leaves are Finale's: they shut for the shift.
 	var x := -40.0
 	while x <= 40.0:
 		if absf(x) >= GATE_HALF:
