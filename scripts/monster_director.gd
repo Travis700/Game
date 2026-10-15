@@ -558,6 +558,7 @@ func check_mascot_missing(peer_id: int, area: String) -> bool:
 			var credited: Array = _credited.get_or_add(str(node.name) + ":missing", [])
 			if peer_id in credited:
 				return false
+			last_log_was_first = credited.is_empty()
 			credited.append(peer_id)
 			if career:
 				career.logged_monster(peer_id, "Mascot")

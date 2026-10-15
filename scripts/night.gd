@@ -281,7 +281,7 @@ func _receive_log(area: String, type: String, named := "") -> void:
 	if not correct and type == "Missing object":
 		# The Mascot's empty stand really is a missing object.
 		correct = director.check_mascot_missing(peer, area)
-		anomalies.last_was_first = true
+		anomalies.last_was_first = director.last_log_was_first
 	if correct:
 		bonus.on_correct_log(named != "" and named == found)
 	var first := (director.last_log_was_first if type == "Monster" else anomalies.last_was_first) or not correct
@@ -444,7 +444,7 @@ func fail_night() -> void:
 	nerve.reset()
 	quota_target = 0
 	_show_quota.rpc("")
-	if daily == "" and not hardcore and number <= LAST_NIGHT:
+	if daily == "" and training == null and not hardcore and number <= LAST_NIGHT:
 		_fail_to_checkpoint()
 		return
 	_restart_run = true
@@ -488,6 +488,9 @@ func _team_work() -> int:
 
 
 func _send_quota() -> void:
+	# Sized to whoever's still here (someone leaving mid-shift shouldn't sink the team).
+	if quota_target > 0:
+		quota_target = (QUOTA_BASE + QUOTA_PER_NIGHT * number) * maxi(players.get_child_count(), 1)
 	var text := ""
 	if quota_target > 0:
 		text = "Work target: %d / %d" % [mini(_team_work(), quota_target), quota_target]
@@ -516,6 +519,7 @@ func _fail_to_checkpoint() -> void:
 	bonus.clear()
 	conditions.clear()
 	_run_nights += 1
+	write_ups = 0
 	_restart_at = checkpoint_for(number)
 	for peer: int in _totals:
 		_totals[peer] = int(_totals[peer] / 2)
@@ -578,7 +582,10 @@ func _end_night() -> void:
 		if hardcore or number > LAST_NIGHT:
 			_restart_run = true
 			summary = "FIRED. Three write-ups, and the district lets the whole team go. A new crew starts from night 1.\n" + summary
+			summary += "\n" + _run_summary()
 			_show_report.rpc(number, rows, summary, "fired:1")
+			_reset_run()
+			run_team = 0
 			save_run(1)
 		else:
 			_restart_at = checkpoint_for(number)
@@ -803,6 +810,7 @@ func _reset_run() -> void:
 func _on_next_night_requested() -> void:
 	if multiplayer.is_server():
 		hiding.release_all()
+		clutter.reset_all()
 	if multiplayer.is_server() and (daily != "" or training):
 		daily_finished.emit()
 		return

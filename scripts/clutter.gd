@@ -29,11 +29,14 @@ const KNOCK_EVERY := 20.0
 signal carried_changed
 
 var director: MonsterDirector
+var shift: Shift
 
 ## Peer id -> the index of the item they're carrying. On every computer.
 var carried: Dictionary = {}
 
 var _props: Array[Interactable] = []
+## Each prop's flight, so a reset can stop one mid-air.
+var _flights: Dictionary = {}
 var _knock_ready: Dictionary = {}
 
 
@@ -49,7 +52,7 @@ func carried_name(peer_id: int) -> String:
 
 ## Which item this collider is, or -1.
 func index_of(body: Object) -> int:
-	return _props.find(body)
+	return _props.find(body) if body is Interactable else -1
 
 
 # --- Host --------------------------------------------------------------------------------
@@ -61,6 +64,9 @@ func request_pick_up(index: int) -> void:
 	var peer := _sender()
 	var guard := director.guard_by_peer(peer)
 	if guard == null or guard.is_dead or index < 0 or index >= _props.size() or index in carried.values():
+		return
+	if shift and shift.state != Shift.State.ON_SHIFT:
+		director.tell(peer, "Leave it. The school's tidy until the shift starts.")
 		return
 	if carried.has(peer):
 		director.tell(peer, "Your hands are full. E to throw the %s first." % carried_name(peer))
@@ -106,6 +112,24 @@ func request_knock(index: int) -> void:
 	get_tree().create_timer(0.6).timeout.connect(func() -> void: director.make_noise(hop, NOISE_SECONDS))
 
 
+## Host: a guard who was carrying something was caught or left: it drops where they were.
+func drop(peer: int, at: Vector3) -> void:
+	if not carried.has(peer):
+		return
+	var index: int = carried[peer]
+	_set_carried.rpc(peer, -1)
+	_put.rpc(index, Vector3(at.x, _floor_under(at), at.z))
+
+
+## Host: brings a player who just joined up to date.
+func send_state_to(peer_id: int) -> void:
+	for peer: int in carried:
+		_set_carried.rpc_id(peer_id, peer, carried[peer])
+	for i in _props.size():
+		if i not in carried.values():
+			_put.rpc_id(peer_id, i, _props[i].global_position - Vector3(0, ITEMS[i]["size"].y * 0.5, 0))
+
+
 ## Host: the night's over; everyone drops what they're holding and things go back.
 func reset_all() -> void:
 	for peer: int in carried.keys():
@@ -149,6 +173,7 @@ func _set_carried(peer: int, index: int) -> void:
 	if index < 0:
 		carried.erase(peer)
 	else:
+		_stop_flight(index)
 		carried[peer] = index
 		_props[index].visible = false
 		_props[index].collision_layer = 0
@@ -161,7 +186,9 @@ func _fly(index: int, from: Vector3, to: Vector3) -> void:
 	prop.visible = true
 	prop.collision_layer = 0
 	prop.global_position = from
+	_stop_flight(index)
 	var arc := create_tween()
+	_flights[index] = arc
 	var top := from.lerp(to, 0.5) + Vector3(0, 1.2, 0)
 	arc.tween_method(func(t: float) -> void:
 		prop.global_position = from.lerp(top, t).lerp(top.lerp(to, t), t), 0.0, 1.0, 0.6)
@@ -172,8 +199,16 @@ func _fly(index: int, from: Vector3, to: Vector3) -> void:
 		get_tree().call_group("captions", "heard", "Clutter", "landed", to))
 
 
+func _stop_flight(index: int) -> void:
+	var flight: Variant = _flights.get(index)
+	if flight is Tween and (flight as Tween).is_valid():
+		(flight as Tween).kill()
+	_flights.erase(index)
+
+
 @rpc("authority", "call_local", "reliable")
 func _put(index: int, at: Vector3) -> void:
+	_stop_flight(index)
 	var prop := _props[index]
 	prop.global_position = at + Vector3(0, ITEMS[index]["size"].y * 0.5, 0)
 	prop.visible = true

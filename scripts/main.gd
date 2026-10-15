@@ -330,6 +330,7 @@ func _ready() -> void:
 	clutter = Clutter.new()
 	clutter.name = "Clutter"
 	clutter.director = director
+	clutter.shift = shift
 	add_child(clutter)
 	clutter.carried_changed.connect(_refresh_inventory)
 	night.clutter = clutter
@@ -512,8 +513,8 @@ func _play_solo() -> void:
 func _play_daily() -> void:
 	menu._continue.button_pressed = false
 	night.daily = Daily.today()
-	night.hardcore = false
 	_play_solo()
+	night.hardcore = false
 	night.number = Daily.night_of(night.daily)
 	night.give_everyone(Daily.STARTING_POINTS)
 
@@ -527,8 +528,8 @@ func _play_training() -> void:
 	training.hud = hud
 	add_child(training)
 	night.training = training
-	night.hardcore = false
 	_play_solo()
+	night.hardcore = false
 	night.number = 1
 	training.guard = _local_guard
 
@@ -706,6 +707,7 @@ func _on_peer_connected(peer_id: int) -> void:
 	print("[net] Guard joined (peer %d)" % peer_id)
 	guard_room.send_state_to(peer_id)
 	anomalies.send_state_to(peer_id)
+	clutter.send_state_to(peer_id)
 	# Their guard spawns once their computer tells us their badge number (_register_employee).
 
 
@@ -756,8 +758,8 @@ func _on_peer_disconnected(peer_id: int) -> void:
 		guard.queue_free()
 	shift.remove_guard(peer_id)
 	guard_room.on_peer_left(peer_id)
-	if clutter.carried.has(peer_id):
-		clutter._set_carried.rpc(peer_id, -1)
+	if guard:
+		clutter.drop(peer_id, guard.global_position)
 	if hiding.hidden.has(peer_id):
 		hiding._set_hidden.rpc(peer_id, -1)
 	_update_guards_required()
@@ -1294,6 +1296,7 @@ func _on_guard_caught(peer_id: int, by: String, from := Vector3.INF) -> void:
 	if guard == null or guard.is_dead:
 		return
 	night.record_death()
+	clutter.drop(peer_id, guard.global_position)
 	# Caught in a cupboard (e.g. by the Self-Portrait): the ghost climbs out.
 	if hiding.hidden.has(peer_id):
 		hiding._set_hidden.rpc(peer_id, -1)
