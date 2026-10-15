@@ -84,6 +84,8 @@ var lockdown_left := 0.0
 var hunt_speed := LOCKDOWN_SPEED
 ## The last night's last hour: one long lockdown, and guards out through the gate are out of reach.
 var finale := false
+## The finale's gate is open: guards out in the street are out of reach.
+var gate_open := false
 var _lockdown_times: Array[float] = []
 ## Everyone's nerve. Host only.
 var nerve: Nerve
@@ -200,6 +202,7 @@ func plan_night(number: int) -> void:
 	lockdown_left = 0.0
 	hunt_speed = LOCKDOWN_SPEED
 	finale = false
+	gate_open = false
 	if number >= LOCKDOWN_FROM_NIGHT:
 		for i in (1 if number < 9 else 2):
 			_lockdown_times.append(randf_range(90.0, 320.0))
@@ -302,6 +305,7 @@ func remove_monster(monster: Monster) -> void:
 ## Host: 6 AM, everything goes back where it came from.
 func end_night() -> void:
 	finale = false
+	gate_open = false
 	hunt_speed = LOCKDOWN_SPEED
 	if lockdown_left > 0.0:
 		lockdown_left = 0.0
@@ -393,14 +397,14 @@ func living_guards() -> Array[Guard]:
 func targetable_guards() -> Array[Guard]:
 	var result: Array[Guard] = []
 	for guard in living_guards():
-		if may_enter(guard.global_position) and not guard.hiding and not _gone(guard):
+		if may_enter(guard.global_position) and not guard.hiding and not is_gone(guard):
 			result.append(guard)
 	return result
 
 
 ## Out through the gate in the finale: out of reach.
-func _gone(guard: Guard) -> bool:
-	return finale and Finale.is_out(guard.global_position)
+func is_gone(guard: Guard) -> bool:
+	return gate_open and Finale.is_out(guard.global_position)
 
 
 func dead_guards() -> Array[Guard]:
@@ -420,7 +424,7 @@ func nearest_living_guard(from: Vector3) -> Guard:
 	var best_distance := INF
 	for guard in living_guards():
 		var distance := from.distance_to(guard.global_position)
-		if distance < best_distance and may_enter(guard.global_position) and not guard.hiding and not _gone(guard):
+		if distance < best_distance and may_enter(guard.global_position) and not guard.hiding and not is_gone(guard):
 			best = guard
 			best_distance = distance
 	return best

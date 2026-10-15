@@ -32,6 +32,8 @@ var captions := true
 var training_done := false
 ## The hat your guard wears (see Hats).
 var hat := "cap"
+## The perk your guard brings to work (see Perks).
+var perk := "thermos"
 ## Whether the Understudy may say back things you said (kept only in the host's memory).
 var voice_mimic := true
 
@@ -56,6 +58,7 @@ func _enter_tree() -> void:
 		mic_device = config.get_value("voice", "device", "")
 		voice_mimic = config.get_value("voice", "mimic", true)
 		hat = config.get_value("look", "hat", "cap")
+		perk = config.get_value("look", "perk", "thermos")
 		training_done = config.get_value("career", "training_done", false)
 		captions = config.get_value("settings", "captions", true)
 		night_length = config.get_value("settings", "night_length", 1)
@@ -90,6 +93,7 @@ func save_settings() -> void:
 	config.set_value("voice", "device", mic_device)
 	config.set_value("voice", "mimic", voice_mimic)
 	config.set_value("look", "hat", hat)
+	config.set_value("look", "perk", perk)
 	config.set_value("career", "training_done", training_done)
 	config.set_value("settings", "captions", captions)
 	config.set_value("settings", "night_length", night_length)

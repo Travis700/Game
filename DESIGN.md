@@ -151,6 +151,8 @@ Which monsters are unlocked on which night is still to be set (section 14).
 
 XP per night: 100 + 10 × night number for clocking out (25 if caught), +20 per correct log, +20 per named monster, +10 per punched station. Ranks at 0, 400, 1200, 2500, 4500, 7500, 12000 and 20000 XP: Trainee, Night Watch, Patrol Officer, Senior Guard, Shift Supervisor, Head of Security, Night Warden, Legend of Westfield. Promotions show on the night report with what they unlock.
 
+**Perks.** One per guard, picked on the menu, one unlocking per rank (sent in the spawn data, validated against the rank): Thermos (r1, nerve drains ×0.75), Track star (r2, stamina ×1.5), Spare batteries (r3, flashlight reach ×1.2, ignores Old batteries), Handy (r4, hold-E ×0.5), Low profile (r5, monsters' notice range ×0.85), Lookout (r6, built-in EMF reader), Cool head (r7, no hiding drain).
+
 ## 11c. Replayability and long-term goals
 
 What keeps a player coming back after the first run:

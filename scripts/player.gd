@@ -65,6 +65,8 @@ var player_name := ""
 var rank := 1
 ## The hat this guard wears (see Hats).
 var hat := "cap"
+## The perk this guard brought (see Perks).
+var perk := "thermos"
 ## The guard room desk this guard is sitting at, or -1 when standing.
 var seated_desk := -1
 ## Mouse look is paused while a camera feed fills the screen.
@@ -164,7 +166,7 @@ func apply_personal(upgrade: String, on: bool) -> void:
 		"radio":
 			has_radio = on
 		"emf":
-			has_emf = on
+			has_emf = on or perk == "lookout"
 
 
 ## Fits (or removes) the heavy-duty flashlight. Called on every computer, so everyone sees the beam.
@@ -175,7 +177,7 @@ func set_bright_flashlight(on: bool) -> void:
 
 ## Sets the beam from the flashlight upgrade and tonight's batteries.
 func apply_flashlight() -> void:
-	var reach := lerpf(0.6, 1.0, battery)
+	var reach := lerpf(0.6, 1.0, battery) * (1.2 if perk == "spare_batteries" else 1.0)
 	flashlight.spot_range = (32.0 if bright_flashlight else 22.0) * reach
 	flashlight.spot_angle = 34.0 if bright_flashlight else 26.0
 	flashlight.light_energy = flashlight_energy()
@@ -389,7 +391,7 @@ func _physics_process(delta: float) -> void:
 
 func _update_stamina(delta: float) -> void:
 	if is_running and boost_left <= 0.0:
-		stamina = maxf(stamina - delta / STAMINA_SECONDS, 0.0)
+		stamina = maxf(stamina - delta / (STAMINA_SECONDS * (1.5 if perk == "track_star" else 1.0)), 0.0)
 		_rest_for = 0.0
 		if stamina <= 0.0:
 			winded = true
@@ -424,7 +426,7 @@ func _update_prompt() -> void:
 	var text := "[E] " + target.prompt if target else ""
 	if target and target.hold_seconds > 0.0:
 		if target == _holding:
-			var filled := int(_hold_time / target.hold_seconds * 10.0)
+			var filled := mini(int(_hold_time / _hold_needed(target) * 10.0), 10)
 			text += "   " + "|".repeat(filled) + ".".repeat(10 - filled)
 		else:
 			text = "[Hold E] " + target.prompt
@@ -461,6 +463,11 @@ func _ghost_ping() -> void:
 	ghost_ping_requested.emit(at, hit.get("collider"))
 
 
+## How long E has to be held on this (Handy guards are quicker).
+func _hold_needed(target: Interactable) -> float:
+	return target.hold_seconds * (0.5 if perk == "handy" else 1.0)
+
+
 ## Counts up while E stays held on the same thing, and uses it once it's been held long enough.
 func _update_hold(delta: float) -> void:
 	if _holding == null:
@@ -470,7 +477,7 @@ func _update_hold(delta: float) -> void:
 		_holding = null
 		return
 	_hold_time += delta
-	if _hold_time >= _holding.hold_seconds:
+	if _hold_time >= _hold_needed(_holding):
 		var target := _holding
 		_holding = null
 		target.interact(self)

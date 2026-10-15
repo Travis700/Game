@@ -75,7 +75,8 @@ func deactivate() -> void:
 
 
 func update(minutes: float) -> void:
-	if not active:
+	# The finale is a chase, not a sitting: the painting waits.
+	if not active or director.finale:
 		return
 	var subject := director.guard_by_peer(_subject)
 	if stage > 0 and (subject == null or subject.is_dead):

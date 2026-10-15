@@ -30,6 +30,7 @@ var director: MonsterDirector
 var shift: Shift
 var hud: CanvasLayer
 var players: Node3D
+var hiding: Hiding
 ## Host: whether tonight ends with the finale, and the difficulty (which wings the key can be in).
 var planned := false
 var difficulty := 1
@@ -85,6 +86,7 @@ func _ready() -> void:
 	chain.mesh = Monster.box(Vector3(0.12, 0.3, 0.16))
 	chain.material_override = brass
 	chain.position = Vector3(0, 1.1, GATE_Z - 0.05)
+	chain.visible = false
 	add_child(chain)
 	# The key: hidden until the finale, then lying on the floor somewhere, glowing.
 	_key = Interactable.new()
@@ -134,6 +136,18 @@ static func is_out(at: Vector3) -> bool:
 	return at.z > OUT_Z
 
 
+## "the Gym", but "Room 103".
+static func the(area: String) -> String:
+	return area if area.begins_with("Room") else "the " + area
+
+
+## Is this spot inside the fence: the yard, the building or its wings?
+static func on_grounds(at: Vector3) -> bool:
+	if at.z > GATE_Z + 0.3 or at.z < -30.5 or absf(at.x) > 80.5:
+		return false
+	return absf(at.x) <= 40.5 or (at.z <= 20.5 and at.z >= -14.5)
+
+
 ## The line under the clock for this guard during the finale.
 func objective_for(guard: Guard) -> String:
 	if is_out(guard.global_position):
@@ -145,7 +159,7 @@ func objective_for(guard: Guard) -> String:
 	if key_holder != 0:
 		var holder := players.get_node_or_null(str(key_holder)) as Guard
 		return "Guard %d has the gate key. Get to the front gate before 6 AM." % (holder.slot if holder else 0)
-	return "The gate's padlock key is in the %s. Fetch it and unlock the front gate before 6 AM." % key_area
+	return "The gate's padlock key is in %s. Fetch it and unlock the front gate before 6 AM." % the(key_area)
 
 
 # --- Host --------------------------------------------------------------------------------
@@ -162,13 +176,14 @@ func update(minutes: float) -> void:
 		var holder := director.guard_by_peer(key_holder)
 		if holder and not holder.is_dead and holder.global_position.distance_to(Vector3(0, holder.global_position.y, GATE_Z)) < UNLOCK_RANGE:
 			_set_key.rpc("", 0, Vector3.ZERO, true)
+			director.gate_open = true
 			director.announcement.emit("The padlock drops. The front gate is OPEN. GET OUT.", "")
 
 
 ## Host: everyone still standing is out. The night can end now.
 func everyone_out() -> bool:
 	var living := director.living_guards()
-	if not active or living.is_empty():
+	if not unlocked or living.is_empty():
 		return false
 	for guard in living:
 		if not is_out(guard.global_position):
@@ -181,8 +196,10 @@ func lock_in() -> Array[Guard]:
 	var out: Array[Guard] = []
 	if not active:
 		return out
+	# Nobody's dropping the key now: it's over.
+	key_holder = 0
 	for guard in director.living_guards():
-		if is_out(guard.global_position):
+		if unlocked and is_out(guard.global_position):
 			out.append(guard)
 		else:
 			director.kill(guard, "the school")
@@ -203,17 +220,26 @@ func request_take() -> void:
 	director.announcement.emit("Guard %d has the gate key." % guard.slot, "")
 
 
-## Host: whoever had the key was caught (or left). It lies where they fell.
-func drop(peer: int, at: Vector3) -> void:
-	if active and key_holder == peer and not unlocked:
-		var area := SchoolBuilder.area_at(at)
-		_set_key.rpc(area if area != "" else "the school grounds", 0, Vector3(at.x, 0.05, at.z), false)
-		director.announcement.emit("Whoever had the gate key was caught. It's lying in the %s." % key_area, "")
+## Host: whoever had the key was caught (or left). It lies where they were: in front of their
+## cupboard if they were hiding, and always somewhere a guard can walk to.
+func drop(peer: int, at: Vector3, left := false) -> void:
+	if not active or key_holder != peer or unlocked or shift.state != Shift.State.ON_SHIFT:
+		return
+	if hiding and hiding.hidden.has(peer):
+		var spot: Dictionary = Hiding.SPOTS[hiding.hidden[peer]]
+		at = spot["at"] + (spot["facing"] as Vector3) * 1.0
+	var map := get_world_3d().navigation_map
+	if NavigationServer3D.map_get_iteration_id(map) > 0:
+		at = NavigationServer3D.map_get_closest_point(map, at)
+	var area := SchoolBuilder.area_at(at)
+	_set_key.rpc(area if area != "" else "guard room" if SchoolBuilder.AREAS["Guard Room"].has_point(at) else "yard", 0, Vector3(at.x, 0.05, at.z), false)
+	director.announcement.emit("%s the gate key. It's lying in %s." % ["Whoever had it has gone, leaving" if left else "Whoever had it was caught. They dropped", the(key_area)], "")
 
 
 func _begin() -> void:
 	_set_active.rpc(true)
 	director.start_finale()
+	director.gate_open = false
 	for kind: String in EXTRAS:
 		director.spawn(kind, EXTRAS[kind])
 	# The key: at one of the round stations, deep in the school (or out in tonight's wings).
@@ -228,13 +254,13 @@ func _begin() -> void:
 	director.announcement.emit("Attention, all staff. Please make your way to the gym for this morning's assembly. Attendance is compulsory.", "intercom")
 	get_tree().create_timer(4.0).timeout.connect(func() -> void:
 		if active:
-			director.announcement.emit("Everything in the building is awake and coming. The front gate's padlock key is in the %s: fetch it, unlock the gate and GET OUT before 6 AM. Whoever's inside at six stays inside." % key_area, ""))
+			director.announcement.emit("Everything in the building is awake and coming. The front gate's padlock key is in %s: fetch it, unlock the gate and GET OUT before 6 AM. Whoever's inside at six stays inside." % the(key_area), ""))
 
 
 ## Host: a new night (or a new run). The gate's shut again.
 func reset() -> void:
 	planned = false
-	if active or unlocked or key_holder != 0:
+	if active or unlocked or key_holder != 0 or key_area != "":
 		_set_active.rpc(false)
 
 
@@ -280,13 +306,13 @@ func _process(delta: float) -> void:
 		get_node("Chain").visible = not should_open
 	if _key.visible:
 		_key.rotation.y += delta * 1.5
-	# The gate's shut: anyone who somehow ended up outside is back in the yard.
+	# The gate's shut: anyone who somehow ended up off the grounds is back in the yard.
 	_told_locked -= delta
 	if _gate_open or players == null:
 		return
 	for guard: Guard in players.get_children():
-		if guard.is_local() and not guard.is_dead and is_out(guard.global_position) and absf(guard.global_position.x) < 41.0:
-			guard.global_position = Vector3(0, 0.1, GATE_Z - 1.5)
+		if guard.is_local() and not guard.is_dead and not guard.hiding and not on_grounds(guard.global_position):
+			guard.global_position = Vector3((guard.slot - 2.5) * 1.4, 0.1, GATE_Z - 4.0)
 			guard.velocity = Vector3.ZERO
 			if _told_locked <= 0.0 and hud:
 				_told_locked = 5.0

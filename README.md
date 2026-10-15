@@ -8,8 +8,8 @@ The full plan is in [DESIGN.md](DESIGN.md).
 Version 1.0.0. The game is complete apart from the art and audio pass: every model is a
 placeholder made of boxes, and every sound is generated in code. Everything else is in:
 nine nights, three difficulties (main building, classroom wing, science wing), 18 monsters,
-the guard room and its 16 cameras, watchman rounds, power cuts, the field guide, ranks, the
-vending machine, saving, achievements and records, proximity voice chat and walkie-talkies
+the guard room and its 16 cameras, watchman rounds, power cuts, the field guide, ranks with hats
+and perks, the vending machine, saving, achievements and records, proximity voice chat and walkie-talkies
 (and a monster that copies your voice), controller support, settings, and Steam lobbies and
 invites (see [STEAM.md](STEAM.md) for the Steamworks steps that need your account).
 

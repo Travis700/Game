@@ -28,6 +28,8 @@ var _steam_label: Label
 var _rank_label: Label
 var _rank_bar: ProgressBar
 var _hat: OptionButton
+var _perk: OptionButton
+var _perk_text: Label
 var _daily_label: Label
 var _daily_friends: Label
 var _status: Label
@@ -105,6 +107,26 @@ func _ready() -> void:
 		Profile.save_settings())
 	hat_row.add_child(_hat)
 	column.add_child(hat_row)
+	var perk_row := HBoxContainer.new()
+	perk_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	perk_row.add_theme_constant_override("separation", 10)
+	var perk_label := Label.new()
+	perk_label.text = "Perk"
+	perk_row.add_child(perk_label)
+	_perk = OptionButton.new()
+	_perk.custom_minimum_size = Vector2(320, 0)
+	_perk.item_selected.connect(func(index: int) -> void:
+		Profile.perk = _perk.get_item_metadata(index)
+		Profile.save_settings()
+		_perk_text.text = Perks.PERKS[Profile.perk]["text"])
+	perk_row.add_child(_perk)
+	column.add_child(perk_row)
+	_perk_text = Label.new()
+	_perk_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_perk_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_perk_text.add_theme_font_size_override("font_size", 14)
+	_perk_text.modulate.a = 0.75
+	column.add_child(_perk_text)
 	_show_rank()
 	visibility_changed.connect(func() -> void:
 		if visible:
@@ -333,6 +355,7 @@ func _spacer(height: float) -> Control:
 ## "Rank 3 · Patrol Officer · 1,450 / 2,500 XP", with a bar to the next rank, and the hats.
 func _show_rank() -> void:
 	_fill_hats()
+	_fill_perks()
 	if _daily_label == null:
 		return
 	var today := Daily.today()
@@ -365,6 +388,22 @@ func _fill_hats() -> void:
 		_hat.set_item_disabled(index, not unlocked)
 		if hat == Profile.hat and unlocked:
 			_hat.select(index)
+
+
+## Every perk: unlocked ones to pick, locked ones greyed out with the rank that unlocks them.
+func _fill_perks() -> void:
+	_perk.clear()
+	var current := Perks.valid(Profile.perk)
+	for perk: String in Perks.PERKS:
+		var unlocked := Perks.is_unlocked(perk)
+		var info: Dictionary = Perks.PERKS[perk]
+		_perk.add_item(info["name"] if unlocked else "%s  (rank %d)" % [info["name"], info["rank"]])
+		var index := _perk.item_count - 1
+		_perk.set_item_metadata(index, perk)
+		_perk.set_item_disabled(index, not unlocked)
+		if perk == current:
+			_perk.select(index)
+	_perk_text.text = Perks.PERKS[current]["text"]
 
 
 ## Friends' daily shift scores from Steam, e.g. "Friends today: 1. Sam 340  ·  2. You 180".

@@ -106,5 +106,5 @@ func _set_conditions(keys: PackedStringArray, night_number: int) -> void:
 ## Old batteries dim every guard's flashlight. Also called when a guard spawns.
 func apply_to_guards() -> void:
 	for guard: Guard in players.get_children():
-		guard.battery = 0.55 if has("batteries") else 1.0
+		guard.battery = 0.55 if has("batteries") and guard.perk != "spare_batteries" else 1.0
 		guard.apply_flashlight()

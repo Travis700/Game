@@ -76,8 +76,10 @@ func update(delta: float) -> void:
 			if monster.global_position.distance_to(at) < MONSTER_RANGE:
 				change -= MONSTER_DRAIN
 				break
-		if guard.hiding:
+		if guard.hiding and guard.perk != "cool_head":
 			change -= HIDING_DRAIN
+		if change < 0.0 and guard.perk == "thermos":
+			change *= 0.75
 		levels[peer] = clampf(nerve + change * delta, 0.0, MAX)
 		if guard.hiding and levels[peer] <= 0.0:
 			_panic(guard)
@@ -113,7 +115,7 @@ func on_caught(caught: Guard) -> void:
 ## Host: how much further monsters notice this guard (1 when calm).
 func reach_factor(guard: Guard) -> float:
 	var nerve: float = levels.get(guard.name.to_int(), MAX)
-	return lerpf(SHAKEN_REACH, 1.0, nerve / MAX)
+	return lerpf(SHAKEN_REACH, 1.0, nerve / MAX) * (0.85 if guard.perk == "low_profile" else 1.0)
 
 
 func _send_all() -> void:
