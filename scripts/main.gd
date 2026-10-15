@@ -1244,6 +1244,14 @@ func _start_night(number: int, difficulty: int, late := false) -> void:
 		get_tree().create_timer(6.0).timeout.connect(func() -> void:
 			if shift.state == Shift.State.ON_SHIFT:
 				hud.show_message("NEW TONIGHT: the district wants a work target met by 6 AM (logs and punched stations; it's under the clock). Miss it and the team gets a write-up; three and you're fired. There's a bonus objective too, for extra pay.\nAnd the power can go out: hold %s on the breaker in the custodian's closet, across the hall from the lobby." % Controls.key_name("interact"), 14.0))
+	elif number == Anomalies.TYPE_FROM_NIGHT["Noise"] and night.daily == "":
+		get_tree().create_timer(6.0).timeout.connect(func() -> void:
+			if shift.state == Shift.State.ON_SHIFT:
+				hud.show_message("NEW TONIGHT: some things can only be heard. A radio, static or whispering with nothing making it is a Noise: log it like anything else. The cameras won't pick it up, so someone has to be out there listening.", 12.0))
+	elif number == 6 and night.daily == "":
+		get_tree().create_timer(6.0).timeout.connect(func() -> void:
+			if shift.state == Shift.State.ON_SHIFT:
+				hud.show_message("NEW TONIGHT: some figures don't stay put. Keep a camera on one and you might see it step somewhere else.", 10.0))
 
 
 ## A few pointers on the first night, a few seconds apart.

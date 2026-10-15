@@ -17,6 +17,7 @@ const TIPS := {
 	"Missing object": "\"Something's gone from the %s. You'll want to write that down.\"",
 	"Extra object": "\"Somebody left something in the %s.\"",
 	"Figure": "\"There's someone standing in the %s. Don't go near them.\"",
+	"Noise": "\"Can you hear that? Something in the %s. Go and listen.\"",
 }
 
 var director: MonsterDirector

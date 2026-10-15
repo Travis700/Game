@@ -178,6 +178,7 @@ func use_time_clock(peer_id: int) -> String:
 func _on_shift_started() -> void:
 	minutes = 0.0
 	clipboard.set_header("Night %d   ·   Westfield High School" % number)
+	clipboard.set_night(number)
 	if not multiplayer.is_server():
 		return
 	run_team = maxi(run_team, players.get_child_count())

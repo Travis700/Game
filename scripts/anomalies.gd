@@ -10,7 +10,13 @@ extends Node3D
 ## live here rather than in SchoolBuilder, so this script owns their normal state.
 
 ## What guards can log. "Monster" entries are checked by the MonsterDirector instead.
-const TYPES: Array[String] = ["Moved object", "Missing object", "Extra object", "Figure", "Monster"]
+const TYPES: Array[String] = ["Moved object", "Missing object", "Extra object", "Figure", "Noise", "Monster"]
+## Types that only start turning up later in a run (and only appear on the clipboard from then).
+const TYPE_FROM_NIGHT := {"Noise": 5}
+## A noise anomaly can be heard (and captioned) this close, metres.
+const NOISE_REACH := 12.0
+## A walking figure steps to its next spot every this many in-game minutes while nobody's near.
+const WALK_EVERY := 15.0
 ## Anomalies never appear or get cleared up while a guard is this close (metres).
 const UNSEEN_DISTANCE := 12.0
 ## A figure disappears when a guard gets this close.
@@ -70,7 +76,28 @@ const DEFINITIONS: Array[Dictionary] = [
 	{"area": "East Hall", "type": "Moved object", "night": 1, "kind": "move", "prop": "hall_bin", "alts": [Vector3(50.0, 0, 5.5), Vector3(72.0, 0, 8.5)],
 		"to": Vector3(63.0, 0, 6.8), "turn": 30.0},
 	{"area": "East Hall", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_east_hall", "alts": [Vector3(46.0, 0, 8.5), Vector3(76.0, 0, 6.0)]},
+	# Night 5: sounds with nothing making them. No camera picks a noise up: someone has to go
+	# and listen. Logged as "Noise".
+	{"area": "Kitchen", "type": "Noise", "night": 5, "kind": "noise", "prop": "noise_kitchen", "sound": "radio"},
+	{"area": "Front Office", "type": "Noise", "night": 5, "kind": "noise", "prop": "noise_office", "sound": "static"},
+	{"area": "Cafeteria", "type": "Noise", "night": 5, "kind": "noise", "prop": "noise_cafeteria", "sound": "whisper", "alts": [Vector3(-32.0, 0, -20.0)]},
+	{"area": "Gym", "type": "Noise", "night": 5, "kind": "noise", "prop": "noise_gym", "sound": "ball", "alts": [Vector3(32.0, 0, -6.0)]},
+	{"area": "Library", "type": "Noise", "night": 5, "kind": "noise", "prop": "noise_library", "sound": "whisper"},
+	{"area": "Room 101", "type": "Noise", "night": 5, "kind": "noise", "prop": "noise_classroom", "sound": "static"},
+	{"area": "Science Lab", "type": "Noise", "night": 5, "kind": "noise", "prop": "noise_lab", "sound": "radio"},
+	# Night 6: figures that don't stay put. Every so often (when nobody's near) one steps to
+	# another spot in the same area, so a camera kept on it catches it moving.
+	{"area": "Main Hall West", "type": "Figure", "night": 6, "kind": "walker", "prop": "walker_west", "alts": [Vector3(-14.0, 0, 6.5), Vector3(-33.0, 0, 7.5)]},
+	{"area": "Lobby", "type": "Figure", "night": 6, "kind": "walker", "prop": "walker_lobby", "alts": [Vector3(-3.0, 0, 13.0), Vector3(3.5, 0, 16.0)]},
+	{"area": "West Hall", "type": "Figure", "night": 6, "kind": "walker", "prop": "walker_west_hall", "alts": [Vector3(-48.0, 0, 6.5), Vector3(-68.0, 0, 7.5)]},
 ]
+## How each noise sounds, and its caption.
+const NOISES := {
+	"radio": "A radio playing, very quietly",
+	"static": "A TV hissing static",
+	"whisper": "Someone whispering",
+	"ball": "A ball bouncing, slowly",
+}
 
 var school: SchoolBuilder
 ## Guards' positions, for the "never in front of a guard" rules. Set by Main.
@@ -171,6 +198,16 @@ func _build_wing_props() -> void:
 	_figure("figure_library", Vector3(-70.0, 0, -7.5), 30.0)
 	_figure("figure_showers", Vector3(66.0, 0, 18.4), 90.0)
 	_figure("figure_east_hall", Vector3(66.0, 0, 6.5), 90.0)
+	_figure("walker_west", Vector3(-24.0, 0, 5.5), 0.0)
+	_figure("walker_lobby", Vector3(0.0, 0, 17.0), 180.0)
+	_figure("walker_west_hall", Vector3(-58.0, 0, 8.0), -90.0)
+	_noise("noise_kitchen", Vector3(-2.0, 1.0, -20.0), "radio")
+	_noise("noise_office", Vector3(-12.0, 1.0, 14.0), "static")
+	_noise("noise_cafeteria", Vector3(-24.0, 1.0, -14.0), "whisper")
+	_noise("noise_gym", Vector3(20.0, 0.3, -14.0), "ball")
+	_noise("noise_library", Vector3(-68.0, 1.0, -6.0), "whisper")
+	_noise("noise_classroom", Vector3(-48.0, 1.0, 16.0), "static")
+	_noise("noise_lab", Vector3(52.0, 1.0, -6.0), "radio")
 
 
 ## Area names guards can log at this difficulty: the cameras' areas first, in camera order,
@@ -206,6 +243,11 @@ func spawn_random(night: int, minutes: float) -> bool:
 		candidates.append(i)
 	if candidates.is_empty():
 		return false
+	# The night something new unlocks, it's likelier to be what turns up.
+	var fresh := candidates.filter(func(i: int) -> bool: return DEFINITIONS[i]["night"] == night and night >= 4 and not records.has(i))
+	if not fresh.is_empty() and randf() < 0.5:
+		start(fresh.pick_random(), minutes, night)
+		return true
 	start(candidates.pick_random(), minutes, night)
 	return true
 
@@ -222,6 +264,12 @@ func plan(night: int) -> void:
 	_spots.clear()
 	for i in DEFINITIONS.size():
 		_spots[i] = randi() % (DEFINITIONS[i].get("alts", []).size() + 1)
+	# The night something new unlocks, make sure it turns up: put two of the new ones first.
+	var fresh := _pool.filter(func(i: int) -> bool: return DEFINITIONS[i]["night"] == night and night >= 4)
+	fresh.shuffle()
+	for i: int in fresh.slice(0, 2):
+		_pool.erase(i)
+		_pool.push_front(i)
 	_pool.resize(maxi(6, ceili(_pool.size() * 0.7)) if _pool.size() > 6 else _pool.size())
 
 
@@ -251,8 +299,17 @@ func update(minutes: float) -> void:
 		var def := DEFINITIONS[i]
 		var record: Dictionary = records[i]
 		var spot: Vector3 = _props[def["prop"]].global_position
-		if def["kind"] == "figure" and _guard_within(spot, FIGURE_VANISH_DISTANCE):
+		if (def["kind"] == "figure" or def["kind"] == "walker") and _guard_within(spot, FIGURE_VANISH_DISTANCE):
 			_end(i, minutes)
+		elif def["kind"] == "walker" and minutes - float(record.get("moved_at", record["started_at"])) >= WALK_EVERY \
+				and record["clear_at"] < 0.0 and not _guard_within(spot, UNSEEN_DISTANCE):
+			var alts: Array = def["alts"]
+			var next := (int(record["variant"]) + 1) % (alts.size() + 1)
+			var to: Vector3 = _home[def["prop"]].origin if next == 0 else alts[next - 1]
+			record["moved_at"] = minutes
+			if not _guard_within(to, UNSEEN_DISTANCE):
+				record["variant"] = next
+				_set_active.rpc(i, true, float(record["amount"]), next)
 		elif record["clear_at"] >= 0.0 and minutes >= record["clear_at"] and not _guard_within(spot, UNSEEN_DISTANCE):
 			_end(i, minutes)
 		elif minutes - record["started_at"] > FADE_AFTER and not _guard_within(spot, UNSEEN_DISTANCE):
@@ -361,16 +418,31 @@ func _set_active(index: int, on: bool, amount := 1.0, variant := 0) -> void:
 	var spot: Variant = alts[variant - 1] if variant > 0 and variant <= alts.size() else null
 	if on and index not in _active:
 		_active.append(index)
+		set_process(true)
 	elif not on:
 		_active.erase(index)
 	match def["kind"]:
 		"hide":
 			_set_visible(prop, not on)
-		"show", "figure":
+		"show", "figure", "walker":
 			prop.transform = _home[def["prop"]]
 			if on and spot != null:
 				prop.position = spot
+				if def["kind"] == "walker":
+					# Facing along its walk, as if it just stepped there.
+					var from: Vector3 = _home[def["prop"]].origin
+					if from.distance_to(spot) > 0.5:
+						prop.look_at(Vector3(from.x, prop.position.y, from.z), Vector3.UP, true)
+						prop.rotate_y(PI)
 			_set_visible(prop, on)
+		"noise":
+			if on and spot != null:
+				prop.position = spot
+			var sound: AudioStreamPlayer3D = prop.get_node("Sound")
+			if on and not sound.playing:
+				sound.play()
+			elif not on:
+				sound.stop()
 		"move":
 			if on:
 				var home: Transform3D = _home[def["prop"]]
@@ -419,6 +491,59 @@ func _prop(prop_name: String, pos: Vector3, parts: Array, visible_at_start := tr
 	_props[prop_name] = body
 	_home[prop_name] = body.transform
 	_set_visible(body, visible_at_start)
+
+
+## A sound with nothing making it: an invisible point that plays a quiet loop while active.
+func _noise(prop_name: String, pos: Vector3, sound: String) -> void:
+	var spot := Node3D.new()
+	spot.name = prop_name
+	spot.position = pos
+	var player := AudioStreamPlayer3D.new()
+	player.name = "Sound"
+	player.stream = _noise_stream(sound)
+	player.max_distance = NOISE_REACH
+	player.unit_size = 3.0
+	player.volume_db = -4.0
+	spot.add_child(player)
+	add_child(spot)
+	_props[prop_name] = spot
+	_home[prop_name] = spot.transform
+
+
+static func _noise_stream(sound: String) -> AudioStreamWAV:
+	match sound:
+		"radio":
+			return Sfx.notes([392.0, 0.0, 330.0, 349.0, 0.0, 294.0, 262.0, 0.0, 0.0, 0.0], 0.3, 0.12, "square", true)
+		"static":
+			return Sfx.notes([1.0, 1.0, 1.0, 0.0], 0.6, 0.08, "noise", true)
+		"whisper":
+			return Sfx.notes([1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0], 0.25, 0.06, "noise", true)
+	# "ball": a slow bounce.
+	return Sfx.notes([90.0, 0.0, 0.0, 0.0, 90.0, 0.0, 0.0, 0.0, 0.0, 0.0], 0.12, 0.5, "sine", true)
+
+
+## Every computer: captions a noise anomaly when this guard is close enough to hear it.
+var _caption_again := 0.0
+
+
+func _process(delta: float) -> void:
+	_caption_again -= delta
+	if _caption_again > 0.0:
+		return
+	_caption_again = 1.0
+	var noisy := false
+	for i in _active:
+		if DEFINITIONS[i]["kind"] != "noise":
+			continue
+		noisy = true
+		var captions := get_tree().get_first_node_in_group("captions") as Captions
+		if captions == null or captions.local_guard == null or not is_instance_valid(captions.local_guard):
+			continue
+		var at: Vector3 = _props[DEFINITIONS[i]["prop"]].global_position
+		if captions.local_guard.global_position.distance_to(at) < NOISE_REACH:
+			captions.heard("Noise", DEFINITIONS[i]["sound"], at)
+	if not noisy:
+		set_process(false)
 
 
 ## A dark, featureless person-shaped figure with two faint points for eyes.

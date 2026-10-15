@@ -36,6 +36,10 @@ const SOUNDS := {
 	":hunt": "Running footsteps",
 	"Speaker:lure": "An alarm from a camera speaker",
 	"Clutter:landed": "Something clattering",
+	"Noise:radio": "A radio playing, very quietly",
+	"Noise:static": "A TV hissing static",
+	"Noise:whisper": "Someone whispering",
+	"Noise:ball": "A ball bouncing, slowly",
 }
 const HEARING := 30.0
 const SHOW_SECONDS := 4.0

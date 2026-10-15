@@ -30,7 +30,8 @@ const TYPE_HELP := {
 	"Moved object": "Something is somewhere other than where it belongs.",
 	"Missing object": "Something that's normally there is gone.",
 	"Extra object": "Something that shouldn't be there at all.",
-	"Figure": "A still, dark shape. It vanishes if you walk up to it.",
+	"Figure": "A dark shape, standing still. It vanishes if you walk up to it.",
+	"Noise": "A sound with nothing making it: a radio, static, whispering. Cameras don't pick these up: someone has to be there to hear it.",
 	"Monster": "Something that moves and comes after people. Log the area it's in right now.",
 }
 
@@ -139,6 +140,18 @@ func set_areas(areas: Array[String]) -> void:
 
 func set_header(text: String) -> void:
 	_header.text = text
+
+
+## Lists the kinds of entry this night can have (some only turn up later in a run).
+func set_night(night_number: int) -> void:
+	var picked := _type.get_item_text(_type.selected) if _type.selected >= 0 else ""
+	_type.clear()
+	for type in Anomalies.TYPES:
+		if night_number >= int(Anomalies.TYPE_FROM_NIGHT.get(type, 0)):
+			_type.add_item(type)
+			if type == picked:
+				_type.select(_type.item_count - 1)
+	_explain_type()
 
 
 ## Opens the clipboard. `area` pre-selects a location, e.g. the camera you were just looking at.
