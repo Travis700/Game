@@ -38,7 +38,13 @@ func think(delta: float) -> void:
 	catch_nearby()
 
 
+## How tall the costume stands.
+const HEIGHT := 2.1
+
+
 func _build_body() -> void:
+	if ModelKit.add(self, "mascot", HEIGHT, PI, visual_layers) != null:
+		return
 	var fur := Color(0.45, 0.32, 0.2)
 	part(capsule(0.4, 1.7), fur, Vector3(0, 0.85, 0))
 	part(box(Vector3(0.62, 0.52, 0.56)), fur, Vector3(0, 1.88, 0))

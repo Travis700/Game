@@ -140,6 +140,7 @@ func build(school_builder: SchoolBuilder) -> void:
 	_prop("mascot", Vector3(9.0, 0.3, 1.5), [
 		[Vector3(0, 0.85, 0), Vector3(0.7, 1.7, 0.5), "costume"],
 		[Vector3(0, 1.85, 0), Vector3(0.6, 0.5, 0.55), "costume"]])
+	_dress("mascot", "mascot", Mascot.HEIGHT)
 	_prop("mop_bucket", Vector3(2.5, 0, -2.0), [
 		[Vector3(0, 0.25, 0), Vector3(0.5, 0.5, 0.5), "red"],
 		[Vector3(0, 0.9, 0), Vector3(0.05, 1.3, 0.05), "wood"]])
@@ -505,6 +506,16 @@ func _prop(prop_name: String, pos: Vector3, parts: Array, visible_at_start := tr
 	_props[prop_name] = body
 	_home[prop_name] = body.transform
 	_set_visible(body, visible_at_start)
+
+
+## Swaps a prop's boxes for its real model, if there is one (the boxes stay as its collision).
+func _dress(prop_name: String, model_name: String, height: float) -> void:
+	var body: Node3D = _props[prop_name]
+	if ModelKit.add(body, model_name, height) == null:
+		return
+	for child in body.get_children():
+		if child is MeshInstance3D and child.mesh is BoxMesh:
+			child.visible = false
 
 
 ## A sound with nothing making it: an invisible point that plays a quiet loop while active.

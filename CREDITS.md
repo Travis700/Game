@@ -45,6 +45,13 @@ then the style reference for two 3x3 sheets made with Google Nano Banana 2 throu
 cut into the other 17 monsters and the 0451 badge. Check each provider's current terms for
 commercial use before release.
 
+## 3D models: generated for this game
+
+- `assets/models/mascot.glb`: the Mascot, made with Meshy (meshy.ai) from a text description,
+  remeshed to about 12,500 triangles; textures shrunk to 1024 px JPEG by
+  `tools/slim_glb.py`. Make sure the Meshy account's plan gives commercial rights before
+  release (free-plan output is CC BY 4.0 and needs a credit line).
+
 ## Icon, key art and store capsules
 
 `icon.png` / `icon.ico` were made with SpriteCook (see `spritecook-assets.json`). The key art
