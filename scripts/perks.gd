@@ -9,7 +9,7 @@ const PERKS := {
 	"thermos": {"name": "Thermos", "rank": 1, "text": "Your nerve wears down 25% slower."},
 	"track_star": {"name": "Track star", "rank": 2, "text": "50% more stamina: run further before you're winded."},
 	"spare_batteries": {"name": "Spare batteries", "rank": 3, "text": "Your flashlight reaches 20% further, and never runs weak on Old batteries nights."},
-	"handy": {"name": "Handy", "rank": 4, "text": "Anything you hold E on (breakers, punch stations...) takes half as long."},
+	"handy": {"name": "Handy", "rank": 4, "text": "Anything you hold {use} on (breakers, punch stations...) takes half as long."},
 	"low_profile": {"name": "Low profile", "rank": 5, "text": "Monsters notice you from 15% less far away."},
 	"lookout": {"name": "Lookout", "rank": 6, "text": "You always carry an EMF reader."},
 	"cool_head": {"name": "Cool head", "rank": 7, "text": "Hiding in a cupboard doesn't cost you any nerve."},
@@ -28,4 +28,4 @@ static func valid(perk: String, rank := -1) -> String:
 
 
 static func describe(perk: String) -> String:
-	return "%s: %s" % [PERKS[perk]["name"], PERKS[perk]["text"]] if PERKS.has(perk) else ""
+	return KeyText.fill("%s: %s" % [PERKS[perk]["name"], PERKS[perk]["text"]]) if PERKS.has(perk) else ""

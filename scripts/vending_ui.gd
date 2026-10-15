@@ -72,7 +72,7 @@ func _ready() -> void:
 		name_label.add_theme_font_size_override("font_size", 20)
 		text.add_child(name_label)
 		var about := Label.new()
-		about.text = info["about"]
+		about.text = KeyText.fill(info["about"])
 		about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		about.custom_minimum_size = Vector2(420, 0)
 		about.add_theme_font_size_override("font_size", 15)
@@ -92,7 +92,7 @@ func _ready() -> void:
 		rows.add_child(row)
 
 	var hint := Label.new()
-	hint.text = "Tab, Esc or E to close."
+	hint.text = KeyText.fill("{clip}, Esc or {use} to close.")
 	hint.modulate.a = 0.55
 	hint.add_theme_font_size_override("font_size", 15)
 	column.add_child(hint)

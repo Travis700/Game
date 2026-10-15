@@ -429,13 +429,13 @@ func focused_interactable() -> Interactable:
 
 func _update_prompt() -> void:
 	var target := focused_interactable() if not is_dead else null
-	var text := "[E] " + target.prompt if target else ""
+	var text := "[%s] " % KeyText.key("interact") + target.prompt if target else ""
 	if target and target.hold_seconds > 0.0:
 		if target == _holding:
 			var filled := mini(int(_hold_time / _hold_needed(target) * 10.0), 10)
 			text += "   " + "|".repeat(filled) + ".".repeat(10 - filled)
 		else:
-			text = "[Hold E] " + target.prompt
+			text = "[Hold %s] " % KeyText.key("interact") + target.prompt
 	if text != _prompt:
 		_prompt = text
 		prompt_changed.emit(text)

@@ -32,7 +32,7 @@ const ENTRIES := {
 	"Lockers": {
 		"name": "the Locker Thing", "where": "Main hallway lockers",
 		"signs": "Locker doors swing open one at a time, with a faint red glow inside. Watch the hallway cameras.",
-		"rule": "Never walk past an open locker. Press E on it to shut it first.",
+		"rule": "Never walk past an open locker. Press {use} on it to shut it first.",
 		"rumour": "Some of the hallway lockers don't stay shut.",
 		"lore": "Sept 20. Locker 113 was open again. I shut it. Locker 114 was open behind me. I shut that one too. I don't open lockers any more.",
 	},
@@ -67,7 +67,7 @@ const ENTRIES := {
 	"Substitute": {
 		"name": "the Substitute", "where": "Classroom wing",
 		"signs": "A teacher nobody hired, at the front of an empty classroom.",
-		"rule": "When it calls your name, look at it and press E to answer \"Here!\" in time.",
+		"rule": "When it calls your name, look at it and press {use} to answer \"Here!\" in time.",
 		"rumour": "A class is still being taught in the classroom wing.",
 		"lore": "Oct 23. Room 101 had a lesson on. Twenty empty chairs, one teacher, my name on the register. I answered. Seemed polite.",
 	},
@@ -95,7 +95,7 @@ const ENTRIES := {
 	"SelfPortrait": {
 		"name": "the Self-Portrait", "where": "Art room",
 		"signs": "The covered canvas at the front of the art room paints a guard, stage by stage.",
-		"rule": "Before it's finished, go to the art room and turn the canvas to the wall (E).",
+		"rule": "Before it's finished, go to the art room and turn the canvas to the wall ({use}).",
 		"rumour": "A painting in the art room is coming along nicely.",
 		"lore": "Nov 15. There's a painting of me in the art room. It's very good. It's nearly finished. I turned it round.",
 	},
@@ -217,7 +217,7 @@ static func build_page(ink: Color, width: float) -> VBoxContainer:
 
 static func _text(text: String, size: int, ink: Color, width: float) -> Label:
 	var label := Label.new()
-	label.text = text
+	label.text = KeyText.fill(text)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.custom_minimum_size = Vector2(width, 0)
 	label.add_theme_font_size_override("font_size", size)

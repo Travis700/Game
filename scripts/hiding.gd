@@ -199,7 +199,7 @@ func _make_slats() -> Control:
 	holder.visible = false
 	layer.add_child(holder)
 	var note := Label.new()
-	note.text = "Hiding. Press E to climb out."
+	note.text = KeyText.fill("Hiding. Press {use} to climb out.")
 	note.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	note.position.y -= 60
 	note.modulate.a = 0.7

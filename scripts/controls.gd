@@ -72,9 +72,56 @@ func _enter_tree() -> void:
 	_load_changes()
 
 
-## The main key for an action, e.g. "W". (Arrow keys and the mouse still work alongside.)
+## Whether the player last used a controller: prompts then name its buttons instead of keys.
+var using_pad := false
+signal device_changed
+
+const PAD_NAMES := {
+	JOY_BUTTON_A: "A", JOY_BUTTON_B: "B", JOY_BUTTON_X: "X", JOY_BUTTON_Y: "Y",
+	JOY_BUTTON_LEFT_SHOULDER: "LB", JOY_BUTTON_RIGHT_SHOULDER: "RB", JOY_BUTTON_LEFT_STICK: "L-stick click",
+	JOY_BUTTON_RIGHT_STICK: "R-stick click", JOY_BUTTON_BACK: "View", JOY_BUTTON_START: "Menu",
+	JOY_BUTTON_DPAD_LEFT: "D-pad left", JOY_BUTTON_DPAD_RIGHT: "D-pad right",
+	JOY_BUTTON_DPAD_UP: "D-pad up", JOY_BUTTON_DPAD_DOWN: "D-pad down",
+}
+## Placeholders that text can use for the player's own keys, e.g. "Press {use} to answer".
+const TOKENS := {
+	"use": "interact", "item": "use_item", "clip": "clipboard", "ping": "ping", "radio": "radio_talk",
+	"talk": "push_to_talk", "zoom": "zoom", "compare": "compare", "light": "flashlight", "run": "sprint",
+	"menu": "pause",
+}
+
+
+func _input(event: InputEvent) -> void:
+	var pad := using_pad
+	if event is InputEventJoypadButton or (event is InputEventJoypadMotion and absf((event as InputEventJoypadMotion).axis_value) > 0.5):
+		pad = true
+	elif event is InputEventKey or event is InputEventMouseButton:
+		pad = false
+	if pad != using_pad:
+		using_pad = pad
+		device_changed.emit()
+
+
+## The main key for an action, e.g. "W" (or the controller button, if that's what's in use).
+## (Arrow keys and the mouse still work alongside.)
 func key_name(action: String) -> String:
+	if using_pad:
+		if JOY_BUTTONS.has(action):
+			return PAD_NAMES.get(JOY_BUTTONS[action][0], "?")
+		if action == "radio_talk":
+			return "RT"
+	if action == "pause":
+		return "Esc"
 	return OS.get_keycode_string(primary_key(action))
+
+
+## Swaps "{use}", "{item}"... in `text` for the player's own keys.
+func fill(text: String) -> String:
+	if not "{" in text:
+		return text
+	for token: String in TOKENS:
+		text = text.replace("{%s}" % token, key_name(TOKENS[token]))
+	return text
 
 
 func primary_key(action: String) -> int:

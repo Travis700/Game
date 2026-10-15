@@ -913,7 +913,7 @@ func _show_ghost(peer_id: int, joined: bool) -> void:
 		if not Finale.on_grounds(guard.global_position):
 			guard.global_position = Vector3((guard.slot - 2.5) * 1.4, 0.1, Finale.GATE_Z - 4.0)
 		hud.set_ghost(true)
-		hud.show_message("The shift had already started, so you've come in as a ghost: watch, leave cold spots (E), knock things over, and help where you can. You'll clock in properly from the next night.", 12.0)
+		hud.show_message("The shift had already started, so you've come in as a ghost: watch, leave cold spots ({use}), knock things over, and help where you can. You'll clock in properly from the next night.", 12.0)
 	elif joined:
 		hud.show_message("Guard %d joined mid-shift. They're a ghost until the next night." % guard.slot)
 	_refresh_guard_visibility()
@@ -1547,7 +1547,7 @@ func _watch(target: Guard) -> void:
 		_show_body_to_viewer(target, false)
 		target.camera.cull_mask &= ~(Guard.SELF_LAYER | SecurityCameras.SPECTRAL_LAYER)
 		target.camera.current = true
-		hud.show_message("Watching %s. G for the next, or back to yourself." % (target.player_name if target.player_name != "" else "Guard %d" % target.slot))
+		hud.show_message("Watching %s. {item} for the next, or back to yourself." % (target.player_name if target.player_name != "" else "Guard %d" % target.slot))
 	elif _local_guard and is_instance_valid(_local_guard):
 		_local_guard.camera.current = true
 
@@ -1816,10 +1816,10 @@ func _on_vending_used(by: Node) -> void:
 func _refresh_inventory() -> void:
 	var carrying := Shop.item_name(shop.local_item)
 	if shop.local_item in Shop.USED_WITH_G:
-		carrying += "  (G to use)"
+		carrying += "  (%s to use)" % Controls.key_name("use_item")
 	var in_hand := clutter.carried_name(multiplayer.get_unique_id()) if clutter and multiplayer.multiplayer_peer else ""
 	if in_hand != "":
-		carrying = ("%s, and " % carrying if carrying != "" else "") + "a %s (E to throw)" % in_hand
+		carrying = ("%s, and " % carrying if carrying != "" else "") + "a %s (%s to throw)" % [in_hand, Controls.key_name("interact")]
 	hud.set_inventory(shop.local_points, carrying)
 	if vending.is_open:
 		vending.refresh(shop.local_points, shop.local_item)

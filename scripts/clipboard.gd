@@ -126,7 +126,7 @@ func _ready() -> void:
 	_log_button.pressed.connect(_on_log_pressed)
 	column.add_child(_log_button)
 
-	var hint := _label("Tab or Esc to put the clipboard away", 15)
+	var hint := _label(KeyText.fill("{clip} or Esc to put the clipboard away"), 15)
 	hint.modulate.a = 0.6
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(hint)

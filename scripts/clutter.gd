@@ -69,7 +69,7 @@ func request_pick_up(index: int) -> void:
 		director.tell(peer, "Leave it. The school's tidy until the shift starts.")
 		return
 	if carried.has(peer):
-		director.tell(peer, "Your hands are full. E to throw the %s first." % carried_name(peer))
+		director.tell(peer, "Your hands are full. {use} to throw the %s first." % carried_name(peer))
 		return
 	if guard.global_position.distance_to(_props[index].global_position) > 3.5:
 		return

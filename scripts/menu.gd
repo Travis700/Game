@@ -124,7 +124,7 @@ func _ready() -> void:
 	_perk.item_selected.connect(func(index: int) -> void:
 		Profile.perk = _perk.get_item_metadata(index)
 		Profile.save_settings()
-		_perk_text.text = Perks.PERKS[Profile.perk]["text"])
+		_perk_text.text = Controls.fill(Perks.PERKS[Profile.perk]["text"]))
 	perk_row.add_child(_perk)
 	column.add_child(perk_row)
 	_perk_text = Label.new()
@@ -486,7 +486,7 @@ func _fill_perks() -> void:
 		_perk.set_item_disabled(index, not unlocked)
 		if perk == current:
 			_perk.select(index)
-	_perk_text.text = Perks.PERKS[current]["text"]
+	_perk_text.text = Controls.fill(Perks.PERKS[current]["text"])
 
 
 ## Friends' scores from Steam: today's daily shift ("Friends today: 1. Sam 340  ·  2. You 180")

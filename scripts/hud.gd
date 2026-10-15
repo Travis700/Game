@@ -42,6 +42,10 @@ var solo := false
 
 
 func _ready() -> void:
+	Controls.device_changed.connect(func() -> void:
+		refresh_key_hint()
+		_hint_time = HINT_SECONDS
+		_hint.modulate.a = 1.0)
 	var crosshair_holder := CenterContainer.new()
 	crosshair_holder.set_anchors_preset(Control.PRESET_FULL_RECT)
 	crosshair_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -293,7 +297,7 @@ func refresh_key_hint() -> void:
 	var move := "%s%s%s%s" % [Controls.key_name("move_forward"), Controls.key_name("move_left"),
 			Controls.key_name("move_back"), Controls.key_name("move_right")]
 	var lines: Array[String] = [
-		"%s  move" % (move if move.length() == 4 else "Move keys"),
+		"%s  move" % ("Left stick" if Controls.using_pad else move if move.length() == 4 else "Move keys"),
 		"%s  run" % Controls.key_name("sprint"), "%s  flashlight" % Controls.key_name("flashlight"),
 		"%s  use" % Controls.key_name("interact"), "%s  clipboard" % Controls.key_name("clipboard"),
 		"%s  use item" % Controls.key_name("use_item"), "%s  mark a spot" % Controls.key_name("ping"),
@@ -302,7 +306,7 @@ func refresh_key_hint() -> void:
 	if not solo:
 		lines.append("%s  talk (voice chat)" % Controls.key_name("push_to_talk"))
 		lines.append("%s  walkie-talkie" % Controls.key_name("radio_talk"))
-	lines.append("Esc  menu")
+	lines.append("%s  menu" % Controls.key_name("pause"))
 	_hint.text = "\n".join(lines)
 
 
@@ -356,6 +360,7 @@ func set_status(text: String) -> void:
 ## ones (being caught, a log's result, a lockdown) always go straight up, and put a teaching
 ## message they cut off back in line. `seconds` < 0 means "as long as it takes to read".
 func show_message(text: String, seconds := -1.0, urgent := false) -> void:
+	text = Controls.fill(text)
 	var sticky := seconds >= STICKY_SECONDS
 	if seconds < 0.0:
 		seconds = clampf(1.5 + text.length() / 15.0, MESSAGE_SECONDS, 10.0)

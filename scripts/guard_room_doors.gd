@@ -125,7 +125,7 @@ func _request_use(doorway: int) -> void:
 	if not installed[doorway]:
 		if shop.take(peer, "door_kit"):
 			_set_state.rpc(doorway, true, false, false)
-			director.tell(peer, "Door fitted. Press E to shut it.")
+			director.tell(peer, "Door fitted. Press {use} to shut it.")
 		return
 	if broken[doorway]:
 		director.tell(peer, "It won't shut. Give it a minute.")

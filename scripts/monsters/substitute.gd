@@ -79,7 +79,7 @@ func _go_about(delta: float) -> void:
 		_target = guard
 		_answer_left = ANSWER_SECONDS
 		state = "register"
-		director.tell(guard.name.to_int(), "The Substitute looks up from its register. \"Guard %d?\"\nLook at it and press E to answer." % guard.slot)
+		director.tell(guard.name.to_int(), "The Substitute looks up from its register. \"Guard %d?\"\nLook at it and press {use} to answer." % guard.slot)
 
 
 func _take_register(delta: float) -> void:

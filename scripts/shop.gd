@@ -13,7 +13,7 @@ signal holding_changed(item: String)
 const ITEMS := {
 	"camera_kit": {
 		"name": "Spectral camera kit", "price": 150, "rank": 2,
-		"about": "Install it at a guard room desk: stand by the desk's chair and press G (it takes 10 seconds). That desk's monitors then show what ordinary cameras can't.",
+		"about": "Install it at a guard room desk: stand by the desk's chair and press {item} (it takes 10 seconds). That desk's monitors then show what ordinary cameras can't.",
 	},
 	"lucky_charm": {
 		"name": "Lucky rabbit's foot", "price": 60,
@@ -21,51 +21,51 @@ const ITEMS := {
 	},
 	"door_kit": {
 		"name": "Guard room door kit", "price": 120,
-		"about": "A heavy door for one of the guard room's two doorways: press E in the doorway to fit it, then E to open and shut it. Monsters can get in from night 7. A shut door holds them for a while before it gives.",
+		"about": "A heavy door for one of the guard room's two doorways: press {use} in the doorway to fit it, then {use} to open and shut it. Monsters can get in from night 7. A shut door holds them for a while before it gives.",
 	},
 	"motion_sensor": {
 		"name": "Motion sensor", "price": 40,
-		"about": "Press G to put it down. When something walks past tonight, everyone hears where.",
+		"about": "Press {item} to put it down. When something walks past tonight, everyone hears where.",
 	},
 	"glue_trap": {
 		"name": "Industrial glue trap", "price": 60, "rank": 2,
-		"about": "Press G to put it down. The first monster to step on it is stuck there for 20 seconds.",
+		"about": "Press {item} to put it down. The first monster to step on it is stuck there for 20 seconds.",
 	},
 	"portable_camera": {
 		"name": "Portable camera", "price": 100, "rank": 3,
-		"about": "Press G to set it up where you stand, pointing the way you're facing. It shows up on the guard room monitors (A / D to find it) until morning. Two at most.",
+		"about": "Press {item} to set it up where you stand, pointing the way you're facing. It shows up on the guard room monitors (A / D to find it) until morning. Two at most.",
 	},
 	"radio": {
 		"name": "Walkie-talkie", "price": 90,
-		"about": "Press G to clip it on (it's yours for the run). Hold B to talk to everyone else with one, wherever they are. Careful: a radio blares when someone calls in, and monsters hear it.",
+		"about": "Press {item} to clip it on (it's yours for the run). Hold {radio} to talk to everyone else with one, wherever they are. Careful: a radio blares when someone calls in, and monsters hear it.",
 	},
 	"energy_drink": {
 		"name": "Energy drink", "price": 25,
-		"about": "Press G to drink it: you run faster for 30 seconds.",
+		"about": "Press {item} to drink it: you run faster for 30 seconds.",
 	},
 	"flashlight": {
 		"name": "Heavy-duty flashlight", "price": 80, "rank": 3,
-		"about": "Press G to swap it for your flashlight. A longer, wider beam, for good. (The Librarian will notice it from further away too.)",
+		"about": "Press {item} to swap it for your flashlight. A longer, wider beam, for good. (The Librarian will notice it from further away too.)",
 	},
 	"emf": {
 		"name": "Pocket EMF reader", "price": 70, "rank": 2,
-		"about": "Press G to clip it on (it's yours for the run). Its lights climb as a monster gets close, even one you can't see. A few kinds push it all the way to EMF 5 (see the field guide).",
+		"about": "Press {item} to clip it on (it's yours for the run). Its lights climb as a monster gets close, even one you can't see. A few kinds push it all the way to EMF 5 (see the field guide).",
 	},
 	"coffee": {
 		"name": "Thermos of coffee", "price": 30,
-		"about": "Press G to drink it: steadies your nerve (+40). Low nerve means monsters notice you sooner, and you start seeing things.",
+		"about": "Press {item} to drink it: steadies your nerve (+40). Low nerve means monsters notice you sooner, and you start seeing things.",
 	},
 	"decoy_radio": {
 		"name": "Decoy radio", "price": 60, "rank": 2,
-		"about": "Press G to put it down. Eight seconds later it starts blaring music for twenty: everything that hunts by sound goes to look. Then get somewhere else.",
+		"about": "Press {item} to put it down. Eight seconds later it starts blaring music for twenty: everything that hunts by sound goes to look. Then get somewhere else.",
 	},
 	"donuts": {
 		"name": "Box of donuts for the district", "price": 300, "rank": 3,
-		"about": "Press G to send it to the district office: they forget one of the team's write-ups.",
+		"about": "Press {item} to send it to the district office: they forget one of the team's write-ups.",
 	},
 	"air_horn": {
 		"name": "Air horn", "price": 70, "rank": 4,
-		"about": "Press G to blast it: every monster within 15 metres freezes for 6 seconds. Everything in the school hears it.",
+		"about": "Press {item} to blast it: every monster within 15 metres freezes for 6 seconds. Everything in the school hears it.",
 	},
 }
 ## Every item needs at least this rank to buy, unless it says otherwise.
@@ -162,11 +162,11 @@ func _request_use() -> void:
 		"":
 			_tell(peer, "You're not carrying anything. Buy something at the vending machine.")
 		"camera_kit":
-			_tell(peer, "Stand by a desk chair in the guard room and press G to install it.")
+			_tell(peer, "Stand by a desk chair in the guard room and press {item} to install it.")
 		"lucky_charm":
 			_tell(peer, "Keep it on you. It helps your roll at a revive totem.")
 		"door_kit":
-			_tell(peer, "Stand in one of the guard room's doorways and press E to fit it.")
+			_tell(peer, "Stand in one of the guard room's doorways and press {use} to fit it.")
 		"motion_sensor", "glue_trap":
 			if take(peer, item):
 				var at := guard.global_position
