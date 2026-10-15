@@ -54,6 +54,9 @@ func _on_state_changed(new_state: String) -> void:
 
 
 func _build_body() -> void:
+	# Head and shoulders above anyone, but still under the door frames (2.4 m).
+	if use_model("hall_monitor", 2.35):
+		return
 	part(capsule(0.22, 2.0), Color(0.16, 0.16, 0.18), Vector3(0, 1.0, 0))
 	part(sphere(0.14), Color(0.72, 0.69, 0.62), Vector3(0, 2.14, 0))
 	part(box(Vector3(0.24, 0.05, 0.02)), Color(0.02, 0.02, 0.02), Vector3(0, 2.16, -0.13))

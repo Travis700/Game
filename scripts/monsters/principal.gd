@@ -43,6 +43,8 @@ func think(delta: float) -> void:
 
 
 func _build_body() -> void:
+	if use_model("principal", 1.98):
+		return
 	part(capsule(0.3, 1.95), Color(0.14, 0.14, 0.16), Vector3(0, 0.98, 0))
 	part(box(Vector3(0.08, 0.5, 0.04)), Color(0.55, 0.05, 0.05), Vector3(0, 1.45, -0.29))
 	part(box(Vector3(0.22, 0.18, 0.04)), Color(0.9, 0.9, 0.9), Vector3(0, 1.62, -0.27))

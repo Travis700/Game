@@ -98,6 +98,8 @@ func _on_state_changed(new_state: String) -> void:
 
 
 func _build_body() -> void:
+	if use_model("lunch_lady", 1.68):
+		return
 	part(capsule(0.42, 1.6), Color(0.5, 0.45, 0.58), Vector3(0, 0.8, 0))
 	part(box(Vector3(0.6, 0.9, 0.05)), Color(0.9, 0.9, 0.88), Vector3(0, 0.75, -0.41))
 	part(sphere(0.17), Color(0.75, 0.7, 0.62), Vector3(0, 1.74, 0))
