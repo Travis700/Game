@@ -13,6 +13,13 @@ const GRAVITY := 9.8
 ## The Bell never pushes a monster faster than this (just under a guard's running speed),
 ## so every chase can still be outrun.
 const BELL_SPEED_CAP := 5.4
+## Moods: from night 3 a monster can come in out of sorts. Same rules, different numbers, and
+## a correct log tells you which. pace scales its speed, senses how far off it notices guards.
+const MOODS := {
+	"restless": {"pace": 1.15, "senses": 1.0, "tell": "%s seems restless tonight: quicker on its feet, and it won't stay put."},
+	"keen": {"pace": 1.0, "senses": 1.25, "tell": "%s seems keen tonight: it'll notice you from further off."},
+	"drowsy": {"pace": 0.85, "senses": 0.85, "tell": "%s seems drowsy tonight: slower, and slower to notice. Don't count on it."},
+}
 
 var director: MonsterDirector
 ## Shown in death messages, e.g. "Caught by the Hall Monitor."
@@ -44,6 +51,10 @@ var hunts_in_lockdown := true
 var _pre_lockdown_state := ""
 ## Pushes an EMF reader to its top level (EMF 5) up close. Evidence for the field guide.
 var emf5 := false
+## Tonight's mood ("" for none; see MOODS).
+var mood := ""
+var pace := 1.0
+var senses := 1.0
 
 var _agent: NavigationAgent3D
 ## Real seconds it has been trying to move without getting anywhere.
@@ -133,6 +144,12 @@ func _on_state_changed(_new_state: String) -> void:
 
 # --- Helpers for behaviours (host) ----------------------------------------------------
 
+func set_mood(new_mood: String) -> void:
+	mood = new_mood if MOODS.has(new_mood) else ""
+	pace = MOODS[mood]["pace"] if mood != "" else 1.0
+	senses = MOODS[mood]["senses"] if mood != "" else 1.0
+
+
 ## Walks toward `target` along the navigation mesh. Returns false if the way is barred,
 ## e.g. the guard room before night 7.
 func move_to(target: Vector3, speed: float) -> bool:
@@ -146,8 +163,9 @@ func move_to(target: Vector3, speed: float) -> bool:
 		return false
 	var direction := next - global_position
 	direction.y = 0.0
-	# Everything moves faster while the school bell rings.
-	speed = minf(speed * director.speed_multiplier(), maxf(speed, BELL_SPEED_CAP))
+	# Everything moves faster while the school bell rings (and a restless one is quicker anyway),
+	# but never faster than it could already go or a guard can run.
+	speed = minf(speed * pace * director.speed_multiplier(), maxf(speed, BELL_SPEED_CAP))
 	if direction.length() > 0.05:
 		direction = direction.normalized()
 		face(direction)
@@ -180,7 +198,7 @@ func patrol_step(points: Array[Vector3], delta: float, speed: float, pause: Vect
 		return false
 	var spot := points[_patrol_index % points.size()]
 	if Vector2(global_position.x - spot.x, global_position.z - spot.z).length() < 1.2 or is_stuck():
-		_patrol_pause = randf_range(pause.x, pause.y)
+		_patrol_pause = randf_range(pause.x, pause.y) * (0.5 if mood == "restless" else 1.0)
 		var step := 1 + (randi() % skip if skip > 0 else 0)
 		_patrol_index = (_patrol_index + step) % points.size()
 		_stuck_for = 0.0
@@ -194,7 +212,7 @@ func patrol_step(points: Array[Vector3], delta: float, speed: float, pause: Vect
 func find_guard(reach: float, need_sight := true, test := Callable()) -> Guard:
 	for guard in director.targetable_guards():
 		# A guard whose nerve is going is noticed from further off.
-		if distance_to_guard(guard) > reach * director.nerve_reach(guard):
+		if distance_to_guard(guard) > reach * senses * director.nerve_reach(guard):
 			continue
 		if test.is_valid() and not test.call(guard):
 			continue

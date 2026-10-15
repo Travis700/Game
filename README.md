@@ -92,6 +92,9 @@ padlock key turns up deep in the school (the intercom says where): fetch it and 
 gate opens. Anyone standing out in the street is safe. Whoever's still inside at 6 AM is caught; one guard out
 wins the run. If the key's carrier is caught, the key lies where they fell.
 
+**Moods:** from night 3 a monster can come in restless (faster, never stays put), keen (notices you from
+further off) or drowsy (slower and duller). Log it correctly and you're told which.
+
 **Marking:** Q (B on a controller) marks the spot you're looking at for the whole team, in your colour and
 through walls, for 8 seconds; a mark on a monster reads MONSTER! (except the disguised ones). At a desk, Q flags
 the camera instead.

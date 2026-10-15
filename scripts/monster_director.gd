@@ -65,6 +65,9 @@ const MASCOT_STAND := Vector3(9.0, 0.3, 1.5)
 const BELL_FROM_NIGHT := 4
 const BELL_SPEED := 1.35
 const BELL_MAX_SECONDS := 60.0
+## Monster moods (see Monster.MOODS): from this night, and how often.
+const MOODS_FROM_NIGHT := 3
+const MOOD_CHANCE := 0.45
 
 var players: Node3D
 var guard_room: GuardRoom
@@ -289,6 +292,10 @@ func _start(kind: String, minutes: float) -> void:
 func spawn(kind: String, at: Vector3, extra := {}) -> void:
 	var data := {"kind": kind, "id": _next_id, "position": at}
 	data.merge(extra)
+	# From night 3 some come in out of sorts (not the real cleaner or students, or the unseen).
+	if night_number >= MOODS_FROM_NIGHT and not data.has("mood") and kind not in ["cleaner", "student", "ghost", "shade"] \
+			and randf() < MOOD_CHANCE:
+		data["mood"] = Monster.MOODS.keys().pick_random()
 	_next_id += 1
 	_spawner.spawn(data)
 
@@ -377,6 +384,7 @@ func _create_monster(data: Dictionary) -> Node:
 			monster = shade
 	monster.name = "Monster%d" % data["id"]
 	monster.director = self
+	monster.set_mood(data.get("mood", ""))
 	monster.position = data["position"]
 	return monster
 
@@ -686,6 +694,9 @@ func check_log(peer_id: int, area: String, named := "") -> String:
 				monster = each
 		var kind: String = monster.get_script().get_global_name()
 		last_log_was_first = (_credited[monster.name] as Array).is_empty()
+		if monster.mood != "":
+			var mood_line: String = Monster.MOODS[monster.mood]["tell"] % (monster.display_name.left(1).to_upper() + monster.display_name.substr(1))
+			get_tree().create_timer(1.5).timeout.connect(func() -> void: tell(peer_id, mood_line))
 		_credited[monster.name].append(peer_id)
 		if career:
 			career.logged_monster(peer_id, kind)
