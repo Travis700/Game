@@ -32,6 +32,7 @@ var _perk: OptionButton
 var _perk_text: Label
 var _daily_label: Label
 var _daily_friends: Label
+var _night_friends: Label
 var _status: Label
 var _address: LineEdit
 var _password: LineEdit
@@ -163,6 +164,8 @@ func _ready() -> void:
 	_daily_friends.add_theme_color_override("font_color", Color(1.0, 0.9, 0.6))
 	_daily_friends.visible = false
 	column.add_child(_daily_friends)
+	_night_friends = _daily_friends.duplicate() as Label
+	column.add_child(_night_friends)
 	SteamService.leaderboard_loaded.connect(_on_leaderboard_loaded)
 	_show_rank()
 	column.add_child(_button("Host a game", func() -> void: host_requested.emit()))
@@ -364,6 +367,7 @@ func _show_rank() -> void:
 			"   ·   your best: %d" % best if best >= 0 else "",
 			"   ·   %d days in a row" % Career.daily_streak() if Career.daily_streak() > 1 else ""]
 	SteamService.request_friends_scores(SteamService.daily_board(today))
+	SteamService.request_friends_scores("furthest_night")
 	var xp := Career.xp()
 	var rank := Career.rank()
 	var floor_xp: int = Career.RANKS[rank - 1][0]
@@ -406,13 +410,16 @@ func _fill_perks() -> void:
 	_perk_text.text = Perks.PERKS[current]["text"]
 
 
-## Friends' daily shift scores from Steam, e.g. "Friends today: 1. Sam 340  ·  2. You 180".
+## Friends' scores from Steam: today's daily shift ("Friends today: 1. Sam 340  ·  2. You 180")
+## and the furthest anyone's got into a run ("Furthest night: 1. Sam 14  ·  2. You 9").
 func _on_leaderboard_loaded(board: String, entries: Array) -> void:
-	if board != SteamService.daily_board(Daily.today()) or entries.is_empty():
+	var label: Label = _daily_friends if board == SteamService.daily_board(Daily.today()) \
+			else _night_friends if board == "furthest_night" else null
+	if label == null or entries.is_empty():
 		return
 	var parts: Array[String] = []
 	for i in mini(entries.size(), 5):
 		var entry: Dictionary = entries[i]
 		parts.append("%d. %s %d" % [i + 1, "You" if entry.get("me", false) else entry["name"], entry["score"]])
-	_daily_friends.text = "Friends today: " + "  ·  ".join(parts)
-	_daily_friends.visible = true
+	label.text = ("Friends today: " if label == _daily_friends else "Furthest night, friends: ") + "  ·  ".join(parts)
+	label.visible = true
