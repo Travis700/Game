@@ -1881,7 +1881,9 @@ func _make_environment() -> Environment:
 
 	var world_env := WorldEnvironment.new()
 	world_env.environment = env
+	world_env.add_to_group("world_env")
 	add_child(world_env)
+	(func() -> void: Profile.apply_brightness()).call_deferred()
 
 	var moon := DirectionalLight3D.new()
 	moon.name = "Moon"

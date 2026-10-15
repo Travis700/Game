@@ -80,6 +80,12 @@ func _ready() -> void:
 	fov.step = 1.0
 	fov.value_changed.connect(func(value: float) -> void: Profile.fov = value)
 	column.add_child(fov)
+	column.add_child(_label("Brightness"))
+	var brightness := _slider(0.6, 1.8, Profile.brightness)
+	brightness.value_changed.connect(func(value: float) -> void:
+		Profile.brightness = value
+		Profile.apply_brightness())
+	column.add_child(brightness)
 	column.add_child(_label("Volume"))
 	_volume = _slider(0.0, 1.0, Profile.volume)
 	_volume.value_changed.connect(func(value: float) -> void:

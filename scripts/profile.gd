@@ -16,6 +16,8 @@ var shadows := true
 var antialiasing := 1
 ## Field of view, in degrees.
 var fov := 75.0
+## Overall brightness (1 = as designed). For dark screens: the night should be dark, not invisible.
+var brightness := 1.0
 ## Voice chat: "push" (hold the push-to-talk key), "open" (talks when you're loud enough) or "off".
 var voice_mode := "push"
 ## Open mic: how loud (0-1) you have to be before it sends.
@@ -54,6 +56,7 @@ func _enter_tree() -> void:
 		shadows = config.get_value("graphics", "shadows", true)
 		antialiasing = config.get_value("graphics", "antialiasing", 1)
 		fov = config.get_value("graphics", "fov", 75.0)
+		brightness = config.get_value("graphics", "brightness", 1.0)
 		voice_mode = config.get_value("voice", "mode", "push")
 		mic_threshold = config.get_value("voice", "threshold", 0.12)
 		voice_volume = config.get_value("voice", "volume", 1.0)
@@ -90,6 +93,7 @@ func save_settings() -> void:
 	config.set_value("graphics", "shadows", shadows)
 	config.set_value("graphics", "antialiasing", antialiasing)
 	config.set_value("graphics", "fov", fov)
+	config.set_value("graphics", "brightness", brightness)
 	config.set_value("voice", "mode", voice_mode)
 	config.set_value("voice", "threshold", mic_threshold)
 	config.set_value("voice", "volume", voice_volume)
@@ -102,6 +106,14 @@ func save_settings() -> void:
 	config.set_value("settings", "captions", captions)
 	config.set_value("settings", "night_length", night_length)
 	_save(config)
+
+
+## Applies the brightness setting to the game world's look (WorldEnvironments in "world_env").
+func apply_brightness() -> void:
+	for node in get_tree().get_nodes_in_group("world_env"):
+		var env := (node as WorldEnvironment).environment
+		env.adjustment_enabled = true
+		env.adjustment_brightness = brightness
 
 
 func apply_volume() -> void:
