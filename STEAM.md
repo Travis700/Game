@@ -10,7 +10,7 @@ you can do (they need your Steamworks account).
   code; friends type the code or accept an invite (Esc menu → *Invite Steam friends*, or
   Steam's own *Join game*). Networking uses Steam's relay, so nobody forwards ports.
 - **Steam names** over each guard, **rich presence** ("Night 4 of 9") in the friends list.
-- **27 achievements** and **6 stats**, mirrored to Steam (list below).
+- **31 achievements** and **6 stats**, mirrored to Steam (list below).
 - **Falls back** to direct connections and room codes when Steam isn't running, so the
   game also works outside Steam (handy for testing).
 - Settings (keys, mouse, FOV, volume, voice chat, graphics), a pause menu, How to play,
@@ -69,6 +69,10 @@ Create these with exactly these API names. Mark them as set by the client.
 | `EMF_FIVE` | Five lights | See an EMF reader hit 5. |
 | `TRAINED` | Fully trained | Finish the training shift. |
 | `LEGEND` | Legend of Westfield | Reach the top rank. |
+| `CLOSE_CALL` | Close call | Get knocked out by a monster you'd never logged, and live to log it. |
+| `TEAM_DAILY` | Team player | Finish a daily shift as a team. |
+| `SECOND_CHANCE` | Second chance | Win a run on the last night's retry. |
+| `DOWN_TO_THE_WIRE` | Down to the wire | Get out through the gate in the finale after 5:55 AM. |
 | `LAST_BELL` | Last bell | Get out through the front gate in the final night's finale. |
 | `OVERTIME` | Overtime | Survive a night of Overtime, after the ninth. |
 | `WORKAHOLIC` | Workaholic | Survive night 15. |
@@ -151,6 +155,6 @@ root-overrides/paths for the save folder:
   camera faults...), nightly bonus objectives and a work target from the district.
 - A nine-night run with checkpoints and a finale, then endless Overtime. Hardcore if you dare.
 - A daily shift that's the same for everyone, with friends' scores.
-- Ranks, perks and hats to unlock, 27 achievements and career records.
+- Ranks, perks and hats to unlock, 31 achievements and career records.
 - A guided training shift, close calls that teach you a monster's rule the first time, sound
   captions, controller support and rebindable keys.

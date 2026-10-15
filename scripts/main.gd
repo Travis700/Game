@@ -1566,6 +1566,7 @@ func _close_call(guard: Guard, by: String) -> bool:
 	var text := ""
 	if kind != "" and kind not in guard.known_monsters and kind not in used and not finale.active:
 		used.append(kind)
+		career.award(peer, "CLOSE_CALL")
 		text = "Everything goes black. You come to in the guard room, shaking. That was %s, and you got lucky. You won't next time.\nHow to survive it: %s" % [
 				FieldGuide.display_name(kind), FieldGuide.ENTRIES[kind]["rule"]]
 	elif night.shift_team() == 1 and not _second_wind_used:

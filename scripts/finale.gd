@@ -40,6 +40,8 @@ var unlocked := false
 ## Every computer: where the key is ("the Gym"), and who's carrying it (peer id, or 0).
 var key_area := ""
 var key_holder := 0
+## Host: peer -> the in-game minute they first got out through the gate.
+var escaped_at: Dictionary = {}
 
 var _leaves: Array[Node3D] = []
 var _gate_open := true
@@ -171,6 +173,11 @@ func update(minutes: float) -> void:
 		_begin()
 	if not active:
 		return
+	# When each guard first got out (for the last-minute achievement).
+	if unlocked:
+		for guard in director.living_guards():
+			if is_out(guard.global_position) and not escaped_at.has(guard.name.to_int()):
+				escaped_at[guard.name.to_int()] = minutes
 	director.hunt_speed = lerpf(HUNT_SPEED.x, HUNT_SPEED.y, clampf((minutes - STARTS_AT) / 60.0, 0.0, 1.0))
 	if not unlocked and key_holder != 0:
 		var holder := director.guard_by_peer(key_holder)
@@ -260,6 +267,7 @@ func _begin() -> void:
 ## Host: a new night (or a new run). The gate's shut again.
 func reset() -> void:
 	planned = false
+	escaped_at.clear()
 	if active or unlocked or key_holder != 0 or key_area != "":
 		_set_active.rpc(false)
 

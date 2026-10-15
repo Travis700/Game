@@ -261,6 +261,7 @@ func _run_shift(delta: float) -> void:
 	if minutes >= SHIFT_MINUTES:
 		# The finale: the gate shuts on anyone still inside, and whoever got out is done.
 		var got_out := finale.lock_in()
+		var escaped_at := finale.escaped_at.duplicate()
 		finale.reset()
 		# Morning: the monsters are gone, and only the living have to clock out.
 		director.end_night()
@@ -281,6 +282,8 @@ func _run_shift(delta: float) -> void:
 			shift.clock_out(peer)
 			if career:
 				career.award(peer, "LAST_BELL")
+				if float(escaped_at.get(peer, 0.0)) >= 355.0:
+					career.award(peer, "DOWN_TO_THE_WIRE")
 			director.tell(peer, "You're out. Behind you the gate swings shut, and the school goes quiet. Clocked out.")
 		if not got_out.is_empty() and shift.everyone_clocked_out():
 			_end_night.call_deferred()
@@ -791,6 +794,8 @@ func _award_night() -> void:
 			career.award(peer, "WORKAHOLIC")
 		if won:
 			career.award(peer, "RUN_WON")
+			if _last_night_retried:
+				career.award(peer, "SECOND_CHANCE")
 			career.add_stat(peer, "runs_won")
 			career.record_score(peer, points_of(peer), difficulty, team)
 			if team == 1:
@@ -945,6 +950,8 @@ func _finish_daily(rows: Array, score: int, summary: String) -> void:
 func _daily_result(date: String, score: int, team: int) -> void:
 	if career:
 		career.record_daily(date, score, team)
+		if team > 0:
+			career._unlock("TEAM_DAILY")
 	var steam := get_node_or_null("/root/SteamService")
 	if steam:
 		steam.submit_score(steam.daily_board(date) + ("" if team == 0 else "_team%d" % team), score)
