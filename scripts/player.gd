@@ -23,6 +23,8 @@ signal spectate_requested
 signal ghost_ping_requested(at: Vector3, touched: Object)
 ## E with nothing in front of you: throw what you're carrying, if anything.
 signal throw_requested
+## Q away from the desks: mark the spot you're looking at for the team.
+signal mark_requested(at: Vector3)
 
 const WALK_SPEED := 3.2
 const SPRINT_SPEED := 5.6
@@ -296,6 +298,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		flashlight.visible = not flashlight.visible
 	elif event.is_action_pressed("interact"):
 		_interact()
+	elif event.is_action_pressed("ping") and not is_dead and not hiding:
+		_mark()
 	elif event.is_action_pressed("use_item") and is_dead:
 		spectate_requested.emit()
 	elif event.is_action_pressed("use_item") and not is_dead:
@@ -450,6 +454,16 @@ func _interact() -> void:
 		target.interact(self)
 	else:
 		throw_requested.emit()
+
+
+## Marks whatever is in front of you, up to 40 metres away.
+func _mark() -> void:
+	var from := camera.global_position
+	var to := from - camera.global_basis.z * 40.0
+	var query := PhysicsRayQueryParameters3D.create(from, to, 1 | Interactable.TALK_LAYER | Monster.LAYER)
+	query.exclude = [get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	mark_requested.emit(hit["position"] + (hit["normal"] as Vector3) * 0.2 if not hit.is_empty() else to)
 
 
 ## Where a ghost is looking: the first thing within 25 metres, or 25 metres out.

@@ -269,10 +269,10 @@ func _build_feed_view() -> void:
 func refresh_key_hint() -> void:
 	var move := "%s%s%s%s" % [Controls.key_name("move_forward"), Controls.key_name("move_left"),
 			Controls.key_name("move_back"), Controls.key_name("move_right")]
-	_hint.text = "%s  move\n%s  run\n%s  flashlight\n%s  use\n%s  clipboard\n%s  use item\n%s  talk (voice chat)\n%s  walkie-talkie\nEsc  menu" % [
+	_hint.text = "%s  move\n%s  run\n%s  flashlight\n%s  use\n%s  clipboard\n%s  use item\n%s  mark a spot\n%s  talk (voice chat)\n%s  walkie-talkie\nEsc  menu" % [
 		move if move.length() == 4 else "Move keys", Controls.key_name("sprint"), Controls.key_name("flashlight"),
 		Controls.key_name("interact"), Controls.key_name("clipboard"), Controls.key_name("use_item"),
-		Controls.key_name("push_to_talk"), Controls.key_name("radio_talk")]
+		Controls.key_name("ping"), Controls.key_name("push_to_talk"), Controls.key_name("radio_talk")]
 
 
 ## What you should be doing right now, under the clock, e.g. "Clock in at the guard room".

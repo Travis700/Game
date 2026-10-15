@@ -92,6 +92,10 @@ padlock key turns up deep in the school (the intercom says where): fetch it and 
 gate opens. Anyone standing out in the street is safe. Whoever's still inside at 6 AM is caught; one guard out
 wins the run. If the key's carrier is caught, the key lies where they fell.
 
+**Marking:** Q (B on a controller) marks the spot you're looking at for the whole team, in your colour and
+through walls, for 8 seconds; a mark on a monster reads MONSTER! (except the disguised ones). At a desk, Q flags
+the camera instead.
+
 **Throwing things:** eleven bits of clutter (a traffic cone, a basketball, a lunch tray, books...) lie about the
 school. E picks one up, E again throws it; it clatters where it lands and draws the sound-hunting monsters. Ghosts
 can knock clutter over (E while looking at it, every 20 seconds).

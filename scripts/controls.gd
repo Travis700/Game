@@ -32,6 +32,7 @@ const JOY_BUTTONS := {
 	"sprint": [JOY_BUTTON_LEFT_STICK],
 	"clipboard": [JOY_BUTTON_BACK],
 	"use_item": [JOY_BUTTON_RIGHT_SHOULDER],
+	"ping": [JOY_BUTTON_B],
 	"push_to_talk": [JOY_BUTTON_LEFT_SHOULDER],
 	"pause": [JOY_BUTTON_START],
 	"move_left": [JOY_BUTTON_DPAD_LEFT],
@@ -56,7 +57,7 @@ const MOUSE_BINDINGS := {
 const REBINDABLE := [
 	["move_forward", "Walk forward"], ["move_back", "Walk back / stand up"], ["move_left", "Walk left"],
 	["move_right", "Walk right"], ["sprint", "Run"], ["interact", "Use"], ["flashlight", "Flashlight"],
-	["clipboard", "Clipboard"], ["use_item", "Use item"], ["zoom", "Full-screen camera"], ["compare", "Compare camera with photo"], ["ping", "Flag a camera for the team"], ["push_to_talk", "Push to talk"], ["radio_talk", "Talk on the walkie-talkie"],
+	["clipboard", "Clipboard"], ["use_item", "Use item"], ["zoom", "Full-screen camera"], ["compare", "Compare camera with photo"], ["ping", "Mark a spot (or flag a camera) for the team"], ["push_to_talk", "Push to talk"], ["radio_talk", "Talk on the walkie-talkie"],
 ]
 const SAVE_PATH := "user://controls.cfg"
 

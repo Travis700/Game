@@ -17,6 +17,11 @@ const PauseMenu := preload("res://scripts/pause_menu.gd")
 ## Ghosts' cold spots: how often each ghost can leave one, and how long one lasts.
 const GHOST_PING_EVERY := 4.0
 const GHOST_PING_SECONDS := 6.0
+## Marks: a living guard's "look here" for the team (Q), how often, and how long one shows.
+const MARK_EVERY := 1.5
+const MARK_SECONDS := 8.0
+## How close a monster has to be to a mark for it to read "MONSTER!".
+const MARK_MONSTER_RANGE := 2.5
 ## How long a flagged camera's marker shows.
 const FLAG_SECONDS := 20.0
 ## Real seconds between camera speaker noises, per guard.
@@ -866,6 +871,11 @@ func on_local_guard_ready(guard: Guard) -> void:
 			hiding._request(-1)
 		else:
 			hiding._request.rpc_id(1, -1))
+	guard.mark_requested.connect(func(at: Vector3) -> void:
+		if multiplayer.is_server():
+			_request_mark(at)
+		else:
+			_request_mark.rpc_id(1, at))
 	guard.ghost_ping_requested.connect(func(at: Vector3, touched: Object) -> void:
 		var item := clutter.index_of(touched)
 		if item >= 0:
@@ -1063,6 +1073,52 @@ func _apply_difficulty(difficulty: int, open_doors := true) -> void:
 	clipboard.set_areas(anomalies.areas(difficulty))
 	if multiplayer.is_server():
 		guard_room.fit_to_open_cameras()
+
+
+## Host: a guard marked a spot for the team. If a monster's right there, it says so.
+@rpc("any_peer", "call_remote", "reliable")
+func _request_mark(at: Vector3) -> void:
+	var peer := multiplayer.get_remote_sender_id()
+	if peer == 0:
+		peer = multiplayer.get_unique_id()
+	var guard := players.get_node_or_null(str(peer)) as Guard
+	var now := Time.get_ticks_msec() / 1000.0
+	if guard == null or guard.is_dead or now < float(_ghost_ping_at.get(-peer - 1000000, 0.0)):
+		return
+	if at.distance_to(guard.global_position) > 45.0:
+		return
+	_ghost_ping_at[-peer - 1000000] = now + MARK_EVERY
+	var monster := false
+	for found in director.active_monsters():
+		# Not the ones in disguise: telling them apart is the whole game.
+		if found is OtherCleaner or found is Student or found is Understudy:
+			continue
+		if found.global_position.distance_to(at) < MARK_MONSTER_RANGE or (found.global_position + Vector3(0, 1.2, 0)).distance_to(at) < MARK_MONSTER_RANGE:
+			monster = true
+	_mark.rpc(at, guard.slot, monster)
+
+
+## Every computer: a marker in that guard's colour, seen through walls, that fades.
+@rpc("authority", "call_local", "reliable")
+func _mark(at: Vector3, slot: int, monster: bool) -> void:
+	var color: Color = Guard.UNIFORM_COLORS[(slot - 1) % Guard.UNIFORM_COLORS.size()]
+	var label := Label3D.new()
+	label.text = "▼\nGuard %d: %s" % [slot, "MONSTER!" if monster else "here"]
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.no_depth_test = true
+	label.fixed_size = true
+	label.pixel_size = 0.0012
+	label.font_size = 28
+	label.outline_size = 8
+	label.modulate = Color(1.0, 0.25, 0.2) if monster else color.lightened(0.35)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	add_child(label)
+	label.global_position = at + Vector3(0, 0.3, 0)
+	Sfx.play_flat(self, Sfx.notes([880.0, 1320.0] if not monster else [990.0, 660.0, 990.0], 0.07, 0.18, "triangle"))
+	var fade := create_tween()
+	fade.tween_interval(MARK_SECONDS - 1.5)
+	fade.tween_property(label, "modulate:a", 0.0, 1.5)
+	fade.tween_callback(label.queue_free)
 
 
 ## Host: a ghost left a cold spot. One every few seconds each, so it can't be spammed.
