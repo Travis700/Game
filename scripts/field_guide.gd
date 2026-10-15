@@ -45,14 +45,14 @@ const ENTRIES := {
 	},
 	"OtherCleaner": {
 		"name": "the Other Cleaner", "where": "Anywhere the cleaner goes",
-		"signs": "EMF 5. Looks just like the night cleaner, but it has no cart and its head sits wrong.",
+		"signs": "EMF 5. Looks just like the night cleaner, but it has no cart, never puts a WET FLOOR sign down, and its head sits wrong. Your heart races near it.",
 		"rule": "Don't get close. Log it as a Monster where you see it and it leaves.",
 		"rumour": "The night cleaner has been seen in two places at once.",
 		"lore": "Oct 5. Waved at Gus on camera 4. Gus was standing next to me. He doesn't know I saw.",
 	},
 	"Student": {
 		"name": "the Student", "where": "Main hallway",
-		"signs": "A kid who says they're locked in. Real kids show up on the cameras; it doesn't.",
+		"signs": "A kid who says they're locked in. Real kids show up on the cameras; it doesn't. And your heart races near the fake one.",
 		"rule": "Check the cameras before you follow. If they're not on screen, don't go with them.",
 		"rumour": "A student keeps getting locked in after hours.",
 		"lore": "Oct 11. A kid asked me to walk him out. I checked the cameras first. He wasn't on any of them. He was very patient about it.",
