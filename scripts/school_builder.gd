@@ -213,11 +213,35 @@ func _make_materials() -> void:
 	_add_mat("jar", Color(0.55, 0.75, 0.45), 0.1, Color(0.3, 0.5, 0.2), 0.6, 0.55)
 
 
+## Surfaces with a texture (assets/textures, made by tools/gen_textures.py), and how many metres
+## one copy of it covers. They're mapped in world space, so every box tiles at the same scale.
+const TEXTURE_METRES := {
+	"floor": 2.4, "wall": 1.6, "ceiling": 1.2, "brick": 1.2, "concrete": 2.0, "asphalt": 3.0,
+	"grass": 4.0, "gym_floor": 1.0, "wood": 1.0, "desk": 1.0, "metal": 1.0, "locker": 1.2,
+	"cork": 1.0, "board": 2.0,
+}
+
+
 func _add_mat(mat_name: String, color: Color, roughness := 0.9, emission := Color.BLACK,
 		emission_energy := 0.0, alpha := 1.0) -> void:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mat.roughness = roughness
+	var path := "res://assets/textures/%s.png" % mat_name
+	if TEXTURE_METRES.has(mat_name) and ResourceLoader.exists(path):
+		# The texture carries the colour itself.
+		mat.albedo_color = Color.WHITE
+		mat.albedo_texture = load(path)
+		mat.normal_enabled = true
+		mat.normal_texture = load("res://assets/textures/%s_n.png" % mat_name)
+		mat.uv1_triplanar = true
+		mat.uv1_world_triplanar = true
+		mat.uv1_triplanar_sharpness = 8.0
+		mat.uv1_scale = Vector3.ONE / float(TEXTURE_METRES[mat_name])
+		# A locker texture is one locker tall, so its vents sit at the top of every door.
+		if mat_name == "locker":
+			mat.uv1_scale = Vector3(1.0 / 2.0, 1.0 / 1.9, 1.0 / 2.0)
+		mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	if emission_energy > 0.0:
 		mat.emission_enabled = true
 		mat.emission = emission
