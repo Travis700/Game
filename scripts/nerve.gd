@@ -13,6 +13,7 @@ const MAX := 100.0
 ## Per real second.
 const BASE_DRAIN := 0.04
 const ALONE_DRAIN := 0.12
+const SOLO_DRAIN := 0.06
 const DARK_DRAIN := 0.5
 const MONSTER_DRAIN := 0.7
 ## Crouched in the dark in a cupboard, listening.
@@ -72,6 +73,9 @@ func update(delta: float) -> void:
 			change += COMPANY_GAIN
 		elif living.size() > 1:
 			change -= ALONE_DRAIN
+		else:
+			# On your own all night: it wears on you, if less than splitting from a team.
+			change -= SOLO_DRAIN
 		for monster in director.active_monsters():
 			if monster.global_position.distance_to(at) < MONSTER_RANGE:
 				change -= MONSTER_DRAIN

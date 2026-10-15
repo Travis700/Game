@@ -35,6 +35,8 @@ const LINES_KEPT := 6
 ## The local player's guard. Set by Main.
 var local_guard: Guard
 var director: MonsterDirector
+## For the base station: guards at a desk can talk over the radio without a walkie-talkie.
+var guard_room: GuardRoom
 ## Set by tests: a function returning fake microphone frames (PackedVector2Array) instead of
 ## the real microphone.
 var test_input := Callable()
@@ -144,8 +146,9 @@ func _process(delta: float) -> void:
 			else:
 				_hangover_left -= delta
 			wants = _hangover_left > 0.0
-	# The walkie-talkie: hold its key (only while alive, with one clipped on).
-	var radio := local_guard.has_radio and not local_guard.is_dead and not local_guard.input_blocked \
+	# The walkie-talkie: hold its key (only while alive, with one clipped on, or at a guard room
+	# desk, where the base station is).
+	var radio := (local_guard.has_radio or at_desk(local_guard)) and not local_guard.is_dead and not local_guard.input_blocked \
 			and Input.is_action_pressed("radio_talk")
 	if radio and not on_radio:
 		_squelch(null)
@@ -215,19 +218,27 @@ func _heard_by_host(speaker: int, loudness: float, radio: bool, packet: PackedBy
 	if not radio:
 		return
 	var talker := director.guard_by_peer(speaker)
-	# Only a living guard with a radio can call over it.
-	if talker == null or talker.is_dead or not talker.has_radio:
+	# Only a living guard with a radio (or at the base station) can call over it.
+	if talker == null or talker.is_dead or not (talker.has_radio or at_desk(talker)):
 		return
 	for guard in director.living_guards():
-		# Guards close by hear the call in person, not out of their own radio.
-		if guard != talker and guard.has_radio and guard.global_position.distance_to(talker.global_position) > RADIO_OVER:
+		# Guards close by hear the call in person, not out of their own radio. The base station
+		# comes out of every guard's radio and the hallway speakers alike.
+		if guard != talker and (guard.has_radio or at_desk(talker)) and guard.global_position.distance_to(talker.global_position) > RADIO_OVER:
 			director.report_voice(guard.name.to_int(), loudness * 0.85)
 
 
 ## Does the local guard hear this speaker over the radio (rather than in person)?
+## Is this guard at a guard room desk, on the base station?
+func at_desk(guard: Guard) -> bool:
+	return guard_room != null and guard.name.to_int() in guard_room.occupants
+
+
 func _hears_on_radio(speaker: int) -> bool:
 	var talker := players_guard(speaker)
-	if talker == null or local_guard == null or not local_guard.has_radio or local_guard.is_dead or talker.is_dead:
+	if talker == null or local_guard == null or local_guard.is_dead or talker.is_dead:
+		return false
+	if not local_guard.has_radio and not at_desk(talker):
 		return false
 	return talker.global_position.distance_to(local_guard.global_position) > RADIO_OVER
 

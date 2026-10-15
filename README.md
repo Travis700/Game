@@ -92,6 +92,10 @@ padlock key turns up deep in the school (the intercom says where): fetch it and 
 gate opens. Anyone standing out in the street is safe. Whoever's still inside at 6 AM is caught; one guard out
 wins the run. If the key's carrier is caught, the key lies where they fell.
 
+**Base station:** sitting at a guard room desk, hold the walkie-talkie key (B) to call the whole team over the
+radio, no walkie needed. Field guards need a walkie-talkie to call back. Careful: the call comes out loud wherever
+your teammates are, and anything near them hears it too.
+
 **Close calls:** the first time a monster you've never logged catches you, you're knocked out instead and wake
 in the guard room, shaken, knowing its rule. Playing solo, you also get one second wind a night (it costs 50).
 The night report lists what was missed and which monsters were out.

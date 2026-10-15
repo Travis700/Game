@@ -97,6 +97,8 @@ var _grace: Dictionary = {}
 var tonight_report := ""
 ## Host: monster kinds someone logged tonight (for the report).
 var _logged_tonight: Dictionary = {}
+## Host: the monsters each night of this run brought, oldest first (see plan_night).
+var _run_history: Array[Array] = []
 var _lockdown_times: Array[float] = []
 ## Everyone's nerve. Host only.
 var nerve: Nerve
@@ -187,6 +189,16 @@ func plan_night(number: int) -> void:
 		if ROSTER[kind]["night"] <= number and SchoolBuilder.area_difficulty(home) <= difficulty:
 			pool.append(kind)
 	pool.shuffle()
+	# A deck, not a lottery: monsters this run hasn't shown yet come first, and nothing turns up
+	# three nights running.
+	if number <= 1:
+		_run_history.clear()
+	var weight := {}
+	for kind: String in pool:
+		var seen := _run_history.any(func(night: Array) -> bool: return kind in night)
+		var twice := _run_history.size() >= 2 and kind in _run_history[-1] and kind in _run_history[-2]
+		weight[kind] = randf() + (3.0 if twice else 0.0) - (0.6 if not seen else 0.0)
+	pool.sort_custom(func(a: String, b: String) -> bool: return weight[a] < weight[b])
 	# Bigger maps (for bigger teams) bring one more monster per open wing.
 	var wanted := MONSTERS_PER_NIGHT[clampi(number - 1, 0, MONSTERS_PER_NIGHT.size() - 1)] + difficulty - 1
 	if conditions and conditions.has("hazard_pay"):
@@ -222,6 +234,9 @@ func plan_night(number: int) -> void:
 		for i in (1 if number < 9 else 2):
 			_lockdown_times.append(randf_range(90.0, 320.0))
 		_lockdown_times.sort()
+	_run_history.append(tonight.map(func(plan: Dictionary) -> String: return plan["kind"]))
+	if _run_history.size() > 12:
+		_run_history.pop_front()
 	# The real night cleaner works every night, unless they've called in sick.
 	if not (conditions and conditions.has("messy")):
 		tonight.append({"kind": "cleaner", "at": 10.0})
@@ -533,7 +548,7 @@ func is_watched(monster: Monster) -> bool:
 				and _clear_line(eye, target, null):
 			return true
 	# The monitors only watch anything if someone's sitting at them.
-	if not living_guards().any(func(guard: Guard) -> bool: return guard.seated_desk >= 0):
+	if guard_room == null or not guard_room.occupants.any(func(peer: int) -> bool: return peer != 0):
 		return false
 	for feed_key in cameras.shown:
 		var camera_index := feed_key / 2

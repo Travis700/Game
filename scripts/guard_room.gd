@@ -232,8 +232,8 @@ func _update_controls_hint() -> void:
 		hud.set_controls("%s / %s  change camera     %s  full screen     %s  compare with photo     %s  log     %s  stand up" % [
 			_key("move_left"), _key("move_right"), _key("zoom"), _key("compare"), _key("clipboard"), _key("move_back")])
 	else:
-		hud.set_controls("Look at a monitor     1-4  monitor full screen     %s  log     %s  stand up" % [
-			_key("clipboard"), _key("move_back")])
+		hud.set_controls("Look at a monitor     1-4  monitor full screen     %s  log     %s  base station radio (everyone hears)     %s  stand up" % [
+			_key("clipboard"), _key("radio_talk"), _key("move_back")])
 
 
 ## The player's key for an action (Controls is an autoload, looked up by path so this
