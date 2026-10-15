@@ -131,6 +131,7 @@ func _ready() -> void:
 	shift.started.connect(lighting.go_dark)
 	shift.started.connect(func() -> void:
 		_second_wind_used = false
+		night.report.incidents.clear()
 		if night.number == 1:
 			_close_calls.clear()
 		_left_alive.clear()
@@ -824,6 +825,13 @@ func _catch_up_late_joiner(peer_id: int) -> void:
 	_show_ghost.rpc(peer_id, true)
 
 
+## Every computer: the nearest camera caught it. Its picture goes on tonight's report.
+@rpc("authority", "call_local", "reliable")
+func _incident(camera_index: int, caption: String) -> void:
+	var image: Image = await cameras.snapshot(camera_index)
+	night.report.add_incident(image, caption)
+
+
 ## A body where a guard was caught, for a computer that joined after it happened.
 @rpc("authority", "call_remote", "reliable")
 func _show_corpse(peer_id: int, at: Vector3) -> void:
@@ -1498,6 +1506,9 @@ func _on_guard_caught(peer_id: int, by: String, from := Vector3.INF) -> void:
 	if _close_call(guard, by):
 		return
 	night.record_death()
+	var camera_index := cameras.best_view_of(guard.global_position)
+	if camera_index >= 0:
+		_incident.rpc(camera_index, "%s · %s cam · Guard %d, caught by %s" % [night.time_text(), cameras.area_of(camera_index), guard.slot, by])
 	clutter.drop(peer_id, guard.global_position)
 	finale.drop(peer_id, guard.global_position)
 	# Caught in a cupboard (e.g. by the Self-Portrait): the ghost climbs out.

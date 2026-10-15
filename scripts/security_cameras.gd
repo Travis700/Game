@@ -115,6 +115,39 @@ func capture_references(time_text: String) -> void:
 			_references[i] = ImageTexture.create_from_image(image)
 
 
+## The open, working camera with the best view of `at` (nearest, in frame, nothing in the way),
+## or -1. For incident photos.
+func best_view_of(at: Vector3) -> int:
+	var best := -1
+	var best_distance := 30.0
+	var target := at + Vector3(0, 1.0, 0)
+	for i in count():
+		if not is_open(i) or not is_working(i):
+			continue
+		var cam := camera(i)
+		var distance := cam.global_position.distance_to(target)
+		if distance >= best_distance or not cam.is_position_in_frustum(target):
+			continue
+		var query := PhysicsRayQueryParameters3D.create(cam.global_position, target, 1)
+		var hit := cam.get_world_3d().direct_space_state.intersect_ray(query)
+		if hit.is_empty() or (hit["position"] as Vector3).distance_to(target) < 1.2:
+			best = i
+			best_distance = distance
+	return best
+
+
+## Every computer: a still from this camera, right now (null where nothing is drawn).
+func snapshot(camera_index: int) -> Image:
+	if DisplayServer.get_name() == "headless":
+		return null
+	var feed := _feeds[key(camera_index, false)]
+	if key(camera_index, false) != _focus:
+		feed.render_target_update_mode = SubViewport.UPDATE_ONCE
+	await get_tree().process_frame
+	await get_tree().process_frame
+	return feed.get_texture().get_image()
+
+
 ## Forgets last night's photos (a new night is starting).
 func clear_references() -> void:
 	_references.clear()

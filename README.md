@@ -102,6 +102,9 @@ over; a revive totem can bring you back) and clock in properly from the next nig
 radio, no walkie needed. Field guards need a walkie-talkie to call back. Careful: the call comes out loud wherever
 your teammates are, and anything near them hears it too.
 
+**Incident photos:** when someone's caught, the nearest camera that can see it takes a picture, and the night
+report shows it.
+
 **Close calls:** the first time a monster you've never logged catches you, you're knocked out instead and wake
 in the guard room, shaken, knowing its rule. Playing solo, you also get one second wind a night (it costs 50).
 The night report lists what was missed and which monsters were out.

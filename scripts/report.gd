@@ -13,6 +13,9 @@ var _overtime_button: Button
 var _waiting: Label
 ## A promotion earned with this night's XP, shown at the bottom of the next report.
 var promotion := ""
+## Tonight's incident photos so far: [texture, caption]. Shown (the last four) on the report.
+var incidents: Array = []
+var _incidents_row: HBoxContainer
 
 const COLUMNS := ["Guard", "Clocked out", "Correct logs", "False reports", "Round", "Tonight's pay", "Total", "XP"]
 
@@ -42,6 +45,11 @@ func _ready() -> void:
 	_table.add_theme_constant_override("h_separation", 28)
 	_table.add_theme_constant_override("v_separation", 10)
 	column.add_child(_table)
+
+	_incidents_row = HBoxContainer.new()
+	_incidents_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_incidents_row.add_theme_constant_override("separation", 14)
+	column.add_child(_incidents_row)
 
 	_summary = Label.new()
 	_summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -102,6 +110,7 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, outcom
 		_table.add_child(_cell("points lost" if row.get("lost", false) else "%+d" % row["pay"], 22))
 		_table.add_child(_cell(str(row["total"]), 22))
 		_table.add_child(_cell("+%d" % row.get("xp", 0), 22))
+	_show_incidents()
 	_summary.text = summary
 	if promotion != "":
 		_summary.text += "\n\n★ " + promotion + " ★"
@@ -115,6 +124,33 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, outcom
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	if is_host and not Input.get_connected_joypads().is_empty():
 		_next_button.grab_focus.call_deferred()
+
+
+## Every computer: a camera still of a guard being caught, for tonight's report.
+func add_incident(image: Image, caption: String) -> void:
+	if image == null:
+		return
+	image.resize(240, 135)
+	incidents.append([ImageTexture.create_from_image(image), caption])
+
+
+func _show_incidents() -> void:
+	for child in _incidents_row.get_children():
+		child.queue_free()
+	for incident: Array in incidents.slice(-4):
+		var box := VBoxContainer.new()
+		var picture := TextureRect.new()
+		picture.texture = incident[0]
+		picture.custom_minimum_size = Vector2(240, 135)
+		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		box.add_child(picture)
+		var caption := _cell(incident[1], 13, 0.75)
+		caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		caption.custom_minimum_size = Vector2(240, 0)
+		box.add_child(caption)
+		_incidents_row.add_child(box)
+	_incidents_row.visible = not incidents.is_empty()
+	incidents.clear()
 
 
 func hide_report() -> void:
