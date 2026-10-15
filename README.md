@@ -88,6 +88,8 @@ isn't full). Run out and you're winded until it comes back up; an energy drink m
 
 **Lockdown:** from night 6 (once a night; twice from night 9 and in Overtime) an alarm wails and for 30 seconds
 every monster hunts the nearest guard it can reach. Hide, get to the guard room (before night 7), or outrun them.
+Often it's a *drill* that follows one monster's rule (the alarm says whose): the Hall Monitor's (only runners and
+shouters are hunted), the Lunch Lady's (freeze when they're near) or the Mascot's (nothing moves while watched).
 
 **The last bell:** the front gate is chained shut all shift. At 5 AM on night 9 the intercom calls an
 assembly, the alarm goes and doesn't stop, and every monster hunts, faster as six gets closer. The gate's

@@ -222,7 +222,7 @@ func _ready() -> void:
 	director.announcement.connect(func(text: String, sound: String) -> void: _announce.rpc(text, sound))
 	director.camera_signal_changed.connect(func(index: int, working: bool) -> void: _camera_signal.rpc(index, working))
 	director.bell_changed.connect(func(ringing: bool) -> void: _set_bell.rpc(ringing))
-	director.lockdown_changed.connect(func(on: bool) -> void: _set_lockdown.rpc(on))
+	director.lockdown_changed.connect(func(on: bool, rule: String) -> void: _set_lockdown.rpc(on, rule))
 	school.bell_panel.used.connect(func(by: Node) -> void:
 		if by != _local_guard or _local_guard.is_dead:
 			return
@@ -841,7 +841,7 @@ func _catch_up_late_joiner(peer_id: int) -> void:
 	for hidden_peer: int in hiding.hidden:
 		hiding._set_hidden.rpc_id(peer_id, hidden_peer, hiding.hidden[hidden_peer])
 	if director.lockdown_left > 0.0:
-		_set_lockdown.rpc_id(peer_id, true)
+		_set_lockdown.rpc_id(peer_id, true, director.drill_rule)
 	if director.bell_ringing:
 		_set_bell.rpc_id(peer_id, true)
 	if finale.active:
@@ -1164,6 +1164,8 @@ func _objective() -> String:
 				return finale.objective_for(_local_guard)
 			var text := "Survive until 6 AM. Watch the cameras and log anything odd (%s)." % Controls.key_name("clipboard") \
 					if night.number <= 1 else "Survive until 6 AM."
+			if _drill_rule != "":
+				text = "LOCKDOWN DRILL: " + _drill_rule + "\n" + text
 			var round_text := rounds.objective_text()
 			if round_text != "":
 				text += "\n" + round_text
@@ -1529,9 +1531,14 @@ func _show_body_to_viewer(guard: Guard, shown: bool) -> void:
 			(part as MeshInstance3D).layers = layers
 
 
+## This lockdown's drill, shown under the objective while it lasts.
+var _drill_rule := ""
+
+
 ## Every computer: the lockdown alarm wails (or stops).
 @rpc("authority", "call_local", "reliable")
-func _set_lockdown(on: bool) -> void:
+func _set_lockdown(on: bool, rule := "") -> void:
+	_drill_rule = rule if on else ""
 	if on:
 		if _siren == null:
 			_siren = AudioStreamPlayer.new()

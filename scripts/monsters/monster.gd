@@ -128,9 +128,21 @@ func _physics_process(delta: float) -> void:
 	think(delta)
 
 
-## Lockdown: straight for the nearest guard it can reach.
+var _drill_look := 0.0
+var _drill_watched := false
+
+
+## Lockdown: straight for the nearest guard it can reach (following the drill's rule, if any).
 func _lockdown_hunt() -> void:
-	var guard := director.nearest_living_guard(global_position)
+	if director.drill == "watched":
+		_drill_look -= get_physics_process_delta_time()
+		if _drill_look <= 0.0:
+			_drill_look = 0.1
+			_drill_watched = director.is_watched(self)
+		if _drill_watched:
+			halt()
+			return
+	var guard := director.lockdown_target(global_position)
 	if guard == null:
 		halt()
 		return

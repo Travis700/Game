@@ -9,7 +9,8 @@ extends Node3D
 
 ## A guard's screen flashes (e.g. the Photographer's flash). Main shows it on their computer.
 ## A lockdown started or ended (everyone hears the alarm).
-signal lockdown_changed(on: bool)
+## `rule`: what this lockdown's drill asks of the guards ("" when it's off, or a plain hunt).
+signal lockdown_changed(on: bool, rule: String)
 signal screen_flashed(peer_id: int, color: Color, seconds: float)
 signal guard_caught(peer_id: int, by: String, from: Vector3)
 signal message_for(peer_id: int, text: String)
@@ -53,6 +54,15 @@ const ROSTER := {
 ## hunts the nearest guard it can reach, wherever they are. Hide, or get to the guard room.
 const LOCKDOWN_FROM_NIGHT := 6
 const LOCKDOWN_SECONDS := 30.0
+## A lockdown follows one monster's rule (a "drill"), picked from what's out tonight.
+## still: they only hunt guards who run or shout. quiet: guards who move near them, or run or
+## talk within earshot. watched: nothing moves while someone's looking at it.
+const DRILLS := {
+	"still": "Walk, don't run: they only hunt a guard who runs or shouts.",
+	"quiet": "Freeze when they're near: they hear footsteps within 12 m, and running or talking from 30 m.",
+	"watched": "Keep your eyes on them: nothing moves while someone's looking, in person or on a monitor.",
+}
+const DRILL_OF := {"HallMonitor": "still", "LunchLady": "quiet", "Mascot": "watched", "Twin": "watched"}
 const LOCKDOWN_SPEED := 3.6
 ## The intercom: in-game minutes between the Principal's summonses, and real seconds to answer.
 const SUMMON_EVERY := Vector2(60.0, 100.0)
@@ -85,6 +95,13 @@ var voice: VoiceChat
 var conditions: Conditions
 ## Real seconds of lockdown left (0 when there isn't one). Host only.
 var lockdown_left := 0.0
+## This lockdown's drill (see DRILLS), "" for a plain hunt.
+var drill := ""
+var drill_rule := ""
+var _drills_used: Array[String] = []
+## Peer -> when (s) they last broke the drill's rule; they're a target for 2 s after.
+var _broke_drill_at: Dictionary = {}
+var _drill_last_pos: Dictionary = {}
 ## How fast monsters hunt in a lockdown (the finale speeds it up). Host only.
 var hunt_speed := LOCKDOWN_SPEED
 ## The last night's last hour: one long lockdown, and guards out through the gate are out of reach.
@@ -238,6 +255,8 @@ func plan_night(number: int) -> void:
 	# Lockdowns: once a night from night 6, twice from night 9 (and Overtime).
 	_lockdown_times.clear()
 	_logged_tonight.clear()
+	_drills_used.clear()
+	_end_drill()
 	lockdown_left = 0.0
 	hunt_speed = LOCKDOWN_SPEED
 	finale = false
@@ -411,7 +430,8 @@ func end_night() -> void:
 	hunt_speed = LOCKDOWN_SPEED
 	if lockdown_left > 0.0:
 		lockdown_left = 0.0
-		lockdown_changed.emit(false)
+		_end_drill()
+		lockdown_changed.emit(false, "")
 	_lockdown_times.clear()
 	for monster in _container.get_children():
 		monster.queue_free()
@@ -674,8 +694,8 @@ func _update_bell(minutes: float, delta: float) -> void:
 func start_finale() -> void:
 	finale = true
 	_lockdown_times.clear()
-	if lockdown_left <= 0.0:
-		lockdown_changed.emit(true)
+	_end_drill()
+	lockdown_changed.emit(true, "")
 	lockdown_left = INF
 
 
@@ -684,9 +704,11 @@ func _update_lockdown(minutes: float, delta: float) -> void:
 		return
 	if lockdown_left > 0.0:
 		lockdown_left -= delta
+		_watch_drill(delta)
 		if lockdown_left <= 0.0:
 			lockdown_left = 0.0
-			lockdown_changed.emit(false)
+			_end_drill()
+			lockdown_changed.emit(false, "")
 			if career:
 				for guard in living_guards():
 					if guard.hiding:
@@ -696,8 +718,80 @@ func _update_lockdown(minutes: float, delta: float) -> void:
 	if not _lockdown_times.is_empty() and minutes >= _lockdown_times[0]:
 		_lockdown_times.pop_front()
 		lockdown_left = LOCKDOWN_SECONDS
-		lockdown_changed.emit(true)
-		announcement.emit("LOCKDOWN. Every one of them is hunting. Hide in a cupboard or get to the guard room.", "")
+		var whose := _pick_drill()
+		lockdown_changed.emit(true, drill_rule)
+		if drill == "":
+			announcement.emit("LOCKDOWN. Every one of them is hunting. Hide in a cupboard or get to the guard room.", "")
+		else:
+			var possessive := whose + ("'" if whose.ends_with("s") else "'s")
+			announcement.emit("LOCKDOWN: %s drill. %s Or hide in a cupboard, or get to the guard room." % [possessive, drill_rule], "")
+
+
+## Host: picks this lockdown's drill from the monsters out right now (a different one each
+## time if it can). Returns whose drill it is, e.g. "the Mascot".
+func _pick_drill() -> String:
+	_end_drill()
+	var options: Array = []
+	for monster in active_monsters():
+		var kind: String = DRILL_OF.get(monster.get_script().get_global_name(), "")
+		if kind != "" and not _drills_used.has(kind):
+			options.append([kind, monster.display_name])
+	if options.is_empty():
+		return ""
+	var picked: Array = options.pick_random()
+	drill = picked[0]
+	drill_rule = DRILLS[drill]
+	_drills_used.append(drill)
+	return picked[1]
+
+
+func _end_drill() -> void:
+	drill = ""
+	drill_rule = ""
+	_broke_drill_at.clear()
+	_drill_last_pos.clear()
+
+
+## Host, during a lockdown: notes who's breaking the drill's rule (and so is fair game).
+func _watch_drill(delta: float) -> void:
+	if drill != "still" and drill != "quiet":
+		return
+	var now := Time.get_ticks_msec() / 1000.0
+	for guard in living_guards():
+		var peer := guard.name.to_int()
+		var position := guard.global_position
+		var last: Vector3 = _drill_last_pos.get(peer, position)
+		_drill_last_pos[peer] = position
+		var speed := Vector2(position.x - last.x, position.z - last.z).length() / maxf(delta, 0.001)
+		var broke := false
+		if drill == "still":
+			broke = guard.is_running or voice_level(guard) > 0.6
+		else:
+			var near := INF
+			for monster in active_monsters():
+				near = minf(near, monster.global_position.distance_to(position))
+			broke = (near < 12.0 and speed > 0.8) \
+					or (near < 30.0 and (guard.is_running or voice_level(guard) > 0.3))
+		if broke:
+			_broke_drill_at[peer] = now
+
+
+## Host: who a monster hunts in a lockdown. In a drill, only those breaking its rule (or, in
+## the "watched" drill, anyone: but it can't move while watched).
+func lockdown_target(from: Vector3) -> Guard:
+	if drill != "still" and drill != "quiet":
+		return nearest_living_guard(from)
+	var now := Time.get_ticks_msec() / 1000.0
+	var best: Guard = null
+	var best_distance := INF
+	for guard in living_guards():
+		if now - float(_broke_drill_at.get(guard.name.to_int(), -INF)) > 2.0:
+			continue
+		var distance := from.distance_to(guard.global_position)
+		if distance < best_distance and may_enter(guard.global_position) and not guard.hiding and not is_gone(guard):
+			best = guard
+			best_distance = distance
+	return best
 
 
 ## Host: now and then, a monster on a monitor someone's watching stops and looks straight into
