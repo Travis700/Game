@@ -68,10 +68,12 @@ func think(delta: float) -> void:
 	else:
 		_still_for = 0.0
 		_warned = false
-	if _still_for > STILL_SECONDS * 0.5 and not _warned:
+	# Punching a station or holding the breaker takes a moment: it gives you twice as long.
+	var limit := STILL_SECONDS * (2.0 if director.at_work_spot(_target) else 1.0)
+	if _still_for > limit * 0.4 and not _warned:
 		_warned = true
-		director.tell(_target.name.to_int(), "Footsteps behind you stop when yours do.")
-	if _still_for > STILL_SECONDS:
+		director.tell(_target.name.to_int(), "Footsteps behind you stop when yours do. KEEP MOVING.")
+	if _still_for > limit:
 		_step_left = STEP_IN_SECONDS
 		state = "step%d" % _target.slot
 

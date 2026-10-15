@@ -185,6 +185,9 @@ a rank (in brackets); the machine shows which.
 - **Heavy-duty flashlight (80, rank 3):** press G to fit it. A longer, wider beam for the rest of the run.
 - **Air horn (70, rank 4):** press G to blast it. Every monster within 15 metres freezes for 6 seconds,
   but everything in the school hears it.
+- **Decoy radio (60, rank 2):** press G to put it down. Eight seconds later it blares music for twenty, and
+  everything that hunts by sound goes to look.
+- **Box of donuts for the district (300, rank 3):** press G to send it: the district forgets one write-up.
 
 Sensors and traps are cleared away each morning.
 
@@ -320,7 +323,7 @@ it runs; that's normal for games that aren't signed (Steam builds don't show it)
 | E | Use. Press E on the time clock in the guard room to clock in and start the night. Hold E on punch stations and the breaker. |
 | Esc | Menu: mouse sensitivity, volume, change keys, graphics (resolution, anti-aliasing, shadows, V-sync), fullscreen, leave the game (pauses solo; in a group the night keeps going) |
 | Tab | Clipboard: log anything odd you spot (after clocking in); its Field guide button shows what you know about each monster |
-| G | Use or put down what you're carrying (sensors, traps, energy drink, coffee, flashlight, EMF reader, air horn). As a ghost: watch through a teammate's eyes |
+| G | Use or put down what you're carrying (sensors, traps, energy drink, coffee, flashlight, EMF reader, air horn, decoy radio, donuts). As a ghost: watch through a teammate's eyes |
 | V | Push to talk (voice chat) |
 | B | Talk on the walkie-talkie (once you have one) |
 | F11 | Switch between fullscreen and a window |

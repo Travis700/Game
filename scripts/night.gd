@@ -594,8 +594,11 @@ func _send_quota() -> void:
 	var text := ""
 	if quota_target > 0:
 		text = "Work target: %d / %d" % [mini(_team_work(), quota_target), quota_target]
-		if _team_work() >= quota_target:
+		var unpunched := rounds.missed_count()
+		if _team_work() - unpunched * Rounds.PUNCH_POINTS * shift_team() >= quota_target:
 			text += " (met)"
+		elif unpunched > 0:
+			text += " (unpunched stations count against it at 6)"
 		if write_ups > 0:
 			text += "   ·   write-ups %d of %d" % [write_ups, WRITE_UPS_TO_FIRE]
 	_show_quota.rpc(text)
@@ -646,7 +649,8 @@ func _end_night() -> void:
 	if shift.state != Shift.State.MORNING:
 		return
 	var rows := _build_rows(true)
-	var work := _team_work()
+	# Stations nobody punched count against the work target, for every guard on shift.
+	var work := maxi(_team_work() - rounds.missed_count() * Rounds.PUNCH_POINTS * shift_team(), 0)
 	_run_nights += 1
 	_award_night()
 	var round_text := "Round: %d of %d stations punched%s." % [rounds.punched.size(), rounds.order.size(),

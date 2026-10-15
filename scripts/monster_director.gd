@@ -112,6 +112,8 @@ var _noises: Array = []
 var night_number := 1
 ## Host: how many guards started tonight (set by Night before plan_night).
 var team_size := 1
+## Where guards stand still to do the job: punch stations and the breaker. Set by Main.
+var work_spots: Array[Vector3] = []
 ## Tonight's difficulty: which wings are open. Monsters only come from open areas.
 var difficulty := 1
 ## Monsters coming out tonight and when: [{"kind", "at"}]. Host only.
@@ -601,6 +603,15 @@ func active_monsters() -> Array[Monster]:
 				and (monster.loggable() or monster is Shade) and not monster.is_queued_for_deletion():
 			result.append(monster)
 	return result
+
+
+## Is this guard at a place where the job means standing still for a moment (a punch station,
+## the breaker)? Set up by Main.
+func at_work_spot(guard: Guard) -> bool:
+	for spot in work_spots:
+		if Vector2(guard.global_position.x - spot.x, guard.global_position.z - spot.z).length() < 2.5:
+			return true
+	return false
 
 
 ## Is this guard sitting at a guard room desk? (Works for every guard, on the host.)

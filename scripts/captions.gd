@@ -6,6 +6,7 @@ extends CanvasLayer
 
 ## By "MonsterClass:state": what that state change sounds like.
 const SOUNDS := {
+	"Decoy:plays": "Music from a decoy radio",
 	"HallMonitor:chase": "Whistle blast",
 	"Coach:whistle": "Whistle: \"HUSTLE!\"",
 	"Coach:chase": "Whistle blasts",

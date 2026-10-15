@@ -329,6 +329,9 @@ func _ready() -> void:
 	power.school = school
 	power.cameras = cameras
 	power.director = director
+	for station: Dictionary in Rounds.STATIONS:
+		director.work_spots.append(station["at"])
+	(func() -> void: director.work_spots.append(power._breaker.global_position)).call_deferred()
 	power.career = career
 	add_child(power)
 	power.breaker_reset.connect(night.add_bonus)

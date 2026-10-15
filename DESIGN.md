@@ -144,8 +144,10 @@ Which monsters are unlocked on which night is still to be set (section 14).
 | Energy drink | 25 | Faster running for 30 s. |
 | Heavy-duty flashlight | 80 | Longer, wider beam for the rest of the run. |
 | Air horn | 70 | Freezes monsters within 15 m for 6 s; everything hears it. |
+| Decoy radio | 60 | Put down; 8 s later it plays music for 20 s, a noise sound-hunters go to. |
+| Box of donuts for the district | 300 | Removes one of the team's write-ups. |
 
-**Rank locks:** spectral camera kit and glue trap need rank 2, portable camera and heavy-duty flashlight rank 3, air horn rank 4.
+**Rank locks:** spectral camera kit, glue trap and decoy radio need rank 2, portable camera, heavy-duty flashlight and donuts rank 3, air horn rank 4.
 
 ## 11b. Ranks
 
@@ -179,6 +181,7 @@ What keeps a player coming back after the first run:
 - **Base station.** A guard seated at a desk can hold the walkie-talkie key without owning one: everyone alive hears it as a radio call (field guards still need a walkie to answer). The Mascot and Twins only count as watched on a monitor while someone occupies a desk.
 - **Monster deck.** Each night's pool is weighted: monsters this run hasn't shown come first, and one that came the last two nights goes to the back. Solo guards' nerve drains 0.06/s on top of the base rate (the guard room still restores it).
 - **Evidence for confirmations.** A teammate's confirmation of something already logged pays (+10) only if they could see it themselves: standing in that area, or seated at a desk with that area's camera on one of their own four monitors. Otherwise it's noted with no pay. Likewise only the monitors of occupied desks count as watching the Mascot and Twins.
+- **The round counts.** At 6 AM every unpunched station takes 20 × guards off the team's work total, and the target line says so while stations are left. The Understudy gives twice as long (8 s) to a guard standing at a punch station or the breaker, and warns at 40%. The Self-Portrait's stage 2 and 3 warnings point at the art room.
 - **Run shape.** Auto difficulty opens a wing at nights 4 and 7 (or more for bigger teams), so solo guards meet all 18 monsters; extra monsters per wing only come for teams big enough to cover them (min(difficulty, guards) − 1). Losing the last night retries it once per run instead of going back to night 7, and a solo second wind still works in the finale. Being fired halves points like a wipe. "Nobody runs" is never tonight's bonus with the Coach out or a lockdown planned.
 - **Honest logs.** A correct Monster log with the wrong name pays 10 less; the first repeat of an entry already paid is a warning, later repeats with nothing new are false reports. Ignoring the Principal's summons (it gives up on a living guard) docks 40. Dead guards don't block, clear or keep anomalies.
 - **Marks.** Q (pad B) away from the desks: a 40 m ray, host rate-limited to one per 1.5 s, broadcast as a billboard Label3D (no depth test) in the guard's uniform colour for 8 s. Within 2.5 m of a non-disguised monster (not the Other Cleaner, Student or Understudy) it reads MONSTER! in red.

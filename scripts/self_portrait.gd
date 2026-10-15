@@ -93,9 +93,9 @@ func update(minutes: float) -> void:
 	_show.rpc(next, subject.slot)
 	match next:
 		2:
-			director.tell(_subject, "You feel watched, like someone is studying your face.")
+			director.tell(_subject, "You feel watched, like someone is studying your face. You smell paint, from the direction of the art room.")
 		3:
-			director.tell(_subject, "Your face feels stiff, like drying paint.")
+			director.tell(_subject, "Your face feels stiff, like drying paint. Something in the art room is nearly done with you.")
 		4:
 			director.tell(_subject, "Somewhere in the art room, a portrait of Guard %d is almost finished." % subject.slot)
 		FINISHED:

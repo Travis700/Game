@@ -55,6 +55,14 @@ const ITEMS := {
 		"name": "Thermos of coffee", "price": 30,
 		"about": "Press G to drink it: steadies your nerve (+40). Low nerve means monsters notice you sooner, and you start seeing things.",
 	},
+	"decoy_radio": {
+		"name": "Decoy radio", "price": 60, "rank": 2,
+		"about": "Press G to put it down. Eight seconds later it starts blaring music for twenty: everything that hunts by sound goes to look. Then get somewhere else.",
+	},
+	"donuts": {
+		"name": "Box of donuts for the district", "price": 300, "rank": 3,
+		"about": "Press G to send it to the district office: they forget one of the team's write-ups.",
+	},
 	"air_horn": {
 		"name": "Air horn", "price": 70, "rank": 4,
 		"about": "Press G to blast it: every monster within 15 metres freezes for 6 seconds. Everything in the school hears it.",
@@ -63,7 +71,10 @@ const ITEMS := {
 ## Every item needs at least this rank to buy, unless it says otherwise.
 const DEFAULT_RANK := 1
 ## Items used or put down with G (the rest are fitted with E).
-const USED_WITH_G: Array[String] = ["camera_kit", "portable_camera", "radio", "motion_sensor", "glue_trap", "energy_drink", "flashlight", "air_horn", "coffee", "emf"]
+const USED_WITH_G: Array[String] = ["camera_kit", "portable_camera", "radio", "motion_sensor", "glue_trap", "energy_drink", "flashlight", "air_horn", "coffee", "emf", "decoy_radio", "donuts"]
+## The decoy radio: seconds before it starts, and how long it plays.
+const DECOY_DELAY := 8.0
+const DECOY_SECONDS := 20.0
 ## How far a motion sensor notices things, and how long it stays quiet after going off.
 const SENSOR_RANGE := 5.0
 const SENSOR_COOLDOWN := 30.0
@@ -179,6 +190,31 @@ func _request_use() -> void:
 			elif take(peer, item):
 				night.nerve.add(peer, 40.0)
 				_tell(peer, "Hot, bitter, and exactly what you needed. Your hands stop shaking.")
+		"decoy_radio":
+			if night.shift.state != Shift.State.ON_SHIFT:
+				_tell(peer, "Save it for the night.")
+			elif take(peer, item):
+				var at := guard.global_position
+				at.y = 0.0
+				var id := _next_drop
+				_next_drop += 1
+				_place.rpc(id, item, at)
+				_tell(peer, "The decoy radio's down. Eight seconds. Move.")
+				get_tree().create_timer(DECOY_DELAY).timeout.connect(func() -> void:
+					if not _placed.has(id):
+						return
+					director.make_noise(at, DECOY_SECONDS)
+					_decoy_plays.rpc(id))
+				get_tree().create_timer(DECOY_DELAY + DECOY_SECONDS).timeout.connect(func() -> void:
+					if _placed.has(id):
+						_remove_placed.rpc(id))
+		"donuts":
+			if night.write_ups <= 0:
+				_tell(peer, "The team hasn't got any write-ups. Keep the donuts for when you do.")
+			elif take(peer, item):
+				night.write_ups -= 1
+				night._send_quota()
+				_tell(peer, "The district office sends its thanks. One write-up quietly disappears.")
 		"air_horn":
 			if take(peer, item):
 				var frozen := 0
@@ -290,7 +326,11 @@ func _place(id: int, item: String, at: Vector3) -> void:
 	node.position = at
 	var mesh := MeshInstance3D.new()
 	var material := StandardMaterial3D.new()
-	if item == "motion_sensor":
+	if item == "decoy_radio":
+		mesh.mesh = Monster.box(Vector3(0.35, 0.22, 0.12))
+		mesh.position.y = 0.11
+		material.albedo_color = Color(0.55, 0.15, 0.12)
+	elif item == "motion_sensor":
 		mesh.mesh = Monster.box(Vector3(0.2, 0.3, 0.2))
 		mesh.position.y = 0.15
 		material.albedo_color = Color(0.2, 0.2, 0.22)
@@ -400,6 +440,22 @@ func _horn(peer_id: int) -> void:
 	var guard := director.guard_by_peer(peer_id)
 	if guard:
 		Sfx.play_at(guard, Sfx.notes([233.0, 233.0, 233.0, 233.0, 233.0, 233.0], 0.14, 0.6, "saw"), 8.0, 80.0)
+
+
+## Every computer: a decoy radio starts blaring.
+@rpc("authority", "call_local", "reliable")
+func _decoy_plays(id: int) -> void:
+	if not _placed.has(id):
+		return
+	var node: Node3D = _placed[id]["node"]
+	var tune := [392.0, 440.0, 494.0, 523.0, 494.0, 440.0, 392.0, 330.0]
+	var music := create_tween().set_loops(int(DECOY_SECONDS / (tune.size() * 0.25)))
+	music.tween_callback(func() -> void:
+		if is_instance_valid(node):
+			Sfx.play_at(node, Sfx.notes(tune, 0.25, 0.35, "square"), 6.0, 60.0))
+	music.tween_interval(tune.size() * 0.25)
+	node.tree_exiting.connect(music.kill)
+	get_tree().call_group("captions", "heard", "Decoy", "plays", node.global_position)
 
 
 @rpc("any_peer", "call_remote", "reliable")
