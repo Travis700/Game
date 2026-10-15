@@ -62,6 +62,9 @@ func _fill() -> void:
 	_heading("Career")
 	_line("Rank %d: %s  (%d XP)" % [Career.rank(), Career.rank_title(Career.rank()), Career.xp()])
 	_line("Furthest night: %s" % (str(Career.best_night()) if Career.best_night() > 0 else "none yet"))
+	if Career.best_grade() >= 1:
+		_line("Highest grade won: %s (next: %s)" % [Grades.title(Career.best_grade()),
+				Grades.title(Grades.unlocked()) if Career.best_grade() < Grades.MAX else "none: you've done them all"])
 	for stat: String in Career.STATS:
 		_line("%s: %d" % [Career.STATS[stat], Career.stat(stat)])
 	_line("Monsters in your field guide: %d of %d" % [FieldGuide.discovered().size(), FieldGuide.ENTRIES.size()])

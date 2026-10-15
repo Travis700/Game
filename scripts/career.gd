@@ -42,6 +42,8 @@ const ACHIEVEMENTS := {
 	"LAST_BELL": ["Last bell", "Get out through the front gate in the final night's finale."],
 	"OVERTIME": ["Overtime", "Survive a night of Overtime, after the ninth."],
 	"WORKAHOLIC": ["Workaholic", "Survive night 15."],
+	"GRADE_ONE": ["Making the grade", "Win a run at Grade 1 or higher."],
+	"TOP_GRADE": ["Top of the class", "Win a run at Grade 5."],
 }
 ## Every kind of monster, for the Field guide achievement.
 const MONSTER_KINDS: Array[String] = [
@@ -101,6 +103,29 @@ func record_night(peer_id: int, night: int) -> void:
 		_record_night(night)
 	elif peer_id in multiplayer.get_peers():
 		_record_night.rpc_id(peer_id, night)
+
+
+## Host: this player won a run at `grade` (0 = no grade): the next grade unlocks.
+func record_grade(peer_id: int, grade: int) -> void:
+	if peer_id == multiplayer.get_unique_id():
+		_record_grade(grade)
+	elif peer_id in multiplayer.get_peers():
+		_record_grade.rpc_id(peer_id, grade)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _record_grade(grade: int) -> void:
+	var config := _load()
+	if grade > int(config.get_value("career", "best_grade", -1)):
+		config.set_value("career", "best_grade", grade)
+		_save(config)
+
+
+## The highest grade this player has won a run at: 0 for a plain run, -1 if they've never won.
+static func best_grade() -> int:
+	var config := _load()
+	var won := int(config.get_value("stats", "runs_won", 0)) > 0
+	return maxi(int(config.get_value("career", "best_grade", -1)), 0 if won else -1)
 
 
 ## This player's daily shift score for `date`. Keeps the best one. True if it's a new best.

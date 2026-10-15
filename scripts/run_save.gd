@@ -55,4 +55,6 @@ static func clear() -> void:
 ## "Night 3 · difficulty 2" for the menu.
 static func describe(data: Dictionary) -> String:
 	var difficulty := int(data.get("difficulty", 0))
-	return "Night %d · %s" % [int(data.get("night", 1)), "auto difficulty" if difficulty == 0 else "difficulty %d" % difficulty]
+	var grade := int(data.get("grade", 0))
+	return "Night %d · %s%s" % [int(data.get("night", 1)), "auto difficulty" if difficulty == 0 else "difficulty %d" % difficulty,
+			" · " + Grades.title(grade) if grade > 0 else ""]

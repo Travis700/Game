@@ -106,6 +106,8 @@ var _drill_last_pos: Dictionary = {}
 var hunt_speed := LOCKDOWN_SPEED
 ## The last night's last hour: one long lockdown, and guards out through the gate are out of reach.
 var finale := false
+## This run's grade (see Grades). Host.
+var grade := 0
 ## The finale's gate is open: guards out in the street are out of reach.
 var gate_open := false
 ## Host: peer id -> when their close-call grace runs out (real seconds).
@@ -264,7 +266,7 @@ func plan_night(number: int) -> void:
 	hunt_speed = LOCKDOWN_SPEED
 	finale = false
 	gate_open = false
-	if number >= LOCKDOWN_FROM_NIGHT:
+	if number >= (4 if grade >= 1 else LOCKDOWN_FROM_NIGHT):
 		for i in (3 if Memos.has(number, "lockdowns") else (1 if number < 9 else 2)):
 			_lockdown_times.append(randf_range(90.0, 320.0))
 	if conditions and conditions.has("drill"):
@@ -289,7 +291,7 @@ func plan_night(number: int) -> void:
 	# Moods (and whether a student is real) are settled now, while a daily shift's dice are
 	# still the same for everyone.
 	for plan in tonight:
-		if number >= MOODS_FROM_NIGHT and plan["kind"] not in ["student", "ghost", "locker_thing", "self_portrait", "principal"] \
+		if number >= (1 if grade >= 1 else MOODS_FROM_NIGHT) and plan["kind"] not in ["student", "ghost", "locker_thing", "self_portrait", "principal"] \
 				and (randf() < MOOD_CHANCE or Memos.has(number, "moods")):
 			plan["mood"] = Monster.MOODS.keys().pick_random()
 		if plan["kind"] == "student":
@@ -677,7 +679,7 @@ func stop_sign_up() -> bool:
 ## How much faster monsters move right now (the Bell).
 func speed_multiplier() -> float:
 	var moon := Conditions.FULL_MOON_SPEED if conditions and conditions.has("full_moon") else 1.0
-	return (BELL_SPEED if bell_ringing else 1.0) * moon
+	return (BELL_SPEED if bell_ringing else 1.0) * moon * (Grades.SPEED if grade >= 4 else 1.0)
 
 
 func _update_bell(minutes: float, delta: float) -> void:

@@ -89,6 +89,8 @@ var keep_gear := false
 ## Host: Hardcore runs go back to night 1 with nothing when the team is caught; otherwise to the
 ## last checkpoint (nights 1, 4 and 7) with gear kept and points halved.
 var hardcore := false
+## This run's grade (0 = none; see Grades). Host, and on every computer for the clock.
+var grade := 0
 ## The nightly work target (from night 2): the team has to earn this many points from real work
 ## (logs, naming, stations) per guard. Miss it and everyone gets a write-up; three and the
 ## district lets the team go (back to the last checkpoint, or night 1 on Hardcore).
@@ -206,6 +208,7 @@ func _on_shift_started() -> void:
 		conditions.forced = Daily.conditions_of(daily)
 	conditions.pick(number)
 	director.team_size = players.get_child_count()
+	director.grade = grade
 	director.plan_night(number)
 	finale.planned = Memos.has_finale(number) and daily == ""
 	finale.difficulty = difficulty
@@ -220,7 +223,7 @@ func _on_shift_started() -> void:
 	power.plan(number, quiet_from)
 	phone.plan(number, quiet_from)
 	# Totems only matter with teammates to bring back; alone, being caught ends the run.
-	if players.get_child_count() > 1:
+	if players.get_child_count() > 1 and grade < 5:
 		totems.place_random()
 	anomalies.plan(number)
 	# Spread tonight's anomalies across the night, starting about 20 minutes in.
@@ -372,7 +375,7 @@ func _receive_log(area: String, type: String, named := "") -> void:
 		stats["misnamed"] = int(stats.get("misnamed", 0)) + 1
 		logged.append(entry)
 		_log_result(peer, true, "Confirmed: a monster in %s, but it wasn't %s.  +%d" % [
-				area, FieldGuide.display_name(named), CORRECT_LOG_POINTS - MISNAME_POINTS])
+				area, FieldGuide.display_name(named), CORRECT_LOG_POINTS - misname_points()])
 	elif correct:
 		stats["correct"] += 1
 		logged.append(entry)
@@ -383,7 +386,7 @@ func _receive_log(area: String, type: String, named := "") -> void:
 		director.tell(peer, "You've already logged that one. Log it again with nothing new there and it counts as a false report.")
 	else:
 		stats["false"] += 1
-		_log_result(peer, false, "Nothing like that in %s.  -%d" % [area, FALSE_REPORT_POINTS])
+		_log_result(peer, false, "Nothing like that in %s.  -%d" % [area, false_report_points()])
 
 
 ## Host: tells a guard straight away whether their log was right.
@@ -469,7 +472,7 @@ func save_run(next_night: int, in_progress := false) -> void:
 		"points": saved_points, "items": saved_items, "upgrades": guard_room.upgraded.duplicate(),
 		"run_stats": _run_stats, "run_nights": _run_nights, "write_ups": write_ups,
 		"doors": doors.installed.duplicate(), "personal": saved_personal, "in_progress": in_progress,
-		"spent": shop.spent, "team": run_team, "last_retried": _last_night_retried,
+		"spent": shop.spent, "team": run_team, "last_retried": _last_night_retried, "grade": grade,
 	})
 
 
@@ -652,9 +655,9 @@ func _team_work() -> int:
 	for peer: int in _stats:
 		var stats: Dictionary = _stats[peer]
 		total += int(stats["correct"]) * CORRECT_LOG_POINTS + int(stats.get("named", 0)) * NAME_POINTS \
-				+ int(stats.get("confirmed", 0)) * CONFIRM_POINTS - int(stats.get("misnamed", 0)) * MISNAME_POINTS \
+				+ int(stats.get("confirmed", 0)) * CONFIRM_POINTS - int(stats.get("misnamed", 0)) * misname_points() \
 				+ int(stats.get("called", 0)) * SPOTTER_POINTS \
-				- int(stats["false"]) * FALSE_REPORT_POINTS
+				- int(stats["false"]) * false_report_points()
 	for peer: int in rounds.punches:
 		total += int(rounds.punches[peer]) * rounds.punch_points()
 	return maxi(total, 0)
@@ -674,7 +677,7 @@ func _send_quota() -> void:
 		elif owed > 0:
 			text += "  ·  %d unpunched: -%d at 6 AM" % [rounds.missed_count(), owed]
 		if write_ups > 0:
-			text += "   ·   write-ups %d of %d" % [write_ups, WRITE_UPS_TO_FIRE]
+			text += "   ·   write-ups %d of %d" % [write_ups, write_ups_to_fire()]
 	_show_quota.rpc(text)
 
 
@@ -684,8 +687,23 @@ func _show_quota(text: String) -> void:
 
 
 ## The first night of the stretch this night is in: 1, 4 or 7.
-static func checkpoint_for(night_number: int) -> int:
+static func checkpoint_for(night_number: int, run_grade := 0) -> int:
+	if run_grade >= 3:
+		return 1 if night_number < 5 else 5
 	return 1 + int((clampi(night_number, 1, LAST_NIGHT) - 1) / 3.0) * 3
+
+
+## What mistakes cost (double from Grade 2), and how many write-ups get a team fired (two from Grade 3).
+func false_report_points() -> int:
+	return FALSE_REPORT_POINTS * (2 if grade >= 2 else 1)
+
+
+func misname_points() -> int:
+	return MISNAME_POINTS * (2 if grade >= 2 else 1)
+
+
+func write_ups_to_fire() -> int:
+	return 2 if grade >= 3 else WRITE_UPS_TO_FIRE
 
 
 ## Host: the team was caught on an ordinary (not Hardcore) run. Back to the last checkpoint:
@@ -706,14 +724,14 @@ func _fail_to_checkpoint() -> void:
 	conditions.clear()
 	_run_nights += 1
 	write_ups = 0
-	_restart_at = checkpoint_for(number)
+	_restart_at = checkpoint_for(number, grade)
 	_halve_points(rows)
 	var summary := "The whole team was caught at %s.\nBack to night %d, the last checkpoint. You keep your gear; everyone's points are halved." % [time_text(), _restart_at]
 	# The last night: one more go at it straight away, once a run, rather than two nights back.
 	if number == LAST_NIGHT and not _last_night_retried:
 		_last_night_retried = true
 		_restart_at = LAST_NIGHT
-		summary = "The whole team was caught at %s.\nThe district gives you one more chance at the last night. You keep your gear; everyone's points are halved. Next time it's back to night %d." % [time_text(), checkpoint_for(number)]
+		summary = "The whole team was caught at %s.\nThe district gives you one more chance at the last night. You keep your gear; everyone's points are halved. Next time it's back to night %d." % [time_text(), checkpoint_for(number, grade)]
 	_show_report.rpc(number, rows, summary, "checkpoint:%d" % _restart_at)
 	shop.push_wallets()
 	save_run(_restart_at)
@@ -754,8 +772,10 @@ func _end_night() -> void:
 		summary += "\n" + awards
 	if difficulty > 1:
 		summary += "\nDifficulty %d: +%d%% XP." % [difficulty, int(XP_PER_WING * (difficulty - 1) * 100)]
+	if grade > 0:
+		summary += "\n%s: +%d%% XP." % [Grades.title(grade), int(Grades.XP_PER_GRADE * grade * 100)]
 	summary += "\nPay: %d for clocking out, +%d per correct log, -%d per false report, -%d for each guard lost." % [
-		SURVIVAL_PAY, CORRECT_LOG_POINTS, FALSE_REPORT_POINTS, DEATH_PENALTY]
+		SURVIVAL_PAY, CORRECT_LOG_POINTS, false_report_points(), DEATH_PENALTY]
 	if daily != "":
 		# The team's score: everyone's pay tonight added up (just yours, solo).
 		var score := 0
@@ -769,25 +789,25 @@ func _end_night() -> void:
 			summary = "Work target met: %d / %d.\n" % [work, quota_target] + summary
 		else:
 			write_ups += 1
-			fired = write_ups >= WRITE_UPS_TO_FIRE
+			fired = write_ups >= write_ups_to_fire()
 			summary = "WRITE-UP %d of %d: the team only managed %d of tonight's %d work target.\n" % [
-					write_ups, WRITE_UPS_TO_FIRE, work, quota_target] + summary
+					write_ups, write_ups_to_fire(), work, quota_target] + summary
 	quota_target = 0
 	_show_quota.rpc("")
 	if fired:
 		write_ups = 0
 		if hardcore or number > LAST_NIGHT:
 			_restart_run = true
-			summary = "FIRED. Three write-ups, and the district lets the whole team go. A new crew starts from night 1.\n" + summary
+			summary = "FIRED. %d write-ups, and the district lets the whole team go. A new crew starts from night 1.\n" % write_ups_to_fire() + summary
 			summary += "\n" + _run_summary()
 			_show_report.rpc(number, rows, summary, "fired:1")
 			_reset_run()
 			run_team = 0
 			save_run(1)
 		else:
-			_restart_at = checkpoint_for(number)
+			_restart_at = checkpoint_for(number, grade)
 			_halve_points(rows)
-			summary = "FIRED. Three write-ups. You're rehired on probation from night %d, the last checkpoint, and everyone's points are halved.\n" % _restart_at + summary
+			summary = "FIRED. %d write-ups. You're rehired on probation from night %d, the last checkpoint, and everyone's points are halved.\n" % [write_ups_to_fire(), _restart_at] + summary
 			_show_report.rpc(number, rows, summary, "fired:%d" % _restart_at)
 			shop.push_wallets()
 			save_run(_restart_at)
@@ -849,6 +869,11 @@ func _award_night() -> void:
 			if _last_night_retried:
 				career.award(peer, "SECOND_CHANCE")
 			career.add_stat(peer, "runs_won")
+			career.record_grade(peer, grade)
+			if grade >= 1:
+				career.award(peer, "GRADE_ONE")
+			if grade >= Grades.MAX:
+				career.award(peer, "TOP_GRADE")
 			career.record_score(peer, points_of(peer), difficulty, team)
 			if team == 1:
 				career.award(peer, "RUN_WON_SOLO")
@@ -926,7 +951,7 @@ func _build_rows(keep_pay: bool) -> Array:
 		var clocked_out := shift.has_clocked_out(peer)
 		var correct_points: int = stats["correct"] * CORRECT_LOG_POINTS + stats.get("named", 0) * NAME_POINTS \
 				+ int(stats.get("confirmed", 0)) * CONFIRM_POINTS + int(stats.get("called", 0)) * SPOTTER_POINTS
-		var false_points: int = stats["false"] * FALSE_REPORT_POINTS + int(stats.get("misnamed", 0)) * MISNAME_POINTS \
+		var false_points: int = stats["false"] * false_report_points() + int(stats.get("misnamed", 0)) * misname_points() \
 				+ int(stats.get("docked", 0))
 		var round_points := rounds.pay_for(peer, clocked_out)
 		var pay: int = (SURVIVAL_PAY if clocked_out else 0) + correct_points - false_points + round_points \
@@ -951,7 +976,7 @@ func _build_rows(keep_pay: bool) -> Array:
 		if clocked_out and bonus.achieved():
 			xp += Bonus.XP
 		# Harder nights are worth more: shift notes, and the bigger school (+25% per wing open).
-		xp = int(xp * conditions.xp_factor() * (1.0 + XP_PER_WING * (difficulty - 1)))
+		xp = int(xp * conditions.xp_factor() * (1.0 + XP_PER_WING * (difficulty - 1)) * (1.0 + Grades.XP_PER_GRADE * grade))
 		if career:
 			career.add_xp(peer, xp)
 		var who := guard.player_name if guard.player_name != "" else "Guard %d" % guard.slot
@@ -1100,7 +1125,7 @@ func _begin_next_night(next_number: int) -> void:
 
 func _show_time() -> void:
 	var text := time_text()
-	hud.set_clock("NIGHT %d   ·   %s" % [number, text])
+	hud.set_clock(("NIGHT %d   ·   %s" % [number, text]) + ("   ·   G%d" % grade if grade > 0 else ""))
 	cameras.set_time(text)
 
 

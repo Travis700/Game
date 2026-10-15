@@ -10,7 +10,7 @@ you can do (they need your Steamworks account).
   code; friends type the code or accept an invite (Esc menu → *Invite Steam friends*, or
   Steam's own *Join game*). Networking uses Steam's relay, so nobody forwards ports.
 - **Steam names** over each guard, **rich presence** ("Night 4 of 9") in the friends list.
-- **31 achievements** and **6 stats**, mirrored to Steam (list below).
+- **33 achievements** and **6 stats**, mirrored to Steam (list below).
 - **Falls back** to direct connections and room codes when Steam isn't running, so the
   game also works outside Steam (handy for testing).
 - Settings (keys, mouse, FOV, volume, voice chat, graphics), a pause menu, How to play,
@@ -76,6 +76,8 @@ Create these with exactly these API names. Mark them as set by the client.
 | `LAST_BELL` | Last bell | Get out through the front gate in the final night's finale. |
 | `OVERTIME` | Overtime | Survive a night of Overtime, after the ninth. |
 | `WORKAHOLIC` | Workaholic | Survive night 15. |
+| `GRADE_ONE` | Making the grade | Win a run at Grade 1 or higher. |
+| `TOP_GRADE` | Top of the class | Win a run at Grade 5. |
 | `LIGHTS_ON` | Who turned out the lights? | Reset the breaker after a power cut. |
 
 Stats (type INT, set by client): `nights_survived`, `runs_won`, `correct_logs`, `times_caught`,
@@ -155,6 +157,6 @@ root-overrides/paths for the save folder:
   camera faults...), nightly bonus objectives and a work target from the district.
 - A nine-night run with checkpoints and a finale, then endless Overtime. Hardcore if you dare.
 - A daily shift that's the same for everyone, with friends' scores.
-- Ranks, perks and hats to unlock, 31 achievements and career records.
+- Ranks, perks and hats to unlock, 33 achievements and career records.
 - A guided training shift, close calls that teach you a monster's rule the first time, sound
   captions, controller support and rebindable keys.

@@ -40,6 +40,8 @@ var _address: LineEdit
 var _password: LineEdit
 var _buttons: Array[Button] = []
 var _difficulty: OptionButton
+var _grade: OptionButton
+var _grade_about: Label
 var _difficulty_about: Label
 var _keep_gear: CheckBox
 var _night_length: OptionButton
@@ -266,11 +268,19 @@ func options() -> Dictionary:
 	return {
 		"difficulty": _difficulty.selected,
 		"hardcore": _keep_gear.button_pressed,
+		"grade": _grade.get_item_id(_grade.selected) if _grade and _grade.visible and _grade.selected >= 0 else 0,
 		"continue": _continue.visible and _continue.button_pressed,
 		"password": _password.text,
 		"seconds_per_minute": float(NIGHT_LENGTHS[maxi(_night_length.selected, 0)][1]),
 		"notes": Profile.custom_notes.filter(func(key: Variant) -> bool: return Conditions.CATALOGUE.has(key)),
 	}
+
+
+func _explain_grade() -> void:
+	var grade: int = _grade.get_item_id(_grade.selected) if _grade.selected >= 0 else 0
+	_grade_about.visible = _grade.visible
+	_grade_about.text = Grades.describe(grade) if grade > 0 \
+			else "You've won a run: Grade 1 is open. Each grade adds to the ones before it. Win at a grade to open the next."
 
 
 func _show_notes() -> void:
@@ -305,6 +315,25 @@ func _add_run_options(column: VBoxContainer) -> void:
 	_difficulty_about.modulate.a = 0.65
 	column.add_child(_difficulty_about)
 	_explain_difficulty()
+
+	# Grades: harder runs, one more unlocked by each run won at the grade before.
+	_grade = OptionButton.new()
+	_grade.custom_minimum_size = Vector2(0, 40)
+	_grade.add_theme_font_size_override("font_size", 18)
+	_grade.add_item("Grade: none (a normal run)", 0)
+	for g in range(1, Grades.unlocked() + 1):
+		_grade.add_item("%s (+%d%% XP)" % [Grades.title(g), int(Grades.XP_PER_GRADE * g * 100)], g)
+	_grade.select(clampi(_grade.get_item_index(clampi(int(saved.get("grade", 0)), 0, Grades.unlocked())), 0, _grade.item_count - 1))
+	_grade.visible = Grades.unlocked() > 0
+	_grade.item_selected.connect(func(_index: int) -> void: _explain_grade())
+	column.add_child(_grade)
+	_grade_about = Label.new()
+	_grade_about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_grade_about.custom_minimum_size = Vector2(420, 0)
+	_grade_about.add_theme_font_size_override("font_size", 15)
+	_grade_about.modulate.a = 0.65
+	column.add_child(_grade_about)
+	_explain_grade()
 
 	_keep_gear = CheckBox.new()
 	_keep_gear.text = "Hardcore"

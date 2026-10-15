@@ -137,6 +137,10 @@ your clipboard, and on the Records screen): what it looks like and how to surviv
 haven't found yet show only a rumour. Once a monster is in your guide, you can name it in a Monster log
 for +25 more. The guide is kept on your computer across runs.
 
+**Grades:** win a run and Grade 1 opens on the menu; win at a grade to open the next, up to Grade 5. Each adds
+to the ones below (moods and lockdowns early, mistakes cost double, fired at two write-ups, faster monsters,
+no second chances) and is worth +20% XP.
+
 **Overtime:** after winning night 9, the host can keep going instead of starting a new run: night 10,
 11 and on, keeping points and gear, with one more monster each night and a new standing *district
 memo* every night (moods on everything, the bell three times, three lockdowns...). Every third

@@ -594,6 +594,7 @@ func _play_daily() -> void:
 	night.daily = Daily.today()
 	_play_solo()
 	night.hardcore = false
+	night.grade = 0
 	night.number = Daily.night_of(night.daily)
 	night.give_everyone(Daily.STARTING_POINTS)
 
@@ -609,6 +610,7 @@ func _play_training() -> void:
 	night.training = training
 	_play_solo()
 	night.hardcore = false
+	night.grade = 0
 	night.number = 1
 	training.guard = _local_guard
 
@@ -646,6 +648,7 @@ func _begin_hosting() -> void:
 		night.daily = Daily.today()
 		night.team_daily = true
 		night.hardcore = false
+		night.grade = 0
 		night.number = Daily.night_of(night.daily)
 		night.give_everyone(Daily.STARTING_POINTS)
 
@@ -676,6 +679,7 @@ func _start_run() -> void:
 	var options: Dictionary = menu.options()
 	night.difficulty_choice = options["difficulty"]
 	night.hardcore = options["hardcore"]
+	night.grade = options["grade"]
 	# A custom shift: the same shift notes every night.
 	if not (options["notes"] as Array).is_empty():
 		night.conditions.forced.assign(options["notes"])
@@ -686,6 +690,7 @@ func _start_run() -> void:
 		return
 	var saved := RunSave.read()
 	night.number = clampi(int(saved.get("night", 1)), 1, 99)
+	night.grade = clampi(int(saved.get("grade", 0)), 0, Grades.MAX)
 	night.saved_points = saved.get("points", {})
 	night.saved_items = saved.get("items", {})
 	if saved.get("in_progress", false):
@@ -828,7 +833,7 @@ func _catch_up_late_joiner(peer_id: int) -> void:
 			night.bonus.on_caught(joiner)
 	elif not _shift_badges.has(badge):
 		night.late_joiners[peer_id] = true
-	_start_night.rpc_id(peer_id, night.number, night.difficulty, true)
+	_start_night.rpc_id(peer_id, night.number, night.difficulty, true, night.grade)
 	# (The clock goes unreliably, so again a moment later, after the start has surely landed.)
 	night._sync_clock.rpc_id(peer_id, night.minutes, night.seconds_per_minute)
 	get_tree().create_timer(0.5).timeout.connect(func() -> void:
@@ -1043,7 +1048,7 @@ func _update_guards_required(left_alive := false) -> void:
 		return
 	shift.guards_required = _guard_count()
 	if shift.state == Shift.State.PRE_SHIFT and shift.clocked_in_count() > 0 and shift.everyone_clocked_in():
-		_start_night.rpc(night.number, night.pick_difficulty())
+		_start_night.rpc(night.number, night.pick_difficulty(), false, night.grade)
 
 
 ## Host: tells a player why they can't join, then disconnects them once the message is through.
@@ -1215,13 +1220,14 @@ func _handle_clock_in(peer_id: int) -> void:
 	else:
 		_receive_message.rpc_id(peer_id, message)
 	if shift.state == Shift.State.PRE_SHIFT and shift.everyone_clocked_in():
-		_start_night.rpc(night.number, night.pick_difficulty())
+		_start_night.rpc(night.number, night.pick_difficulty(), false, night.grade)
 
 
 @rpc("authority", "call_local", "reliable")
-func _start_night(number: int, difficulty: int, late := false) -> void:
+func _start_night(number: int, difficulty: int, late := false, grade := 0) -> void:
 	print("[net] Night %d started at difficulty %d" % [number, difficulty])
 	night.number = number
+	night.grade = grade
 	night.difficulty = difficulty
 	cameras.clear_references()
 	_apply_difficulty(difficulty)
@@ -1633,7 +1639,7 @@ func _on_guard_caught(peer_id: int, by: String, from := Vector3.INF) -> void:
 ## Returns true if that's what happened.
 func _close_call(guard: Guard, by: String) -> bool:
 	# (Not the gate shutting at 6 AM on the last night: there's no waking up from that.)
-	if night.hardcore or night.training or shift.state != Shift.State.ON_SHIFT or by == "the school":
+	if night.hardcore or night.training or night.grade >= 5 or shift.state != Shift.State.ON_SHIFT or by == "the school":
 		return false
 	var peer := guard.name.to_int()
 	var kind := FieldGuide.kind_for_name(by)
