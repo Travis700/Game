@@ -47,6 +47,13 @@ func loggable() -> bool:
 	return state != "hidden"
 
 
+## Host: a bright light went off nearby (the Photographer's flash): it bolts for the ceiling.
+func scare() -> void:
+	if state != "hidden" and state != "flee":
+		_flee_to = _nearest_hiding_place()
+		state = "flee"
+
+
 func think(delta: float) -> void:
 	match state:
 		"flee":

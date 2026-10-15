@@ -99,7 +99,7 @@ Each player has their **own clipboard and their own points.**
 | 11 | The Nurse | Nurse's office | D2 | 3 | Slowly follows any guard who's on their own. Stick together. |
 | 12 | The Crossing Guard | Science wing | D3 | 1 | Holds up a STOP sign; anyone it sees moving gets run down. |
 | 13 | The Self-Portrait | Art room | D3 | 2 | Paints one guard stage by stage; finished, it catches them. Turn it to the wall. |
-| 14 | The Specimen | Science lab | D3 | 3 | Crawls after you in the dark; flees from flashlight beams into the ceiling. |
+| 14 | The Specimen | Science lab | D3 | 3 | Crawls after you in the dark; flees from flashlight beams (and the Photographer's flash) into the ceiling. Faster, and back sooner, in a power cut. |
 | 15 | The Understudy | Locker rooms | D3 | 4 | Dressed as a guard, follows one; stand still in its sight and it steps in. |
 
 Monsters per night: 1, 1, 2, 2, 3, 3, 4, 4, 5, plus one for each open wing. The real night cleaner works every night.

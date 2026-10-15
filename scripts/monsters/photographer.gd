@@ -25,6 +25,9 @@ const SPOTS: Array[Vector3] = [
 
 var _target: Guard
 var _left := 0.0
+## How far the flash sends a Specimen scuttling into the ceiling.
+const FLASH_SCARE_RANGE := 12.0
+
 var _flash_light: OmniLight3D
 
 
@@ -115,6 +118,11 @@ func _pop() -> void:
 	var fade := create_tween()
 	fade.tween_property(_flash_light, "light_energy", 0.0, 0.35)
 	fade.tween_callback(func() -> void: _flash_light.visible = false)
+	if multiplayer.is_server():
+		for other in director.active_monsters():
+			if other.has_method("scare") and other.global_position.distance_to(global_position) < FLASH_SCARE_RANGE \
+					and director._clear_line(eye_position(), other.global_position + Vector3(0, 0.6, 0), other):
+				other.scare()
 	SoundBank.play_at(self, "flash_pop", 2.0, 30.0, Sfx.thud(2.2, 0.06, 0.6))
 
 

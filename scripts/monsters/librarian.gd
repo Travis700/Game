@@ -107,7 +107,8 @@ func _hunt(delta: float) -> void:
 	var loud := (_target.flashlight.visible and distance < LIGHT_RANGE * 1.5) or (_target.is_running and distance < HEAR_RUNNING) \
 			or distance < director.voice_reach(_target, HEAR_WHISPER, HEAR_SHOUT)
 	_calm_for = 0.0 if loud else _calm_for + delta
-	if _calm_for > CALM_AFTER or not chase(_target, HUNT_SPEED, delta):
+	# In a power cut there's nothing to see by: it gives up twice as fast.
+	if _calm_for > CALM_AFTER * (0.5 if director.is_dark() else 1.0) or not chase(_target, HUNT_SPEED, delta):
 		state = "shelve"
 
 

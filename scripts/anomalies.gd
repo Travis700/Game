@@ -347,9 +347,11 @@ func check_log(peer_id: int, area: String, type: String, minutes: float) -> bool
 ## Host: an anomaly that's out right now, as {"area", "type"}, or {} if there isn't one.
 ## (For the phone's tip-offs.)
 func tip() -> Dictionary:
-	if _active.is_empty():
+	# Only what nobody has logged yet is worth pointing out.
+	var unlogged := _active.filter(func(i: int) -> bool: return not records.has(i) or records[i]["credited"].is_empty())
+	if unlogged.is_empty():
 		return {}
-	var def: Dictionary = DEFINITIONS[_active.pick_random()]
+	var def: Dictionary = DEFINITIONS[unlogged.pick_random()]
 	return {"area": def["area"], "type": def["type"]}
 
 

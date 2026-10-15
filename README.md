@@ -278,7 +278,7 @@ on your clipboard as "Monster" in that area for points.
 | The Crossing Guard | 1 | Science wing, east main hall (difficulty 3) | Blows its whistle and holds up a STOP sign at a "crossing". Don't move while the sign is up, or it runs you down. |
 | The Coach | 2 | Locker rooms, East Hall (difficulty 3) | Whistles when it sees you: then run, and keep running until you're out of its sight. Walking or standing where it can see you gets you chased. |
 | The Self-Portrait | 2 | Art room (difficulty 3) | A canvas painting one of the guards, a stage at a time (watch the Art Room camera). Finished, it catches them. Turn it to the wall (E) to wipe it. |
-| The Specimen | 3 | Science lab (difficulty 3) | Crawls after you in the dark. Catch it in your flashlight and it hides in the ceiling for a while. |
+| The Specimen | 3 | Science lab (difficulty 3) | Crawls after you in the dark. Catch it in your flashlight (or let the Photographer's flash catch it) and it hides in the ceiling for a while, half as long in a power cut. |
 | The Understudy | 4 | Locker rooms (difficulty 3) | Dressed as one of you, following at a distance. Stand still where it can see you and it steps in. It says things your teammates said, in their voices. Log it and it takes a bow. |
 
 The real **night cleaner** works every night pushing a mop cart. They're harmless, and logging them is a false report.
