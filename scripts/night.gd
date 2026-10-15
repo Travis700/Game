@@ -696,6 +696,8 @@ func _end_night() -> void:
 	if director.tonight_report != "":
 		summary += "\n" + director.tonight_report
 	summary += "\n" + round_text
+	if number == 1 and daily == "" and training == null:
+		summary += "\nTomorrow night: the district sets a work target, and the power can go out."
 	if conditions.summary() != "":
 		summary += "\n" + conditions.summary()
 	if bonus.summary() != "":
