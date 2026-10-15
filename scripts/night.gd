@@ -40,6 +40,17 @@ const SPOTTER_POINTS := 15
 const XP_PER_CALL := 10
 ## How long a call-out counts for (real seconds).
 const CALLOUT_SECONDS := 60.0
+## The report's teaser for what the next night brings.
+const TOMORROW := {
+	2: "the district sets a work target, the power can go out, and there's a bonus objective.",
+	3: "the front office phone starts ringing, and the shift notes begin.",
+	4: "on Auto, the school gets bigger: a new wing opens if it hasn't yet.",
+	5: "some things can only be heard, the monsters come in moods, and the school bell rings.",
+	6: "the lockdown alarm, and figures that don't stay put.",
+	7: "the guard room stops being safe.",
+	8: "the bell rings twice.",
+	9: "the last night. At 5 AM, the last bell.",
+}
 ## Pay for each guard who gets out through the gate in an Overtime finale.
 const OVERTIME_ESCAPE_PAY := 100
 ## Overtime: after the ninth night the host can keep going. This night earns "Workaholic".
@@ -775,8 +786,8 @@ func _end_night() -> void:
 	if director.tonight_report != "":
 		summary += "\n" + director.tonight_report
 	summary += "\n" + round_text
-	if number == 1 and daily == "" and training == null:
-		summary += "\nTomorrow night: the district sets a work target, the power can go out, and there's a bonus objective."
+	if daily == "" and training == null and TOMORROW.has(number + 1):
+		summary += "\nTomorrow night: " + TOMORROW[number + 1]
 	if conditions.summary() != "":
 		summary += "\n" + conditions.summary()
 	if bonus.summary() != "":

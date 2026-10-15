@@ -254,6 +254,9 @@ func plan_night(number: int) -> void:
 	# Night 1: the first monster turns up early, so a new guard meets one before they've settled in.
 	if number == 1 and count >= 1:
 		tonight[0]["at"] = randf_range(30.0, 60.0)
+	# Nights 2 and 3: still early enough that a quiet night isn't mistaken for an empty one.
+	elif number <= 3 and count >= 1:
+		tonight[0]["at"] = randf_range(40.0, 90.0)
 	# From night 2, one of them comes in late (around 4 AM), so the night builds to the end.
 	if number >= 2 and count >= 2:
 		tonight[count - 1]["at"] = randf_range(235.0, 255.0)
@@ -326,6 +329,9 @@ func update(minutes: float, delta: float) -> void:
 		_starting_mood = ""
 		if plan.get("late", false):
 			announcement.emit("Something else just came into the building. It's not on anyone's rota.", "")
+		elif night_number == 1 and plan == tonight[0]:
+			# A new guard's first monster: its camera glitches, so nobody misses the moment.
+			get_tree().create_timer(1.0).timeout.connect(_first_contact)
 	lockers.update(minutes)
 	portrait.update(minutes)
 	_update_bell(minutes, delta)
@@ -339,6 +345,21 @@ func update(minutes: float, delta: float) -> void:
 		if minutes >= _blackouts[camera_index]:
 			_blackouts.erase(camera_index)
 			camera_signal_changed.emit(camera_index, true)
+
+
+## Host, night 1: the first monster just came in. The camera that sees it best blacks out for a
+## moment, and everyone's told where to look.
+func _first_contact() -> void:
+	var monsters := active_monsters()
+	if monsters.is_empty() or cameras == null:
+		return
+	var monster: Monster = monsters[0]
+	var index := cameras.best_view_of(monster.global_position)
+	if index < 0:
+		return
+	_blackouts[index] = _minutes + 1.0
+	camera_signal_changed.emit(index, false)
+	announcement.emit("The %s camera glitched. Something's on it." % cameras.area_of(index), "")
 
 
 ## The field guide kind for each planned monster.

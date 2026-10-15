@@ -86,6 +86,9 @@ func plan(night_number: int, ends_by := CUT_WINDOW.y) -> void:
 	var count := 0 if night_number < 2 else (1 if night_number < 5 else (2 if night_number < 8 else 3))
 	if conditions and conditions.has("wiring"):
 		count += 2
+	# Night 2 introduces power cuts: the first comes while the explanation is still fresh.
+	if night_number == 2 and count > 0:
+		_schedule.append(randf_range(60.0, 120.0))
 	var tries := 0
 	while _schedule.size() < count and tries < 50:
 		tries += 1

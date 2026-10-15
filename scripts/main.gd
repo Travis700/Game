@@ -1257,6 +1257,10 @@ func _start_night(number: int, difficulty: int, late := false, grade := 0) -> vo
 		get_tree().create_timer(6.0).timeout.connect(func() -> void:
 			if shift.state == Shift.State.ON_SHIFT:
 				hud.show_message("NEW TONIGHT: the district wants a work target met by 6 AM (logs and punched stations; it's under the clock). Miss it and the team gets a write-up; three and you're fired. There's a bonus objective too, for extra pay.\nAnd the power can go out: hold %s on the breaker in the custodian's closet, across the hall from the lobby." % Controls.key_name("interact"), 14.0))
+	elif number == 3 and night.daily == "":
+		get_tree().create_timer(14.0).timeout.connect(func() -> void:
+			if shift.state == Shift.State.ON_SHIFT:
+				hud.show_message("NEW TONIGHT: the phone on the front office desk may ring. Answer it ({use}) within about 35 seconds and a voice tips you off about something out of place. Let it ring out and the power goes.", 12.0))
 	elif number == Anomalies.TYPE_FROM_NIGHT["Noise"] and night.daily == "":
 		get_tree().create_timer(6.0).timeout.connect(func() -> void:
 			if shift.state == Shift.State.ON_SHIFT:

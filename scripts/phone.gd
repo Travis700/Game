@@ -87,7 +87,7 @@ func update(minutes: float, delta: float) -> void:
 		_ring_left = RING_SECONDS
 		_set_ringing.rpc(true)
 		for guard in director.living_guards():
-			director.tell(guard.name.to_int(), "A phone is ringing in the front office.")
+			director.tell(guard.name.to_int(), "A phone is ringing in the front office. Answer it ({use}), or the power goes.")
 
 
 func end_night() -> void:
