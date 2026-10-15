@@ -35,6 +35,11 @@ const XP_PER_PUNCH := 10
 const XP_PER_WING := 0.25
 ## Survive this night and the run is won.
 const LAST_NIGHT := 9
+## Pay (and XP) for calling something out (a flagged camera or a mark) that a teammate then logs.
+const SPOTTER_POINTS := 15
+const XP_PER_CALL := 10
+## How long a call-out counts for (real seconds).
+const CALLOUT_SECONDS := 60.0
 ## Pay for each guard who gets out through the gate in an Overtime finale.
 const OVERTIME_ESCAPE_PAY := 100
 ## Overtime: after the ninth night the host can keep going. This night earns "Workaholic".
@@ -67,6 +72,8 @@ var finale: Finale
 var nerve: Nerve
 ## The date of the daily shift being played (see Daily), or "" for an ordinary run.
 var daily := ""
+## Host: area -> {"peer", "at" (s)}: the latest call-out (camera flag or mark) in each area.
+var _callouts: Dictionary = {}
 ## The training shift, when that's what's being played (see Training), or null.
 var training: Training
 ## Emitted on the host when a daily shift's report is closed: back to the menu.
@@ -336,7 +343,17 @@ func _receive_log(area: String, type: String, named := "") -> void:
 		if logger and found != "" and found not in logger.known_monsters:
 			logger.known_monsters.append(found)
 	var first := (director.last_log_was_first if type == "Monster" else anomalies.last_was_first) or not correct
-	if correct and not first and not _could_see(peer, area):
+	var caller := _caller_for(area, peer) if correct else 0
+	if correct and first and caller != 0:
+		# Teamwork pays: whoever called it out gets a cut too.
+		var caller_stats: Dictionary = _stats.get_or_add(caller, {"correct": 0, "false": 0})
+		caller_stats["called"] = int(caller_stats.get("called", 0)) + 1
+		var logger_guard := director.guard_by_peer(peer)
+		director.tell(caller, "%s logged what you called out in %s.  +%d" % [
+				logger_guard.player_name if logger_guard and logger_guard.player_name != "" else "Guard %d" % (logger_guard.slot if logger_guard else 0),
+				area, SPOTTER_POINTS])
+		bonus.on_callout()
+	if correct and not first and not _could_see(peer, area) and caller == 0:
 		# Only passed on by a teammate: noted, but nobody pays for hearsay.
 		logged.append(entry)
 		_log_result(peer, true, "Noted: %s, %s. A teammate logged it first, and you didn't see it yourself: no pay." % [area, type.to_lower()])
@@ -471,6 +488,22 @@ func give_everyone(amount: int) -> void:
 	for guard: Guard in players.get_children():
 		_totals[guard.name.to_int()] = points_of(guard.name.to_int()) + amount
 	shop.push_wallets()
+
+
+## Host: a guard pointed the team at an area (flagged its camera, or marked a spot in it).
+func note_callout(peer_id: int, area: String) -> void:
+	if area != "":
+		_callouts[area] = {"peer": peer_id, "at": Time.get_ticks_msec() / 1000.0}
+
+
+## Host: who called out this area in the last minute, other than `logger` (0 if nobody).
+func _caller_for(area: String, logger: int) -> int:
+	var call: Dictionary = _callouts.get(area, {})
+	if call.is_empty() or int(call["peer"]) == logger \
+			or Time.get_ticks_msec() / 1000.0 - float(call["at"]) > CALLOUT_SECONDS:
+		return 0
+	var caller := director.guard_by_peer(int(call["peer"]))
+	return int(call["peer"]) if caller != null and not late_joiners.has(int(call["peer"])) else 0
 
 
 ## Host: extra pay for tonight (e.g. getting out in an Overtime finale).
@@ -620,6 +653,7 @@ func _team_work() -> int:
 		var stats: Dictionary = _stats[peer]
 		total += int(stats["correct"]) * CORRECT_LOG_POINTS + int(stats.get("named", 0)) * NAME_POINTS \
 				+ int(stats.get("confirmed", 0)) * CONFIRM_POINTS - int(stats.get("misnamed", 0)) * MISNAME_POINTS \
+				+ int(stats.get("called", 0)) * SPOTTER_POINTS \
 				- int(stats["false"]) * FALSE_REPORT_POINTS
 	for peer: int in rounds.punches:
 		total += int(rounds.punches[peer]) * rounds.punch_points()
@@ -863,6 +897,7 @@ func _awards() -> String:
 		["Sharpest eyes", ["log", "logs"], func(peer: int) -> int: return int(_stats.get(peer, {}).get("correct", 0))],
 		["Monster expert", ["named", "named"], func(peer: int) -> int: return int(_stats.get(peer, {}).get("named", 0))],
 		["Night watchman", ["station", "stations"], func(peer: int) -> int: return int(rounds.punches.get(peer, 0))],
+		["Best spotter", ["call-out", "call-outs"], func(peer: int) -> int: return int(_stats.get(peer, {}).get("called", 0))],
 	]
 	for category: Array in categories:
 		var best: Guard = null
@@ -890,7 +925,7 @@ func _build_rows(keep_pay: bool) -> Array:
 		var stats: Dictionary = _stats.get(peer, {"correct": 0, "false": 0})
 		var clocked_out := shift.has_clocked_out(peer)
 		var correct_points: int = stats["correct"] * CORRECT_LOG_POINTS + stats.get("named", 0) * NAME_POINTS \
-				+ int(stats.get("confirmed", 0)) * CONFIRM_POINTS
+				+ int(stats.get("confirmed", 0)) * CONFIRM_POINTS + int(stats.get("called", 0)) * SPOTTER_POINTS
 		var false_points: int = stats["false"] * FALSE_REPORT_POINTS + int(stats.get("misnamed", 0)) * MISNAME_POINTS \
 				+ int(stats.get("docked", 0))
 		var round_points := rounds.pay_for(peer, clocked_out)
@@ -911,7 +946,7 @@ func _build_rows(keep_pay: bool) -> Array:
 			_totals[peer] = 0
 		var xp: int = 0 if late else (XP_CLOCKED_OUT + number * XP_PER_NIGHT if clocked_out else XP_CAUGHT) \
 				+ stats["correct"] * XP_PER_LOG + stats.get("named", 0) * XP_PER_NAME \
-				+ int(stats.get("confirmed", 0)) * int(XP_PER_LOG / 2) \
+				+ int(stats.get("confirmed", 0)) * int(XP_PER_LOG / 2) + int(stats.get("called", 0)) * XP_PER_CALL \
 				+ int(rounds.punches.get(peer, 0)) * XP_PER_PUNCH
 		if clocked_out and bonus.achieved():
 			xp += Bonus.XP

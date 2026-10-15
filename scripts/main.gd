@@ -1316,6 +1316,7 @@ func _request_mark(at: Vector3) -> void:
 	if at.distance_to(guard.global_position) > 45.0:
 		return
 	_ghost_ping_at[-peer - 1000000] = now + MARK_EVERY
+	night.note_callout(peer, SchoolBuilder.area_at(at))
 	var monster := false
 	for found in director.active_monsters():
 		# Not the ones in disguise: telling them apart is the whole game.
@@ -1451,6 +1452,7 @@ func _request_flag(area: String) -> void:
 	if now < float(_ghost_ping_at.get(-peer, 0.0)):
 		return
 	_ghost_ping_at[-peer] = now + 2.0
+	night.note_callout(peer, area)
 	_flag.rpc(area, guard.player_name if guard.player_name != "" else "Guard %d" % guard.slot)
 
 

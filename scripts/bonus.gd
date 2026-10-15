@@ -16,7 +16,9 @@ const SHOUT := 0.6
 ## The round has to be finished by this time (in-game minutes after midnight: 3 AM).
 const ROUND_BY := 180.0
 
-const KINDS := ["no_running", "quiet", "logs", "name", "early_round", "nobody_caught"]
+const KINDS := ["no_running", "quiet", "logs", "name", "early_round", "nobody_caught", "callouts"]
+## "callouts": this many logs of things a teammate called out first.
+const CALLOUT_GOAL := 3
 
 var director: MonsterDirector
 var rounds: Rounds
@@ -30,6 +32,7 @@ var failed := false
 var _goal := 0
 var _logs := 0
 var _named := 0
+var _callouts := 0
 var _round_done_at := -1.0
 var _running_for: Dictionary = {}
 
@@ -39,7 +42,7 @@ func pick(night_number: int) -> void:
 	kind = KINDS.pick_random()
 	# Naming needs a field guide with something in it.
 	# ...and "keep it down" needs someone to talk to (alone it'd be free).
-	while (kind == "name" and night_number < 3) or (kind == "quiet" and director.team_size <= 1):
+	while (kind == "name" and night_number < 3) or ((kind == "quiet" or kind == "callouts") and director.team_size <= 1):
 		kind = KINDS.pick_random()
 	if kind == "early_round" and rounds.order.is_empty():
 		kind = "logs"
@@ -50,6 +53,7 @@ func pick(night_number: int) -> void:
 	failed = false
 	_logs = 0
 	_named = 0
+	_callouts = 0
 	_round_done_at = -1.0
 	_running_for.clear()
 	_goal = 3 + int(night_number / 2.0)
@@ -90,6 +94,13 @@ func on_correct_log(named: bool) -> void:
 		_send()
 
 
+## Host: someone logged what a teammate called out (flagged or marked) first.
+func on_callout() -> void:
+	_callouts += 1
+	if kind == "callouts":
+		_send()
+
+
 ## Host: a guard was caught.
 func on_caught(guard: Guard) -> void:
 	if kind == "nobody_caught" and not failed:
@@ -107,6 +118,8 @@ func achieved() -> bool:
 			return _named >= 1
 		"early_round":
 			return _round_done_at >= 0.0
+		"callouts":
+			return _callouts >= CALLOUT_GOAL
 	return true
 
 
@@ -139,6 +152,8 @@ func _send() -> void:
 			progress = " (done)" if _named > 0 else ""
 		"early_round":
 			progress = " (done)" if _round_done_at >= 0.0 else ""
+		"callouts":
+			progress = " (%d / %d)" % [mini(_callouts, CALLOUT_GOAL), CALLOUT_GOAL]
 	_show.rpc("Bonus +%d: %s%s" % [POINTS, _title(), progress])
 
 
@@ -156,6 +171,10 @@ func _title() -> String:
 			return "finish the round before 3 AM"
 		"nobody_caught":
 			return "nobody gets caught"
+		"callouts":
+			var controls := get_node_or_null("/root/Controls")
+			var key: String = controls.key_name("ping") if controls else "Q"
+			return "log %d things a teammate called out first (%s marks a spot, or flags a camera)" % [CALLOUT_GOAL, key]
 	return ""
 
 
