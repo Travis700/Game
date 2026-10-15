@@ -87,7 +87,7 @@ const PAD_NAMES := {
 const TOKENS := {
 	"use": "interact", "item": "use_item", "clip": "clipboard", "ping": "ping", "radio": "radio_talk",
 	"talk": "push_to_talk", "zoom": "zoom", "compare": "compare", "light": "flashlight", "run": "sprint",
-	"menu": "pause",
+	"menu": "pause", "left": "move_left", "right": "move_right",
 }
 
 

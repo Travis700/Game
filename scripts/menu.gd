@@ -211,7 +211,8 @@ func _ready() -> void:
 		team_daily.disabled = true
 		team_daily.tooltip_text = "Finish the training to unlock the daily shift."
 	team_daily.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	team_daily.tooltip_text = "Today's daily shift for a team: friends join as usual, and the team's score goes on its own board."
+	if Profile.training_done:
+		team_daily.tooltip_text = "Today's daily shift for a team: friends join as usual, and the team's score goes on its own board."
 	host_row.add_child(team_daily)
 	column.add_child(host_row)
 
@@ -440,7 +441,8 @@ func show_status(text: String) -> void:
 ## Greys the buttons out while a connection attempt is in progress.
 func set_busy(busy: bool) -> void:
 	for button in _buttons:
-		button.disabled = busy
+		# (The daily stays locked until the training's done.)
+		button.disabled = busy or (not Profile.training_done and button.text in ["Daily shift", "Host today's daily"])
 	_address.editable = not busy
 	_password.editable = not busy
 

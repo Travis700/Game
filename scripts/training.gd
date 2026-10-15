@@ -30,6 +30,9 @@ var step := -1
 var objective := ""
 var _hidden_for := 0.0
 var _finished := false
+## The bench only moves once the midnight photos are taken, so comparing shows the difference.
+var _photos_taken := false
+var _bench_waiting := false
 
 
 ## The shift has started: no monsters, no conditions, a frozen clock, and the first step.
@@ -38,7 +41,11 @@ func begin() -> void:
 	night.director.tonight.clear()
 	night.rounds._set_state.rpc(PackedInt32Array(), PackedInt32Array(), false)
 	# Tonight's photos, once the lights are down and before anything's changed, for "compare".
-	get_tree().create_timer(3.0).timeout.connect(func() -> void: night.cameras.capture_references(night.time_text()))
+	get_tree().create_timer(3.0).timeout.connect(func() -> void:
+		night.cameras.capture_references(night.time_text())
+		_photos_taken = true
+		if _bench_waiting:
+			night.anomalies.start(ANOMALY, night.minutes))
 	_go(0)
 
 
@@ -52,7 +59,9 @@ func _process(delta: float) -> void:
 			if guard.seated_desk >= 0:
 				_go(1)
 		1:
-			if night.guard_room._comparing or int(night._stats.get(1, {}).get("correct", 0)) >= 1:
+			var room: GuardRoom = night.guard_room
+			var lobby := room._comparing and room._zoomed >= 0 and night.cameras.area_of(room.assignments[room._zoomed]) == "Lobby"
+			if lobby or int(night._stats.get(1, {}).get("correct", 0)) >= 1:
 				_go(2)
 		2:
 			if int(night._stats.get(1, {}).get("correct", 0)) >= 1:
@@ -86,7 +95,10 @@ func _go(next: int) -> void:
 			"zoom": key.call("zoom", "Space"), "compare": key.call("compare", "R")})
 	match step:
 		1:
-			night.anomalies.start(ANOMALY, night.minutes)
+			if _photos_taken:
+				night.anomalies.start(ANOMALY, night.minutes)
+			else:
+				_bench_waiting = true
 		3:
 			night.rounds._set_state.rpc(PackedInt32Array([STATION]), PackedInt32Array(), true)
 		4:

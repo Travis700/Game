@@ -96,9 +96,8 @@ func _ready() -> void:
 	for index in PAGES.size():
 		var topic := Button.new()
 		topic.text = PAGES[index][0]
-		if int(FROM_NIGHT.get(PAGES[index][0], 0)) > Career.best_night() + 1:
+		if _locked(index):
 			topic.text += "  (night %d)" % FROM_NIGHT[PAGES[index][0]]
-			topic.modulate.a = 0.5
 		topic.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		topic.custom_minimum_size = Vector2(230, 34)
 		topic.pressed.connect(_show_page.bind(index))
@@ -123,23 +122,28 @@ func open() -> void:
 
 func _show_page(index: int) -> void:
 	_heading.text = PAGES[index][0]
-	var from: int = FROM_NIGHT.get(PAGES[index][0], 0)
-	if from > Career.best_night() + 1:
-		_body.text = "Something for later: this starts on night %d. Get that far and it'll be explained here." % from
+	for i in _topics.size():
+		_topics[i].modulate = Color(1.0, 0.9, 0.6) if i == index else Color(1, 1, 1, 0.45 if _locked(i) else 0.8)
+	if _locked(index):
+		_body.text = "Something for later: this starts on night %d. Get that far and it'll be explained here." % FROM_NIGHT[PAGES[index][0]]
 		return
 	_body.text = Controls.fill(PAGES[index][1]) if PAGES[index][0] != "Controls" else _controls_text()
-	for i in _topics.size():
-		_topics[i].modulate = Color(1.0, 0.9, 0.6) if i == index else Color(1, 1, 1, 0.8)
+
+
+## A topic about a night this player hasn't reached yet.
+func _locked(index: int) -> bool:
+	return int(FROM_NIGHT.get(PAGES[index][0], 0)) > Career.best_night() + 1
 
 
 ## The Controls page, built from the player's own keys.
 func _controls_text() -> String:
 	var k := func(action: String) -> String: return Controls.key_name(action)
-	return ("{move} move · {run} run (it tires you out) · Mouse look · {light} flashlight · {use} use (hold it on punch stations and the breaker; {use} on clutter to pick it up, {use} again to throw) · {clip} clipboard and field guide · {item} use the item you're carrying · {ping} mark a spot · {talk} push to talk · {radio} walkie-talkie · Esc menu (keys can be changed there) · F11 fullscreen\n\n"
+	return ("{move} move · {run} run (it tires you out) · {look} look · {light} flashlight · {use} use (hold it on punch stations and the breaker; {use} on clutter to pick it up, {use} again to throw) · {clip} clipboard and field guide · {item} use the item you're carrying · {ping} mark a spot · {talk} push to talk · {radio} walkie-talkie · Esc menu (keys can be changed there) · F11 fullscreen\n\n"
 		+ "At a desk: {left} / {right} change a monitor's camera · {zoom} or click for full screen · 1-4 a monitor full screen · {compare} compare with tonight's photo · {ping} flag the camera · {light} its speaker · {back} stand up\n\n"
 		+ "As a ghost: {use} leave a cold spot, or knock over clutter you're looking at · {item} watch through a teammate's eyes\n\n"
 		+ "A controller works too: the prompts switch to its buttons when you use it.").format({
-			"move": "%s%s%s%s" % [k.call("move_forward"), k.call("move_left"), k.call("move_back"), k.call("move_right")],
+			"move": "Left stick" if Controls.using_pad else "%s%s%s%s" % [k.call("move_forward"), k.call("move_left"), k.call("move_back"), k.call("move_right")],
+			"look": "Right stick" if Controls.using_pad else "Mouse",
 			"run": k.call("sprint"), "light": k.call("flashlight"), "use": k.call("interact"), "clip": k.call("clipboard"),
 			"item": k.call("use_item"), "ping": k.call("ping"), "talk": k.call("push_to_talk"), "radio": k.call("radio_talk"),
 			"left": k.call("move_left"), "right": k.call("move_right"), "zoom": k.call("zoom"), "compare": k.call("compare"),

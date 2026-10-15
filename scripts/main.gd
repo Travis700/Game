@@ -461,7 +461,13 @@ func _ready() -> void:
 	_menu_message = ""
 	if _play_after_reload:
 		_play_after_reload = false
-		_play_solo.call_deferred()
+		# Straight into a new night 1, unless that would replace a saved run (or an invite's
+		# being answered): then the menu, where the player chooses.
+		if RunSave.exists():
+			menu.show_status("Training done. You have a saved run: continue it, or untick \"Continue saved run\" to start again from night 1.")
+		elif SteamService.pending_lobby == 0:
+			menu._continue.button_pressed = false
+			_play_solo.call_deferred()
 
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)

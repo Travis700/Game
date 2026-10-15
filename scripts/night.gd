@@ -786,8 +786,6 @@ func _end_night() -> void:
 	if director.tonight_report != "":
 		summary += "\n" + director.tonight_report
 	summary += "\n" + round_text
-	if daily == "" and training == null and TOMORROW.has(number + 1):
-		summary += "\nTomorrow night: " + TOMORROW[number + 1]
 	if conditions.summary() != "":
 		summary += "\n" + conditions.summary()
 	if bonus.summary() != "":
@@ -838,6 +836,9 @@ func _end_night() -> void:
 			shop.push_wallets()
 			save_run(_restart_at)
 		return
+	# What tomorrow brings (only when tomorrow really is the next night).
+	if daily == "" and training == null and TOMORROW.has(number + 1):
+		summary += "\nTomorrow night: " + TOMORROW[number + 1]
 	if number == LAST_NIGHT:
 		_won = true
 		_restart_run = true

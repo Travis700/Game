@@ -33,7 +33,7 @@ const ITEMS := {
 	},
 	"portable_camera": {
 		"name": "Portable camera", "price": 100, "rank": 3,
-		"about": "Press {item} to set it up where you stand, pointing the way you're facing. It shows up on the guard room monitors (A / D to find it) until morning. Two at most.",
+		"about": "Press {item} to set it up where you stand, pointing the way you're facing. It shows up on the guard room monitors ({left} / {right} to find it) until morning. Two at most.",
 	},
 	"radio": {
 		"name": "Walkie-talkie", "price": 90,

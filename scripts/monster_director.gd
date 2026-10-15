@@ -116,6 +116,7 @@ var handled_tonight: Array[String] = []
 ## Host, night 3 with a team: once, a teammate's voice from an empty hallway (a taste of the
 ## Understudy). When (in-game minutes; -1 for not tonight), and the line for the report.
 var _echo_at := -1.0
+var _first_contact_done := false
 var _echo_note := ""
 const ECHO_SPOTS: Array[Vector3] = [Vector3(-30, 0, 7), Vector3(30, 0, 7), Vector3(0, 0, -2), Vector3(-58, 0, 7), Vector3(60, 0, 7), Vector3(-21, 0, -11)]
 ## The finale's gate is open: guards out in the street are out of reach.
@@ -229,6 +230,7 @@ func plan_night(number: int) -> void:
 	_out_tonight.clear()
 	_caught_by_kind.clear()
 	_echo_note = ""
+	_first_contact_done = false
 	_echo_at = randf_range(80.0, 220.0) if number == 3 and team_size >= 2 else -1.0
 	var pool: Array = []
 	for kind: String in ROSTER:
@@ -336,7 +338,8 @@ func update(minutes: float, delta: float) -> void:
 		_starting_mood = ""
 		if plan.get("late", false):
 			announcement.emit("Something else just came into the building. It's not on anyone's rota.", "")
-		elif night_number == 1 and plan == tonight[0]:
+		elif night_number == 1 and not _first_contact_done and plan["kind"] != "cleaner":
+			_first_contact_done = true
 			# A new guard's first monster: its camera glitches, so nobody misses the moment.
 			get_tree().create_timer(1.0).timeout.connect(_first_contact)
 	lockers.update(minutes)

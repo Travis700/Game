@@ -289,7 +289,7 @@ func _update_chair_prompts() -> void:
 		if occupants[desk] != 0:
 			prompt = "Desk %d (taken)" % (desk + 1)
 		elif _can_install_at(desk):
-			prompt = "Sit at desk %d     (G: install the spectral camera kit here)" % (desk + 1)
+			prompt = "Sit at desk %d     (%s: install the spectral camera kit here)" % [desk + 1, _key("use_item")]
 		_chairs[desk].prompt = prompt
 
 
