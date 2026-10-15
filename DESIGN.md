@@ -209,6 +209,7 @@ What keeps a player coming back after the first run:
 
 ## 11f. Stakes and agency (from the design critique)
 
+- **Ghost radio.** A ghost within 3 m of a living guard who carries a walkie-talkie comes through on that guard's radio (Radio bus, squelch, caption) in 3 s bursts, at most one burst per 20 s per ghost; decided on the listener's computer, never reported to monsters. The caught message tells ghosts how (in team games).
 - **Call-outs.** A camera flag or a mark records a call-out for its area (host, real time). When another guard makes the first correct log in that area within 60 s, the caller gets +15 points (counted towards the work target) and +10 XP, and a non-first log there counts as seen (Confirmed +10, not hearsay). "Best spotter" joins the team awards; "log 3 things a teammate called out first" is a team-only bonus objective.
 - **Work target.** From night 2: (30 + 22 × night) × (1 + 0.6 × (guards − 1)) points from logs, named monsters and punched stations, less false reports and misnamed monsters. Each night has 4 + 2 × night + 2 × (guards − 1) anomalies. Missing it is a write-up; three write-ups and the team is fired (back to the last checkpoint; night 1 on Hardcore; ends the run in Overtime).
 - **Checkpoints.** A team wipe (or being fired) goes back to night 1, 4 or 7 with gear kept and points halved. Hardcore restores the old back-to-night-1-with-nothing rule.

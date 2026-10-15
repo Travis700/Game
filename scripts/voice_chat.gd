@@ -49,6 +49,14 @@ var transmitting := false
 var on_radio := false
 ## Beyond this, a radio call is heard over the radio rather than in person.
 const RADIO_OVER := 8.0
+## A ghost standing this close to a living guard with a walkie-talkie breaks through on it, as
+## static-wrapped bursts: a few seconds at a time, then not again for a while. Monsters never
+## hear it (it's only played on that guard's computer).
+const GHOST_RADIO_RANGE := 3.0
+const GHOST_CLIP := 3.0
+const GHOST_CLIP_EVERY := 20.0
+## Peer id -> when (s) that ghost's current burst began, on this computer.
+var _ghost_clip_from: Dictionary = {}
 
 var _mic_player: AudioStreamPlayer
 var _capture: AudioEffectCapture
@@ -277,8 +285,10 @@ func _play(speaker: int, packet: PackedByteArray) -> void:
 	var guard := players_guard(speaker)
 	if guard == null or local_guard == null:
 		return
-	# Ghosts hear everyone; the living only hear the living.
+	# Ghosts hear everyone; the living only hear the living (bar a ghost on their radio).
 	if guard.is_dead and not local_guard.is_dead:
+		if _ghost_breaks_through(speaker, guard):
+			_play_radio(speaker, packet)
 		return
 	# Untyped first: the player may have been freed along with a guard who left.
 	var existing: Variant = _voices.get(speaker)
@@ -294,6 +304,24 @@ func _play(speaker: int, packet: PackedByteArray) -> void:
 		_voices[speaker] = player
 	player.volume_db = linear_to_db(maxf(float(_profile_value("voice_volume", 1.0)), 0.0001))
 	_push(player, speaker, packet)
+
+
+## Does this ghost's voice come through the local guard's walkie-talkie right now?
+func _ghost_breaks_through(speaker: int, ghost: Guard) -> bool:
+	if not local_guard.has_radio or ghost.global_position.distance_to(local_guard.global_position) > GHOST_RADIO_RANGE:
+		return false
+	var now := Time.get_ticks_msec() / 1000.0
+	var from := float(_ghost_clip_from.get(speaker, -INF))
+	if now - from < GHOST_CLIP:
+		return true
+	if now - from >= GHOST_CLIP_EVERY:
+		_ghost_clip_from[speaker] = now
+		_squelch(null)
+		var hud := get_tree().get_first_node_in_group("captions") as Captions
+		if hud:
+			hud.heard("Radio", "ghost", ghost.global_position)
+		return true
+	return false
 
 
 func _make_generator() -> AudioStreamGenerator:

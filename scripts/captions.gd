@@ -36,6 +36,7 @@ const SOUNDS := {
 	":hunt": "Running footsteps",
 	"Speaker:lure": "An alarm from a camera speaker",
 	"Clutter:landed": "Something clattering",
+	"Radio:ghost": "A voice through the static on your radio",
 	"Noise:radio": "A radio playing, very quietly",
 	"Noise:static": "A TV hissing static",
 	"Noise:whisper": "Someone whispering",

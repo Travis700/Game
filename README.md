@@ -212,7 +212,9 @@ ticked Hardcore, which sends a wiped team back to night 1 with nothing).
 ## Voice chat
 
 Talk to your team in the game. Voices come from each guard and fade with distance, so if you split
-up you can't hear each other. Ghosts hear the living, but only other ghosts hear a ghost.
+up you can't hear each other. Ghosts hear the living, but only other ghosts hear a ghost, except that a
+ghost standing right by a teammate who carries a walkie-talkie breaks through on it, a few seconds of
+static-wrapped voice at a time.
 
 - **Hold V to talk** (push to talk). In the Esc menu you can switch to **Open mic** (it sends whenever
   you're loud enough; set how loud with the slider and watch the level meter), pick your microphone,

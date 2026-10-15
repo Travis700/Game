@@ -1701,6 +1701,8 @@ func _guard_died(peer_id: int, by: String, at: Vector3, from := Vector3.INF) -> 
 		hud.flash(Color(0.6, 0.0, 0.0, 0.4), 2.0)
 		hud.set_ghost(true)
 		var tip := FieldGuide.caught_tip(by)
+		if players.get_child_count() > 1 and not hud.solo:
+			tip += ("\n" if tip != "" else "") + "As a ghost: %s leaves a cold spot. Stand right by a teammate carrying a walkie-talkie and talk: they'll hear you through the static, a few seconds at a time." % Controls.key_name("interact")
 		hud.show_message("You were caught by %s.%s" % [by, "\n" + tip if tip != "" else ""], 9.0 if tip != "" else 4.0)
 		Sfx.play_flat(self, Sfx.notes([110.0, 104.0, 98.0, 92.0], 0.35, 0.4, "saw"))
 	else:
