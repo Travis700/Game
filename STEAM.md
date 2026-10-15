@@ -130,7 +130,7 @@ root-overrides/paths for the save folder:
 
 - Play a full run solo, and a full run with 2-4 people over Steam.
 - Store page: capsule art is ready in `steam/art/` (header 920×430, small 462×174, main 1232×706,
-  library 600×900, all from `keyart_raw.png`, title in Inter). Still to make: the library hero
+  library 600×900, all from `keyart_final.jpg`; the library capsule's title is set in Inter). Still to make: the library hero
   (3840×1240, needs a wider/higher-res key art), screenshots and a trailer.
 - Content survey: mild horror, no gore. Multiplayer: online co-op 1-4, voice chat.
 - Price: about US$5 as planned.

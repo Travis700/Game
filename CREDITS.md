@@ -47,8 +47,9 @@ commercial use before release.
 
 ## Icon, key art and store capsules
 
-`icon.png` / `icon.ico` and `steam/art/keyart_raw.png` (also the boot splash) were made with
-SpriteCook (see `spritecook-assets.json`). Capsule titles are set in Inter (SIL Open Font Licence).
+`icon.png` / `icon.ico` were made with SpriteCook (see `spritecook-assets.json`). The key art
+`steam/art/keyart_final.jpg` (store capsules and the boot splash) is the project owner's corrected
+version of a SpriteCook image (`keyart_raw.png`, superseded). Capsule titles are set in Inter (SIL Open Font Licence).
 
 ## Generated in code
 
