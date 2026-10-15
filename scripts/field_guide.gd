@@ -31,7 +31,7 @@ const ENTRIES := {
 	},
 	"Lockers": {
 		"name": "the Locker Thing", "where": "Main hallway lockers",
-		"signs": "Locker doors swing open one at a time. Watch the hallway cameras.",
+		"signs": "Locker doors swing open one at a time, with a faint red glow inside. Watch the hallway cameras.",
 		"rule": "Never walk past an open locker. Press E on it to shut it first.",
 		"rumour": "Some of the hallway lockers don't stay shut.",
 		"lore": "Sept 20. Locker 113 was open again. I shut it. Locker 114 was open behind me. I shut that one too. I don't open lockers any more.",

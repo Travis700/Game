@@ -26,6 +26,7 @@ var active := false
 var credited: Array[int] = []
 
 var _hinges: Array[Node3D] = []
+var _glows: Dictionary = {}
 var _handles: Array[Interactable] = []
 var _open: Array[bool] = []
 var _next_open_at := 0.0
@@ -140,6 +141,18 @@ func _set_open(index: int, open: bool) -> void:
 	tween.tween_property(_hinges[index], "rotation_degrees:y", -100.0 if open else 0.0, 0.6 if open else 0.12)
 	(_handles[index].get_child(0) as CollisionShape3D).disabled = not open
 	Sfx.play_at(_hinges[index], _creak if open else _slam, 0.0, 25.0)
+	# A faint red glow from inside an open one, so you can see it coming even in the dark.
+	if open and not _glows.has(index):
+		var glow := OmniLight3D.new()
+		glow.light_color = Color(0.9, 0.15, 0.1)
+		glow.light_energy = 0.6
+		glow.omni_range = 1.8
+		add_child(glow)
+		glow.global_position = _front(index) + Vector3(0, 1.2, 0)
+		_glows[index] = glow
+	elif not open and _glows.has(index):
+		(_glows[index] as Node).queue_free()
+		_glows.erase(index)
 
 
 func _open_one() -> void:
