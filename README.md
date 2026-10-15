@@ -112,7 +112,7 @@ report shows it.
 in the guard room, shaken, knowing its rule. Playing solo, you also get one second wind a night (it costs 50).
 The night report lists what was missed and which monsters were out.
 
-**Moods:** from night 3 a monster can come in restless (faster, never stays put), keen (notices you from
+**Moods:** from night 5 a monster can come in restless (faster, never stays put), keen (notices you from
 further off) or drowsy (slower and duller). Log it correctly and you're told which.
 
 **Marking:** Q (B on a controller) marks the spot you're looking at for the whole team, in your colour and
@@ -127,7 +127,7 @@ can knock clutter over (E while looking at it, every 20 seconds).
 out. Nothing can find you inside, and a chase ends when you hide, unless the monster saw you go in, in
 which case it pulls you out.
 
-**The phone:** from night 2 the front office phone rings once or twice a night. Answer it (E) within about
+**The phone:** from night 3 the front office phone rings once or twice a night. Answer it (E) within about
 35 seconds for a tip-off about where something is out of place right now. Let it ring out and the power goes.
 
 **The field guide:** log a monster correctly and it goes in your field guide (the button at the top of
@@ -145,7 +145,7 @@ date). Score is that night's pay. Your best per day and your streak of days are 
 isn't touched. **Host today's daily** plays it as a team: friends join as usual, the score is everyone's
 pay added up, and it goes on a Steam board for teams that size (team bests are kept apart from solo ones).
 
-**Shift notes and bonus objectives:** from night 2 each night has one or two conditions (fog, faulty
+**Shift notes and bonus objectives:** from night 3 each night has one or two conditions (bonus objectives from night 2) (fog, faulty
 wiring, old batteries, a full moon, an inspector's visit, sound carrying, a messy school, hazard pay,
 camera faults, a lockdown drill, an early start),
 each worth +15% XP. Every night also has a team bonus objective (nobody runs, nobody shouts, log N
@@ -200,7 +200,7 @@ a rank (in brackets); the machine shows which.
 Sensors and traps are cleared away each morning.
 
 Upgrades and points last for the whole run, and are lost if the whole team is caught (unless the host
-ticked "Keep gear", which keeps upgrades and items).
+ticked Hardcore, which sends a wiped team back to night 1 with nothing).
 
 ## Voice chat
 
@@ -236,7 +236,7 @@ night with the odd creak or thump, plus each monster's own noises. Real recordin
 
 ## The Bell
 
-From night 4 the school bell sometimes rings in the middle of the night (twice a night from night 8).
+From night 5 the school bell sometimes rings in the middle of the night (twice a night from night 8).
 While it rings, every monster moves faster. Shut it off at the bell panel in the front office (press E),
 or wait about a minute for it to stop.
 

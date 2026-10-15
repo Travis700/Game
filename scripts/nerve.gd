@@ -185,7 +185,8 @@ func _whisper() -> void:
 		player.pitch_scale = 0.5
 	get_tree().create_timer(2.0).timeout.connect(spot.queue_free)
 	if randf() < 0.5:
-		hud.show_message(["...behind you...", "...it's here...", "...don't turn around...", "...Guard..."].pick_random(), 2.0)
+		# A whisper, as a sound caption (not the message line: it mustn't push real news away).
+		get_tree().call_group("captions", "_add", "[A whisper: \"%s\"]" % ["...behind you...", "...it's here...", "...don't turn around...", "...Guard..."].pick_random())
 
 
 func _figure_at_the_edge() -> void:

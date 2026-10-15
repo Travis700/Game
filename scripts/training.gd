@@ -12,13 +12,13 @@ const STATION := 3
 const HIDE_SECONDS := 8.0
 
 const STEPS := [
-	"Training 1/7: sit at a desk in the guard room (E on a chair) to watch the cameras. A / D changes a monitor's camera.",
-	"Training 2/7: something in the Lobby has moved: the bench. Press Tab, pick Lobby and Moved object, and log it.",
-	"Training 3/7: every night has a round. Go and punch the station in the Main Hall East (amber lamp): hold E on it.",
-	"Training 4/7: the power's out. Reset the breaker in the custodian's closet, across the hall from the lobby: hold E on it.",
-	"Training 5/7: something's coming down the hall. Hide in a cupboard: there's one at each end of the main hallway (E).",
-	"Training 6/7: stay hidden until it's gone past...",
-	"Training 7/7: that was the Hall Monitor, a monster. Log it: Tab, pick the area it's in (Main Hall West or East: watch the cameras or peek out), and Monster.",
+	"Training 1/7: sit at a desk in the guard room ({use} on a chair) to watch the cameras. {left} / {right} changes a monitor's camera.",
+	"Training 2/7: something in the Lobby has moved: the bench. Press {clip}, pick Lobby and Moved object, and log it.",
+	"Training 3/7: every night has a round. Go and punch the station in the Main Hall East (amber lamp): hold {use} on it.",
+	"Training 4/7: the power's out. Reset the breaker in the custodian's closet, across the hall from the lobby: hold {use} on it.",
+	"Training 5/7: something's coming down the hall. Hide in a cupboard: there's one at each end of the main hallway ({use}).",
+	"Training 6/7: stay hidden until it's gone past... (Hiding wears on your nerve, bottom left; the lit guard room brings it back.)",
+	"Training 7/7: that was the Hall Monitor, a monster. Log it: {clip}, pick the area it's in (Main Hall West or East: watch the cameras or peek out), and Monster.",
 ]
 
 var night: Night
@@ -71,7 +71,12 @@ func _process(delta: float) -> void:
 
 func _go(next: int) -> void:
 	step = next
-	objective = STEPS[step]
+	# (Controls is an autoload, looked up by path from a class_name script.)
+	var controls := get_node_or_null("/root/Controls")
+	var key := func(action: String, fallback: String) -> String:
+		return controls.key_name(action) if controls else fallback
+	objective = (STEPS[step] as String).format({"use": key.call("interact", "E"), "clip": key.call("clipboard", "Tab"),
+			"left": key.call("move_left", "A"), "right": key.call("move_right", "D")})
 	match step:
 		1:
 			night.anomalies.start(ANOMALY, night.minutes)
@@ -88,7 +93,9 @@ func _go(next: int) -> void:
 				(monster as Monster).practice = true
 	if step > 0:
 		Sfx.play_flat(self, Sfx.notes([660.0, 990.0], 0.08, 0.2, "sine"))
-		hud.show_message("Done. " + objective, 6.0)
+		# A beat later, so whatever just happened (a log's ✓) is read first. The step itself is
+		# already under the clock.
+		get_tree().create_timer(1.5).timeout.connect(func() -> void: hud.show_message("Step done.", 2.0))
 
 
 func _finish() -> void:

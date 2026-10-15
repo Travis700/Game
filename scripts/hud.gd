@@ -29,7 +29,11 @@ var _feed_view: Control
 var _feed_picture: TextureRect
 var _feed_title: Label
 var _message_time := 0.0
+## Messages waiting their turn: [text, seconds].
+var _queue: Array = []
 var _hint_time := HINT_SECONDS
+## Playing alone (no voice chat lines in the key list).
+var solo := false
 
 
 func _ready() -> void:
@@ -175,6 +179,9 @@ func _process(delta: float) -> void:
 	if _message_time > 0.0:
 		_message_time -= delta
 		_message.modulate.a = clampf(_message_time, 0.0, 1.0)
+	if _message_time <= 0.25 and not _queue.is_empty():
+		var next: Array = _queue.pop_front()
+		_display(next[0], next[1])
 	if _hint_time > 0.0:
 		_hint_time -= delta
 		_hint.modulate.a = clampf(_hint_time, 0.0, 1.0)
@@ -265,14 +272,29 @@ func _build_feed_view() -> void:
 	_feed_view.add_child(_feed_title)
 
 
+## Shows the key list again for a while (on entering the school).
+func show_hint() -> void:
+	refresh_key_hint()
+	_hint_time = HINT_SECONDS
+	_hint.modulate.a = 1.0
+
+
 ## The key list in the top left, using the player's own keys.
 func refresh_key_hint() -> void:
 	var move := "%s%s%s%s" % [Controls.key_name("move_forward"), Controls.key_name("move_left"),
 			Controls.key_name("move_back"), Controls.key_name("move_right")]
-	_hint.text = "%s  move\n%s  run\n%s  flashlight\n%s  use\n%s  clipboard\n%s  use item\n%s  mark a spot\n%s  talk (voice chat)\n%s  walkie-talkie\nEsc  menu" % [
-		move if move.length() == 4 else "Move keys", Controls.key_name("sprint"), Controls.key_name("flashlight"),
-		Controls.key_name("interact"), Controls.key_name("clipboard"), Controls.key_name("use_item"),
-		Controls.key_name("ping"), Controls.key_name("push_to_talk"), Controls.key_name("radio_talk")]
+	var lines: Array[String] = [
+		"%s  move" % (move if move.length() == 4 else "Move keys"),
+		"%s  run" % Controls.key_name("sprint"), "%s  flashlight" % Controls.key_name("flashlight"),
+		"%s  use" % Controls.key_name("interact"), "%s  clipboard" % Controls.key_name("clipboard"),
+		"%s  use item" % Controls.key_name("use_item"), "%s  mark a spot" % Controls.key_name("ping"),
+	]
+	# Talking is for teams.
+	if not solo:
+		lines.append("%s  talk (voice chat)" % Controls.key_name("push_to_talk"))
+		lines.append("%s  walkie-talkie" % Controls.key_name("radio_talk"))
+	lines.append("Esc  menu")
+	_hint.text = "\n".join(lines)
 
 
 ## What you should be doing right now, under the clock, e.g. "Clock in at the guard room".
@@ -318,10 +340,39 @@ func set_status(text: String) -> void:
 	_status.text = text
 
 
-func show_message(text: String, seconds := MESSAGE_SECONDS) -> void:
+## Shows a message under the crosshair. They queue: one that arrives while another still has
+## a while to go waits its turn (unless it's urgent: being caught, a lockdown, a log's result,
+## which go straight up and put the one they interrupted back in the queue). Long messages
+## stay up longer. `seconds` < 0 means "as long as it takes to read".
+func show_message(text: String, seconds := -1.0, urgent := false) -> void:
+	if seconds < 0.0:
+		seconds = clampf(1.5 + text.length() / 15.0, MESSAGE_SECONDS, 12.0)
+	urgent = urgent or _is_urgent(text)
+	if text == _message.text and _message_time > 0.0:
+		_message_time = maxf(_message_time, seconds)
+		return
+	if not urgent and _message_time > 1.0:
+		if _queue.any(func(queued: Array) -> bool: return queued[0] == text):
+			return
+		if _queue.size() >= 4:
+			_queue.pop_front()
+		_queue.append([text, seconds])
+		return
+	# Interrupted with plenty left to read: it goes back in line, first.
+	if urgent and _message_time > 2.0 and _message.text != "":
+		_queue.push_front([_message.text, _message_time])
+	_display(text, seconds)
+
+
+func _display(text: String, seconds: float) -> void:
 	_message.text = text
 	_message_time = seconds
 	_message.modulate.a = 1.0
+
+
+static func _is_urgent(text: String) -> bool:
+	return text.begins_with("✓") or text.begins_with("✗") or text.begins_with("LOCKDOWN") \
+			or text.begins_with("You were caught") or text.begins_with("Everything goes black")
 
 
 func _make_label(size: int, h_align: HorizontalAlignment, v_align: VerticalAlignment) -> Label:

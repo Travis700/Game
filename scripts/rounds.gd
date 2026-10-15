@@ -173,7 +173,8 @@ func objective_text() -> String:
 	for i in order:
 		if i not in punched:
 			left.append(STATIONS[i]["area"])
-	return "Round %d/%d, still to punch: %s" % [punched.size(), order.size(), ", ".join(left)]
+	var listed := ", ".join(left.slice(0, 3)) + (" +%d more" % (left.size() - 3) if left.size() > 3 else "")
+	return "Round %d/%d, still to punch: %s" % [punched.size(), order.size(), listed]
 
 
 func _show() -> void:

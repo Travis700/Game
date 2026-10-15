@@ -64,7 +64,7 @@ func _ready() -> void:
 
 func plan(night_number: int) -> void:
 	_schedule.clear()
-	var count := 0 if night_number < 2 else (1 if night_number < 6 else 2)
+	var count := 0 if night_number < 3 else (1 if night_number < 6 else 2)
 	for i in count:
 		_schedule.append(randf_range(WINDOW.x, WINDOW.y))
 	_schedule.sort()

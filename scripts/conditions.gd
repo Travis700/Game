@@ -1,6 +1,6 @@
 class_name Conditions
 extends Node
-## Tonight's conditions: from night 2, each night comes with one or two "shift notes" that
+## Tonight's conditions: from night 3, each night comes with one or two "shift notes" that
 ## change how it plays (fog, faulty wiring, a full moon...), so no two nights are the same.
 ## Harder nights earn more XP.
 ##
@@ -10,17 +10,17 @@ extends Node
 
 ## Each condition: its name, what the shift note says, and the first night it can come up.
 const CATALOGUE := {
-	"fog": {"name": "Fog advisory", "night": 2,
+	"fog": {"name": "Fog advisory", "night": 3,
 		"about": "Thick fog tonight, inside and out. You won't see far."},
-	"wiring": {"name": "Faulty wiring", "night": 2,
+	"wiring": {"name": "Faulty wiring", "night": 3,
 		"about": "The electrics are acting up: expect the power to go more often."},
-	"inspector": {"name": "Inspector's visit", "night": 2,
+	"inspector": {"name": "Inspector's visit", "night": 3,
 		"about": "The district wants a thorough round: more stations, and each pays double."},
-	"sharp_ears": {"name": "Sound carries", "night": 2,
+	"sharp_ears": {"name": "Sound carries", "night": 3,
 		"about": "It's very quiet tonight. Monsters hear voices from half as far again."},
 	"batteries": {"name": "Old batteries", "night": 3,
 		"about": "The new batteries didn't arrive. Flashlights are dim and don't reach far."},
-	"messy": {"name": "Messy school", "night": 2,
+	"messy": {"name": "Messy school", "night": 3,
 		"about": "The cleaner called in sick, and the place is a mess: half as many anomalies again."},
 	"full_moon": {"name": "Full moon", "night": 4,
 		"about": "Everything in this school is restless. Monsters move faster."},
@@ -53,7 +53,7 @@ var forced: Array[String] = []
 ## Picks tonight's conditions: none on night 1, one on nights 2-4, two after that, and one
 ## more for every night past the ninth (Overtime).
 func pick(night_number: int) -> void:
-	var count := 0 if night_number < 2 else (1 if night_number < 5 else 2 + maxi(night_number - 9, 0))
+	var count := 0 if night_number < 3 else (1 if night_number < 5 else 2 + maxi(night_number - 9, 0))
 	var pool: Array[String] = []
 	for key: String in CATALOGUE:
 		if CATALOGUE[key]["night"] <= night_number:

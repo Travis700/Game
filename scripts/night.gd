@@ -200,7 +200,9 @@ func _on_shift_started() -> void:
 	finale.planned = number == LAST_NIGHT and daily == ""
 	finale.difficulty = difficulty
 	rounds.plan(number, difficulty)
-	bonus.pick(number)
+	# (Night 1 has enough to learn without a bonus objective too.)
+	if number >= 2:
+		bonus.pick(number)
 	nerve.reset()
 	quota_target = 0 if number < 2 or daily != "" else quota_for(players.get_child_count())
 	power.plan(number)
@@ -619,11 +621,12 @@ func _send_quota() -> void:
 		quota_target = quota_for(shift_team())
 	var text := ""
 	if quota_target > 0:
-		text = "Work target: %d / %d" % [mini(_work_after_round(), quota_target), quota_target]
+		text = "Work target: %d / %d" % [_team_work(), quota_target]
+		var owed := _team_work() - _work_after_round()
 		if _work_after_round() >= quota_target:
 			text += " (met)"
-		elif rounds.missed_count() > 0:
-			text += " (unpunched stations count against it at 6)"
+		elif owed > 0:
+			text += "  ·  %d unpunched: -%d at 6 AM" % [rounds.missed_count(), owed]
 		if write_ups > 0:
 			text += "   ·   write-ups %d of %d" % [write_ups, WRITE_UPS_TO_FIRE]
 	_show_quota.rpc(text)

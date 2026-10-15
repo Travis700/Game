@@ -7,7 +7,7 @@ extends CharacterBody3D
 ## and the Sync node copies its position, look direction and flashlight to everyone else.
 
 signal prompt_changed(text: String)
-signal message_shown(text: String)
+signal message_shown(text: String, seconds: float)
 ## Keys pressed while sitting at a guard room desk: "prev", "next", "zoom", "stand" or "back".
 signal desk_action(action: String)
 signal clipboard_requested
@@ -409,8 +409,8 @@ func _update_stamina(delta: float) -> void:
 		winded = false
 
 
-func show_message(text: String) -> void:
-	message_shown.emit(text)
+func show_message(text: String, seconds := -1.0) -> void:
+	message_shown.emit(text, seconds)
 
 
 func _update_head_bob(delta: float, moving: bool) -> void:

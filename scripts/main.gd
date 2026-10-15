@@ -786,6 +786,8 @@ func _on_server_disconnected() -> void:
 func _enter_school() -> void:
 	menu.visible = false
 	hud.visible = true
+	hud.solo = _mode == "solo"
+	hud.show_hint()
 
 
 func _back_to_menu(message: String) -> void:
@@ -1160,7 +1162,8 @@ func _objective() -> String:
 				return night.training.objective
 			if finale.active:
 				return finale.objective_for(_local_guard)
-			var text := "Survive until 6 AM. Watch the cameras and log anything odd (%s)." % Controls.key_name("clipboard")
+			var text := "Survive until 6 AM. Watch the cameras and log anything odd (%s)." % Controls.key_name("clipboard") \
+					if night.number <= 1 else "Survive until 6 AM."
 			var round_text := rounds.objective_text()
 			if round_text != "":
 				text += "\n" + round_text
@@ -1168,8 +1171,6 @@ func _objective() -> String:
 				text += "\n" + night.quota_text
 			if night.bonus.status != "":
 				text += "\n" + night.bonus.status
-			if not night.conditions.active.is_empty():
-				text += "\nTonight: " + ", ".join(night.conditions.names())
 			return text
 		Shift.State.MORNING:
 			return "It's 6 AM. Clock out at the time clock in the guard room to get paid."
@@ -1235,22 +1236,29 @@ func _start_night(number: int, difficulty: int, late := false) -> void:
 	if number == 1 and night.training == null:
 		_show_first_night_tips()
 	elif number == 2:
-		hud.show_message("Tip: from tonight the power can go out. The breaker is in the custodian's closet, across the hall from the lobby.")
+		# Night 2 brings two new things: say both, once, and give it time to be read.
+		get_tree().create_timer(6.0).timeout.connect(func() -> void:
+			if shift.state == Shift.State.ON_SHIFT:
+				hud.show_message("NEW TONIGHT: the district wants a work target met by 6 AM (logs and punched stations; it's under the clock). Miss it and the team gets a write-up; three and you're fired.\nAnd the power can go out: hold %s on the breaker in the custodian's closet, across the hall from the lobby." % Controls.key_name("interact"), 14.0))
 
 
 ## A few pointers on the first night, a few seconds apart.
 func _show_first_night_tips() -> void:
+	var use := Controls.key_name("interact")
 	var tips: Array[String] = [
-		"Tip: sit at a desk (E on a chair) to watch the cameras. A / D changes a monitor's camera.",
-		"Tip: something moved, missing, or there that shouldn't be? Press Tab and log where and what. Wrong guesses cost points.",
+		"Tip: sit at a desk (%s on a chair) to watch the cameras. %s / %s changes a monitor's camera." % [use, Controls.key_name("move_left"), Controls.key_name("move_right")],
+		"Tip: something moved, missing, or there that shouldn't be? Press %s and log where and what. Wrong guesses cost points." % Controls.key_name("clipboard"),
 		"Tip: the real night cleaner leaves WET FLOOR signs where they've mopped. That's just cleaning: learn what's normal.",
-		"Tip: tonight's round is at the top of the screen. Find the amber lamps and hold E to punch them. The bell is loud.",
+		"Tip: tonight's round is under the clock. Find the amber lamps and hold %s to punch them. Each punch rings out, and monsters hear it." % use,
 		"Tip: at 6 AM, clock out at the time clock or you don't get paid.",
 	]
+	# Someone who did the training knows the desks, the clipboard and the round already.
+	if Profile.training_done:
+		tips = [tips[2], tips[4]]
 	for i in tips.size():
-		get_tree().create_timer(8.0 + i * 14.0).timeout.connect(func() -> void:
+		get_tree().create_timer(10.0 + i * 16.0).timeout.connect(func() -> void:
 			if shift.state == Shift.State.ON_SHIFT and night.number == 1:
-				hud.show_message(tips[i]))
+				hud.show_message(tips[i], 8.0))
 
 
 ## A player who just joined: which night it is and last night's difficulty, so their cameras

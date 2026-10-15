@@ -37,6 +37,9 @@ var _running_for: Dictionary = {}
 ## Host: picks tonight's objective.
 func pick(night_number: int) -> void:
 	kind = KINDS.pick_random()
+	# Naming needs a field guide with something in it.
+	while kind == "name" and night_number < 3:
+		kind = KINDS.pick_random()
 	if kind == "early_round" and rounds.order.is_empty():
 		kind = "logs"
 	# Not "nobody runs" on a night that will make people run: the Coach, or a lockdown.

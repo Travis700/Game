@@ -11,9 +11,9 @@ signal join_requested(address: String)
 
 ## Night length choices: the label and real seconds per in-game minute.
 const NIGHT_LENGTHS := [["Short nights (8 min)", 1.35], ["Normal nights (12 min)", 2.0], ["Long nights (16 min)", 2.7]]
-## What each difficulty adds to the map. Auto picks one level per guard (up to 3).
+## What each difficulty adds to the map. Auto grows with the run and the team.
 const DIFFICULTIES := [
-	["Auto: one level per guard", "Picks the map size from the team: 1 guard plays difficulty 1, 2 guards play 2, and 3 or 4 guards play 3."],
+	["Auto: grows with the run", "The school grows as the run goes on: alone, the classroom wing opens on night 4 and the science wing on night 7. Bigger teams start bigger (2 guards start at 2, 3 or 4 at 3)."],
 	["1 · Main building", "The gate, lobby, front office, main hall, cafeteria, kitchen and gym. Best for one guard."],
 	["2 · + Classroom wing", "Opens the west wing: classrooms, the library and the nurse's office, and the Substitute, the Librarian, the Nurse and the Twins who work there. Best for two guards."],
 	["3 · + Science wing", "Opens the east wing too: the science lab, art room and locker rooms, with the Specimen, the Self-Portrait, the Understudy, the Crossing Guard and the Coach. Best for three or four guards."],
@@ -156,6 +156,9 @@ func _ready() -> void:
 	training.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	play_row.add_child(training)
 	column.add_child(play_row)
+	# New here: training goes first.
+	if not Profile.training_done:
+		play_row.move_child(training, 0)
 	_daily_label = Label.new()
 	_daily_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_daily_label.add_theme_font_size_override("font_size", 14)
@@ -251,7 +254,11 @@ func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	# With a controller, start on the first button so the D-pad can move around the menu.
 	if not Input.get_connected_joypads().is_empty():
-		_buttons[0].grab_focus.call_deferred()
+		var first := _buttons[0]
+		for button in _buttons:
+			if button.text == "Training (start here)":
+				first = button
+		first.grab_focus.call_deferred()
 
 
 ## The host's choices for the run: {"difficulty": 0-3 (0 = auto), "keep_gear", "continue"}.

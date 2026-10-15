@@ -64,11 +64,11 @@ const GUARD_ROOM := AABB(Vector3(6, -1, 10), Vector3(14, 5, 10))
 const MASCOT_STAND := Vector3(9.0, 0.3, 1.5)
 ## The Bell: from this night it can ring at the wrong time, speeding every monster up until
 ## someone shuts it off at the panel in the front office (or it stops by itself).
-const BELL_FROM_NIGHT := 4
+const BELL_FROM_NIGHT := 5
 const BELL_SPEED := 1.35
 const BELL_MAX_SECONDS := 60.0
 ## Monster moods (see Monster.MOODS): from this night, and how often.
-const MOODS_FROM_NIGHT := 3
+const MOODS_FROM_NIGHT := 5
 const MOOD_CHANCE := 0.45
 
 var players: Node3D
