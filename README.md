@@ -138,8 +138,9 @@ haven't found yet show only a rumour. Once a monster is in your guide, you can n
 for +25 more. The guide is kept on your computer across runs.
 
 **Overtime:** after winning night 9, the host can keep going instead of starting a new run: night 10,
-11 and on, keeping points and gear, with one more monster and one more shift note each night. Your
-furthest night is kept on the Records screen.
+11 and on, keeping points and gear, with one more monster each night and a new standing *district
+memo* every night (moods on everything, the bell three times, three lockdowns...). Every third
+Overtime night ends with the last bell again. Your furthest night is kept on the Records screen.
 
 **Daily shift:** the menu's **Daily shift** button plays today's shift: one solo night that's the same for
 everyone that day (night, conditions, round, bonus objective and monster plan are all seeded from the

@@ -1248,6 +1248,14 @@ func _start_night(number: int, difficulty: int, late := false) -> void:
 		get_tree().create_timer(6.0).timeout.connect(func() -> void:
 			if shift.state == Shift.State.ON_SHIFT:
 				hud.show_message("NEW TONIGHT: some things can only be heard. A radio, static or whispering with nothing making it is a Noise: log it like anything else. The cameras won't pick it up, so someone has to be out there listening.", 12.0))
+	elif number > Night.LAST_NIGHT:
+		var memo := Memos.new_tonight(number)
+		var finale_text := "And tonight ends like the last night did: at 5 AM, the last bell. Get the key, get out (+%d each)." % Night.OVERTIME_ESCAPE_PAY \
+				if Memos.has_finale(number) else ""
+		if memo != "" or finale_text != "":
+			get_tree().create_timer(6.0).timeout.connect(func() -> void:
+				if shift.state == Shift.State.ON_SHIFT:
+					hud.show_message(("DISTRICT MEMO: %s\n" % memo if memo != "" else "") + finale_text, 12.0))
 	elif number == 6 and night.daily == "":
 		get_tree().create_timer(6.0).timeout.connect(func() -> void:
 			if shift.state == Shift.State.ON_SHIFT:

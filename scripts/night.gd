@@ -35,6 +35,8 @@ const XP_PER_PUNCH := 10
 const XP_PER_WING := 0.25
 ## Survive this night and the run is won.
 const LAST_NIGHT := 9
+## Pay for each guard who gets out through the gate in an Overtime finale.
+const OVERTIME_ESCAPE_PAY := 100
 ## Overtime: after the ninth night the host can keep going. This night earns "Workaholic".
 const OVERTIME_GOAL := 15
 ## The highest difficulty: the main building plus both wings.
@@ -198,7 +200,7 @@ func _on_shift_started() -> void:
 	conditions.pick(number)
 	director.team_size = players.get_child_count()
 	director.plan_night(number)
-	finale.planned = number == LAST_NIGHT and daily == ""
+	finale.planned = Memos.has_finale(number) and daily == ""
 	finale.difficulty = difficulty
 	rounds.plan(number, difficulty)
 	# (Night 1 has enough to learn without a bonus objective too.)
@@ -285,6 +287,8 @@ func _run_shift(delta: float) -> void:
 		for guard in got_out:
 			var peer := guard.name.to_int()
 			shift.clock_out(peer)
+			if number > LAST_NIGHT:
+				pay_extra(peer, OVERTIME_ESCAPE_PAY)
 			if career:
 				career.award(peer, "LAST_BELL")
 				if float(escaped_at.get(peer, 0.0)) >= 355.0:
@@ -467,6 +471,12 @@ func give_everyone(amount: int) -> void:
 	for guard: Guard in players.get_children():
 		_totals[guard.name.to_int()] = points_of(guard.name.to_int()) + amount
 	shop.push_wallets()
+
+
+## Host: extra pay for tonight (e.g. getting out in an Overtime finale).
+func pay_extra(peer_id: int, amount: int) -> void:
+	var stats: Dictionary = _stats.get_or_add(peer_id, {"correct": 0, "false": 0})
+	stats["extra"] = int(stats.get("extra", 0)) + amount
 
 
 ## Host: a guard did something worth a correct log's pay (e.g. walking a real student out).
@@ -885,7 +895,7 @@ func _build_rows(keep_pay: bool) -> Array:
 				+ int(stats.get("docked", 0))
 		var round_points := rounds.pay_for(peer, clocked_out)
 		var pay: int = (SURVIVAL_PAY if clocked_out else 0) + correct_points - false_points + round_points \
-				- _deaths * DEATH_PENALTY
+				- _deaths * DEATH_PENALTY + int(stats.get("extra", 0))
 		if clocked_out and bonus.achieved():
 			pay += Bonus.POINTS
 		if pay > 0 and conditions.has("hazard_pay"):

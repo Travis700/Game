@@ -245,11 +245,14 @@ func plan_night(number: int) -> void:
 	if number >= 2 and count >= 2:
 		tonight[count - 1]["at"] = randf_range(235.0, 255.0)
 		tonight[count - 1]["late"] = true
+	if Memos.has(number, "late") and count >= 3:
+		tonight[count - 2]["at"] = randf_range(230.0, 250.0)
+		tonight[count - 2]["late"] = true
 	# The Bell rings once or twice a night from night 5.
 	_bell_times.clear()
 	if number >= BELL_FROM_NIGHT:
 		# Twice a night from night 8 (not 7, when the guard room opens: one new thing at a time).
-		for i in (1 if number < 8 else 2):
+		for i in (3 if Memos.has(number, "bell") else (1 if number < 8 else 2)):
 			_bell_times.append(randf_range(60.0, 300.0))
 		_bell_times.sort()
 	# Lockdowns: once a night from night 6, twice from night 9 (and Overtime).
@@ -262,7 +265,7 @@ func plan_night(number: int) -> void:
 	finale = false
 	gate_open = false
 	if number >= LOCKDOWN_FROM_NIGHT:
-		for i in (1 if number < 9 else 2):
+		for i in (3 if Memos.has(number, "lockdowns") else (1 if number < 9 else 2)):
 			_lockdown_times.append(randf_range(90.0, 320.0))
 	if conditions and conditions.has("drill"):
 		_lockdown_times.append(randf_range(60.0, 300.0))
@@ -273,7 +276,7 @@ func plan_night(number: int) -> void:
 			plan["at"] = minf(float(plan["at"]) * 0.5, 115.0)
 			plan.erase("late")
 	# Camera faults: a third of the open cameras are dead all night.
-	if conditions and conditions.has("camera_fault"):
+	if (conditions and conditions.has("camera_fault")) or Memos.has(number, "cameras"):
 		var open: Array[int] = []
 		for i in cameras.count():
 			if cameras.is_open(i):
@@ -287,7 +290,7 @@ func plan_night(number: int) -> void:
 	# still the same for everyone.
 	for plan in tonight:
 		if number >= MOODS_FROM_NIGHT and plan["kind"] not in ["student", "ghost", "locker_thing", "self_portrait", "principal"] \
-				and randf() < MOOD_CHANCE:
+				and (randf() < MOOD_CHANCE or Memos.has(number, "moods")):
 			plan["mood"] = Monster.MOODS.keys().pick_random()
 		if plan["kind"] == "student":
 			plan["real"] = randf() < 0.2

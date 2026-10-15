@@ -50,10 +50,10 @@ var forced: Array[String] = []
 
 # --- Host --------------------------------------------------------------------------------
 
-## Picks tonight's conditions: none on night 1, one on nights 3-4, two after that, and one
-## more for every night past the ninth (Overtime).
+## Picks tonight's conditions: none on nights 1-2, one on nights 3-4, two after that, and three in
+## Overtime (which gets harder through its district memos instead: see Memos).
 func pick(night_number: int) -> void:
-	var count := 0 if night_number < 3 else (1 if night_number < 5 else 2 + maxi(night_number - 9, 0))
+	var count := 0 if night_number < 3 else (1 if night_number < 5 else (2 if night_number <= Night.LAST_NIGHT else 3))
 	var pool: Array[String] = []
 	for key: String in CATALOGUE:
 		if CATALOGUE[key]["night"] <= night_number:
