@@ -89,7 +89,7 @@ func request_throw(from: Vector3, direction: Vector3) -> void:
 	var land := _landing(from, direction.normalized())
 	_set_carried.rpc(peer, -1)
 	_fly.rpc(index, from, land)
-	get_tree().create_timer(0.6).timeout.connect(func() -> void: director.make_noise(land, NOISE_SECONDS))
+	get_tree().create_timer(0.6, false).timeout.connect(func() -> void: director.make_noise(land, NOISE_SECONDS))
 
 
 ## A ghost knocked an item: it hops and clatters.
@@ -110,7 +110,7 @@ func request_knock(index: int) -> void:
 	var at := _props[index].global_position
 	var hop := at + Vector3(randf_range(-1.2, 1.2), 0, randf_range(-1.2, 1.2))
 	_fly.rpc(index, at, Vector3(hop.x, _floor_under(hop), hop.z))
-	get_tree().create_timer(0.6).timeout.connect(func() -> void: director.make_noise(hop, NOISE_SECONDS))
+	get_tree().create_timer(0.6, false).timeout.connect(func() -> void: director.make_noise(hop, NOISE_SECONDS))
 
 
 ## Host: a guard who was carrying something was caught or left: it drops where they were.

@@ -409,7 +409,8 @@ func _request_sit(desk: int) -> void:
 	if not multiplayer.is_server() or desk < 0 or desk >= DESKS:
 		return
 	var peer := _sender()
-	if occupants[desk] != 0 or peer in occupants:
+	var guard := shop.director.guard_by_peer(peer) if shop and shop.director else null
+	if occupants[desk] != 0 or peer in occupants or (guard != null and guard.is_dead):
 		return
 	_set_occupant.rpc(desk, peer)
 

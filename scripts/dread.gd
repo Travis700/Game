@@ -254,7 +254,9 @@ func jumpscare(from: Vector3) -> void:
 	zoom.tween_property(camera, "fov", start_fov, 0.3)
 	zoom.tween_callback(func() -> void:
 		camera.rotation = Vector3.ZERO
-		local_guard.input_blocked = false
+		# (Not if the night report came up meanwhile: that keeps the controls.)
+		if night == null or night.shift.state != Shift.State.REPORT:
+			local_guard.input_blocked = false
 		_scaring = false)
 
 

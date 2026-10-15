@@ -78,7 +78,7 @@ func _request(spot: int) -> void:
 		# Remembered now: the monster itself may be gone by the time it pulls them out.
 		var by := seen_by.display_name
 		var from := seen_by.global_position
-		get_tree().create_timer(PULL_OUT_SECONDS).timeout.connect(func() -> void:
+		get_tree().create_timer(PULL_OUT_SECONDS, false).timeout.connect(func() -> void:
 			if hidden.get(peer, -1) == spot and is_instance_valid(guard) and not guard.is_dead:
 				_set_hidden.rpc(peer, -1)
 				director.kill(guard, by, from))

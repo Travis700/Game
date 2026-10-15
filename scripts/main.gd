@@ -291,6 +291,9 @@ func _ready() -> void:
 	pause_menu.name = "PauseMenu"
 	add_child(pause_menu)
 	pause_menu.closed.connect(_on_ui_closed)
+	pause_menu.closed.connect(func() -> void:
+		if night.report.visible:
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE)
 	pause_menu.closed.connect(hud.refresh_key_hint)
 	pause_menu.voice = voice
 	pause_menu.leave_requested.connect(func() -> void:
@@ -299,6 +302,8 @@ func _ready() -> void:
 	var report := Report.new()
 	report.name = "Report"
 	add_child(report)
+	report.leave_requested.connect(func() -> void:
+		_back_to_menu("You ended the session." if multiplayer.is_server() and _mode != "solo" else ""))
 
 	night = Night.new()
 	night.name = "Night"
@@ -675,6 +680,8 @@ func _start_run() -> void:
 		for key: String in night.saved_points:
 			night.saved_points[key] = maxi(int(night.saved_points[key]) - Night.SURVIVAL_PAY, 0)
 		menu.show_status("Last time, the run was left mid-shift. Everyone loses %d points." % Night.SURVIVAL_PAY)
+		get_tree().create_timer(2.0).timeout.connect(func() -> void:
+			hud.show_message("Last time, the run was left mid-shift. Everyone loses %d points." % Night.SURVIVAL_PAY, 8.0))
 	var upgrades: Array = saved.get("upgrades", [])
 	for desk in mini(upgrades.size(), GuardRoom.DESKS):
 		if upgrades[desk]:
@@ -806,7 +813,11 @@ func _catch_up_late_joiner(peer_id: int) -> void:
 	elif not _shift_badges.has(badge):
 		night.late_joiners[peer_id] = true
 	_start_night.rpc_id(peer_id, night.number, night.difficulty, true)
+	# (The clock goes unreliably, so again a moment later, after the start has surely landed.)
 	night._sync_clock.rpc_id(peer_id, night.minutes, night.seconds_per_minute)
+	get_tree().create_timer(0.5).timeout.connect(func() -> void:
+		if peer_id in multiplayer.get_peers():
+			night._sync_clock.rpc_id(peer_id, night.minutes, night.seconds_per_minute))
 	night.conditions._set_conditions.rpc_id(peer_id, PackedStringArray(night.conditions.active), night.number)
 	rounds._set_state.rpc_id(peer_id, PackedInt32Array(rounds.order), PackedInt32Array(rounds.punched), rounds.open)
 	if not power.on:
@@ -870,6 +881,9 @@ func _show_ghost(peer_id: int, joined: bool) -> void:
 		return
 	guard.set_dead(true)
 	if guard == _local_guard:
+		# In through the (locked) gate, so there's somewhere to haunt.
+		if not Finale.on_grounds(guard.global_position):
+			guard.global_position = Vector3((guard.slot - 2.5) * 1.4, 0.1, Finale.GATE_Z - 4.0)
 		hud.set_ghost(true)
 		hud.show_message("The shift had already started, so you've come in as a ghost: watch, leave cold spots (E), knock things over, and help where you can. You'll clock in properly from the next night.", 12.0)
 	elif joined:
@@ -925,17 +939,21 @@ func _on_peer_disconnected(peer_id: int) -> void:
 		return
 	print("[net] Guard left (peer %d)" % peer_id)
 	var guard := players.get_node_or_null(str(peer_id)) as Guard
+	var last_at := guard.global_position if guard else Vector3.ZERO
 	if guard:
 		if shift.state == Shift.State.ON_SHIFT and not guard.is_dead:
 			_left_alive[guard.employee_number] = true
 		# Keep what they had, by badge, so they get exactly that back if they rejoin.
 		night.remember_guard(guard)
+		# Out of the team straight away, so nothing below (a night starting or ending, a save)
+		# still counts them.
+		players.remove_child(guard)
 		guard.queue_free()
 	shift.remove_guard(peer_id)
 	guard_room.on_peer_left(peer_id)
 	if guard:
-		clutter.drop(peer_id, guard.global_position)
-		finale.drop(peer_id, guard.global_position, true)
+		clutter.drop(peer_id, last_at)
+		finale.drop(peer_id, last_at, true)
 	if hiding.hidden.has(peer_id):
 		hiding._set_hidden.rpc(peer_id, -1)
 	_update_guards_required()
@@ -990,8 +1008,12 @@ func _guard_count() -> int:
 
 
 func _update_guards_required() -> void:
-	if shift.state in [Shift.State.ON_SHIFT, Shift.State.MORNING] and _guard_count() > 0 and director.living_guards().is_empty():
+	if shift.state == Shift.State.ON_SHIFT and _guard_count() > 0 and director.living_guards().is_empty():
 		night.fail_night()
+		return
+	# In the morning, the last one still to clock out leaving just ends the night.
+	if shift.state == Shift.State.MORNING and director.living_guards().is_empty():
+		night._end_night.call_deferred()
 		return
 	if shift.state == Shift.State.MORNING:
 		shift.guards_required = director.living_guards().size()
@@ -1546,7 +1568,7 @@ func _on_guard_caught(peer_id: int, by: String, from := Vector3.INF) -> void:
 	_guard_died.rpc(peer_id, by, guard.global_position, from)
 	if director.living_guards().is_empty():
 		# Give the last guard's jumpscare time to play before the night's results cover it.
-		get_tree().create_timer(SCARE_SECONDS).timeout.connect(func() -> void:
+		get_tree().create_timer(SCARE_SECONDS, false).timeout.connect(func() -> void:
 			if director.living_guards().is_empty():
 				night.fail_night())
 

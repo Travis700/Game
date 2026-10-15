@@ -79,6 +79,8 @@ const DECOY_SECONDS := 20.0
 const SENSOR_RANGE := 5.0
 const SENSOR_COOLDOWN := 30.0
 const TRAP_RANGE := 0.9
+## How long a vending tray item is kept for whoever bought it.
+const DROP_RESERVED_SECONDS := 30.0
 const TRAP_SECONDS := 20.0
 const BOOST_SECONDS := 30.0
 const HORN_RANGE := 15.0
@@ -104,6 +106,8 @@ var _next_drop := 1
 ## Sensors and traps put down tonight: id -> {"item", "node", "position", "quiet"}. Every computer
 ## has the nodes; the host checks them.
 var _placed: Dictionary = {}
+## Host: drop id -> [buyer peer, when bought].
+var _drop_buyers: Dictionary = {}
 ## Host: personal upgrades each guard has fitted for the run: peer -> ["flashlight", "radio"].
 var _owned: Dictionary = {}
 var _box_material: StandardMaterial3D
@@ -200,12 +204,12 @@ func _request_use() -> void:
 				_next_drop += 1
 				_place.rpc(id, item, at)
 				_tell(peer, "The decoy radio's down. Eight seconds. Move.")
-				get_tree().create_timer(DECOY_DELAY).timeout.connect(func() -> void:
+				get_tree().create_timer(DECOY_DELAY, false).timeout.connect(func() -> void:
 					if not _placed.has(id):
 						return
 					director.make_noise(at, DECOY_SECONDS)
 					_decoy_plays.rpc(id))
-				get_tree().create_timer(DECOY_DELAY + DECOY_SECONDS).timeout.connect(func() -> void:
+				get_tree().create_timer(DECOY_DELAY + DECOY_SECONDS, false).timeout.connect(func() -> void:
 					if _placed.has(id):
 						_remove_placed.rpc(id))
 		"donuts":
@@ -242,6 +246,12 @@ func _request_use() -> void:
 				_tell(peer, {"flashlight": "You swap in the heavy-duty flashlight. That's a proper beam.",
 						"emf": "You clip the EMF reader to your pocket. Its lights are quiet. For now."}.get(item,
 						"You clip the walkie-talkie to your belt. Hold %s to talk on it." % _key("radio_talk")))
+
+
+func _connected_peers() -> Array:
+	var peers: Array = Array(multiplayer.get_peers())
+	peers.append(multiplayer.get_unique_id())
+	return peers
 
 
 ## Host: fits (or removes) one of a guard's personal upgrades, on every computer.
@@ -425,6 +435,7 @@ func _request_buy(item: String) -> void:
 	if career and spent[badge] >= 1000:
 		career.award(peer, "BIG_SPENDER")
 	_send_wallet(peer)
+	_drop_buyers[_next_drop] = [peer, Time.get_ticks_msec() / 1000.0]
 	_spawn_drop.rpc(_next_drop, item)
 	_next_drop += 1
 	_tell(peer, "Clunk. %s drops into the tray." % item_name(item))
@@ -466,6 +477,13 @@ func _request_pickup(drop_id: int) -> void:
 	if _held.has(peer):
 		_tell(peer, "Your hands are full. You're carrying the %s." % item_name(_held[peer]).to_lower())
 		return
+	# Whoever paid for it gets it (anyone may, if it's been sitting there a while).
+	var buyer: Array = _drop_buyers.get(drop_id, [peer, 0.0])
+	if int(buyer[0]) != peer and int(buyer[0]) in _connected_peers() \
+			and Time.get_ticks_msec() / 1000.0 - float(buyer[1]) < DROP_RESERVED_SECONDS:
+		_tell(peer, "That's someone else's. Give them a moment to pick it up.")
+		return
+	_drop_buyers.erase(drop_id)
 	_held[peer] = _drops[drop_id]["item"]
 	_remove_drop.rpc(drop_id)
 	_send_holding(peer)

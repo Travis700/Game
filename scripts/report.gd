@@ -1,6 +1,8 @@
 extends CanvasLayer
 ## The end-of-night report: each guard's pay for the night and the team's results.
 
+## Leave the session from the report (the host ends it for everyone).
+signal leave_requested
 signal next_night_requested
 ## The host chose to keep going after the ninth night.
 signal overtime_requested
@@ -68,6 +70,14 @@ func _ready() -> void:
 	_overtime_button.add_theme_font_size_override("font_size", 22)
 	_overtime_button.pressed.connect(func() -> void: overtime_requested.emit())
 	column.add_child(_overtime_button)
+
+	var leave := Button.new()
+	leave.text = "Leave"
+	leave.flat = true
+	leave.add_theme_font_size_override("font_size", 16)
+	leave.modulate.a = 0.7
+	leave.pressed.connect(func() -> void: leave_requested.emit())
+	column.add_child(leave)
 
 	_waiting = Label.new()
 	_waiting.text = "Waiting for the host to start the next night..."
