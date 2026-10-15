@@ -681,8 +681,11 @@ func _end_night() -> void:
 	summary += "\nPay: %d for clocking out, +%d per correct log, -%d per false report, -%d for each guard lost." % [
 		SURVIVAL_PAY, CORRECT_LOG_POINTS, FALSE_REPORT_POINTS, DEATH_PENALTY]
 	if daily != "":
-		var row: Dictionary = rows[0] if not rows.is_empty() else {}
-		_finish_daily(rows, int(row.get("pay", 0)), summary)
+		# The team's score: everyone's pay tonight added up (just yours, solo).
+		var score := 0
+		for row: Dictionary in rows:
+			score += int(row.get("pay", 0))
+		_finish_daily(rows, score, summary)
 		return
 	var fired := false
 	if quota_target > 0 and number != LAST_NIGHT:
@@ -893,18 +896,28 @@ func _build_rows(keep_pay: bool) -> Array:
 func _finish_daily(rows: Array, score: int, summary: String) -> void:
 	score = maxi(score, 0)
 	randomize()
+	var team := shift_team()
 	var best_before := Career.daily_best(daily)
-	var new_best := career.record_daily(daily, score) if career else false
-	var headline := "Daily shift for %s: you scored %d." % [daily, score]
+	var new_best := score > best_before
+	_daily_result.rpc(daily, score, team)
+	var headline := ("Daily shift for %s: you scored %d." if team == 1 else "Team daily shift for %s: the team scored %d.") % [daily, score]
 	if new_best and best_before >= 0:
 		headline += " A new best for today (was %d)." % best_before
 	elif not new_best:
 		headline += " Today's best is still %d." % best_before
-	headline += "  Days in a row: %d." % Career.daily_streak()
+	headline += "  Days in a row: %d." % maxi(Career.daily_streak(), 1)
+	_show_report.rpc(number, rows, headline + "\n" + summary, "daily")
+
+
+## Every computer: today's daily score goes in each player's records, and on Steam (solo and
+## team scores on separate boards).
+@rpc("authority", "call_local", "reliable")
+func _daily_result(date: String, score: int, team: int) -> void:
+	if career:
+		career.record_daily(date, score)
 	var steam := get_node_or_null("/root/SteamService")
 	if steam:
-		steam.submit_score(steam.daily_board(daily), score)
-	_show_report.rpc(number, rows, headline + "\n" + summary, "daily")
+		steam.submit_score(steam.daily_board(date) + ("" if team <= 1 else "_team"), score)
 
 
 ## Host, after the ninth night: the team stays on. Points, gear and upgrades carry on.

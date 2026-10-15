@@ -139,10 +139,12 @@ furthest night is kept on the Records screen.
 **Daily shift:** the menu's **Daily shift** button plays today's shift: one solo night that's the same for
 everyone that day (night, conditions, round, bonus objective and monster plan are all seeded from the
 date). Score is that night's pay. Your best per day and your streak of days are kept; the saved run
-isn't touched.
+isn't touched. **Host today's daily** plays it as a team: friends join as usual, the score is everyone's
+pay added up, and it goes on a separate team board on Steam.
 
 **Shift notes and bonus objectives:** from night 2 each night has one or two conditions (fog, faulty
-wiring, old batteries, a full moon, an inspector's visit, sound carrying, a messy school, hazard pay),
+wiring, old batteries, a full moon, an inspector's visit, sound carrying, a messy school, hazard pay,
+camera faults, a lockdown drill, an early start),
 each worth +15% XP. Every night also has a team bonus objective (nobody runs, nobody shouts, log N
 things, name a monster, finish the round by 3 AM, nobody caught) worth +60 and +50 XP. Test conditions
 with `--conditions=fog,batteries`.

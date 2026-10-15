@@ -418,6 +418,10 @@ func _ready() -> void:
 			_host())
 	menu.join_requested.connect(_join)
 	menu.daily_requested.connect(_play_daily)
+	menu.team_daily_requested.connect(func() -> void:
+		menu._continue.button_pressed = false
+		night.daily = Daily.today()
+		_host())
 	menu.training_requested.connect(_play_training)
 	night.daily_finished.connect(func() -> void: _back_to_menu(""))
 	SteamService.lobby_ready.connect(_on_steam_lobby_ready)
@@ -610,6 +614,11 @@ func _begin_hosting() -> void:
 	_start_run()
 	_enter_school()
 	_spawn_guard(1, Profile.employee_number, _player_name(), Career.rank(), _hat(), _perk(), Career.monsters_seen())
+	# A team daily shift: today's night, today's notes, today's starting points.
+	if night.daily != "":
+		night.hardcore = false
+		night.number = Daily.night_of(night.daily)
+		night.give_everyone(Daily.STARTING_POINTS)
 
 
 func _join(typed: String) -> void:
@@ -875,6 +884,9 @@ func _register_employee(badge: int, password: String, player_name := "", rank :=
 	while badge < 1000 or _badge_in_use(badge):
 		badge = randi_range(1000, 9999)
 	_spawn_guard(peer_id, badge, player_name, rank, hat, perk, known)
+	if night.daily != "" and shift.state == Shift.State.PRE_SHIFT:
+		night._totals[peer_id] = Daily.STARTING_POINTS
+		shop.push_wallets()
 	# Spawn data is replayed as it was first sent: tell them about anyone promoted since.
 	for guard: Guard in players.get_children():
 		if guard.name.to_int() != peer_id:

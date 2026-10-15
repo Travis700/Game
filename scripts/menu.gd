@@ -4,6 +4,8 @@ extends CanvasLayer
 signal solo_requested
 signal host_requested
 signal daily_requested
+## Host today's daily shift for a team.
+signal team_daily_requested
 signal training_requested
 signal join_requested(address: String)
 
@@ -169,7 +171,17 @@ func _ready() -> void:
 	column.add_child(_night_friends)
 	SteamService.leaderboard_loaded.connect(_on_leaderboard_loaded)
 	_show_rank()
-	column.add_child(_button("Host a game", func() -> void: host_requested.emit()))
+	var host_row := HBoxContainer.new()
+	host_row.add_theme_constant_override("separation", 8)
+	var host := _button("Host a game", func() -> void: host_requested.emit())
+	host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	host.size_flags_stretch_ratio = 2.0
+	host_row.add_child(host)
+	var team_daily := _button("Host today's daily", func() -> void: team_daily_requested.emit())
+	team_daily.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	team_daily.tooltip_text = "Today's daily shift for a team: friends join as usual, and the team's score goes on its own board."
+	host_row.add_child(team_daily)
+	column.add_child(host_row)
 
 	_password = LineEdit.new()
 	_password.placeholder_text = "Room password (optional, for hosting or joining)"
@@ -394,7 +406,7 @@ func _show_rank() -> void:
 		return
 	var today := Daily.today()
 	var best := Career.daily_best(today)
-	_daily_label.text = "Today's daily shift (solo, the same for everyone): %s%s%s" % [Daily.describe(today),
+	_daily_label.text = "Today's daily shift (the same for everyone; solo, or host it for a team): %s%s%s" % [Daily.describe(today),
 			"   ·   your best: %d" % best if best >= 0 else "",
 			"   ·   %d days in a row" % Career.daily_streak() if Career.daily_streak() > 1 else ""]
 	SteamService.request_friends_scores(SteamService.daily_board(today))
