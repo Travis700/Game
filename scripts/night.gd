@@ -195,6 +195,7 @@ func _on_shift_started() -> void:
 		seed(Daily.seed_of(daily))
 		conditions.forced = Daily.conditions_of(daily)
 	conditions.pick(number)
+	director.team_size = players.get_child_count()
 	director.plan_night(number)
 	finale.planned = number == LAST_NIGHT and daily == ""
 	finale.difficulty = difficulty
@@ -309,6 +310,8 @@ func _receive_log(area: String, type: String, named := "") -> void:
 	if not correct and type == "Missing object":
 		# The Mascot's empty stand really is a missing object.
 		correct = director.check_mascot_missing(peer, area)
+		if correct and director.guard_by_peer(peer) and "Mascot" not in director.guard_by_peer(peer).known_monsters:
+			director.guard_by_peer(peer).known_monsters.append("Mascot")
 		anomalies.last_was_first = director.last_log_was_first
 	if correct:
 		bonus.on_correct_log(named != "" and named == found)
@@ -316,7 +319,11 @@ func _receive_log(area: String, type: String, named := "") -> void:
 		if logger and found != "" and found not in logger.known_monsters:
 			logger.known_monsters.append(found)
 	var first := (director.last_log_was_first if type == "Monster" else anomalies.last_was_first) or not correct
-	if correct and not first:
+	if correct and not first and not _could_see(peer, area):
+		# Only passed on by a teammate: noted, but nobody pays for hearsay.
+		logged.append(entry)
+		_log_result(peer, true, "Noted: %s, %s. A teammate logged it first, and you didn't see it yourself: no pay." % [area, type.to_lower()])
+	elif correct and not first:
 		stats["confirmed"] = int(stats.get("confirmed", 0)) + 1
 		logged.append(entry)
 		_log_result(peer, true, "Confirmed: %s, %s. A teammate logged it first.  +%d" % [area, type.to_lower(), CONFIRM_POINTS])
@@ -368,7 +375,10 @@ func pick_difficulty() -> int:
 		return 1
 	if difficulty_choice > 0:
 		return clampi(difficulty_choice, 1, MAX_DIFFICULTY)
-	return clampi(players.get_child_count(), 1, MAX_DIFFICULTY)
+	# Auto: one wing per guard, and the school opens up as the run goes on (a new wing at
+	# nights 4 and 7), so even a solo guard meets everything.
+	var ramp := 1 + int((number - 1) / 3.0)
+	return clampi(maxi(players.get_child_count(), ramp), 1, MAX_DIFFICULTY)
 
 
 ## Host: a guard just spawned. Gives back what they had in the saved run.
@@ -513,6 +523,8 @@ func fail_night() -> void:
 ## team shares one school's worth of anomalies.
 ## Host: how many guards clocked in for tonight's shift.
 var _shift_team := 1
+## Host: whether this run has had its one retry of the last night.
+var _last_night_retried := false
 ## Host: peers who joined mid-shift as ghosts tonight. Not in tonight's counts, pay or credit.
 var late_joiners: Dictionary = {}
 
@@ -536,6 +548,23 @@ func on_principal_ignored(peer: int) -> void:
 		return
 	dock(peer, IGNORED_SUMMONS_POINTS)
 	director.tell(peer, "The intercom crackles: \"Guard, you did not come when called. That will be noted on your pay.\"  -%d" % IGNORED_SUMMONS_POINTS)
+
+
+## Host: could this guard see `area` for themselves: standing in it, or sitting at a desk with
+## one of its cameras on their own monitors?
+func _could_see(peer: int, area: String) -> bool:
+	var guard := director.guard_by_peer(peer)
+	if guard == null:
+		return false
+	if SchoolBuilder.area_at(guard.global_position) == area:
+		return true
+	var desk := guard_room.occupants.find(peer)
+	if desk < 0:
+		return false
+	for monitor in range(desk * 4, desk * 4 + 4):
+		if cameras.area_of(guard_room.assignments[monitor]) == area:
+			return true
+	return false
 
 
 ## Host: takes points off a guard's pay tonight.
@@ -584,6 +613,15 @@ static func checkpoint_for(night_number: int) -> int:
 
 ## Host: the team was caught on an ordinary (not Hardcore) run. Back to the last checkpoint:
 ## tonight's pay still counts, everyone keeps their gear, and then points are halved.
+func _halve_points(rows: Array) -> void:
+	for peer: int in _totals:
+		_totals[peer] = int(_totals[peer] / 2)
+	for badge: String in saved_points:
+		saved_points[badge] = int(int(saved_points[badge]) / 2)
+	for row: Dictionary in rows:
+		row["total"] = int(int(row["total"]) / 2)
+
+
 func _fail_to_checkpoint() -> void:
 	var rows := _build_rows(true)
 	rounds.clear()
@@ -592,13 +630,13 @@ func _fail_to_checkpoint() -> void:
 	_run_nights += 1
 	write_ups = 0
 	_restart_at = checkpoint_for(number)
-	for peer: int in _totals:
-		_totals[peer] = int(_totals[peer] / 2)
-	for badge: String in saved_points:
-		saved_points[badge] = int(int(saved_points[badge]) / 2)
-	for row: Dictionary in rows:
-		row["total"] = int(int(row["total"]) / 2)
+	_halve_points(rows)
 	var summary := "The whole team was caught at %s.\nBack to night %d, the last checkpoint. You keep your gear; everyone's points are halved." % [time_text(), _restart_at]
+	# The last night: one more go at it straight away, once a run, rather than two nights back.
+	if number == LAST_NIGHT and not _last_night_retried:
+		_last_night_retried = true
+		_restart_at = LAST_NIGHT
+		summary = "The whole team was caught at %s.\nThe district gives you one more chance at the last night. You keep your gear; everyone's points are halved. Next time it's back to night %d." % [time_text(), checkpoint_for(number)]
 	_show_report.rpc(number, rows, summary, "checkpoint:%d" % _restart_at)
 	shop.push_wallets()
 	save_run(_restart_at)
@@ -665,7 +703,8 @@ func _end_night() -> void:
 			save_run(1)
 		else:
 			_restart_at = checkpoint_for(number)
-			summary = "FIRED. Three write-ups. You're rehired on probation from night %d, the last checkpoint.\n" % _restart_at + summary
+			_halve_points(rows)
+			summary = "FIRED. Three write-ups. You're rehired on probation from night %d, the last checkpoint, and everyone's points are halved.\n" % _restart_at + summary
 			_show_report.rpc(number, rows, summary, "fired:%d" % _restart_at)
 			shop.push_wallets()
 			save_run(_restart_at)
@@ -761,6 +800,7 @@ func _forget_run() -> void:
 	_run_stats.clear()
 	_run_nights = 0
 	write_ups = 0
+	_last_night_retried = false
 
 
 ## Co-op only: who did best tonight, e.g. "Sharpest eyes: Sam (4 logs)  ·  Night watchman: Guard 2 (3 stations)".
@@ -809,16 +849,15 @@ func _build_rows(keep_pay: bool) -> Array:
 			pay += Bonus.POINTS
 		if pay > 0 and conditions.has("hazard_pay"):
 			pay = int(pay * 1.5)
+		var late := late_joiners.has(peer)
+		if late:
+			clocked_out = false
+			pay = 0
 		if keep_pay:
 			# Points never go below zero.
 			_totals[peer] = maxi(_totals.get(peer, 0) + pay, 0)
 		else:
 			_totals[peer] = 0
-		var late := late_joiners.has(peer)
-		if late:
-			clocked_out = false
-			pay = 0
-			_totals[peer] = maxi(int(_totals.get(peer, 0)), 0)
 		var xp: int = 0 if late else (XP_CLOCKED_OUT + number * XP_PER_NIGHT if clocked_out else XP_CAUGHT) \
 				+ stats["correct"] * XP_PER_LOG + stats.get("named", 0) * XP_PER_NAME \
 				+ int(stats.get("confirmed", 0)) * int(XP_PER_LOG / 2) \

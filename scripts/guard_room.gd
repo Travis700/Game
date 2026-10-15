@@ -470,6 +470,18 @@ func _refresh_screen(monitor: int) -> void:
 	_screens[monitor].prompt = cameras.title(camera)
 
 
+## The feeds on the monitors of desks someone is sitting at (what's actually being watched).
+func watched_feeds() -> Array[int]:
+	var feeds: Array[int] = []
+	for monitor in assignments.size():
+		if occupants[monitor / 4] == 0:
+			continue
+		var feed_key := SecurityCameras.key(assignments[monitor], _is_spectral(monitor))
+		if feed_key not in feeds:
+			feeds.append(feed_key)
+	return feeds
+
+
 func _update_shown() -> void:
 	var shown: Array[int] = []
 	for monitor in assignments.size():

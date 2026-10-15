@@ -110,6 +110,8 @@ var last_log_was_first := true
 var _noises: Array = []
 
 var night_number := 1
+## Host: how many guards started tonight (set by Night before plan_night).
+var team_size := 1
 ## Tonight's difficulty: which wings are open. Monsters only come from open areas.
 var difficulty := 1
 ## Monsters coming out tonight and when: [{"kind", "at"}]. Host only.
@@ -202,7 +204,8 @@ func plan_night(number: int) -> void:
 		weight[kind] = randf() + (3.0 if twice else 0.0) - (0.6 if not seen else 0.0)
 	pool.sort_custom(func(a: String, b: String) -> bool: return weight[a] < weight[b])
 	# Bigger maps (for bigger teams) bring one more monster per open wing.
-	var wanted := MONSTERS_PER_NIGHT[clampi(number - 1, 0, MONSTERS_PER_NIGHT.size() - 1)] + difficulty - 1
+	# One more per open wing, but only for teams big enough to cover them.
+	var wanted := MONSTERS_PER_NIGHT[clampi(number - 1, 0, MONSTERS_PER_NIGHT.size() - 1)] + mini(difficulty, team_size) - 1
 	if conditions and conditions.has("hazard_pay"):
 		wanted += 1
 	# Overtime: one more for every night past the last.
@@ -573,10 +576,10 @@ func is_watched(monster: Monster) -> bool:
 		if to_monster.length() < 40.0 and (-guard.camera.global_basis.z).angle_to(to_monster) < deg_to_rad(50) \
 				and _clear_line(eye, target, null):
 			return true
-	# The monitors only watch anything if someone's sitting at them.
-	if guard_room == null or not guard_room.occupants.any(func(peer: int) -> bool: return peer != 0):
+	# The monitors only watch anything if someone's sitting at them: just that desk's four.
+	if guard_room == null:
 		return false
-	for feed_key in cameras.shown:
+	for feed_key in guard_room.watched_feeds():
 		var camera_index := feed_key / 2
 		if not cameras.is_working(camera_index):
 			continue

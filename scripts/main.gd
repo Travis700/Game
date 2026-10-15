@@ -85,7 +85,7 @@ var clutter: Clutter
 var finale: Finale
 ## Host: when each ghost may next leave a cold spot.
 var _ghost_ping_at: Dictionary = {}
-## Host: the monster kinds each guard has had a close call with this session (peer -> kinds).
+## Host: the monster kinds each guard has had a close call with this run (badge -> kinds).
 var _close_calls: Dictionary = {}
 ## Host: a solo guard's second wind, once a night.
 var _second_wind_used := false
@@ -131,6 +131,8 @@ func _ready() -> void:
 	shift.started.connect(lighting.go_dark)
 	shift.started.connect(func() -> void:
 		_second_wind_used = false
+		if night.number == 1:
+			_close_calls.clear()
 		_left_alive.clear()
 		night.late_joiners.clear()
 		_shift_badges.clear()
@@ -1514,13 +1516,15 @@ func _on_guard_caught(peer_id: int, by: String, from := Vector3.INF) -> void:
 ## knocked out instead: they wake in the guard room, shaken, and know the rule now.
 ## Returns true if that's what happened.
 func _close_call(guard: Guard, by: String) -> bool:
-	if night.hardcore or night.training or finale.active or shift.state != Shift.State.ON_SHIFT:
+	# (Not the gate shutting at 6 AM on the last night: there's no waking up from that.)
+	if night.hardcore or night.training or shift.state != Shift.State.ON_SHIFT or by == "the school":
 		return false
 	var peer := guard.name.to_int()
 	var kind := FieldGuide.kind_for_name(by)
-	var used: Array = _close_calls.get_or_add(peer, [])
+	# By badge, so reconnecting doesn't bring them back. (Not in the finale: that's the test.)
+	var used: Array = _close_calls.get_or_add(guard.employee_number, [])
 	var text := ""
-	if kind != "" and kind not in guard.known_monsters and kind not in used:
+	if kind != "" and kind not in guard.known_monsters and kind not in used and not finale.active:
 		used.append(kind)
 		text = "Everything goes black. You come to in the guard room, shaking. That was %s, and you got lucky. You won't next time.\nHow to survive it: %s" % [
 				FieldGuide.display_name(kind), FieldGuide.ENTRIES[kind]["rule"]]

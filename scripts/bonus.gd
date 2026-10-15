@@ -39,6 +39,10 @@ func pick(night_number: int) -> void:
 	kind = KINDS.pick_random()
 	if kind == "early_round" and rounds.order.is_empty():
 		kind = "logs"
+	# Not "nobody runs" on a night that will make people run: the Coach, or a lockdown.
+	if kind == "no_running" and (director.tonight.any(func(plan: Dictionary) -> bool: return plan["kind"] == "coach") \
+			or not director._lockdown_times.is_empty()):
+		kind = "logs"
 	failed = false
 	_logs = 0
 	_named = 0
