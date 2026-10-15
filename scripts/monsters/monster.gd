@@ -13,7 +13,7 @@ const GRAVITY := 9.8
 ## The Bell never pushes a monster faster than this (just under a guard's running speed),
 ## so every chase can still be outrun.
 const BELL_SPEED_CAP := 5.4
-## Moods: from night 3 a monster can come in out of sorts. Same rules, different numbers, and
+## Moods: from night 5 a monster can come in out of sorts. Same rules, different numbers, and
 ## a correct log tells you which. pace scales its speed, senses how far off it notices guards.
 const MOODS := {
 	"restless": {"pace": 1.15, "senses": 1.0, "tell": "%s seems restless tonight: quicker on its feet, and it won't stay put."},

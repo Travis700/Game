@@ -1239,7 +1239,7 @@ func _start_night(number: int, difficulty: int, late := false) -> void:
 		# Night 2 brings two new things: say both, once, and give it time to be read.
 		get_tree().create_timer(6.0).timeout.connect(func() -> void:
 			if shift.state == Shift.State.ON_SHIFT:
-				hud.show_message("NEW TONIGHT: the district wants a work target met by 6 AM (logs and punched stations; it's under the clock). Miss it and the team gets a write-up; three and you're fired.\nAnd the power can go out: hold %s on the breaker in the custodian's closet, across the hall from the lobby." % Controls.key_name("interact"), 14.0))
+				hud.show_message("NEW TONIGHT: the district wants a work target met by 6 AM (logs and punched stations; it's under the clock). Miss it and the team gets a write-up; three and you're fired. There's a bonus objective too, for extra pay.\nAnd the power can go out: hold %s on the breaker in the custodian's closet, across the hall from the lobby." % Controls.key_name("interact"), 14.0))
 
 
 ## A few pointers on the first night, a few seconds apart.
@@ -1662,6 +1662,7 @@ func _guard_died(peer_id: int, by: String, at: Vector3, from := Vector3.INF) -> 
 	if guard == _local_guard:
 		guard_room.leave_desk()
 		_close_all_ui()
+		hud.clear_messages()
 		guard.input_blocked = false
 		dread.jumpscare(from)
 		hud.flash(Color(0.6, 0.0, 0.0, 0.4), 2.0)
@@ -1849,6 +1850,7 @@ func on_achievement(title: String) -> void:
 ## Every computer, when the night report appears: leave the desk and stop moving.
 func on_report() -> void:
 	_close_all_ui()
+	hud.clear_messages()
 	if _local_guard:
 		guard_room.leave_desk()
 		_local_guard.input_blocked = true
@@ -1859,6 +1861,7 @@ func on_next_night() -> void:
 	school.clock_machine.prompt = "Clock in"
 	_clocked_in = false
 	_close_all_ui()
+	hud.clear_messages()
 	# After a team wipe the lights are still down; bring them back for the evening.
 	lighting.go_bright()
 	ambience.stop()

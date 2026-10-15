@@ -293,7 +293,6 @@ func _run_shift(delta: float) -> void:
 
 func _on_log_submitted(area: String, type: String, named := "") -> void:
 	clipboard.add_entry(time_text(), area, type if named == "" else FieldGuide.display_name(named).capitalize())
-	hud.show_message("Logged: %s, %s." % [area, type.to_lower()])
 	if multiplayer.is_server():
 		_receive_log(area, type, named)
 	else:
@@ -622,7 +621,7 @@ func _send_quota() -> void:
 	var text := ""
 	if quota_target > 0:
 		text = "Work target: %d / %d" % [_team_work(), quota_target]
-		var owed := _team_work() - _work_after_round()
+		var owed := int(rounds.missed_count() * rounds.punch_points() * (1.0 + 0.6 * (shift_team() - 1)))
 		if _work_after_round() >= quota_target:
 			text += " (met)"
 		elif owed > 0:
@@ -697,7 +696,7 @@ func _end_night() -> void:
 		summary += "\n" + director.tonight_report
 	summary += "\n" + round_text
 	if number == 1 and daily == "" and training == null:
-		summary += "\nTomorrow night: the district sets a work target, and the power can go out."
+		summary += "\nTomorrow night: the district sets a work target, the power can go out, and there's a bonus objective."
 	if conditions.summary() != "":
 		summary += "\n" + conditions.summary()
 	if bonus.summary() != "":

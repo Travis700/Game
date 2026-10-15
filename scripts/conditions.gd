@@ -50,7 +50,7 @@ var forced: Array[String] = []
 
 # --- Host --------------------------------------------------------------------------------
 
-## Picks tonight's conditions: none on night 1, one on nights 2-4, two after that, and one
+## Picks tonight's conditions: none on night 1, one on nights 3-4, two after that, and one
 ## more for every night past the ninth (Overtime).
 func pick(night_number: int) -> void:
 	var count := 0 if night_number < 3 else (1 if night_number < 5 else 2 + maxi(night_number - 9, 0))

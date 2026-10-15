@@ -29,8 +29,11 @@ var _feed_view: Control
 var _feed_picture: TextureRect
 var _feed_title: Label
 var _message_time := 0.0
-## Messages waiting their turn: [text, seconds].
+## Messages waiting their turn: [text, seconds, sticky].
 var _queue: Array = []
+## Whether the message showing is a teaching message (holds the screen while it's read).
+var _message_sticky := false
+const STICKY_SECONDS := 8.0
 var _hint_time := HINT_SECONDS
 ## Playing alone (no voice chat lines in the key list).
 var solo := false
@@ -181,7 +184,7 @@ func _process(delta: float) -> void:
 		_message.modulate.a = clampf(_message_time, 0.0, 1.0)
 	if _message_time <= 0.25 and not _queue.is_empty():
 		var next: Array = _queue.pop_front()
-		_display(next[0], next[1])
+		_display(next[0], next[1], next[2])
 	if _hint_time > 0.0:
 		_hint_time -= delta
 		_hint.modulate.a = clampf(_hint_time, 0.0, 1.0)
@@ -340,33 +343,50 @@ func set_status(text: String) -> void:
 	_status.text = text
 
 
-## Shows a message under the crosshair. They queue: one that arrives while another still has
-## a while to go waits its turn (unless it's urgent: being caught, a lockdown, a log's result,
-## which go straight up and put the one they interrupted back in the queue). Long messages
-## stay up longer. `seconds` < 0 means "as long as it takes to read".
+## Shows a message under the crosshair. Most messages simply replace the one before, as quick
+## feedback should. But a teaching message (one given 8 seconds or more: a monster's rule, the
+## shift notes, a tip) holds the screen while it's being read: anything ordinary that arrives
+## meanwhile waits behind it (and similar waiting messages collapse into the latest). Urgent
+## ones (being caught, a log's result, a lockdown) always go straight up, and put a teaching
+## message they cut off back in line. `seconds` < 0 means "as long as it takes to read".
 func show_message(text: String, seconds := -1.0, urgent := false) -> void:
+	var sticky := seconds >= STICKY_SECONDS
 	if seconds < 0.0:
-		seconds = clampf(1.5 + text.length() / 15.0, MESSAGE_SECONDS, 12.0)
+		seconds = clampf(1.5 + text.length() / 15.0, MESSAGE_SECONDS, 10.0)
 	urgent = urgent or _is_urgent(text)
 	if text == _message.text and _message_time > 0.0:
 		_message_time = maxf(_message_time, seconds)
 		return
-	if not urgent and _message_time > 1.0:
-		if _queue.any(func(queued: Array) -> bool: return queued[0] == text):
-			return
-		if _queue.size() >= 4:
-			_queue.pop_front()
-		_queue.append([text, seconds])
+	var holding := _message_sticky and _message_time > 1.0
+	if not urgent and (holding or not _queue.is_empty()):
+		# One waiting message per kind ("Watching...", "...flagged"): the latest wins.
+		var prefix := text.substr(0, 12)
+		_queue = _queue.filter(func(queued: Array) -> bool: return queued[0] != text and (queued[0] as String).substr(0, 12) != prefix)
+		_queue.append([text, seconds, sticky])
+		if _queue.size() > 6:
+			# Drop the oldest ordinary one, never a teaching message.
+			for i in _queue.size():
+				if not _queue[i][2]:
+					_queue.remove_at(i)
+					break
 		return
-	# Interrupted with plenty left to read: it goes back in line, first.
-	if urgent and _message_time > 2.0 and _message.text != "":
-		_queue.push_front([_message.text, _message_time])
-	_display(text, seconds)
+	if urgent and _message_sticky and _message_time > 2.0:
+		_queue.push_front([_message.text, _message_time, true])
+	_display(text, seconds, sticky)
 
 
-func _display(text: String, seconds: float) -> void:
+## Clears whatever's showing or waiting (the night ended, or you were caught).
+func clear_messages() -> void:
+	_queue.clear()
+	_message_time = 0.0
+	_message_sticky = false
+	_message.modulate.a = 0.0
+
+
+func _display(text: String, seconds: float, sticky := false) -> void:
 	_message.text = text
 	_message_time = seconds
+	_message_sticky = sticky
 	_message.modulate.a = 1.0
 
 

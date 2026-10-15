@@ -228,7 +228,7 @@ func plan_night(number: int) -> void:
 	if number >= 2 and count >= 2:
 		tonight[count - 1]["at"] = randf_range(235.0, 255.0)
 		tonight[count - 1]["late"] = true
-	# The Bell rings once or twice a night from night 4.
+	# The Bell rings once or twice a night from night 5.
 	_bell_times.clear()
 	if number >= BELL_FROM_NIGHT:
 		# Twice a night from night 8 (not 7, when the guard room opens: one new thing at a time).

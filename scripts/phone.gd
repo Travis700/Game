@@ -1,6 +1,6 @@
 class_name Phone
 extends Node3D
-## The phone on the front office desk. From night 2 it rings once or twice a night, loud enough
+## The phone on the front office desk. From night 3 it rings once or twice a night, loud enough
 ## to hear across the building. Whoever answers it (E) hears a tip-off: where something out of
 ## place is right now. Nobody answers in time, and the line goes dead. So do the lights.
 ##
