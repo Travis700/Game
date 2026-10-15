@@ -92,6 +92,9 @@ padlock key turns up deep in the school (the intercom says where): fetch it and 
 gate opens. Anyone standing out in the street is safe. Whoever's still inside at 6 AM is caught; one guard out
 wins the run. If the key's carrier is caught, the key lies where they fell.
 
+**Joining late:** you can join a team mid-shift. You come in as a ghost (watch, leave cold spots, knock things
+over; a revive totem can bring you back) and clock in properly from the next night.
+
 **Base station:** sitting at a guard room desk, hold the walkie-talkie key (B) to call the whole team over the
 radio, no walkie needed. Field guards need a walkie-talkie to call back. Careful: the call comes out loud wherever
 your teammates are, and anything near them hears it too.

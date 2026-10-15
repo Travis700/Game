@@ -739,14 +739,55 @@ func _back_to_menu(message: String) -> void:
 func _on_peer_connected(peer_id: int) -> void:
 	if not multiplayer.is_server():
 		return
-	if shift.state == Shift.State.ON_SHIFT:
-		_reject(peer_id, "That team's shift has already started.")
+	if shift.state == Shift.State.MORNING or shift.state == Shift.State.REPORT:
+		_reject(peer_id, "That team's just finishing a night. Try again in a minute.")
 		return
 	print("[net] Guard joined (peer %d)" % peer_id)
 	guard_room.send_state_to(peer_id)
 	anomalies.send_state_to(peer_id)
 	clutter.send_state_to(peer_id)
 	# Their guard spawns once their computer tells us their badge number (_register_employee).
+
+
+## Host: someone joined in the middle of a shift. They come in as a ghost (they can watch, leave
+## cold spots and knock things over, and a totem can bring them back), and clock in properly
+## from the next night. Their computer is brought up to date with the night so far.
+func _catch_up_late_joiner(peer_id: int) -> void:
+	_start_night.rpc_id(peer_id, night.number, night.difficulty)
+	night._sync_clock.rpc_id(peer_id, night.minutes, night.seconds_per_minute)
+	night.conditions._set_conditions.rpc_id(peer_id, PackedStringArray(night.conditions.active), night.number)
+	rounds._set_state.rpc_id(peer_id, PackedInt32Array(rounds.order), PackedInt32Array(rounds.punched), rounds.open)
+	if not power.on:
+		power._set_power.rpc_id(peer_id, false, false)
+	for hidden_peer: int in hiding.hidden:
+		hiding._set_hidden.rpc_id(peer_id, hidden_peer, hiding.hidden[hidden_peer])
+	if director.lockdown_left > 0.0:
+		_set_lockdown.rpc_id(peer_id, true)
+	if director.bell_ringing:
+		_set_bell.rpc_id(peer_id, true)
+	if finale.active:
+		finale._set_active.rpc_id(peer_id, true)
+		finale._set_key.rpc_id(peer_id, finale.key_area, finale.key_holder, finale._key.global_position, finale.unlocked)
+	for guard: Guard in players.get_children():
+		if guard.is_dead:
+			_show_ghost.rpc_id(peer_id, guard.name.to_int(), false)
+	_show_ghost.rpc(peer_id, true)
+
+
+## Every computer: a guard is a ghost (a late joiner, or someone who was already caught when
+## this computer joined). `joined` says it's a new arrival, for the message.
+@rpc("authority", "call_local", "reliable")
+func _show_ghost(peer_id: int, joined: bool) -> void:
+	var guard := players.get_node_or_null(str(peer_id)) as Guard
+	if guard == null:
+		return
+	guard.set_dead(true)
+	if guard == _local_guard:
+		hud.set_ghost(true)
+		hud.show_message("The shift had already started, so you've come in as a ghost: watch, leave cold spots (E), knock things over, and help where you can. A totem can bring you back. You'll clock in properly from the next night.", 12.0)
+	elif joined:
+		hud.show_message("Guard %d joined mid-shift. They're a ghost until the next night." % guard.slot)
+	_refresh_guard_visibility()
 
 
 ## Host: a player who just joined shows their badge. Their guard spawns with it.
@@ -758,8 +799,8 @@ func _register_employee(badge: int, password: String, player_name := "", rank :=
 	if password != _password:
 		_reject(peer_id, "Wrong room password." if password != "" else "That room needs a password.")
 		return
-	if shift.state != Shift.State.PRE_SHIFT:
-		_reject(peer_id, "That team's shift has already started.")
+	if shift.state != Shift.State.PRE_SHIFT and shift.state != Shift.State.ON_SHIFT:
+		_reject(peer_id, "That team's just finishing a night. Try again in a minute.")
 		return
 	if players.get_child_count() >= MAX_GUARDS:
 		_reject(peer_id, "That team is full.")
@@ -773,6 +814,8 @@ func _register_employee(badge: int, password: String, player_name := "", rank :=
 		if guard.name.to_int() != peer_id:
 			_set_rank.rpc_id(peer_id, guard.name.to_int(), guard.rank)
 	shop.send_state_to(peer_id)
+	if shift.state == Shift.State.ON_SHIFT:
+		_catch_up_late_joiner(peer_id)
 	doors.send_state_to(peer_id)
 	_sync_session.rpc_id(peer_id, night.number, night.difficulty)
 	_update_guards_required()

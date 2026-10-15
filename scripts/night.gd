@@ -181,6 +181,7 @@ func _on_shift_started() -> void:
 	if not multiplayer.is_server():
 		return
 	run_team = maxi(run_team, players.get_child_count())
+	_shift_team = players.get_child_count()
 	_stats.clear()
 	_logged.clear()
 	_deaths = 0
@@ -510,6 +511,10 @@ func fail_night() -> void:
 
 ## The team's work target tonight: each extra guard adds 60% of one guard's share, since a
 ## team shares one school's worth of anomalies.
+## Host: how many guards clocked in for tonight's shift.
+var _shift_team := 1
+
+
 func quota_for(team: int) -> int:
 	return int((QUOTA_BASE + QUOTA_PER_NIGHT * number) * (1.0 + 0.6 * (maxi(team, 1) - 1)))
 
@@ -544,7 +549,8 @@ func _team_work() -> int:
 func _send_quota() -> void:
 	# Sized to whoever's still here (someone leaving mid-shift shouldn't sink the team).
 	if quota_target > 0:
-		quota_target = quota_for(players.get_child_count())
+		# (Not counting anyone who joined mid-shift as a ghost.)
+		quota_target = quota_for(mini(players.get_child_count(), _shift_team))
 	var text := ""
 	if quota_target > 0:
 		text = "Work target: %d / %d" % [mini(_team_work(), quota_target), quota_target]
