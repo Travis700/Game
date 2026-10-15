@@ -960,7 +960,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 		finale.drop(peer_id, last_at, true)
 	if hiding.hidden.has(peer_id):
 		hiding._set_hidden.rpc(peer_id, -1)
-	_update_guards_required()
+	_update_guards_required(guard != null and not guard.is_dead)
 
 
 ## Host only. The spawner runs _create_guard with the same data on every computer,
@@ -1011,13 +1011,18 @@ func _guard_count() -> int:
 	return count
 
 
-func _update_guards_required() -> void:
+func _update_guards_required(left_alive := false) -> void:
 	if shift.state == Shift.State.ON_SHIFT and _guard_count() > 0 and director.living_guards().is_empty():
 		night.fail_night()
 		return
 	# In the morning, the last one still to clock out leaving just ends the night.
+	# In the morning, the last one still to clock out leaving just ends the night (if they were
+	# alive: everyone being caught is still a wipe, even if a ghost leaves during the scare).
 	if shift.state == Shift.State.MORNING and director.living_guards().is_empty():
-		night._end_night.call_deferred()
+		if left_alive:
+			night._end_night.call_deferred()
+		else:
+			night.fail_night()
 		return
 	if shift.state == Shift.State.MORNING:
 		shift.guards_required = director.living_guards().size()

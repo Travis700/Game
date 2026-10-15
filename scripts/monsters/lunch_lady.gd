@@ -44,7 +44,8 @@ func think(delta: float) -> void:
 		_silence += delta
 		# She stops a step short of where the sound was and listens: a guard who keeps still
 		# right there is never found.
-		var reached := Vector2(global_position.x - _heard_at.x, global_position.z - _heard_at.z).length() < STOP_SHORT
+		# (While she can still hear someone, she keeps coming.)
+		var reached := not heard and Vector2(global_position.x - _heard_at.x, global_position.z - _heard_at.z).length() < STOP_SHORT
 		if _silence > LOSE_INTEREST_AFTER or (not reached and not move_to(_heard_at, HUNT_SPEED)):
 			state = "wander"
 			_wander_timer = 0.0

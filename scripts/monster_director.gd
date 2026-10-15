@@ -633,6 +633,16 @@ func is_seated(guard: Guard) -> bool:
 	return guard.name.to_int() in guard_room.occupants
 
 
+## True while a Crossing Guard that can see this guard is holding up its STOP sign.
+func stop_sign_up_for(guard: Guard) -> bool:
+	for node in _container.get_children():
+		if node is CrossingGuard and (node as Monster).state == "stop" \
+				and (node as Monster).distance_to_guard(guard) < CrossingGuard.SIGHT_RANGE \
+				and can_see((node as Monster).eye_position(), guard):
+			return true
+	return false
+
+
 ## True while a Crossing Guard is holding up its STOP sign (everyone should be standing still).
 func stop_sign_up() -> bool:
 	for node in _container.get_children():

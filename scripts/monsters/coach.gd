@@ -53,7 +53,7 @@ func think(delta: float) -> void:
 		_grace -= delta
 		# A moment of slacking, not a single slow reading.
 		# (Standing still for the Crossing Guard's sign doesn't count: one rule at a time.)
-		_slacking = _slacking + delta if director.guard_speed(_watching) < HUSTLE_SPEED and not director.stop_sign_up() else 0.0
+		_slacking = _slacking + delta if director.guard_speed(_watching) < HUSTLE_SPEED and not director.stop_sign_up_for(_watching) else 0.0
 		if _grace <= 0.0 and _slacking > SLACK_SECONDS:
 			director.tell(_watching.name.to_int(), "\"DID I SAY STOP?\"")
 			_target = _watching

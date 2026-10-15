@@ -12,6 +12,7 @@ const CHASE_TIME := 7.0
 const REVEAL_SECONDS := 0.8
 const LOSE_SIGHT_AFTER := 3.0
 const REVEAL_COOLDOWN := 20.0
+const LOST_COOLDOWN := 5.0
 
 var _chase_left := 0.0
 var _reveal_left := 0.0
@@ -41,8 +42,9 @@ func think(delta: float) -> void:
 	if _chase_left > 0.0:
 		_chase_left -= delta
 		if not chase(_target, CHASE_SPEED, delta, LOSE_SIGHT_AFTER) or _chase_left <= 0.0:
+			# A full rest only after a full chase: slipping out of sight buys a few seconds.
+			_cooldown = REVEAL_COOLDOWN if _chase_left <= 0.0 else LOST_COOLDOWN
 			_chase_left = 0.0
-			_cooldown = REVEAL_COOLDOWN
 			state = "walk"
 		return
 	var guard := find_guard(NOTICE_DISTANCE) if _cooldown <= 0.0 else null

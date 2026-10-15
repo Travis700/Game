@@ -406,7 +406,7 @@ func restore_guard(peer_id: int, badge: int) -> void:
 ## dropped from this session, so rejoining gives back exactly what they had.
 func remember_guard(guard: Guard) -> void:
 	var peer := guard.name.to_int()
-	if _restart_run:
+	if _restart_run and not _won:
 		# The run is over (lost); nothing carries into the next one. (A won run may go on into
 		# Overtime, so that keeps it; a new run clears it anyway.)
 		_totals.erase(peer)

@@ -65,7 +65,7 @@ func think(delta: float) -> void:
 	var watching := distance < SIGHT_RANGE and director.can_see(eye_position(), _target)
 	# Standing still is fair when the Crossing Guard's sign is up, and a guard sitting at a
 	# desk is working, not standing about.
-	var excused := director.stop_sign_up() or director.is_seated(_target)
+	var excused := director.stop_sign_up_for(_target) or director.is_seated(_target)
 	if watching and not excused and director.guard_speed(_target) < STILL_SPEED:
 		_still_for += delta
 	else:
