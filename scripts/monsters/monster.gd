@@ -38,6 +38,8 @@ var state := "":
 var visual_layers := 1
 ## Harmless characters (the real night cleaner, a real student) can't be logged as monsters.
 var harmless := false
+## Training's Hall Monitor: harmless, but it can be logged, for practice.
+var practice := false
 ## Some monsters slip away once a guard logs them on the clipboard (e.g. the Other Cleaner).
 var leaves_when_logged := false
 ## Footstep sound: lower pitch for heavy things, higher for small ones. Silent ones float.

@@ -12,12 +12,13 @@ const STATION := 3
 const HIDE_SECONDS := 8.0
 
 const STEPS := [
-	"Training 1/6: sit at a desk in the guard room (E on a chair) to watch the cameras. A / D changes a monitor's camera.",
-	"Training 2/6: something in the Lobby has moved: the bench. Press Tab, pick Lobby and Moved object, and log it.",
-	"Training 3/6: every night has a round. Go and punch the station in the Main Hall East (amber lamp): hold E on it.",
-	"Training 4/6: the power's out. Reset the breaker in the custodian's closet, across the hall from the lobby: hold E on it.",
-	"Training 5/6: something's coming down the hall. Hide in a cupboard: there's one at each end of the main hallway (E).",
-	"Training 6/6: stay hidden until it's gone past...",
+	"Training 1/7: sit at a desk in the guard room (E on a chair) to watch the cameras. A / D changes a monitor's camera.",
+	"Training 2/7: something in the Lobby has moved: the bench. Press Tab, pick Lobby and Moved object, and log it.",
+	"Training 3/7: every night has a round. Go and punch the station in the Main Hall East (amber lamp): hold E on it.",
+	"Training 4/7: the power's out. Reset the breaker in the custodian's closet, across the hall from the lobby: hold E on it.",
+	"Training 5/7: something's coming down the hall. Hide in a cupboard: there's one at each end of the main hallway (E).",
+	"Training 6/7: stay hidden until it's gone past...",
+	"Training 7/7: that was the Hall Monitor, a monster. Log it: Tab, pick the area it's in (Main Hall West or East: watch the cameras or peek out), and Monster.",
 ]
 
 var night: Night
@@ -62,6 +63,9 @@ func _process(delta: float) -> void:
 		5:
 			_hidden_for += delta
 			if _hidden_for >= HIDE_SECONDS:
+				_go(6)
+		6:
+			if night.director._logged_tonight.has("HallMonitor"):
 				_finish()
 
 
@@ -81,6 +85,7 @@ func _go(next: int) -> void:
 			night.director.spawn("hall_monitor", Vector3(x, 0, 7))
 			for monster in night.director.get_node("Live").get_children():
 				(monster as Monster).harmless = true
+				(monster as Monster).practice = true
 	if step > 0:
 		Sfx.play_flat(self, Sfx.notes([660.0, 990.0], 0.08, 0.2, "sine"))
 		hud.show_message("Done. " + objective, 6.0)

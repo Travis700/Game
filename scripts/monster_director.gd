@@ -742,7 +742,7 @@ func check_log(peer_id: int, area: String, named := "") -> String:
 	var found: Array[Monster] = []
 	for node: Node in _container.get_children():
 		var monster := node as Monster
-		if monster == null or monster.harmless or monster.is_queued_for_deletion() or not monster.loggable():
+		if monster == null or (monster.harmless and not monster.practice) or monster.is_queued_for_deletion() or not monster.loggable():
 			continue
 		var credited: Array = _credited.get_or_add(monster.name, [])
 		if peer_id not in credited and SchoolBuilder.area_at(monster.global_position) == area:
