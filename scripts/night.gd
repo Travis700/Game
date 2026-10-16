@@ -47,7 +47,7 @@ const TOMORROW := {
 	4: "on Auto, the school gets bigger: a new wing opens if it hasn't yet.",
 	5: "some things can only be heard, the monsters come in moods, and the school bell rings.",
 	6: "the lockdown alarm, and figures that don't stay put.",
-	7: "the guard room stops being safe.",
+	7: "the guard room stops being safe, and on Auto the science wing opens.",
 	8: "the bell rings twice.",
 	9: "the last night. At 5 AM, the last bell.",
 }

@@ -67,6 +67,8 @@ const DRILLS := {
 const DRILL_OF := {"HallMonitor": "still", "LunchLady": "quiet", "Mascot": "watched", "Twin": "watched"}
 const LOCKDOWN_SPEED := 3.6
 ## The intercom: in-game minutes between the Principal's summonses, and real seconds to answer.
+## The most monsters a run hasn't met yet that turn up in one night.
+const NEW_MONSTERS_PER_NIGHT := 2
 const SUMMON_EVERY := Vector2(60.0, 100.0)
 const SUMMON_SECONDS := 45.0
 ## How long a camera stays dark after the Ghost passes (in-game minutes).
@@ -258,11 +260,26 @@ func plan_night(number: int) -> void:
 	if number <= 1:
 		_run_history.clear()
 	var weight := {}
+	var unseen := {}
 	for kind: String in pool:
 		var seen: bool = _run_history.keys().any(func(night: int) -> bool: return night < number and kind in _run_history[night])
 		var twice: bool = kind in _run_history.get(number - 1, []) and kind in _run_history.get(number - 2, [])
 		weight[kind] = randf() + (3.0 if twice else 0.0) - (0.6 if not seen else 0.0)
+		unseen[kind] = not seen
 	pool.sort_custom(func(a: String, b: String) -> bool: return weight[a] < weight[b])
+	# One new thing at a time: at most two monsters this run hasn't met yet in one night (the
+	# night a wing opens could otherwise be all new), unless there's nothing else to send.
+	var deck: Array = []
+	var new_ones := 0
+	for kind: String in pool:
+		if unseen[kind] and new_ones >= NEW_MONSTERS_PER_NIGHT:
+			continue
+		deck.append(kind)
+		new_ones += 1 if unseen[kind] else 0
+	for kind: String in pool:
+		if kind not in deck:
+			deck.append(kind)
+	pool = deck
 	# Bigger maps (for bigger teams) bring one more monster per open wing.
 	# One more per open wing, but only for teams big enough to cover them.
 	var wanted := MONSTERS_PER_NIGHT[clampi(number - 1, 0, MONSTERS_PER_NIGHT.size() - 1)] + mini(difficulty, team_size) - 1
