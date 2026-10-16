@@ -239,6 +239,7 @@ func plan_night(number: int) -> void:
 	night_number = number
 	tonight.clear()
 	_credited.clear()
+	_monster_areas.clear()
 	_out_tonight.clear()
 	_caught_by_kind.clear()
 	_echo_note = ""
@@ -341,6 +342,7 @@ func plan_night(number: int) -> void:
 func update(minutes: float, delta: float) -> void:
 	_minutes = minutes
 	_track_guard_speeds(delta)
+	_track_monster_areas()
 	for plan in tonight:
 		if plan.get("started", false) or minutes < plan["at"]:
 			continue
@@ -1038,6 +1040,28 @@ func tell(peer_id: int, text: String) -> void:
 ## Host: checks a clipboard "Monster" entry. Returns the kind of monster (e.g. "LunchLady") this
 ## guard hasn't logged yet that's in that area right now, or "" if there isn't one. If several
 ## are there, the one the guard `named` counts first.
+## How long a monster still counts as being in an area after it's left (real seconds): a guard
+## filling in the clipboard shouldn't lose a right log because it stepped over a line.
+const LOG_GRACE_MSEC := 10000
+## Host: when each monster (by node name) was last seen in each area.
+var _monster_areas: Dictionary = {}
+
+
+func _track_monster_areas() -> void:
+	var now := Time.get_ticks_msec()
+	for node: Node in _container.get_children():
+		var monster := node as Monster
+		if monster:
+			(_monster_areas.get_or_add(monster.name, {}) as Dictionary)[SchoolBuilder.area_at(monster.global_position)] = now
+
+
+func _was_in(monster: Monster, area: String) -> bool:
+	if SchoolBuilder.area_at(monster.global_position) == area:
+		return true
+	var seen: Dictionary = _monster_areas.get(monster.name, {})
+	return seen.has(area) and Time.get_ticks_msec() - int(seen[area]) < LOG_GRACE_MSEC
+
+
 func check_log(peer_id: int, area: String, named := "") -> String:
 	last_log_repeat = false
 	var found: Array[Monster] = []
@@ -1046,7 +1070,7 @@ func check_log(peer_id: int, area: String, named := "") -> String:
 		if monster == null or (monster.harmless and not monster.practice) or monster.is_queued_for_deletion() or not monster.loggable():
 			continue
 		var credited: Array = _credited.get_or_add(monster.name, [])
-		if peer_id not in credited and SchoolBuilder.area_at(monster.global_position) == area:
+		if peer_id not in credited and _was_in(monster, area):
 			found.append(monster)
 	if not found.is_empty():
 		var monster: Monster = found[0]
