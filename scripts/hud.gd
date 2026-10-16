@@ -42,6 +42,7 @@ var solo := false
 
 
 func _ready() -> void:
+	_build_fear()
 	Controls.device_changed.connect(func() -> void:
 		refresh_key_hint()
 		_hint_time = HINT_SECONDS
@@ -185,6 +186,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if not visible:
 		return
+	_update_fear(delta)
 	if _message_time > 0.0:
 		_message_time -= delta
 		_message.modulate.a = clampf(_message_time, 0.0, 1.0)
@@ -216,6 +218,8 @@ func set_inventory(points: int, item_name: String) -> void:
 
 ## The faint blue look and reminder while you're a ghost.
 func set_ghost(on: bool) -> void:
+	if on:
+		_fear_target = 0.0
 	_ghost_tint.visible = on
 	_ghost_note.visible = on
 
@@ -366,8 +370,35 @@ func set_emf(level: int) -> void:
 ## Your nerve (0-100), shown below 100 while on shift. Turns red as it runs low.
 func set_nerve(value: float) -> void:
 	_nerve_bar.value = value
+	_fear_target = clampf((FEAR_FROM - value) / FEAR_FROM, 0.0, 1.0)
 	_nerve_box.visible = value < 99.5
 	_nerve_bar.modulate = Color(1, 1, 1).lerp(Color(1.0, 0.3, 0.25), clampf(1.0 - value / 60.0, 0.0, 1.0))
+
+
+## Nerve below this starts to show on screen.
+const FEAR_FROM := 70.0
+var _fear: ColorRect
+var _fear_target := 0.0
+var _fear_now := 0.0
+
+
+## The full-screen effect for low nerve (under everything else on the HUD).
+func _build_fear() -> void:
+	_fear = ColorRect.new()
+	_fear.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_fear.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var material := ShaderMaterial.new()
+	material.shader = load("res://assets/shaders/fear.gdshader")
+	_fear.material = material
+	_fear.visible = false
+	add_child(_fear)
+	move_child(_fear, 0)
+
+
+func _update_fear(delta: float) -> void:
+	_fear_now = move_toward(_fear_now, _fear_target, delta * 0.5)
+	(_fear.material as ShaderMaterial).set_shader_parameter("fear", _fear_now)
+	_fear.visible = _fear_now > 0.01
 
 
 ## Session info in the top-right corner, e.g. "Hosting · 2 guards".

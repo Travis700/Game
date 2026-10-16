@@ -108,7 +108,7 @@ Monsters per night: 1, 1, 2, 2, 3, 3, 4, 4, 5, plus one for each open wing. The 
 
 **Hazard: power cuts.** From night 2 (1 a night; 2 from night 5; 3 from night 8) the power fails: lights and cameras die, red emergency lights come on, the vending machine stops. Someone must hold E on the breaker in the custodian's closet; it pays like a correct log.
 
-**Fear feedback.** A heartbeat that speeds up as the nearest monster gets closer, a low drone while something nearby is chasing, flashlights that flicker near monsters, and a jumpscare (the camera snaps to the face of whatever caught you) before the ghost view. None of it fires for a monster in disguise (the Other Cleaner, a fake Student or the Understudy before they show themselves) or for the Ghost: those you have to read for yourself.
+**Fear feedback.** Low nerve shows on screen (below 70: the colour drains, the edges close in and grain creeps in). A heartbeat that speeds up as the nearest monster gets closer, a low drone while something nearby is chasing, flashlights that flicker near monsters, and a jumpscare (the camera snaps to the face of whatever caught you) before the ghost view. None of it fires for a monster in disguise (the Other Cleaner, a fake Student or the Understudy before they show themselves) or for the Ghost: those you have to read for yourself.
 
 **Voice mimicry.** The host keeps each guard's last few spoken lines in memory; the Understudy replays them in that guard's voice from where it stands. Opt out in the Esc menu.
 
