@@ -240,6 +240,8 @@ func plan_night(number: int) -> void:
 	tonight.clear()
 	_credited.clear()
 	_monster_areas.clear()
+	_principal_credited.clear()
+	_answered_at = -PRINCIPAL_LOG_MSEC
 	_out_tonight.clear()
 	_caught_by_kind.clear()
 	_echo_note = ""
@@ -1043,6 +1045,12 @@ func tell(peer_id: int, text: String) -> void:
 ## How long a monster still counts as being in an area after it's left (real seconds): a guard
 ## filling in the clipboard shouldn't lose a right log because it stepped over a line.
 const LOG_GRACE_MSEC := 10000
+## How long after a summons is answered the Principal can still be logged (real ms).
+const PRINCIPAL_LOG_MSEC := 60000
+## Host: who has logged the Principal tonight while it was only on the intercom, and when the
+## last summons was answered.
+var _principal_credited: Array[int] = []
+var _answered_at := -PRINCIPAL_LOG_MSEC
 ## Host: when each monster (by node name) was last seen in each area.
 var _monster_areas: Dictionary = {}
 
@@ -1105,6 +1113,16 @@ func check_log(peer_id: int, area: String, named := "") -> String:
 		if career:
 			career.logged_monster(peer_id, "SelfPortrait")
 		return "SelfPortrait"
+	# The Principal, on the intercom from its office: while a summons is live (or just answered),
+	# it's there to be logged, and named.
+	if area == "Front Office" and _principal_on and peer_id not in _principal_credited \
+			and (_summoned != 0 or Time.get_ticks_msec() - _answered_at < PRINCIPAL_LOG_MSEC):
+		last_log_was_first = _principal_credited.is_empty()
+		_logged_tonight["Principal"] = true
+		_principal_credited.append(peer_id)
+		if career:
+			career.logged_monster(peer_id, "Principal")
+		return "Principal"
 	if lockers.active and peer_id not in lockers.credited and lockers.has_open_in(area):
 		last_log_was_first = lockers.credited.is_empty()
 		_logged_tonight["Lockers"] = true
@@ -1143,6 +1161,10 @@ func _update_principal(minutes: float, delta: float) -> void:
 		return
 	if SchoolBuilder.area_at(summoned.global_position) == "Front Office":
 		announcement.emit("The intercom crackles: \"...Good. Back to work.\"", "intercom")
+		# Answering in time is how you handle the Principal.
+		if career:
+			career.stamp(_summoned, "Principal", "handled")
+		_answered_at = Time.get_ticks_msec()
 		_summoned = 0
 		summons_changed.emit(0, 0.0)
 		_next_summon = minutes + randf_range(SUMMON_EVERY.x, SUMMON_EVERY.y)

@@ -105,6 +105,7 @@ const HANDLED := {
 	"Substitute": ["PRESENT", "Answer its register."],
 	"SelfPortrait": ["ART_CRITIC", "Turn it to the wall."],
 	"Student": ["GOOD_SAMARITAN", "Walk a real student to safety."],
+	"Principal": ["", "Answer its summons in time."],
 }
 const HANDLED_DEFAULT := "Clock out of a night it was out, with nobody caught by it."
 
