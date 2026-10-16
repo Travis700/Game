@@ -75,3 +75,8 @@ func _build_body() -> void:
 	part(box(Vector3(0.36, 0.1, 0.12)), Color(0.4, 0.5, 0.7), Vector3(0, 1.88, -0.12), 1.0, 0.6)
 	for side: float in [-1.0, 1.0]:
 		part(sphere(0.025), Color(0.05, 0.05, 0.1), Vector3(side * 0.06, 1.87, -0.15))
+
+
+## Passes for the real thing (see Monster.disguised).
+func disguised() -> bool:
+	return true

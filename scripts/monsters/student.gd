@@ -102,3 +102,8 @@ func _build_body() -> void:
 	part(box(Vector3(0.36, 0.38, 0.14)), Color(0.55, 0.15, 0.15), Vector3(0, 0.95, 0.22))
 	part(sphere(0.13), Color(0.75, 0.62, 0.52), Vector3(0, 1.38, 0))
 	part(sphere(0.135), Color(0.2, 0.13, 0.08), Vector3(0, 1.43, 0.03))
+
+
+## Passes for the real thing (see Monster.disguised).
+func disguised() -> bool:
+	return not real and state != "reveal"

@@ -140,3 +140,8 @@ func _build_body() -> void:
 	_uniform = body.material_override as StandardMaterial3D
 	part(box(Vector3(0.42, 0.14, 0.12)), Color(0.02, 0.02, 0.03), Vector3(0, 1.6, -0.3))
 	part(box(Vector3(0.36, 0.1, 0.38)), Color(0.08, 0.08, 0.1), Vector3(0, 1.82, 0))
+
+
+## Passes for a teammate until it rushes (see Monster.disguised).
+func disguised() -> bool:
+	return not state.begins_with("step")

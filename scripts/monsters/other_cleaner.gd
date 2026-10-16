@@ -93,3 +93,8 @@ func _on_state_changed(new_state: String) -> void:
 		var voice := Sfx.play_at(self, SoundBank.get_sound("wet_voice", Sfx.notes([140.0, 120.0, 96.0, 80.0], 0.18, 0.5, "saw")), 4.0, 30.0)
 		if voice:
 			voice.pitch_scale = 0.6
+
+
+## Passes for the real thing (see Monster.disguised).
+func disguised() -> bool:
+	return state != "reveal"

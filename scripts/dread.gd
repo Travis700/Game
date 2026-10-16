@@ -58,7 +58,7 @@ func _process(delta: float) -> void:
 	var hunting := INF
 	for node in director.get_node("Live").get_children():
 		var monster := node as Monster
-		if monster == null or monster.harmless or monster.state == "hidden":
+		if monster == null or monster.harmless or monster.state == "hidden" or monster.disguised():
 			continue
 		var distance := monster.global_position.distance_to(local_guard.global_position)
 		nearest = minf(nearest, distance)
@@ -97,7 +97,7 @@ func _flicker_flashlights() -> void:
 	var monsters: Array[Node3D] = []
 	for node in director.get_node("Live").get_children():
 		var monster := node as Monster
-		if monster and not monster.harmless and monster.state != "hidden":
+		if monster and not monster.harmless and monster.state != "hidden" and not monster.disguised():
 			monsters.append(monster)
 	for guard: Guard in players.get_children():
 		if not guard.flashlight.visible:

@@ -375,6 +375,12 @@ func catch_nearby() -> bool:
 
 
 ## Roughly where its eyes are, for line-of-sight checks.
+## True while it's passing itself off as something harmless (or can't be sensed at all): the
+## heartbeat, the drone and flickering flashlights mustn't give it away. Override as needed.
+func disguised() -> bool:
+	return false
+
+
 ## Where its face is, for the jumpscare: the camera snaps to look right at it.
 func face_point() -> Vector3:
 	return global_position + Vector3(0, _model_height * 0.92 if _model_height > 0.0 else 1.55, 0)
