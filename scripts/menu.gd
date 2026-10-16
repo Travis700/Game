@@ -397,7 +397,7 @@ func _add_run_options(column: VBoxContainer) -> void:
 	# Custom shift: pick the shift notes for every night of the run.
 	_notes = MenuButton.new()
 	_notes.flat = false
-	_notes.tooltip_text = "Pick shift notes to have every night, from night 3 (each one waits for its own first night, and is still worth +15% XP). Nothing ticked: random notes, as usual."
+	_notes.tooltip_text = "Pick shift notes to have every night, from night 3 (each one waits for its own first night). Notes you pick earn no XP bonus. Nothing ticked: random notes, as usual."
 	var popup := _notes.get_popup()
 	popup.hide_on_checkable_item_selection = false
 	for key: String in Conditions.CATALOGUE:

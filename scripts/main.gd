@@ -713,6 +713,7 @@ func _start_run() -> void:
 	# A custom shift: the same shift notes every night.
 	if not (options["notes"] as Array).is_empty() and night.daily == "":
 		night.conditions.forced.assign(options["notes"])
+		night.conditions.custom = true
 	# The daily shift is the same length for everyone.
 	night.seconds_per_minute = Night.SECONDS_PER_MINUTE if night.daily != "" else options["seconds_per_minute"]
 	_password = options["password"]

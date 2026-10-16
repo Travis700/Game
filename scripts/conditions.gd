@@ -46,6 +46,8 @@ var hud: CanvasLayer
 var active: Array[String] = []
 ## Host: conditions to use every night instead of random ones (--conditions=fog,batteries).
 var forced: Array[String] = []
+## True on a custom shift: the host picked the notes (see xp_factor).
+var custom := false
 
 
 # --- Host --------------------------------------------------------------------------------
@@ -78,6 +80,9 @@ func has(key: String) -> bool:
 
 ## Multiplies tonight's XP: harder nights are worth more.
 func xp_factor() -> float:
+	# Notes you picked yourself (a custom shift) aren't a risk you took on: no bonus for them.
+	if custom:
+		return 1.0
 	return 1.0 + XP_BONUS * active.size()
 
 
@@ -85,6 +90,8 @@ func xp_factor() -> float:
 func summary() -> String:
 	if active.is_empty():
 		return ""
+	if custom:
+		return "Tonight's conditions: %s (custom shift: no XP bonus)." % ", ".join(names())
 	return "Tonight's conditions: %s (+%d%% XP)." % [", ".join(names()), int(round(XP_BONUS * active.size() * 100.0))]
 
 
