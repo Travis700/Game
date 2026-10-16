@@ -50,6 +50,18 @@ var _continue: CheckBox
 var _warned_about_save := false
 
 
+var _menu_scroll: ScrollContainer
+var _menu_column: VBoxContainer
+
+
+## Lets the panel be as tall as its contents, up to what fits on screen (then it scrolls).
+func _fit_menu() -> void:
+	if _menu_scroll == null or not is_inside_tree():
+		return
+	var room := get_viewport().get_visible_rect().size.y - 70.0
+	_menu_scroll.custom_minimum_size = Vector2(_menu_column.get_combined_minimum_size().x,
+			minf(_menu_column.get_combined_minimum_size().y, room))
+
 func _ready() -> void:
 	var shade := ColorRect.new()
 	shade.color = Color(0.02, 0.03, 0.06, 0.55)
@@ -71,12 +83,23 @@ func _ready() -> void:
 	style.set_content_margin_all(28)
 	panel.add_theme_stylebox_override("panel", style)
 	center.add_child(panel)
-	panel.add_child(column)
+	# On a short screen the panel scrolls rather than running off the bottom.
+	_menu_scroll = ScrollContainer.new()
+	_menu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.add_child(_menu_scroll)
+	_menu_scroll.add_child(column)
+	_menu_column = column
+	get_viewport().size_changed.connect(_fit_menu)
+	_fit_menu.call_deferred()
 
 	var title := Label.new()
 	title.text = "NIGHT SHIFT"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 64)
+	if Fonts.title():
+		title.add_theme_font_override("font", Fonts.title())
+		title.add_theme_font_size_override("font_size", 96)
+	else:
+		title.add_theme_font_size_override("font_size", 64)
 	column.add_child(title)
 
 	var subtitle := Label.new()

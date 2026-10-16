@@ -49,7 +49,9 @@ func _ready() -> void:
 
 	_title = Label.new()
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_title.add_theme_font_size_override("font_size", 44)
+	_title.add_theme_font_size_override("font_size", 56 if Fonts.title() else 44)
+	if Fonts.title():
+		_title.add_theme_font_override("font", Fonts.title())
 	column.add_child(_title)
 
 	_table = GridContainer.new()

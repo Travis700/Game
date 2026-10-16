@@ -1548,6 +1548,8 @@ func _update_tonight_board() -> void:
 		_tonight_board.width = 700
 		_tonight_board.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_tonight_board.modulate = Color(0.12, 0.1, 0.08)
+		if Fonts.typed():
+			_tonight_board.font = Fonts.typed()
 		_tonight_board.outline_size = 0
 		_tonight_board.double_sided = false
 		add_child(_tonight_board)

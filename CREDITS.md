@@ -63,6 +63,12 @@ commercial use before release.
 `steam/art/keyart_final.jpg` (store capsules and the boot splash) is the project owner's corrected
 version of a SpriteCook image (`keyart_raw.png`, superseded). Capsule titles are set in Inter (SIL Open Font Licence).
 
+## Fonts
+
+- Bebas Neue (titles) by Dharma Type, SIL Open Font License 1.1.
+- Special Elite (the clipboard and notices) by Astigmatic, Apache License 2.0.
+  Both from Google Fonts, in `assets/fonts/`.
+
 ## Generated in code
 
 `floor`, `ceiling`, `metal`, `locker`, `cork`, `board` textures: `tools/gen_textures.py`. Fallback sounds (used where

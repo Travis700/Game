@@ -51,6 +51,11 @@ func _ready() -> void:
 
 	var paper := PanelContainer.new()
 	paper.add_theme_stylebox_override("panel", _box_style(PAPER, 4, 26))
+	# Everything on the paper is typed.
+	if Fonts.typed():
+		var typed := Theme.new()
+		typed.default_font = Fonts.typed()
+		paper.theme = typed
 	board.add_child(paper)
 
 	var column := VBoxContainer.new()
