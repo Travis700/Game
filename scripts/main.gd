@@ -295,6 +295,11 @@ func _ready() -> void:
 	pause_menu.name = "PauseMenu"
 	add_child(pause_menu)
 	pause_menu.closed.connect(_on_ui_closed)
+	pause_menu.kick_requested.connect(func(peer: int) -> void:
+		var guard := director.guard_by_peer(peer)
+		if guard:
+			_kicked[guard.employee_number] = true
+		_reject(peer, "The host removed you from the session."))
 	pause_menu.closed.connect(func() -> void:
 		if night.report.visible:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE)
@@ -999,6 +1004,9 @@ func _register_employee(badge: int, password: String, player_name := "", rank :=
 	if players.get_child_count() >= MAX_GUARDS:
 		_reject(peer_id, "That team is full.")
 		return
+	if _kicked.has(badge):
+		_reject(peer_id, "The host removed you from this session.")
+		return
 	# Two copies of the game on one computer share a badge. Lend the second one a spare.
 	while badge < 1000 or _badge_in_use(badge):
 		badge = randi_range(1000, 9999)
@@ -1124,6 +1132,10 @@ func _update_guards_required(left_alive := false) -> void:
 
 
 ## Host: tells a player why they can't join, then disconnects them once the message is through.
+## Host: badges removed from this session (they can't come back in).
+var _kicked: Dictionary = {}
+
+
 func _reject(peer_id: int, reason: String) -> void:
 	_turn_away.rpc_id(peer_id, reason)
 	get_tree().create_timer(1.0).timeout.connect(func() -> void:
@@ -1180,6 +1192,12 @@ func on_local_guard_ready(guard: Guard) -> void:
 			shop.request_use())
 	guard.pause_requested.connect(func() -> void:
 		guard.input_blocked = true
+		var others: Array = []
+		if _mode == "Hosting":
+			for other: Guard in players.get_children():
+				if other.name.to_int() != multiplayer.get_unique_id():
+					others.append([other.name.to_int(), other.player_name if other.player_name != "" else "Guard %d" % other.slot])
+		pause_menu.set_team(others)
 		pause_menu.open(_mode == "solo", _mode == "Hosting", (_mode == "solo" or _mode == "Hosting")
 				and shift.state == Shift.State.ON_SHIFT and night.daily == "" and night.training == null))
 	doors.local_guard = guard

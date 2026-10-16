@@ -4,6 +4,8 @@ extends CanvasLayer
 
 signal closed
 signal leave_requested
+## The host wants this player out of the session.
+signal kick_requested(peer_id: int)
 
 ## Voice chat modes: setting value, and what the menu calls it.
 const VOICE_MODES := [["push", "Push to talk"], ["open", "Open mic"], ["off", "Off"]]
@@ -201,11 +203,28 @@ func _ready() -> void:
 	column.add_child(_button("Change keys...", func() -> void:
 		_scroll.visible = false
 		_keys.visible = true))
+	# The host's list of the other players, each with a button to remove them.
+	_team = VBoxContainer.new()
+	column.add_child(_team)
 	_resume = _button("Resume", close)
 	column.add_child(_resume)
 	_leave = _button("Leave to the main menu", func() -> void: leave_requested.emit())
 	column.add_child(_leave)
 	column.add_child(_button("Quit the game", func() -> void: get_tree().quit()))
+
+
+var _team: VBoxContainer
+
+
+## The host's team list: `others` is [peer id, name] for everyone but the host.
+func set_team(others: Array) -> void:
+	for child in _team.get_children():
+		child.queue_free()
+	for other: Array in others:
+		var peer: int = other[0]
+		_team.add_child(_button("Remove %s from the session" % other[1], func() -> void:
+			kick_requested.emit(peer)
+			close()))
 
 
 ## `solo` pauses the game; `hosting` means leaving ends the session for everyone.

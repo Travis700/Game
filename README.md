@@ -103,6 +103,9 @@ wins the run. If the key's carrier is caught, the key lies where they fell.
 **Custom shift:** on the menu, tick shift notes (fog, full moon, camera faults...) to have every night of the
 run, for your own challenge runs. Notes you pick yourself earn no XP bonus.
 
+**Removing a player:** the host's Esc menu lists everyone else with a button to remove them from the
+session (they can't rejoin it), for someone who's gone idle or won't clock in.
+
 **Joining late:** you can join a team mid-shift. You come in as a ghost (watch, leave cold spots, knock things
 over; a revive totem can't bring back someone who never clocked in) and clock in properly from the next night.
 
