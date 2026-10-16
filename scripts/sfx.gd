@@ -44,6 +44,33 @@ static func notes(freqs: Array, note_seconds: float, volume := 0.35, wave := "si
 	return wav
 
 
+## A bird's chirp: a quick, wavering glide from `from_hz` to `to_hz`, a few times over.
+static func chirp(from_hz: float, to_hz: float, seconds := 0.12, repeats := 2, volume := 0.18) -> AudioStreamWAV:
+	var per := int(seconds * RATE)
+	var gap := int(0.06 * RATE)
+	var data := PackedByteArray()
+	data.resize((per + gap) * repeats * 2)
+	var offset := 0
+	for r in repeats:
+		var phase := 0.0
+		for n in per:
+			var k := float(n) / per
+			var freq := lerpf(from_hz, to_hz, k * k) * (1.0 + 0.03 * sin(TAU * 38.0 * n / RATE))
+			phase += freq / RATE
+			var envelope := sin(PI * k)
+			data.encode_s16(offset, int(clampf(sin(TAU * phase) * envelope * volume, -1.0, 1.0) * 32767.0))
+			offset += 2
+		for n in gap:
+			data.encode_s16(offset, 0)
+			offset += 2
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = RATE
+	wav.stereo = false
+	wav.data = data
+	return wav
+
+
 ## Plays a sound from a point in the world. One-off sounds clean themselves up.
 static func play_at(parent: Node3D, stream: AudioStream, volume_db := 0.0, max_distance := 30.0) -> AudioStreamPlayer3D:
 	var player := AudioStreamPlayer3D.new()

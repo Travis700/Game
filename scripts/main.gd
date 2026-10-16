@@ -150,6 +150,7 @@ func _ready() -> void:
 	add_child(ambience)
 	shift.started.connect(ambience.start)
 	shift.morning_started.connect(ambience.stop)
+	shift.morning_started.connect(_dawn_chorus)
 	shift.started.connect(func() -> void: school.clock_machine.prompt = "Check time clock")
 	shift.morning_started.connect(func() -> void: school.clock_machine.prompt = "Clock out")
 	school.clock_machine.used.connect(_on_clock_machine_used)
@@ -771,6 +772,21 @@ func _start_run() -> void:
 		if "flashlight" not in list:
 			list.append("flashlight")
 	print("[run] Continuing the saved run: ", RunSave.describe(saved))
+
+
+## 6 AM on every computer: the birds start up outside, a few at first, then more.
+func _dawn_chorus() -> void:
+	var dawn := SoundBank.get_sound("dawn", null, false)
+	if dawn:
+		SoundBank.play_flat(self, "dawn", -10.0, dawn)
+		return
+	for i in 14:
+		var wait := 0.6 + i * randf_range(0.9, 1.6)
+		get_tree().create_timer(wait).timeout.connect(func() -> void:
+			if shift.state != Shift.State.MORNING:
+				return
+			var low := randf_range(2600.0, 3600.0)
+			Sfx.play_flat(self, Sfx.chirp(low, low * randf_range(1.2, 1.6), randf_range(0.08, 0.16), randi_range(1, 4)), randf_range(-20.0, -11.0)))
 
 
 ## Tells the host, on the menu and once the night starts, what walking out last time cost.
