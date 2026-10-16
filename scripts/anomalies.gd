@@ -13,6 +13,8 @@ extends Node3D
 const TYPES: Array[String] = ["Moved object", "Missing object", "Extra object", "Figure", "Noise", "Monster"]
 ## Types that only start turning up later in a run (and only appear on the clipboard from then).
 const TYPE_FROM_NIGHT := {"Noise": 5}
+## How many of the newly unlocked kind turn up the night they unlock.
+const FRESH_PER_NIGHT := 3
 ## A noise anomaly can be heard (and captioned) this close, metres.
 const NOISE_REACH := 12.0
 ## A walking figure steps to its next spot every this many in-game minutes while nobody's near.
@@ -247,7 +249,12 @@ func spawn_random(night: int, minutes: float) -> bool:
 		candidates.append(i)
 	if candidates.is_empty():
 		return false
-	# The night something new unlocks, it's likelier to be what turns up.
+	# The night something new unlocks, it's likelier to be what turns up: a few times, not all night.
+	var fresh_tonight := records.keys().filter(func(i: int) -> bool: return DEFINITIONS[i]["night"] == night).size()
+	if night >= 4 and fresh_tonight >= FRESH_PER_NIGHT:
+		var older := candidates.filter(func(i: int) -> bool: return DEFINITIONS[i]["night"] != night)
+		if not older.is_empty():
+			candidates = older
 	var fresh := candidates.filter(func(i: int) -> bool: return DEFINITIONS[i]["night"] == night and night >= 4 and not records.has(i))
 	if not fresh.is_empty() and randf() < 0.5:
 		start(fresh.pick_random(), minutes, night)
