@@ -60,7 +60,7 @@ with `tools/slim_glb.py`. In `assets/models/` as `prop_<asset>.glb`.
 
 ## School art: made for this game
 
-The posters, the library's book spines, the art class's paintings, the periodic table and the
+The posters, the locker doors, the library's book spines, the art class's paintings, the periodic table and the
 cafeteria menu in `assets/textures/school/` are drawn by `tools/gen_school_art.py` (text in Bebas
 Neue and Special Elite, see Fonts).
 

@@ -56,6 +56,15 @@ func build(locker_material: Material, dark_material: Material) -> void:
 		panel.material_override = locker_material
 		panel.position = Vector3(0.23 * facing, 0, 0)
 		hinge.add_child(panel)
+		# Painted like the rest of the row (see SchoolBuilder._locker_row).
+		var front := MeshInstance3D.new()
+		var quad := QuadMesh.new()
+		quad.size = Vector2(0.46, 1.84)
+		front.mesh = quad
+		front.material_override = _door_paint()
+		front.position = Vector3(0, 0, facing * 0.011)
+		front.rotation.y = 0.0 if facing > 0.0 else PI
+		panel.add_child(front)
 		# Something to press E on while the door is open.
 		var handle := Interactable.new()
 		handle.prompt = "Close the locker"
@@ -71,6 +80,20 @@ func build(locker_material: Material, dark_material: Material) -> void:
 		_hinges.append(hinge)
 		_handles.append(handle)
 		_open.append(false)
+
+
+var _paint: StandardMaterial3D
+
+
+func _door_paint() -> StandardMaterial3D:
+	if _paint == null:
+		_paint = StandardMaterial3D.new()
+		_paint.albedo_texture = load("res://assets/textures/school/locker.png")
+		_paint.normal_enabled = true
+		_paint.normal_texture = load("res://assets/textures/school/locker_n.png")
+		_paint.roughness = 0.5
+		_paint.metallic = 0.35
+	return _paint
 
 
 ## Host, every frame during the shift.

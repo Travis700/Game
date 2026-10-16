@@ -221,6 +221,8 @@ func _make_materials() -> void:
 	_add_mat("jar", Color(0.55, 0.75, 0.45), 0.1, Color(0.3, 0.5, 0.2), 0.6, 0.55)
 	_make_gym_materials()
 	_add_mat("linen", Color(0.85, 0.86, 0.84), 0.95)
+	_add_mat("baseboard", Color(0.1, 0.1, 0.11), 0.7)
+	_add_mat("door_frame", Color(0.24, 0.27, 0.3), 0.45)
 	_add_mat("tray", Color(0.45, 0.6, 0.66), 0.5)
 	_add_mat("curtain", Color(0.38, 0.5, 0.5), 1.0)
 	_add_mat("lab_base", Color(0.5, 0.53, 0.48), 0.7)
@@ -386,6 +388,7 @@ func _wall(along_x: bool, fixed: float, from: float, to: float, openings: Array,
 		if gap_start > cursor:
 			_wall_piece(along_x, fixed, cursor, gap_start, 0.0, WALL_H, mat)
 		_wall_piece(along_x, fixed, gap_start, gap_end, height, WALL_H, mat)
+		_door_frame(along_x, fixed, gap_start, gap_end, height)
 		cursor = gap_end
 	if end > cursor:
 		_wall_piece(along_x, fixed, cursor, end, 0.0, WALL_H, mat)
@@ -399,6 +402,22 @@ func _wall_piece(along_x: bool, fixed: float, from: float, to: float, bottom: fl
 		_box(Vector3(middle, bottom + height * 0.5, fixed), Vector3(length, height, WALL_T), mat)
 	else:
 		_box(Vector3(fixed, bottom + height * 0.5, middle), Vector3(WALL_T, height, length), mat)
+	# Painted walls get a dark rubber baseboard along both sides.
+	if bottom == 0.0 and mat == "wall":
+		var skirt := Vector3(length, 0.1, WALL_T + 0.024) if along_x else Vector3(WALL_T + 0.024, 0.1, length)
+		_box(Vector3(middle, 0.05, fixed) if along_x else Vector3(fixed, 0.05, middle), skirt, "baseboard", false)
+
+
+## A painted steel frame round a doorway, on both sides of the wall.
+func _door_frame(along_x: bool, fixed: float, from: float, to: float, height: float) -> void:
+	const BAR := 0.07
+	var depth := WALL_T + 0.05
+	var place := func(along: float, y: float, size_along: float, size_y: float) -> void:
+		var size := Vector3(size_along, size_y, depth) if along_x else Vector3(depth, size_y, size_along)
+		_box(Vector3(along, y, fixed) if along_x else Vector3(fixed, y, along), size, "door_frame", false)
+	place.call(from - BAR * 0.5 + 0.01, height * 0.5, BAR, height)
+	place.call(to + BAR * 0.5 - 0.01, height * 0.5, BAR, height)
+	place.call((from + to) * 0.5, height + BAR * 0.5, to - from + BAR * 2.0 - 0.02, BAR)
 
 
 func _sign(text: String, pos: Vector3, facing: Vector3, font_size := 56, color := Color(0.95, 0.93, 0.85)) -> void:
@@ -686,12 +705,27 @@ func _locker_row(x1: float, x2: float, z: float) -> void:
 	body.position = Vector3((x1 + x2) * 0.5, HEIGHT * 0.5, z)
 	body.add_child(collider)
 	add_child(body)
-	# Thin dark seams between lockers so the row reads as individual doors.
-	var x := x1 + 0.5
-	var face_z := z + (DEPTH * 0.5 + 0.003) * (1.0 if z < 7.0 else -1.0)
-	while x < x2 - 0.1:
-		_box(Vector3(x, HEIGHT * 0.5, face_z), Vector3(0.025, HEIGHT - 0.1, 0.005), "dark", false)
-		x += 0.5
+	# The doors: one painted locker door, repeated along the row's front.
+	var facing := 1.0 if z < 7.0 else -1.0
+	var doors := int(round((x2 - x1) / 0.5))
+	var key := "lockers_%d" % doors
+	if not _mats.has(key):
+		var front := StandardMaterial3D.new()
+		front.albedo_texture = load("res://assets/textures/school/locker.png")
+		front.normal_enabled = true
+		front.normal_texture = load("res://assets/textures/school/locker_n.png")
+		front.uv1_scale = Vector3(doors, 1, 1)
+		front.roughness = 0.5
+		front.metallic = 0.35
+		_mats[key] = front
+	var quad := QuadMesh.new()
+	quad.size = Vector2(x2 - x1, HEIGHT)
+	var face := MeshInstance3D.new()
+	face.mesh = quad
+	face.material_override = _mats[key]
+	face.position = Vector3((x1 + x2) * 0.5, HEIGHT * 0.5, z + facing * (DEPTH * 0.5 + 0.004))
+	face.rotation.y = 0.0 if facing > 0.0 else PI
+	add_child(face)
 
 
 func _build_cafeteria() -> void:

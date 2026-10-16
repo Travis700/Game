@@ -287,8 +287,55 @@ def menu():
     img.save(os.path.join(OUT, 'menu.png'))
 
 
+def locker():
+    """One locker door, 0.5 x 1.9 m: louvres top and bottom, a handle, a number plate, worn paint.
+    Also its normal map (locker_n.png), worked out from a height map."""
+    w, h = 200, 760
+    paint = (52, 86, 140)
+    img = Image.new('RGB', (w, h), paint)
+    height = Image.new('L', (w, h), 128)
+    d, hd = ImageDraw.Draw(img), ImageDraw.Draw(height)
+    # Pressed edge round the door, and the gap to the next locker.
+    d.rectangle([0, 0, w - 1, h - 1], outline=(18, 26, 40), width=3)
+    hd.rectangle([0, 0, w - 1, h - 1], outline=60, width=3)
+    hd.rectangle([10, 10, w - 11, h - 11], outline=150, width=4)
+    d.rectangle([10, 10, w - 11, h - 11], outline=tuple(min(255, c + 18) for c in paint), width=2)
+    for top in (40, h - 130):
+        for k in range(6):
+            y = top + k * 15
+            d.rectangle([40, y, w - 40, y + 7], fill=(14, 18, 26))
+            hd.rectangle([40, y, w - 40, y + 7], fill=40)
+            hd.line([40, y + 8, w - 40, y + 8], fill=190, width=2)
+    # Handle recess and latch.
+    d.rectangle([w - 58, 340, w - 30, 430], fill=(36, 60, 100))
+    hd.rectangle([w - 58, 340, w - 30, 430], fill=80)
+    d.rectangle([w - 50, 360, w - 38, 410], fill=(150, 152, 156))
+    hd.rectangle([w - 50, 360, w - 38, 410], fill=220)
+    # Number plate.
+    d.rectangle([w / 2 - 30, 150, w / 2 + 30, 172], fill=(196, 190, 170))
+    hd.rectangle([w / 2 - 30, 150, w / 2 + 30, 172], fill=170)
+    # Scuffs and a few dents low down.
+    for k in range(60):
+        x, y = random.randint(12, w - 12), random.randint(h // 2, h - 14)
+        d.line([x, y, x + random.randint(-14, 14), y + random.randint(-3, 3)], fill=(84, 110, 150), width=1)
+    img.save(os.path.join(OUT, 'locker.png'))
+    # Normal map from the height map.
+    hp = height.filter(ImageFilter.GaussianBlur(1)).load()
+    normal = Image.new('RGB', (w, h))
+    np_ = normal.load()
+    for y in range(h):
+        for x in range(w):
+            dx = (hp[min(x + 1, w - 1), y] - hp[max(x - 1, 0), y]) / 255.0
+            dy = (hp[x, min(y + 1, h - 1)] - hp[x, max(y - 1, 0)]) / 255.0
+            nx, ny, nz = -dx * 2.5, dy * 2.5, 1.0
+            length = (nx * nx + ny * ny + nz * nz) ** 0.5
+            np_[x, y] = tuple(int((c / length * 0.5 + 0.5) * 255) for c in (nx, ny, nz))
+    normal.save(os.path.join(OUT, 'locker_n.png'))
+
+
 posters()
 menu()
+locker()
 bookcase()
 paintings()
 periodic()
