@@ -32,10 +32,20 @@ func _ready() -> void:
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
+	var outer := VBoxContainer.new()
+	outer.custom_minimum_size = Vector2(1080, 0)
+	outer.add_theme_constant_override("separation", 16)
+	center.add_child(outer)
+	# Everything above the buttons scrolls if a big team's night won't fit, so the buttons
+	# always stay on screen.
+	_body_scroll = ScrollContainer.new()
+	_body_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	outer.add_child(_body_scroll)
 	var column := VBoxContainer.new()
-	column.custom_minimum_size = Vector2(1080, 0)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.add_theme_constant_override("separation", 16)
-	center.add_child(column)
+	_body_scroll.add_child(column)
+	_body = column
 
 	_title = Label.new()
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -64,12 +74,12 @@ func _ready() -> void:
 	_next_button.custom_minimum_size = Vector2(0, 52)
 	_next_button.add_theme_font_size_override("font_size", 22)
 	_next_button.pressed.connect(func() -> void: next_night_requested.emit())
-	column.add_child(_next_button)
+	outer.add_child(_next_button)
 	_overtime_button = Button.new()
 	_overtime_button.custom_minimum_size = Vector2(0, 52)
 	_overtime_button.add_theme_font_size_override("font_size", 22)
 	_overtime_button.pressed.connect(func() -> void: overtime_requested.emit())
-	column.add_child(_overtime_button)
+	outer.add_child(_overtime_button)
 
 	var leave := Button.new()
 	leave.text = "Leave"
@@ -77,18 +87,30 @@ func _ready() -> void:
 	leave.add_theme_font_size_override("font_size", 16)
 	leave.modulate.a = 0.7
 	leave.pressed.connect(func() -> void: leave_requested.emit())
-	column.add_child(leave)
+	outer.add_child(leave)
 
 	_waiting = Label.new()
 	_waiting.text = "Waiting for the host to start the next night..."
 	_waiting.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_waiting.modulate.a = 0.7
-	column.add_child(_waiting)
+	outer.add_child(_waiting)
 
 
 ## `rows` is one dictionary per guard; see Night._build_report.
 ## `outcome` is "night" (an ordinary night), "caught" (everyone was caught, back to night 1),
 ## "checkpoint:N" (caught, back to night N), "fired:N" (three write-ups, back to night N), "won", "overtime", "daily" or "training".
+var _body_scroll: ScrollContainer
+var _body: VBoxContainer
+## Room kept on screen below the report for its buttons (virtual pixels).
+const BUTTONS_ROOM := 300.0
+
+
+## Fits the scrolling part to whatever it holds, up to what leaves the buttons on screen.
+func _fit_body() -> void:
+	var room := get_viewport().get_visible_rect().size.y - BUTTONS_ROOM
+	_body_scroll.custom_minimum_size.y = minf(_body.get_combined_minimum_size().y, maxf(room, 200.0))
+
+
 func show_report(night: int, rows: Array, summary: String, is_host: bool, outcome := "night") -> void:
 	match outcome:
 		"caught":
@@ -134,6 +156,7 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, outcom
 	_overtime_button.text = "Keep going: Overtime (night %d)" % (night + 1)
 	_waiting.visible = not is_host
 	visible = true
+	_fit_body.call_deferred()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	if is_host and not Input.get_connected_joypads().is_empty():
 		_next_button.grab_focus.call_deferred()
