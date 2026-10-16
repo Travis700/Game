@@ -70,7 +70,7 @@ const DEFINITIONS: Array[Dictionary] = [
 	{"area": "West Hall", "type": "Extra object", "night": 1, "kind": "show", "prop": "wet_floor_sign", "alts": [Vector3(-48.0, 0, 7.0), Vector3(-70.0, 0, 8.0)]},
 	# Science wing (difficulty 3).
 	{"area": "Science Lab", "type": "Missing object", "night": 1, "kind": "hide", "prop": "skeleton"},
-	{"area": "Science Lab", "type": "Moved object", "night": 2, "kind": "move", "prop": "skeleton", "alts": [Vector3(57.5, 0, -9.5), Vector3(45.5, 0, -0.5)],
+	{"area": "Science Lab", "type": "Moved object", "night": 2, "kind": "move", "prop": "skeleton", "alts": [Vector3(57.5, 0, -9.5), Vector3(43.0, 0, -3.0)],
 		"to": Vector3(50.0, 0, -3.0), "turn": 120.0},
 	{"area": "Art Room", "type": "Extra object", "night": 1, "kind": "show", "prop": "clay_bust"},
 	{"area": "Locker Rooms", "type": "Extra object", "night": 1, "kind": "show", "prop": "duffel_bag", "alts": [Vector3(48.0, 0, 12.0), Vector3(69.5, 0, 13.5)]},

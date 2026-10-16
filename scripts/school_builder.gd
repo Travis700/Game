@@ -220,6 +220,21 @@ func _make_materials() -> void:
 	_add_mat("night_window", Color(0.03, 0.04, 0.07), 0.1, Color(0.16, 0.22, 0.38), 0.7)
 	_add_mat("jar", Color(0.55, 0.75, 0.45), 0.1, Color(0.3, 0.5, 0.2), 0.6, 0.55)
 	_make_gym_materials()
+	_add_mat("linen", Color(0.85, 0.86, 0.84), 0.95)
+	_add_mat("tray", Color(0.45, 0.6, 0.66), 0.5)
+	_add_mat("curtain", Color(0.38, 0.5, 0.5), 1.0)
+	_add_mat("lab_base", Color(0.5, 0.53, 0.48), 0.7)
+	_add_mat("lab_top", Color(0.05, 0.05, 0.06), 0.25)
+	var books := StandardMaterial3D.new()
+	books.albedo_texture = load("res://assets/textures/school/bookcase.png")
+	books.uv1_scale = Vector3(4, 1, 1)
+	books.roughness = 0.9
+	_mats["books"] = books
+	var gold := StandardMaterial3D.new()
+	gold.albedo_color = Color(0.85, 0.66, 0.22)
+	gold.metallic = 0.85
+	gold.roughness = 0.3
+	_mats["gold"] = gold
 
 
 ## Surfaces with a texture in assets/textures, and how many metres one copy of it covers. They're
@@ -464,6 +479,10 @@ func _floodlight(pos: Vector3, rotation_deg: Vector3, energy: float, light_range
 	add_child(light)
 
 
+## Posters' materials, one per picture (see _poster).
+var _posters: Dictionary = {}
+
+
 ## Hands out shared materials, e.g. so lighting can dim every ceiling panel at once.
 func get_material(mat_name: String) -> StandardMaterial3D:
 	return _mats[mat_name]
@@ -568,6 +587,14 @@ func _build_lobby() -> void:
 	_box(Vector3(-5.55, 1.5, 12.5), Vector3(0.58, 1.0, 2.38), "glass")
 	# Doormat.
 	_box(Vector3(0, 0.01, 19.0), Vector3(3.5, 0.02, 1.5), "dark", false)
+	# Trophies on two glass shelves in the case.
+	for shelf_y: float in [1.0, 1.5]:
+		_box(Vector3(-5.55, shelf_y, 12.5), Vector3(0.5, 0.015, 2.3), "glass", false)
+	for i in 6:
+		_trophy(Vector3(-5.55, 1.0 if i < 3 else 1.5, 11.75 + (i % 3) * 0.75), 1.6 if i % 3 == 1 else 1.1)
+	_model("prop_wall_clock", Vector3(0, 2.85, 19.875), 0.38, PI)
+	_model("prop_fire_alarm", Vector3(-3.6, 1.3, 10.125), 0.2)
+	_poster("poster_basketball", Vector3(5.875, 1.6, 18.0), Vector3.LEFT)
 
 
 func _build_front_office() -> void:
@@ -575,9 +602,20 @@ func _build_front_office() -> void:
 	_box(Vector3(-9.0, 0.55, 18.0), Vector3(0.6, 1.1, 4.0), "wood")
 	_box(Vector3(-9.0, 0.55, 12.0), Vector3(0.6, 1.1, 2.0), "wood")
 	for desk_pos: Vector3 in [Vector3(-14, 0, 13), Vector3(-14, 0, 17.5), Vector3(-18, 0, 15)]:
-		_desk(desk_pos, 1.6, 0.8)
+		_steel_desk(desk_pos, PI)
+	_model("prop_classic_laptop", Vector3(-18.0, 0.77, 15.05), 0.24, PI)
+	# Filing cabinets: four drawers each, with handles.
 	for i in 4:
-		_box(Vector3(-19.2 + i * 0.6, 0.65, 10.45), Vector3(0.55, 1.3, 0.6), "metal")
+		var cabinet_x := -19.2 + i * 0.6
+		_box(Vector3(cabinet_x, 0.65, 10.45), Vector3(0.55, 1.3, 0.6), "metal")
+		for drawer in 4:
+			var drawer_y := 0.16 + drawer * 0.32
+			_box(Vector3(cabinet_x, drawer_y + 0.15, 10.752), Vector3(0.5, 0.012, 0.006), "dark", false)
+			_box(Vector3(cabinet_x, drawer_y + 0.06, 10.765), Vector3(0.14, 0.025, 0.02), "steel", false)
+	_solid_model("prop_shelf_01", Vector3(-11.5, 0, 19.72), 2.0, PI, Vector3(0.96, 2.0, 0.26))
+	_model("prop_wall_clock", Vector3(-14.0, 2.4, 19.875), 0.36, PI)
+	_model("prop_hanging_picture_frame_01", Vector3(-19.875, 1.35, 16.2), 0.7, PI * 0.5)
+	_poster("poster_lost_found", Vector3(-6.125, 1.55, 17.3), Vector3.LEFT)
 	# The bell's control panel, by the filing cabinets.
 	bell_panel = _interactable(Vector3(-19.82, 1.5, 18.5), Vector3(0.1, 0.5, 0.4), "metal", "School bell panel", "")
 	_box(Vector3(-19.76, 1.62, 18.5), Vector3(0.02, 0.1, 0.1), "led", false)
@@ -627,6 +665,13 @@ func _build_hallway() -> void:
 		_locker_row(span.x, span.y, 9.62)
 	for span: Vector2 in [Vector2(-39.6, -16.7), Vector2(-13.3, -1.0), Vector2(1.0, 13.3), Vector2(16.7, 39.6)]:
 		_locker_row(span.x, span.y, 4.38)
+	# Posters above the lockers, and clocks.
+	for item: Array in [["poster_no_running", -30.0, 9.875], ["poster_dance", -9.0, 9.875], ["poster_president", 32.0, 9.875],
+			["poster_science_fair", -21.0, 4.125], ["poster_basketball", 11.5, 4.125], ["poster_no_running", 25.0, 4.125]]:
+		var on_north: bool = item[2] > 7.0
+		_poster(item[0], Vector3(item[1], 2.5, item[2]), Vector3.FORWARD if on_north else Vector3.BACK)
+	_model("prop_wall_clock", Vector3(-14.0, 2.35, 9.875), 0.36, PI)
+	_model("prop_wall_clock", Vector3(21.0, 2.35, 4.125), 0.36)
 
 
 func _locker_row(x1: float, x2: float, z: float) -> void:
@@ -660,21 +705,65 @@ func _build_cafeteria() -> void:
 			if _model("prop_cafeteria_table", Vector3(x - 1.5, 0, z), 0.8) and _model("prop_cafeteria_table", Vector3(x + 1.5, 0, z), 0.8):
 				for part in parts:
 					_hide_boxes(part)
-	# Serving counter in front of the kitchen door.
-	_box(Vector3(-7.5, 0.5, -26.0), Vector3(0.8, 1.0, 6.0), "metal")
-	_box(Vector3(-7.5, 0.5, -16.5), Vector3(0.8, 1.0, 5.0), "metal")
+	# Serving counter in front of the kitchen door, with a sneeze guard and a tray rail.
+	for counter: Vector2 in [Vector2(-26.0, 6.0), Vector2(-16.5, 5.0)]:
+		_box(Vector3(-7.5, 0.5, counter.x), Vector3(0.8, 1.0, counter.y), "metal")
+		_box(Vector3(-7.5, 1.4, counter.x), Vector3(0.5, 0.02, counter.y - 0.2), "glass", false)
+		for end: float in [-1.0, 1.0]:
+			_box(Vector3(-7.5, 1.2, counter.x + end * (counter.y * 0.5 - 0.15)), Vector3(0.03, 0.4, 0.03), "steel", false)
+		_box(Vector3(-8.05, 0.85, counter.x), Vector3(0.3, 0.03, counter.y), "steel", false)
+		# Food pans set into the counter top.
+		var pan := counter.x - counter.y * 0.5 + 0.6
+		while pan < counter.x + counter.y * 0.5 - 0.4:
+			_box(Vector3(-7.45, 1.0, pan), Vector3(0.5, 0.012, 0.42), "steel", false)
+			pan += 0.55
+	# A stack of lunch trays at the start of the line.
+	for tray in 8:
+		_box(Vector3(-8.05, 0.88 + tray * 0.018, -14.35), Vector3(0.32, 0.014, 0.45), "tray", false)
+	_poster("menu", Vector3(-5.125, 1.7, -21.5 + 3.1), Vector3.LEFT, Vector2(0.9, 1.2))
 	# The other trash can (by the hallway) belongs to Anomalies.
 	_box(Vector3(-38.8, 0.45, -27.5), Vector3(0.6, 0.9, 0.6), "dark")
+	_model("prop_wall_clock", Vector3(-22.5, 2.5, 3.875), 0.4, PI)
+	_poster("poster_dance", Vector3(-30.0, 1.7, 3.875), Vector3.FORWARD)
+	_poster("poster_president", Vector3(-34.0, 1.7, 3.875), Vector3.FORWARD)
 
 
 func _build_kitchen_and_closet() -> void:
 	# Kitchen: counters, a fridge and a stove.
 	_box(Vector3(0, 0.45, -29.3), Vector3(9.4, 0.9, 1.0), "metal")
 	_box(Vector3(4.2, 1.0, -20.0), Vector3(1.0, 2.0, 1.4), "metal")
+	# The fridge's two doors and their handles.
+	_box(Vector3(3.695, 1.0, -20.0), Vector3(0.01, 1.96, 0.012), "dark", false)
+	for handle_z: float in [-20.12, -19.88]:
+		_box(Vector3(3.67, 1.15, handle_z), Vector3(0.03, 0.5, 0.025), "steel", false)
 	_box(Vector3(0, 0.45, -18.0), Vector3(3.0, 0.9, 1.2), "dark")
+	_solid_model("prop_electric_stove", Vector3(-4.55, 0, -24.9), 0.9, PI * 0.5, Vector3(0.68, 0.9, 0.52))
+	_solid_model("prop_electric_stove", Vector3(-4.55, 0, -25.45), 0.9, PI * 0.5, Vector3(0.68, 0.9, 0.52))
+	_model("prop_vintage_microwave", Vector3(3.6, 0.9, -29.45), 0.32)
+	_solid_model("prop_steel_frame_shelves_01", Vector3(4.55, 0, -23.3), 1.8, -PI * 0.5, Vector3(0.45, 1.8, 0.95))
+	_solid_model("prop_plastic_container", Vector3(4.45, 0, -22.0), 0.4, PI * 0.5, Vector3(0.6, 0.4, 0.84))
+	_solid_model("prop_industrial_storage_cart", Vector3(2.5, 0, -12.6), 0.9, PI, Vector3(1.05, 0.9, 0.72))
 	# Custodian's closet shelves. The mop bucket belongs to Anomalies.
-	_box(Vector3(-4.5, 1.0, -6.0), Vector3(0.6, 2.0, 6.0), "metal")
+	var shelves := _box(Vector3(-4.5, 1.0, -6.0), Vector3(0.6, 2.0, 6.0), "metal")
+	var shelf_z := -8.4
+	var have_models := true
+	while shelf_z < -3.0 and have_models:
+		have_models = _model("prop_steel_frame_shelves_01", Vector3(-4.55, 0, shelf_z), 1.9, PI * 0.5) != null
+		shelf_z += 1.0
+	if have_models:
+		_hide_boxes(shelves)
+	for bottle_z: float in [-7.6, -7.35, -4.4]:
+		_model("prop_multi_cleaner_5_litre", Vector3(-4.5, 1.9, bottle_z), 0.3, PI * 0.5)
+	for bottle_z: float in [-6.3, -5.3, -5.05]:
+		_model("prop_multi_cleaner_5_litre", Vector3(-4.6, 0.0, bottle_z), 0.3, PI * 0.5)
+	_model("prop_cardboard_box_01", Vector3(-4.5, 1.9, -6.2), 0.3, 0.2)
+	_solid_model("prop_cardboard_box_01", Vector3(-4.35, 0, -10.6), 0.34, 0.0, Vector3(0.4, 0.62, 0.52))
+	_model("prop_cardboard_box_01", Vector3(-4.35, 0.34, -10.55), 0.28, 0.4)
+	_model("prop_plastic_broom", Vector3(4.6, 0, -11.5), 1.2, -PI * 0.5)
 
+
+## How high the nurse's cot mattresses sit on their bed frames.
+const NURSE_MATTRESS_Y := 0.36
 
 ## The gym is a hall of its own: its roof is twice the height of the rest of the school.
 const GYM_H := 7.5
@@ -960,6 +1049,119 @@ func _ball(pos: Vector3) -> void:
 	add_child(ball)
 
 
+# --- Furnishing ---------------------------------------------------------------
+
+## A ready-made model that's also solid: an invisible box of `solid` size, standing on the floor
+## under `pos`, keeps guards and monsters out of it. Null (and no box) if there's no such model.
+func _solid_model(model_name: String, pos: Vector3, height: float, turn: float, solid: Vector3) -> Node3D:
+	var model := _model(model_name, pos, height, turn)
+	if model:
+		_box(pos + Vector3(0, solid.y * 0.5, 0), solid, "dark").visible = false
+	return model
+
+
+## A sheet on a wall (assets/textures/school/<art>.png): a poster, a chart, a painting.
+## `pos` is on the wall's face; `facing` is the way the wall faces.
+func _poster(art: String, pos: Vector3, facing: Vector3, size := Vector2(0.6, 0.84)) -> void:
+	var paper: StandardMaterial3D = _posters.get(art)
+	if paper == null:
+		paper = StandardMaterial3D.new()
+		paper.albedo_texture = load("res://assets/textures/school/%s.png" % art)
+		paper.roughness = 0.85
+		_posters[art] = paper
+	var quad := QuadMesh.new()
+	quad.size = size
+	var sheet := MeshInstance3D.new()
+	sheet.mesh = quad
+	sheet.material_override = paper
+	sheet.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	sheet.position = pos + facing * 0.012
+	sheet.rotation.y = atan2(facing.x, facing.z)
+	add_child(sheet)
+
+
+## The teacher's (or nurse's) steel desk, `turn` 0 when whoever sits at it is on its +Z side.
+func _steel_desk(pos: Vector3, turn: float) -> void:
+	var across := Vector3(2.0, 0.77, 0.95) if is_zero_approx(fmod(absf(turn), PI)) else Vector3(0.95, 0.77, 2.0)
+	if _solid_model("prop_metal_office_desk", pos, 0.77, turn, across) == null:
+		_desk(pos, 1.6, 0.8)
+
+
+## A school chair; `turn` 0 faces +Z. Solid, so nobody walks through it.
+func _school_chair(pos: Vector3, turn: float) -> void:
+	_gym_chair(pos, turn)
+
+
+## A double-sided library bookcase running north-south, 2 m tall: shelves full of books on both
+## faces (one painted texture, tiled), wooden ends and a top.
+func _bookcase_row(centre: Vector3, length: float) -> void:
+	const HEIGHT := 2.0
+	const DEPTH := 0.6
+	_box(centre + Vector3(0, HEIGHT * 0.5, 0), Vector3(DEPTH, HEIGHT, length), "wood")
+	for end: float in [-1.0, 1.0]:
+		_box(centre + Vector3(0, (HEIGHT + 0.05) * 0.5, end * (length * 0.5 + 0.025)),
+				Vector3(DEPTH + 0.04, HEIGHT + 0.05, 0.05), "wood", false)
+	_box(centre + Vector3(0, HEIGHT + 0.03, 0), Vector3(DEPTH + 0.06, 0.06, length + 0.1), "wood", false)
+	for side: float in [-1.0, 1.0]:
+		var quad := QuadMesh.new()
+		quad.size = Vector2(length, HEIGHT - 0.04)
+		var books := MeshInstance3D.new()
+		books.mesh = quad
+		books.material_override = _mats["books"]
+		books.position = centre + Vector3(side * (DEPTH * 0.5 + 0.004), HEIGHT * 0.5, 0)
+		books.rotation.y = side * PI * 0.5
+		add_child(books)
+
+
+## A science lab bench, 4 x 1.2 m: painted cupboards under a black top, doors down both sides.
+func _lab_bench(pos: Vector3) -> void:
+	_box(pos + Vector3(0, 0.45, 0), Vector3(4.0, 0.9, 1.2), "lab_base")
+	_box(pos + Vector3(0, 0.9, 0), Vector3(4.1, 0.04, 1.3), "lab_top", false)
+	for side: float in [-1.0, 1.0]:
+		var face_z := pos.z + side * 0.603
+		for k in 7:
+			_box(Vector3(pos.x - 1.5 + k * 0.5, 0.43, face_z), Vector3(0.014, 0.78, 0.006), "dark", false)
+		for k in 8:
+			var door_x := pos.x - 1.75 + k * 0.5
+			_box(Vector3(door_x + (0.17 if k % 2 == 0 else -0.17), 0.72, face_z + side * 0.012),
+					Vector3(0.02, 0.12, 0.02), "steel", false)
+	_box(pos + Vector3(1.4, 1.05, 0), Vector3(0.08, 0.3, 0.08), "metal", false)
+
+
+## An easel in the art room, turned so its canvas faces `facing` (radians about Y, 0 = +Z).
+func _easel(spot: Vector3, facing: float, painting: int) -> void:
+	var place := func(offset: Vector3) -> Vector3:
+		return spot + offset.rotated(Vector3.UP, facing)
+	var solid := _box(place.call(Vector3(0, 0.9, 0)), Vector3(0.7, 1.8, 0.4), "wood")
+	solid.visible = false
+	solid.rotation.y = facing
+	for leg_x: float in [-0.28, 0.28]:
+		var leg := _box(place.call(Vector3(leg_x, 0.85, 0.05)), Vector3(0.035, 1.72, 0.035), "wood", false)
+		leg.rotation = Vector3(-0.09, facing, 0)
+	var back := _box(place.call(Vector3(0, 0.78, -0.2)), Vector3(0.035, 1.6, 0.035), "wood", false)
+	back.rotation = Vector3(0.28, facing, 0)
+	var ledge := _box(place.call(Vector3(0, 0.82, 0.11)), Vector3(0.7, 0.03, 0.07), "wood", false)
+	ledge.rotation.y = facing
+	var canvas := _box(place.call(Vector3(0, 1.24, 0.1)), Vector3(0.6, 0.8, 0.03), "canvas", false)
+	canvas.rotation.y = facing
+	_poster("painting_%d" % painting, place.call(Vector3(0, 1.24, 0.11)), Vector3.BACK.rotated(Vector3.UP, facing), Vector2(0.58, 0.78))
+
+
+## A trophy on a shelf: a dark base, a stem and a gold cup.
+func _trophy(pos: Vector3, scale: float) -> void:
+	_box(pos + Vector3(0, 0.03 * scale, 0), Vector3(0.1, 0.06, 0.1) * scale, "dark", false)
+	var cup := CylinderMesh.new()
+	cup.top_radius = 0.06 * scale
+	cup.bottom_radius = 0.02 * scale
+	cup.height = 0.18 * scale
+	cup.radial_segments = 12
+	var trophy := MeshInstance3D.new()
+	trophy.mesh = cup
+	trophy.material_override = _mats["gold"]
+	trophy.position = pos + Vector3(0, 0.15 * scale, 0)
+	add_child(trophy)
+
+
 func _desk(pos: Vector3, width: float, depth: float) -> void:
 	_box(pos + Vector3(0, 0.74, 0), Vector3(width, 0.05, depth), "desk")
 	for side: float in [-1.0, 1.0]:
@@ -1120,25 +1322,53 @@ func _build_classroom_wing() -> void:
 	for span: Vector2 in [Vector2(-79.6, -75.2), Vector2(-72.8, -62.2), Vector2(-59.8, -48.2), Vector2(-45.8, -40.4)]:
 		_locker_row(span.x, span.y, 9.62)
 
-	_classroom(Vector3(-47.0, 0, 15.0), 1.0)
-	_classroom(Vector3(-61.0, 0, 15.0), 1.0)
-	_classroom(Vector3(-49.0, 0, -9.0), -1.0)
+	_classroom(Vector3(-47.0, 0, 15.0), 1.0, 3, 7.0, "poster_stay_in_class")
+	_classroom(Vector3(-61.0, 0, 15.0), 1.0, 3, 7.0, "poster_read")
+	_classroom(Vector3(-49.0, 0, -9.0), -1.0, 3, 9.0, "poster_science_fair")
 
-	# Library: rows of shelves, the checkout desk and reading tables.
+	# Library: rows of bookcases, the checkout desk and reading tables.
 	for i in 4:
-		_box(Vector3(-76.0 + i * 4.0, 1.0, -9.0), Vector3(0.6, 2.0, 6.0), "wood")
+		_bookcase_row(Vector3(-76.0 + i * 4.0, 0, -9.0), 6.0)
 	_box(Vector3(-62.0, 0.55, 0.5), Vector3(3.0, 1.1, 0.8), "wood")
+	_model("prop_desk_lamp_arm_01", Vector3(-61.0, 1.1, 0.6), 0.5, PI)
+	_model("prop_classic_laptop", Vector3(-62.4, 1.1, 0.45), 0.24, PI)
 	for table: Vector3 in [Vector3(-70, 0, -1.0), Vector3(-61, 0, -9.0)]:
 		_desk(table, 2.4, 1.2)
+		for side: float in [-1.0, 1.0]:
+			for along: float in [-0.6, 0.6]:
+				_school_chair(table + Vector3(along, 0, side * 0.9), 0.0 if side < 0.0 else PI)
 	_box(Vector3(-79.6, 1.6, -3.0), Vector3(0.1, 1.6, 4.0), "cork", false)
+	_poster("poster_read", Vector3(-79.875, 1.6, -8.0), Vector3.RIGHT)
+	_poster("poster_quiet", Vector3(-70.0, 1.6, -13.875), Vector3.BACK)
+	_model("prop_wall_clock", Vector3(-66.0, 2.3, 3.875), 0.36, PI)
 
 	# Nurse's office: two cots behind a curtain, and a medicine cabinet.
 	for cot_z: float in [13.0, 17.5]:
-		_box(Vector3(-77.5, 0.3, cot_z), Vector3(2.0, 0.6, 0.9), "metal")
-		_box(Vector3(-77.5, 0.63, cot_z), Vector3(1.9, 0.08, 0.85), "wall", false)
-	_box(Vector3(-75.6, 1.0, 15.25), Vector3(0.04, 2.0, 2.6), "glass", false)
+		var cot := _box(Vector3(-77.5, 0.3, cot_z), Vector3(2.0, 0.6, 0.9), "metal")
+		var mattress := _box(Vector3(-77.5, 0.63, cot_z), Vector3(1.9, 0.08, 0.85), "wall", false)
+		if _model("prop_old_bed_frame", Vector3(-77.5, 0, cot_z), 1.0, PI * 0.5):
+			_hide_boxes(cot)
+			mattress.position.y = NURSE_MATTRESS_Y
+			mattress.material_override = _mats["linen"]
+	# The curtain round the cots, on a rail, pulled most of the way across.
+	_box(Vector3(-75.6, 2.12, 14.6), Vector3(0.04, 0.04, 6.4), "steel", false)
+	var fold := 0
+	var z := 12.7
+	while z < 17.8:
+		var pleat := _box(Vector3(-75.6 + (0.04 if fold % 2 == 0 else -0.04), 1.1, z), Vector3(0.03, 1.95, 0.46), "curtain", false)
+		pleat.rotation.y = 0.35 if fold % 2 == 0 else -0.35
+		fold += 1
+		z += 0.38
 	_box(Vector3(-69.0, 1.0, 19.5), Vector3(1.4, 2.0, 0.5), "wall")
 	_box(Vector3(-69.0, 1.3, 19.24), Vector3(0.3, 0.3, 0.02), "red", false)
+	_model("prop_medical_box", Vector3(-69.0, 2.0, 19.5), 0.1)
+	_steel_desk(Vector3(-70.5, 0, 12.0), 0.0)
+	_school_chair(Vector3(-70.5, 0, 12.9), PI)
+	_poster("poster_wash_hands", Vector3(-68.125, 1.6, 16.0), Vector3.LEFT)
+	# Posters along West Hall.
+	_poster("poster_stay_in_class", Vector3(-66.0, 2.5, 9.875), Vector3.FORWARD)
+	_poster("poster_president", Vector3(-52.0, 2.5, 9.875), Vector3.FORWARD)
+	_poster("poster_dance", Vector3(-55.0, 2.5, 4.125), Vector3.BACK)
 
 	# Lights: the hallway, a light per room. Most of the wing is left dark at night.
 	var x := -44.0
@@ -1168,10 +1398,23 @@ func _build_classroom_wing() -> void:
 
 ## A classroom: rows of student desks facing a chalkboard and the teacher's desk.
 ## `facing` is +1 when the board is on the south wall, -1 when it's on the north wall.
-func _classroom(centre: Vector3, facing: float, rows := 3) -> void:
+func _classroom(centre: Vector3, facing: float, rows := 3, half_width := 7.0, poster := "") -> void:
 	var board_z := centre.z + facing * 4.75
+	var board_wall := centre.z + facing * 4.875
+	var back_wall := centre.z - facing * 4.875
 	_box(Vector3(centre.x, 1.6, board_z), Vector3(4.0, 1.2, 0.06), "board", false)
-	_desk(Vector3(centre.x + 3.0, 0, board_z - facing * 1.6), 1.6, 0.8)
+	_steel_desk(Vector3(centre.x + 3.0, 0, board_z - facing * 1.6), PI if facing < 0.0 else 0.0)
+	_school_chair(Vector3(centre.x + 3.0, 0, board_z - facing * 0.75), PI if facing > 0.0 else 0.0)
+	_model("prop_wall_clock", Vector3(centre.x, 2.38, board_wall), 0.34, PI if facing > 0.0 else 0.0)
+	# The TV cart in the corner by the board, on the side away from the teacher's desk.
+	var side := -1.0 if facing > 0.0 else 1.0
+	var cart := Vector3(centre.x + side * (half_width - 0.8), 0, board_z - facing * 0.9)
+	_solid_model("prop_industrial_storage_cart", cart, 0.9, PI * 0.5, Vector3(0.72, 0.9, 1.05))
+	_model("prop_television_02", cart + Vector3(0, 0.87, 0), 0.42, PI * 0.5 * -side)
+	_solid_model("prop_shelf_01", Vector3(centre.x - side * 4.5, 0, back_wall + facing * 0.14), 2.0,
+			0.0 if facing > 0.0 else PI, Vector3(0.96, 2.0, 0.26))
+	if poster != "":
+		_poster(poster, Vector3(centre.x - side * (half_width - 0.125), 1.6, centre.z), Vector3(side, 0, 0))
 	# Spaced so a monster (or a guard) can get between any two desks.
 	for row in rows:
 		for col in 4:
@@ -1197,8 +1440,19 @@ func _build_science_wing() -> void:
 	# Science lab: black-topped benches, a fume hood and a shelf of jars.
 	for bench_z: float in [-1.0, -5.0, -9.0]:
 		for bench_x: float in [46.0, 54.0]:
-			_box(Vector3(bench_x, 0.45, bench_z), Vector3(4.0, 0.9, 1.2), "dark")
-			_box(Vector3(bench_x + 1.4, 1.05, bench_z), Vector3(0.08, 0.3, 0.08), "metal", false)
+			_lab_bench(Vector3(bench_x, 0, bench_z))
+			# Stools along the side away from the board.
+			for along: float in [-1.0, 1.0]:
+				_solid_model("prop_metal_stool_02", Vector3(bench_x + along, 0, bench_z + 0.95), 0.65, 0.0,
+						Vector3(0.4, 0.65, 0.4))
+	_model("prop_vintage_microscope", Vector3(45.3, 0.92, -5.1), 0.36)
+	_model("prop_vintage_microscope", Vector3(46.8, 0.92, -4.9), 0.36, 0.5)
+	_model("prop_industrial_microscope", Vector3(55.0, 0.92, -9.0), 0.42, PI)
+	_model("prop_chemistry_set", Vector3(46.0, 0.92, -9.15), 0.4)
+	for burner: Vector3 in [Vector3(53.0, 0.92, -1.1), Vector3(55.0, 0.92, -0.9), Vector3(46.9, 0.92, -1.25)]:
+		_model("prop_bunsen_burner", burner, 0.17)
+	_poster("periodic", Vector3(40.125, 1.8, -3.5), Vector3.RIGHT, Vector2(2.0, 1.25))
+	_poster("poster_science_fair", Vector3(61.875, 1.6, -11.0), Vector3.LEFT)
 	_box(Vector3(40.6, 1.2, -9.0), Vector3(1.0, 2.4, 2.4), "metal")
 	_box(Vector3(61.5, 0.5, -6.0), Vector3(0.6, 1.0, 5.0), "wood")
 	specimen_jar = Node3D.new()
@@ -1216,10 +1470,20 @@ func _build_science_wing() -> void:
 	for i in 6:
 		var angle := TAU * i / 6.0
 		var spot := Vector3(71.0 + cos(angle) * 4.0, 0, -5.0 + sin(angle) * 4.0)
-		var easel := _box(spot + Vector3(0, 0.9, 0), Vector3(0.7, 1.8, 0.1), "wood")
-		easel.rotation.y = -angle + PI * 0.5
+		# Canvas facing out of the ring, towards whoever's painting.
+		_easel(spot, atan2(cos(angle), sin(angle)), i % 4 + 1)
 	_desk(Vector3(66.0, 0, -12.0), 2.4, 1.0)
 	_desk(Vector3(76.0, 0, -12.0), 2.4, 1.0)
+	_model("prop_spray_paint_bottles", Vector3(75.3, 0.77, -12.2), 0.2)
+	_model("prop_ceramic_vase_01", Vector3(76.6, 0.77, -11.9), 0.32)
+	_model("prop_planter_pot_clay", Vector3(77.1, 0.77, -12.3), 0.2)
+	_model("prop_spray_paint_bottles", Vector3(67.0, 0.77, -11.8), 0.2, 1.2)
+	for stool_x: float in [65.2, 66.8, 75.2, 76.8]:
+		_solid_model("prop_painted_wooden_stool", Vector3(stool_x, 0, -10.9), 0.5, 0.0, Vector3(0.36, 0.5, 0.38))
+	_solid_model("prop_wooden_display_shelves_01", Vector3(79.6, 0, -6.0), 1.5, 0.0, Vector3(0.36, 1.5, 1.04))
+	for hung: Array in [[66.0, 1], [76.0, 3]]:
+		_box(Vector3(hung[0], 1.7, 3.85), Vector3(0.7, 0.9, 0.04), "wood", false)
+		_poster("painting_%d" % hung[1], Vector3(hung[0], 1.7, 3.83), Vector3.FORWARD, Vector2(0.6, 0.8))
 	self_portrait_easel = _interactable(Vector3(71.0, 1.2, -12.8), Vector3(1.3, 1.6, 0.12), "canvas", "Look at the canvas", "")
 	_box(Vector3(71.0, 0.2, -12.8), Vector3(0.9, 0.4, 0.5), "wood")
 
@@ -1229,6 +1493,11 @@ func _build_science_wing() -> void:
 	for shower_x in [44.0, 48.0, 52.0, 56.0, 64.0, 68.0, 72.0, 76.0]:
 		_box(Vector3(shower_x, 2.1, 19.7), Vector3(0.2, 0.1, 0.3), "metal", false)
 		_box(Vector3(shower_x + 2.0, 1.0, 19.0), Vector3(0.05, 2.0, 1.6), "wall")
+
+	_model("prop_trash_can", Vector3(42.0, 0, 10.6), 0.9)
+	_poster("poster_science_fair", Vector3(56.0, 2.5, 4.125), Vector3.BACK)
+	_poster("poster_no_running", Vector3(76.0, 2.5, 4.125), Vector3.BACK)
+	_poster("poster_basketball", Vector3(60.0, 2.5, 9.875), Vector3.FORWARD)
 
 	var x := 44.0
 	while x <= 76.0:

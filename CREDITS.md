@@ -32,6 +32,37 @@ with `tools/slim_glb.py`. In `assets/models/` as `prop_<asset>.glb`.
 | Plastic Crate 01 | PierreB3D |
 | School Chair 01 | Ethan Place |
 | Steel Frame Shelves 01 | James Ray Cock |
+| Metal Office Desk | Ulan Cabanilla |
+| Classic Laptop | Arrangemonk |
+| Hanging Picture Frame 01 | James Ray Cock |
+| Shelf 01 | Gabriel Radić |
+| Desk Lamp Arm 01 | Yann Kervran, Kuutti Siitonen |
+| Old Bed Frame | Luca B |
+| Medical Box | Ulan Cabanilla |
+| Metal Stool 02 | Ulan Cabanilla |
+| Industrial Microscope | Lukas Walzer |
+| Vintage Microscope | Luis José Fernández Rodríguez |
+| Chemistry Set | Jiří Ptáček |
+| Bunsen Burner | BKS |
+| Painted Wooden Stool | Kirill Sannikov |
+| Spray Paint Bottles | James Ray Cock |
+| Wooden Display Shelves 01 | James Ray Cock |
+| Ceramic Vase 01 | James Ray Cock |
+| Planter Pot Clay | Amal Kumar |
+| Industrial Storage Cart | Jule Bielitz |
+| Electric Stove | Kuutti Siitonen |
+| Vintage Microwave | Adam Nekola |
+| Plastic Container | PierreB3D |
+| Cardboard Box 01 | Rahul Chaudhary |
+| Television 02 | Benny Weimer |
+| Plastic Broom | L |
+| Multi Cleaner 5 Litre | James Ray Cock |
+
+## School art: made for this game
+
+The posters, the library's book spines, the art class's paintings, the periodic table and the
+cafeteria menu in `assets/textures/school/` are drawn by `tools/gen_school_art.py` (text in Bebas
+Neue and Special Elite, see Fonts).
 
 ## Gym art: made for this game
 
