@@ -224,6 +224,7 @@ func _ready() -> void:
 	director.announcement.connect(func(text: String, sound: String) -> void: _announce.rpc(text, sound))
 	director.camera_signal_changed.connect(func(index: int, working: bool) -> void: _camera_signal.rpc(index, working))
 	director.bell_changed.connect(func(ringing: bool) -> void: _set_bell.rpc(ringing))
+	director.summons_changed.connect(func(peer: int, seconds: float) -> void: _show_summons.rpc(peer, seconds))
 	director.lockdown_changed.connect(func(on: bool, rule: String) -> void: _set_lockdown.rpc(on, rule))
 	school.bell_panel.used.connect(func(by: Node) -> void:
 		if by != _local_guard or _local_guard.is_dead:
@@ -1202,6 +1203,30 @@ var _badge_typed := false
 
 
 ## The line under the clock telling you what to do next.
+## Who the Principal has called to the office (0: nobody), and when their time is up.
+var _summons_peer := 0
+var _summons_until := 0
+
+
+@rpc("authority", "call_local", "reliable")
+func _show_summons(peer: int, seconds: float) -> void:
+	_summons_peer = peer
+	_summons_until = Time.get_ticks_msec() + int(seconds * 1000.0)
+
+
+## The summons, for the objective line: the one called gets a countdown, the rest a heads-up.
+func _summons_text() -> String:
+	if _summons_peer == 0:
+		return ""
+	var left := ceili((_summons_until - Time.get_ticks_msec()) / 1000.0)
+	if left <= 0:
+		return ""
+	if _summons_peer == multiplayer.get_unique_id():
+		return "THE PRINCIPAL WANTS YOU: get to the front office (%d s)." % left
+	var called := director.guard_by_peer(_summons_peer)
+	return "The Principal has called Guard %d to the front office." % called.slot if called else ""
+
+
 func _objective() -> String:
 	if _local_guard == null:
 		return ""
@@ -1221,6 +1246,8 @@ func _objective() -> String:
 					if night.number <= 1 else "Survive until 6 AM."
 			if _drill_rule != "":
 				text = "LOCKDOWN DRILL: " + _drill_rule + "\n" + text
+			elif _summons_text() != "":
+				text = _summons_text() + "\n" + text
 			var round_text := rounds.objective_text()
 			if round_text != "":
 				text += "\n" + round_text

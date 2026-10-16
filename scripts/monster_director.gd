@@ -10,6 +10,8 @@ extends Node3D
 ## A guard's screen flashes (e.g. the Photographer's flash). Main shows it on their computer.
 ## A lockdown started or ended (everyone hears the alarm).
 ## `rule`: what this lockdown's drill asks of the guards ("" when it's off, or a plain hunt).
+## Host: the Principal has called a guard to the office (`peer` 0: nobody's called).
+signal summons_changed(peer: int, seconds: float)
 signal lockdown_changed(on: bool, rule: String)
 signal screen_flashed(peer_id: int, color: Color, seconds: float)
 signal guard_caught(peer_id: int, by: String, from: Vector3)
@@ -540,6 +542,8 @@ func end_night() -> void:
 	ghost_active = false
 	_principal_on = false
 	_principal_out = false
+	if _summoned != 0:
+		summons_changed.emit(0, 0.0)
 	_summoned = 0
 	for camera_index: int in _blackouts.keys():
 		camera_signal_changed.emit(camera_index, true)
@@ -1104,16 +1108,19 @@ func _update_principal(minutes: float, delta: float) -> void:
 			return
 		_summoned = guard.name.to_int()
 		_summon_left = SUMMON_SECONDS
+		summons_changed.emit(_summoned, SUMMON_SECONDS)
 		announcement.emit("The intercom crackles: \"Guard %d. My office. Now.\"" % guard.slot, "intercom")
 		return
 	var summoned := guard_by_peer(_summoned)
 	if summoned == null or summoned.is_dead:
 		_summoned = 0
+		summons_changed.emit(0, 0.0)
 		_next_summon = minutes + randf_range(SUMMON_EVERY.x, SUMMON_EVERY.y)
 		return
 	if SchoolBuilder.area_at(summoned.global_position) == "Front Office":
 		announcement.emit("The intercom crackles: \"...Good. Back to work.\"", "intercom")
 		_summoned = 0
+		summons_changed.emit(0, 0.0)
 		_next_summon = minutes + randf_range(SUMMON_EVERY.x, SUMMON_EVERY.y)
 		return
 	var before := _summon_left
@@ -1125,6 +1132,7 @@ func _update_principal(minutes: float, delta: float) -> void:
 		_principal_out = true
 		spawn("principal", FRONT_OFFICE, {"target": _summoned})
 		_summoned = 0
+		summons_changed.emit(0, 0.0)
 
 
 ## Called by the Principal when it gives up and goes back to its office.

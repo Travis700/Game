@@ -431,9 +431,18 @@ func _display(text: String, seconds: float, sticky := false) -> void:
 	_message.modulate.a = 1.0
 
 
+## News that can't wait behind a lesson: results, alarms, and anything with a clock on it
+## (the Principal's summons, the phone, the power, the bell).
+const URGENT_STARTS: Array[String] = ["✓", "✗", "LOCKDOWN", "You were caught", "Everything goes black",
+	"The intercom crackles", "A phone is ringing", "The phone stops ringing", "A whisper on the line",
+	"The power's gone out", "The school bell is ringing"]
+
+
 static func _is_urgent(text: String) -> bool:
-	return text.begins_with("✓") or text.begins_with("✗") or text.begins_with("LOCKDOWN") \
-			or text.begins_with("You were caught") or text.begins_with("Everything goes black")
+	for start in URGENT_STARTS:
+		if text.begins_with(start):
+			return true
+	return false
 
 
 func _make_label(size: int, h_align: HorizontalAlignment, v_align: VerticalAlignment) -> Label:
