@@ -5,8 +5,9 @@ The full plan is in [DESIGN.md](DESIGN.md).
 
 ## Status
 
-Version 1.0.0. The game is complete apart from the art and audio pass: every model is a
-placeholder made of boxes, and every sound is generated in code. Everything else is in:
+Version 1.0.0. Every monster and the guards are 3D models made from the notebook drawings and the
+key art (Meshy), the school has photo textures, and the sounds are a mix of recordings and generated
+effects (see [CREDITS.md](CREDITS.md)); the school's props are still simple shapes. Everything is in:
 nine nights with a last-bell finale, then Overtime; three difficulties (main building, classroom
 wing, science wing); 18 monsters with moods, a field guide and R. Hale's notebook; the guard room
 and its 16 cameras; watchman rounds, power cuts, shift notes and nightly bonuses; a training shift,
@@ -245,9 +246,10 @@ right with which way they came from, e.g. "[Whistle blast, behind you]". Turn th
 
 ## Sound
 
-Everything is generated in code for now (no audio files): footsteps for every guard and monster
-(you hear your teammates', and the monsters' too; running is louder), a low hum in the building at
-night with the odd creak or thump, plus each monster's own noises. Real recordings come with the art pass.
+Footsteps for every guard and monster on every surface (you hear your teammates', and the monsters'
+too; running is louder), a low hum in the building at night with the odd creak or thump, a menu theme,
+and each monster's own noises. Recorded and generated sounds are in `assets/sounds`; anything missing
+falls back to a sound made in code.
 
 ## The Bell
 
@@ -269,7 +271,7 @@ on your clipboard as "Monster" in that area for points.
 | Locker Thing | 3 | Main hallway | Locker doors swing open. Walk past an open one and you're pulled in. Press E to shut them. |
 | The Principal | 3 | Front office | Calls one guard to the office over the intercom. Get there within 45 seconds, or it comes to find you. |
 | The Other Cleaner | 5 | Anywhere | A copy of the night cleaner, with no cart and its head at a wrong angle. Gets close, then attacks. Log it and it leaves. |
-| The Student | 5 | Main hallway | A kid who asks you to follow them. Usually a trap, and the fake never shows on the cameras. Sometimes they're real (+25). |
+| The Student | 5 | Main hallway | A kid who asks you to follow them. Usually a trap, and the fake never shows on the cameras. Sometimes they're real: walk them out for +75 (a log's +25 plus 50). |
 | The Ghost | 5 | Anywhere | Invisible to your eyes. Drifts through walls toward the living and knocks out cameras it passes. Only spectral monitors show it, and the time clock lists one name too many. |
 | The Photographer | 3 | Main building | An old flash camera for a face. When it sees you, its flash whines as it charges: look away or get out of sight before it fires, or you're blinded and it rushes you. |
 | The Substitute | 1 | Classroom wing (difficulty 2+) | Takes the register when you come near: "Guard 2?" Look at it and press E to answer, or get detention. |
@@ -288,7 +290,8 @@ The real **night cleaner** works every night pushing a mop cart. They're harmles
 only other ghosts can see you. Press E to leave a cold spot where you're looking: a blue glow and a
 chill the living can see, so you can still point things out to them. Press G to watch through a living teammate's eyes
 (G again for the next, and back to yourself). Each death costs every guard 50 points. If the whole team is caught,
-the run starts over from night 1.
+the run goes back to the last checkpoint (nights 1, 4 and 7) with your gear and half your points; on
+Hardcore, back to night 1 with nothing.
 
 **Revive totems:** three glowing stones are hidden around the school each night. A living guard can
 use one for a dead teammate: 4 in 6 brings them back, 2 in 6 lets a shade out that hunts whoever rolled.
@@ -347,13 +350,15 @@ it runs; that's normal for games that aren't signed (Steam builds don't show it)
 | Esc | Menu: mouse sensitivity, field of view, brightness, volume, voice chat, captions, change keys, graphics (resolution, anti-aliasing, shadows, V-sync), fullscreen, leave the game (pauses solo; in a group the night keeps going) |
 | Tab | Clipboard: log anything odd you spot (after clocking in); its Field guide button shows what you know about each monster |
 | G | Use or put down what you're carrying (sensors, traps, energy drink, coffee, flashlight, EMF reader, air horn, decoy radio, donuts). As a ghost: watch through a teammate's eyes |
+| Q | Mark a spot for the team (at a desk: flag the camera) |
+| R | At a desk, full screen: compare the camera with tonight's photo |
 | V | Push to talk (voice chat) |
 | B | Talk on the walkie-talkie (once you have one) |
 | F11 | Switch between fullscreen and a window |
 
 **With a controller** (Xbox names; PlayStation and Switch pads work the same way): left stick move,
-right stick look, L3 run, A use, Y flashlight, X full-screen camera, Back clipboard, RB use item,
-LB push to talk, RT walkie-talkie, Start menu. In menus, the D-pad moves and A selects; B goes back.
+right stick look, L3 run, A use, Y flashlight, X full-screen camera, R3 compare with the photo, B mark,
+Back clipboard, RB use item, LB push to talk, RT walkie-talkie, Start menu. In menus, the D-pad moves and A selects; B goes back.
 
 **At a guard room desk** (press E on a chair to sit):
 

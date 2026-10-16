@@ -1,6 +1,6 @@
 # Night Shift — Design Document
 
-*Status: version 1.0.0, feature complete in greybox. Left: the art and audio pass (textures, models, sounds), then the Steamworks steps in STEAM.md and the store page. Numbers marked (tunable) are starting points to adjust during playtesting.*
+*Status: version 1.0.0, feature complete, with 3D models for every monster and the guards, photo textures and recorded sounds. Left: the school's props are still simple shapes; then the Steamworks steps in STEAM.md and the store page. Numbers marked (tunable) are starting points to adjust during playtesting.*
 
 ## 1. Overview
 
@@ -77,7 +77,7 @@ Each player has their **own clipboard and their own points.**
 
 - A guard who dies becomes a **ghost**. Ghosts can move around and watch, but can't interact with anything.
 - **Revive totems** are hidden around the map. Using one is a dice roll: **4 in 6 revives** a dead teammate, **2 in 6 summons a monster** near the totem (odds shown on the totem; tunable). Rarer totems or shop items may improve the odds.
-- **If every guard dies, the run restarts from night 1.** For a solo player, one death ends the run.
+- **If every guard dies, the run goes back to the last checkpoint** (nights 1, 4 and 7, or 1 and 5 from Grade 3) with gear kept and points halved; on Hardcore it restarts from night 1 with nothing. A solo guard gets one second wind a night (Grade 5: none).
 
 ## 9. Monsters
 
@@ -86,21 +86,23 @@ Each player has their **own clipboard and their own points.**
 | # | Monster | Home | Difficulty | From night | How it works |
 |---|---|---|---|---|---|
 | 1 | Hall Monitor | Main hallway | D1 | 1 | Walks the hall; chases anyone it sees running. |
-| 2 | The Mascot | Gym | D1 | 1 | Only moves while nobody watches it, in person or on a monitor. |
+| 2 | The Mascot | Gym | D1 | 1 | Only moves while nobody watches it, in person or on the monitor a seated guard is looking at. |
 | 3 | Lunch Lady | Cafeteria | D1 | 2 | Blind, humming; hears running from far away. |
 | 4 | Locker Thing | Main hallway | D1 | 3 | Lockers swing open; walk past one and you're pulled in. Shut them with E. |
 | 5 | The Principal | Front office | D1 | 3 | Calls a guard to the office over the intercom; 45 seconds to get there. |
 | 6 | The Other Cleaner | Roams | D1 | 5 | A fake night cleaner with no cart. Log it and it leaves. |
 | 7 | The Student | Main hallway | D1 | 5 | A kid asking you to follow. Usually a trap; sometimes real. |
 | 8 | The Ghost | Roams | D1 | 5 | Only on spectral monitors; knocks out cameras; an extra name on the time clock. |
-| 8b | The Photographer | Main building | D1 | 3 | Charges a flash when it sees you; looking at it when it fires blinds you and it rushes you. Don't watch it. |
-| 9 | The Substitute | Classroom wing | D2 | 1 | Takes the register: answer "Here!" with E, or get detention. |
-| 10 | The Librarian | Library | D2 | 2 | Hates light and noise: shushes, then hunts until it's dark and quiet. |
-| 11 | The Nurse | Nurse's office | D2 | 3 | Slowly follows any guard who's on their own. Stick together. |
-| 12 | The Crossing Guard | Science wing | D3 | 1 | Holds up a STOP sign; anyone it sees moving gets run down. |
-| 13 | The Self-Portrait | Art room | D3 | 2 | Paints one guard stage by stage; finished, it catches them. Turn it to the wall. |
-| 14 | The Specimen | Science lab | D3 | 3 | Crawls after you in the dark; flees from flashlight beams (and the Photographer's flash) into the ceiling. Faster, and back sooner, in a power cut. |
-| 15 | The Understudy | Locker rooms | D3 | 4 | Dressed as a guard, follows one; stand still in its sight and it steps in. |
+| 9 | The Photographer | Main building | D1 | 3 | Charges a flash when it sees you; looking at it when it fires blinds you and it rushes you. Don't watch it. |
+| 10 | The Substitute | Classroom wing | D2 | 1 | Takes the register: answer "Here!" with E, or get detention. |
+| 11 | The Librarian | Library | D2 | 2 | Hates light and noise: shushes, then hunts until it's dark and quiet. |
+| 12 | The Nurse | Nurse's office | D2 | 3 | Slowly follows any guard who's on their own. Stick together. |
+| 13 | The Twins | Rooms 101 and 102 | D2 | 2 | Two girls who only move while neither is watched (in person, or on the monitor a seated guard is looking at). One monster: logging the second is a repeat, not a mistake. |
+| 14 | The Crossing Guard | Science wing | D3 | 1 | Holds up a STOP sign; anyone it sees moving gets run down. |
+| 15 | The Self-Portrait | Art room | D3 | 2 | Paints one guard stage by stage; finished, it catches them. Turn it to the wall. |
+| 16 | The Coach | Locker rooms, East Hall | D3 | 2 | Whistles when it sees you: run, and keep running until you're out of its sight (5 s of hustle and it lets you go). Walk or stand in its sight and it chases you. It excuses anyone stopped by the Crossing Guard, and the Hall Monitor leaves its runners be. |
+| 17 | The Specimen | Science lab | D3 | 3 | Crawls after you in the dark; flees from flashlight beams (and the Photographer's flash) into the ceiling. Faster, and back sooner, in a power cut. |
+| 18 | The Understudy | Locker rooms | D3 | 4 | Dressed as a guard, follows one; stand still in its sight and it steps in. |
 
 Monsters per night: 1, 1, 2, 2, 3, 3, 4, 4, 5, plus one for each open wing. The real night cleaner works every night.
 
@@ -121,8 +123,8 @@ Each night picks its monsters at random from the pool available at that difficul
 | 1 | 1 | Mostly ordinary. Teaches cameras, clipboard and clocking in. |
 | 2 | 1 | |
 | 3 | 2 | |
-| 4 | 2 | The Bell can start ringing. |
-| 5 | 3 | The Ghost can appear. |
+| 4 | 2 | |
+| 5 | 3 | The Ghost can appear; the Bell can start ringing. |
 | 6 | 3 | |
 | 7 | 4 | **Sharp ramp:** monsters can now enter the guard room. |
 | 8 | 4 | |
@@ -248,12 +250,10 @@ What keeps a player coming back after the first run:
 10. ~~Release features: voice chat and walkie-talkies, controller support, settings (keys, graphics, FOV, audio, voice), records, credits and licences, Windows and Linux builds~~
 11. **Next:** the art and audio pass (textures, models, sounds); then the Steamworks steps (STEAM.md), store page and release.
 
-## 14. Open questions
+## 14. Settled questions
 
-- Game name.
-- Which night each monster unlocks.
-- Exact point values for survival, correct logs, false reports and deaths.
-- What happens to a guard who is alive at 6am but hasn't clocked out (grace period, or no pay)?
-- Can ghosts talk to living players?
-- Guard room defenses from night 7: locked doors, a power limit, or something else?
-- Story: who is the Ghost, and why does the school have monsters?
+- Name: Night Shift. Unlock nights: the table above. Points: section 10 and the code's constants.
+- Alive but not clocked out at 6 AM: 90 seconds to clock out, or no survival pay.
+- Ghosts only talk to ghosts, except in short bursts over a living guard's walkie-talkie.
+- The guard room from night 7: monsters can get in; doors from the vending machine hold them for a while.
+- The story: R. Hale's notebook (the field guide) and the memos.
