@@ -396,6 +396,13 @@ func send_state_to(peer_id: int) -> void:
 		_set_active.rpc_id(peer_id, i, true, float(records.get(i, {}).get("amount", 1.0)), int(records.get(i, {}).get("variant", 0)))
 
 
+## Host: 6 AM. Everything goes back to normal for the morning; what was missed stays on
+## record for the report.
+func put_away() -> void:
+	for i in _active.duplicate():
+		_set_active.rpc(i, false)
+
+
 ## Host: puts everything back for the next night.
 func reset_all() -> void:
 	_noise_call_at = -100.0

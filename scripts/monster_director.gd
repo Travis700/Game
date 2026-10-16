@@ -826,10 +826,10 @@ func _update_lockdown(minutes: float, delta: float) -> void:
 		var whose := _pick_drill()
 		lockdown_changed.emit(true, drill_rule)
 		if drill == "":
-			announcement.emit("LOCKDOWN. Every one of them is hunting. Hide in a cupboard or get to the guard room.", "")
+			announcement.emit("LOCKDOWN. Every one of them is hunting. Hide in a cupboard%s." % _safe_room_text(" or get to the guard room"), "")
 		else:
 			var possessive := whose + ("'" if whose.ends_with("s") else "'s")
-			announcement.emit("LOCKDOWN: %s drill. %s Or hide in a cupboard, or get to the guard room." % [possessive, drill_rule], "")
+			announcement.emit("LOCKDOWN: %s drill. %s Or hide in a cupboard%s." % [possessive, drill_rule, _safe_room_text(", or get to the guard room")], "")
 
 
 ## Host: picks this lockdown's drill from the monsters out right now (a different one each
@@ -1133,6 +1133,11 @@ func _update_principal(minutes: float, delta: float) -> void:
 		spawn("principal", FRONT_OFFICE, {"target": _summoned})
 		_summoned = 0
 		summons_changed.emit(0, 0.0)
+
+
+## The guard room as a refuge, while it still is one (the doors give way from night 7).
+func _safe_room_text(text: String) -> String:
+	return text if night_number < GUARD_ROOM_OPENS_ON_NIGHT else ""
 
 
 ## Called by the Principal when it gives up and goes back to its office.

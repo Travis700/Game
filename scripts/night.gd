@@ -306,6 +306,8 @@ func _run_shift(delta: float) -> void:
 		phone.end_night()
 		hiding.release_all()
 		clutter.reset_all()
+		anomalies.put_away()
+		_morning_at = Time.get_ticks_msec()
 		# Morning: nerves settle (kept for the night's awards first).
 		_morning_nerve = nerve.levels.duplicate()
 		nerve.reset()
@@ -333,11 +335,20 @@ func _on_log_submitted(area: String, type: String, named := "") -> void:
 		_receive_log.rpc_id(1, area, type, named)
 
 
+## How long after 6 AM a log that was on its way still counts.
+const LATE_LOG_MSEC := 3000
+var _morning_at := 0
+
+
 @rpc("any_peer", "call_remote", "reliable")
 func _receive_log(area: String, type: String, named := "") -> void:
 	if not multiplayer.is_server():
 		return
-	if shift.state != Shift.State.ON_SHIFT and shift.state != Shift.State.MORNING:
+	# A log sent just before 6 AM still counts; after that, the night's over.
+	if shift.state != Shift.State.ON_SHIFT and not (shift.state == Shift.State.MORNING
+			and Time.get_ticks_msec() - _morning_at < LATE_LOG_MSEC):
+		if shift.state == Shift.State.MORNING:
+			director.tell(_sender(), "Too late: the log closes at 6 AM.")
 		return
 	var peer := _sender()
 	var stats: Dictionary = _stats.get_or_add(peer, {"correct": 0, "false": 0})
