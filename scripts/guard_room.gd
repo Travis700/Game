@@ -112,6 +112,7 @@ func _add_screen(pos: Vector3, monitor: int) -> void:
 func _process(delta: float) -> void:
 	if local_guard == null:
 		return
+	_update_interference(delta)
 	_update_chair_prompts()
 	_update_install(delta)
 	var focused := -1
@@ -501,6 +502,52 @@ func _refresh_screen(monitor: int) -> void:
 ## The feeds on the monitors of desks someone is sitting at (what's actually being watched).
 ## Host: the feeds someone at a desk is looking at right now (one per seated guard: the monitor
 ## they've picked out, or have full screen).
+## How long a burst of interference lasts on a monitor (seconds).
+const BURST_SECONDS := 0.7
+## This computer: which monsters have already walked onto which monitor's camera tonight.
+var _burst_seen: Dictionary = {}
+var _burst_left: Array[float] = []
+var _burst_check := 0.0
+
+
+## This computer, in the guard room: the first time a monster walks onto a camera on a monitor,
+## that monitor tears with static for a moment. (Not for one in disguise: that would give it away.)
+func _update_interference(delta: float) -> void:
+	if _burst_left.size() != _materials.size():
+		_burst_left.resize(_materials.size())
+		_burst_left.fill(0.0)
+	for monitor in _burst_left.size():
+		if _burst_left[monitor] > 0.0:
+			_burst_left[monitor] = maxf(_burst_left[monitor] - delta, 0.0)
+			_materials[monitor].set_shader_parameter("burst", _burst_left[monitor] / BURST_SECONDS)
+	_burst_check -= delta
+	if _burst_check > 0.0 or not SecurityCameras.GUARD_ROOM.has_point(local_guard.global_position) or shop == null or shop.director == null:
+		return
+	_burst_check = 0.25
+	var live := shop.director.get_node_or_null("Live")
+	if live == null:
+		return
+	for node in live.get_children():
+		var monster := node as Monster
+		if monster == null or monster.harmless or monster.disguised() or monster.state == "hidden":
+			continue
+		var area := SchoolBuilder.area_at(monster.global_position)
+		for monitor in assignments.size():
+			if cameras.area_of(assignments[monitor]) != area or not cameras.is_working(assignments[monitor]):
+				continue
+			var seen := "%s|%d" % [monster.name, monitor]
+			if _burst_seen.has(seen):
+				continue
+			_burst_seen[seen] = true
+			_burst_left[monitor] = BURST_SECONDS
+			SoundBank.play_at(_screens[monitor], "glitch", -10.0, 8.0, Sfx.notes([0.0], 0.3, 0.2, "noise"))
+
+
+## A new night: every monster's first appearance on each camera counts again.
+func forget_interference() -> void:
+	_burst_seen.clear()
+
+
 func watched_feeds() -> Array[int]:
 	var feeds: Array[int] = []
 	for monitor in assignments.size():

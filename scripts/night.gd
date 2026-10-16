@@ -1215,6 +1215,7 @@ func _show_report(night: int, rows: Array, summary: String, outcome: String) -> 
 func _begin_next_night(next_number: int) -> void:
 	number = next_number
 	minutes = 0.0
+	guard_room.forget_interference()
 	shift.reset()
 	clipboard.clear_entries()
 	report.hide_report()

@@ -523,6 +523,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(_delta: float) -> void:
 	if _mode == "":
 		return
+	ambience.night_progress = night.minutes / Night.SHIFT_MINUTES
 	# Stop watching a teammate who's gone or been caught, or once you're back on your feet.
 	if _spectating != null and (not is_instance_valid(_spectating) or _spectating.is_dead
 			or _local_guard == null or not _local_guard.is_dead):
