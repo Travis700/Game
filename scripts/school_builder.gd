@@ -210,7 +210,16 @@ func _make_materials() -> void:
 	_add_mat("fence", Color(0.35, 0.37, 0.38), 0.5, Color.BLACK, 0.0, 0.35)
 	_add_mat("board", Color(0.08, 0.16, 0.12), 0.8)
 	_add_mat("canvas", Color(0.85, 0.82, 0.74), 0.9)
+	_add_mat("gym_roof", Color(0.2, 0.21, 0.22), 0.8)
+	_add_mat("steel", Color(0.3, 0.32, 0.34), 0.45)
+	_add_mat("riser", Color(0.16, 0.17, 0.19), 0.6)
+	_add_mat("safety_yellow", Color(0.85, 0.68, 0.1), 0.6)
+	_add_mat("paint_white", Color(0.92, 0.92, 0.9), 0.5)
+	_add_mat("pad", Color(0.1, 0.15, 0.32), 0.7)
+	_add_mat("rim", Color(0.85, 0.3, 0.06), 0.4)
+	_add_mat("night_window", Color(0.03, 0.04, 0.07), 0.1, Color(0.16, 0.22, 0.38), 0.7)
 	_add_mat("jar", Color(0.55, 0.75, 0.45), 0.1, Color(0.3, 0.5, 0.2), 0.6, 0.55)
+	_make_gym_materials()
 
 
 ## Surfaces with a texture in assets/textures, and how many metres one copy of it covers. They're
@@ -221,6 +230,25 @@ const TEXTURE_METRES := {
 	"grass": 2.5, "gym_floor": 1.7, "wood": 1.7, "desk": 0.6, "metal": 1.0, "locker": 1.2,
 	"cork": 1.0, "board": 2.0,
 }
+
+
+## Gym materials that need more than a colour: the bleacher seats (the floor's wood, darker),
+## the hoop nets and the basketballs.
+func _make_gym_materials() -> void:
+	var seat := (_mats["gym_floor"] as StandardMaterial3D).duplicate() as StandardMaterial3D
+	seat.albedo_color = Color(0.82, 0.66, 0.5)
+	_mats["bleacher_seat"] = seat
+	var net := StandardMaterial3D.new()
+	net.albedo_texture = load("res://assets/textures/gym/net.png")
+	net.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	net.cull_mode = BaseMaterial3D.CULL_DISABLED
+	net.uv1_scale = Vector3(4, 1, 1)
+	net.roughness = 1.0
+	_mats["net"] = net
+	var ball := StandardMaterial3D.new()
+	ball.albedo_texture = load("res://assets/textures/gym/basketball.png")
+	ball.roughness = 0.75
+	_mats["basketball"] = ball
 
 
 func _add_mat(mat_name: String, color: Color, roughness := 0.9, emission := Color.BLACK,
@@ -396,6 +424,26 @@ func _light(pos: Vector3, night_energy := 0.6, light_range := 8.0, flicker := fa
 	return light
 
 
+## One of the gym's hanging lamps: the model, a glowing lens under it that dims with the light,
+## and the light itself just below.
+func _gym_lamp(x: float, z: float, night_energy: float, flicker := false) -> void:
+	const LAMP_H := 1.36
+	var bottom := GYM_H - LAMP_H
+	var light := _light(Vector3(x, bottom - 0.3, z), night_energy, 17.0, flicker, false,
+			Color(1.0, 0.94, 0.82), maxf(night_energy * 4.0, 3.2))
+	_model("prop_hanging_industrial_lamp", Vector3(x, bottom, z), LAMP_H)
+	var disc := CylinderMesh.new()
+	disc.top_radius = 0.2
+	disc.bottom_radius = 0.2
+	disc.height = 0.02
+	var lens := MeshInstance3D.new()
+	lens.mesh = disc
+	lens.material_override = _mats["light_panel"]
+	lens.position = Vector3(x, bottom + 0.03, z)
+	add_child(lens)
+	light.set_meta("panel", lens)
+
+
 ## A floodlight that is on before the shift and cut when the night starts.
 ## `rotation_deg` aims it: a spotlight with no rotation points north (-Z).
 func _floodlight(pos: Vector3, rotation_deg: Vector3, energy: float, light_range: float, angle: float) -> void:
@@ -438,7 +486,9 @@ func _build_grounds() -> void:
 	# Grass sits a touch lower than the building floor so the two never flicker against each other.
 	_box(Vector3(0, -0.27, 10), Vector3(220, 0.5, 170), "grass")
 	_box(Vector3(0, -0.1, -5), Vector3(80, 0.2, 50), "floor")
-	_box(Vector3(0, WALL_H + 0.1, -5), Vector3(80.5, 0.2, 50.5), "ceiling", false)
+	# The ceiling everywhere but the gym, which has its own roof higher up.
+	_box(Vector3(-17.625, WALL_H + 0.1, -5), Vector3(45.25, 0.2, 50.5), "ceiling", false)
+	_box(Vector3(22.625, WALL_H + 0.1, 12.125), Vector3(35.25, 0.2, 16.25), "ceiling", false)
 	# Path from the street, through the gate, to the front doors.
 	_box(Vector3(0, -0.11, 42), Vector3(4, 0.2, 44), "concrete")
 	# Street outside the gate.
@@ -626,20 +676,288 @@ func _build_kitchen_and_closet() -> void:
 	_box(Vector3(-4.5, 1.0, -6.0), Vector3(0.6, 2.0, 6.0), "metal")
 
 
+## The gym is a hall of its own: its roof is twice the height of the rest of the school.
+const GYM_H := 7.5
+## The court, painted on the gym floor: 25.6 x 15.2 m with its length running north-south.
+const COURT_CENTRE := Vector3(22.5, 0.0, -13.0)
+const COURT_HALF := Vector2(7.6, 12.8)
+## Bleachers: four tiers, each 0.75 m deep and 0.45 m up, the front row 2.3 m in from the wall.
+## The east ones' front edge; the west ones mirror them across the court.
+const BLEACHER_FRONT := 36.775
+const BLEACHER_TIER := Vector2(0.75, 0.45)
+const BLEACHER_ROWS := 4
+const BLEACHER_Z := Vector2(-23.0, -3.0)
+## The two aisles up each stand (their centres), each this wide.
+const BLEACHER_AISLES: Array[float] = [-18.0, -8.0]
+const AISLE_WIDTH := 1.1
+
+
 func _build_gym() -> void:
 	_box(Vector3(22.5, 0.005, -13.0), Vector3(34.6, 0.01, 33.6), "gym_floor", false)
-	# Bleachers along the east wall.
-	for step in 4:
-		_box(Vector3(37.15 + step * 0.75, 0.225 + step * 0.45 * 0.5, -13.0),
-				Vector3(0.75, 0.45 + step * 0.45, 20.0), "wood")
-	# Basketball hoops at each end.
-	for z: float in [-29.4, 3.4]:
-		var facing := 1.0 if z < 0.0 else -1.0
-		_box(Vector3(22.5, 1.5, z), Vector3(0.15, 3.0, 0.15), "metal")
-		_box(Vector3(22.5, 2.95, z + facing * 0.3), Vector3(1.8, 1.05, 0.05), "glass", false)
-		_box(Vector3(22.5, 2.6, z + facing * 0.6), Vector3(0.45, 0.03, 0.45), "red", false)
+	_build_gym_shell()
+	_build_court()
+	for side: float in [1.0, -1.0]:
+		_bleachers(side)
+	for end: float in [-1.0, 1.0]:
+		_hoop(end)
+	_build_gym_walls()
+	_build_gym_courtside()
 	# The mascot's stand by the gym doors. The costume itself belongs to Anomalies.
 	_box(Vector3(9.0, 0.15, 1.5), Vector3(1.2, 0.3, 1.2), "wood")
+
+
+## The walls carry on up past the rest of the school to the gym's own roof: steel decking on
+## beams, with a row of high windows along each end letting in a little moonlight.
+func _build_gym_shell() -> void:
+	var half_t := WALL_T * 0.5
+	_wall_piece(true, 4.0, 5.0 - half_t, 40.0 + half_t, WALL_H, GYM_H, "wall")
+	_wall_piece(true, -30.0, 5.0 - half_t, 40.0 + half_t, WALL_H, GYM_H, "brick")
+	_wall_piece(false, 5.0, -30.0 - half_t, 4.0 + half_t, WALL_H, GYM_H, "wall")
+	_wall_piece(false, 40.0, -30.0 - half_t, 4.0 + half_t, WALL_H, GYM_H, "brick")
+	_box(Vector3(22.625, GYM_H + 0.1, -13.0), Vector3(35.25, 0.2, 34.25), "gym_roof", false)
+	var z := -27.0
+	while z < 3.0:
+		_box(Vector3(22.5, GYM_H - 0.25, z), Vector3(34.75, 0.5, 0.22), "steel", false)
+		z += 4.5
+	for x: float in [14.0, 31.0]:
+		_box(Vector3(x, GYM_H - 0.6, -13.0), Vector3(0.18, 0.18, 33.75), "steel", false)
+	for wall_z: float in [-29.875, 3.875]:
+		var inward := 1.0 if wall_z < 0.0 else -1.0
+		for x: float in [9.0, 13.0, 17.0, 28.0, 32.0, 36.0]:
+			_box(Vector3(x, 6.35, wall_z + inward * 0.02), Vector3(2.4, 1.1, 0.04), "night_window", false)
+			for bar: float in [-0.4, 0.4]:
+				_box(Vector3(x + bar, 6.35, wall_z + inward * 0.045), Vector3(0.05, 1.1, 0.02), "steel", false)
+			_box(Vector3(x, 6.35, wall_z + inward * 0.045), Vector3(2.4, 0.05, 0.02), "steel", false)
+
+
+## The court lines and paint, as one see-through sheet just above the wooden floor.
+func _build_court() -> void:
+	var paint := StandardMaterial3D.new()
+	paint.albedo_texture = load("res://assets/textures/gym/court.png")
+	paint.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	paint.roughness = 0.4
+	paint.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	var plane := PlaneMesh.new()
+	# The picture has a metre of floor round the court; its long side runs along the court.
+	plane.size = Vector2(COURT_HALF.y * 2.0 + 2.0, COURT_HALF.x * 2.0 + 2.0)
+	var sheet := MeshInstance3D.new()
+	sheet.mesh = plane
+	sheet.material_override = paint
+	sheet.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	sheet.position = COURT_CENTRE + Vector3(0, 0.012, 0)
+	sheet.rotation.y = PI * 0.5
+	add_child(sheet)
+
+
+## One stand of bleachers: east (side 1) or west (side -1). The tiers are solid steps (dark steel
+## risers) you can climb; on each sit a wooden deck and, along its front edge, a seat plank.
+## Two aisles have half-steps with yellow edges and a hand rail up the middle.
+func _bleachers(side: float) -> void:
+	var along := func(depth: float) -> float:
+		return BLEACHER_FRONT + depth if side > 0.0 else 45.0 - BLEACHER_FRONT - depth
+	var length := BLEACHER_Z.y - BLEACHER_Z.x
+	var middle_z := (BLEACHER_Z.x + BLEACHER_Z.y) * 0.5
+	var seats := _gaps_between(BLEACHER_Z, BLEACHER_AISLES, AISLE_WIDTH)
+	for row in BLEACHER_ROWS:
+		var front: float = row * BLEACHER_TIER.x
+		var top: float = (row + 1) * BLEACHER_TIER.y
+		var centre_x: float = along.call(front + BLEACHER_TIER.x * 0.5)
+		_box(Vector3(centre_x, top * 0.5, middle_z), Vector3(BLEACHER_TIER.x, top, length), "riser")
+		_box(Vector3(centre_x, top + 0.015, middle_z), Vector3(BLEACHER_TIER.x - 0.02, 0.03, length), "gym_floor", false)
+		# The seat: a thick plank along the front edge, standing a little proud of the riser.
+		for run: Vector2 in seats:
+			_box(Vector3(along.call(front + 0.12), top + 0.06, (run.x + run.y) * 0.5),
+					Vector3(0.3, 0.06, run.y - run.x), "bleacher_seat", false)
+		for aisle: float in BLEACHER_AISLES:
+			# A half-step up to this tier, in the aisle.
+			var step_top := top - BLEACHER_TIER.y * 0.5
+			_box(Vector3(along.call(front - 0.19), step_top - 0.1125, aisle),
+					Vector3(0.375, 0.225, AISLE_WIDTH), "riser")
+			_box(Vector3(along.call(front - 0.19), step_top + 0.012, aisle),
+					Vector3(0.375, 0.024, AISLE_WIDTH), "gym_floor", false)
+			for edge_top: float in [step_top, top]:
+				var edge_depth: float = front - 0.36 if edge_top == step_top else front + 0.02
+				_box(Vector3(along.call(edge_depth), edge_top + 0.036, aisle),
+						Vector3(0.05, 0.012, AISLE_WIDTH - 0.02), "safety_yellow", false)
+	# Hand rails: up each aisle and each end, and along the back.
+	var rise := Vector2(BLEACHER_TIER.x * (BLEACHER_ROWS - 1), BLEACHER_TIER.y * (BLEACHER_ROWS - 1))
+	var rail_zs: Array[float] = [BLEACHER_Z.x + 0.08, BLEACHER_Z.y - 0.08]
+	rail_zs.append_array(BLEACHER_AISLES)
+	for rail_z: float in rail_zs:
+		for row in BLEACHER_ROWS:
+			_box(Vector3(along.call(row * BLEACHER_TIER.x + 0.3), (row + 1) * BLEACHER_TIER.y + 0.45, rail_z),
+					Vector3(0.05, 0.9, 0.05), "steel", false)
+		var rail := _box(Vector3(along.call(0.3 + rise.x * 0.5), BLEACHER_TIER.y + 0.9 + rise.y * 0.5, rail_z),
+				Vector3(rise.length() + 0.2, 0.05, 0.05), "steel", false)
+		rail.rotation.z = atan2(rise.y, rise.x) * side
+	var back_top: float = BLEACHER_ROWS * BLEACHER_TIER.y
+	_box(Vector3(along.call(BLEACHER_ROWS * BLEACHER_TIER.x - 0.15), back_top + 1.0, middle_z),
+			Vector3(0.05, 0.05, length), "steel", false)
+	_box(Vector3(along.call(BLEACHER_ROWS * BLEACHER_TIER.x - 0.15), back_top + 0.5, middle_z),
+			Vector3(0.04, 0.04, length), "steel", false)
+
+
+## The stretches of [from, to] left between gaps of `width` centred on `gaps`.
+func _gaps_between(span: Vector2, gaps: Array[float], width: float) -> Array[Vector2]:
+	var runs: Array[Vector2] = []
+	var cursor := span.x
+	for gap in gaps:
+		runs.append(Vector2(cursor, gap - width * 0.5))
+		cursor = gap + width * 0.5
+	runs.append(Vector2(cursor, span.y))
+	return runs
+
+
+## A basketball goal at one end (-1 south, 1 north): a glass backboard hung from the roof on a
+## steel frame, an orange rim and a white net, rim 3.05 m up, 1.575 m in from the baseline.
+func _hoop(end: float) -> void:
+	var baseline := COURT_CENTRE.z + end * COURT_HALF.y
+	var inward := -end
+	var face := baseline + inward * 1.22
+	var board_z := face - inward * 0.015
+	var x := COURT_CENTRE.x
+	_box(Vector3(x, 3.435, board_z), Vector3(1.83, 1.07, 0.03), "glass", false)
+	# White edging round the board, and the target square over the rim.
+	for y: float in [3.435 - 0.51, 3.435 + 0.51]:
+		_box(Vector3(x, y, board_z), Vector3(1.83, 0.05, 0.036), "paint_white", false)
+	for dx: float in [-0.89, 0.89]:
+		_box(Vector3(x + dx, 3.435, board_z), Vector3(0.05, 1.07, 0.036), "paint_white", false)
+	var square_z := face + inward * 0.004
+	for y: float in [3.075, 3.48]:
+		_box(Vector3(x, y, square_z), Vector3(0.61, 0.05, 0.008), "paint_white", false)
+	for dx: float in [-0.28, 0.28]:
+		_box(Vector3(x + dx, 3.2775, square_z), Vector3(0.05, 0.455, 0.008), "paint_white", false)
+	_box(Vector3(x, 2.87, board_z), Vector3(1.83, 0.07, 0.09), "pad", false)
+	# The rim, on a bracket, and its net.
+	var rim_z := face + inward * (0.15 + 0.2305)
+	_box(Vector3(x, 3.035, face + inward * 0.1), Vector3(0.22, 0.04, 0.2), "rim", false)
+	var ring := TorusMesh.new()
+	ring.inner_radius = 0.2225
+	ring.outer_radius = 0.2385
+	ring.rings = 24
+	var rim := MeshInstance3D.new()
+	rim.mesh = ring
+	rim.material_override = _mats["rim"]
+	rim.position = Vector3(x, 3.05, rim_z)
+	add_child(rim)
+	var cone := CylinderMesh.new()
+	cone.top_radius = 0.225
+	cone.bottom_radius = 0.14
+	cone.height = 0.42
+	cone.cap_top = false
+	cone.cap_bottom = false
+	cone.radial_segments = 16
+	var net := MeshInstance3D.new()
+	net.mesh = cone
+	net.material_override = _mats["net"]
+	net.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	net.position = Vector3(x, 3.05 - 0.21, rim_z)
+	add_child(net)
+	# The frame: two posts up from the board to the roof, tied back to the end wall.
+	var wall_face := -29.875 if end < 0.0 else 3.875
+	var behind := board_z - inward * 0.12
+	for dx: float in [-0.6, 0.6]:
+		var post_bottom := 3.97
+		_box(Vector3(x + dx, (post_bottom + GYM_H) * 0.5, behind), Vector3(0.1, GYM_H - post_bottom, 0.1), "steel", false)
+		var span := absf(wall_face - behind)
+		_box(Vector3(x + dx, 6.6, (wall_face + behind) * 0.5), Vector3(0.1, 0.1, span), "steel", false)
+		var drop := Vector2(span, 6.6 - 4.2)
+		var brace := _box(Vector3(x + dx, (6.6 + 4.2) * 0.5, (wall_face + behind) * 0.5),
+				Vector3(0.08, 0.08, drop.length()), "steel", false)
+		brace.rotation.x = atan2(drop.y, drop.x) * (1.0 if wall_face < behind else -1.0)
+
+
+## Pads on the walls behind each basket, the scoreboards, and the banners.
+func _build_gym_walls() -> void:
+	for wall_z: float in [-29.875, 3.875]:
+		var inward := 1.0 if wall_z < 0.0 else -1.0
+		# (The north wall has the gym doors at x 13.5-16.5.)
+		var first := 15.3 if wall_z < 0.0 else 17.3
+		var x := first
+		while x + 2.4 <= 30.0:
+			_box(Vector3(x + 1.2, 1.05, wall_z + inward * 0.05), Vector3(2.36, 1.9, 0.1), "pad", false)
+			x += 2.4
+		_scoreboard(Vector3(22.5, 5.0, wall_z + inward * 0.12), inward)
+	_banner("banner_home", Vector3(5.125 + 0.02, 5.2, -13.0), Vector3.RIGHT, Vector2(6.0, 2.0))
+	var pennants := ["banner_state_87", "banner_district_94", "banner_conference_03", "banner_state_11"]
+	for i in pennants.size():
+		_banner(pennants[i], Vector3(39.875 - 0.02, 5.6, -19.0 + i * 4.0), Vector3.LEFT, Vector2(1.3, 2.03))
+
+
+func _scoreboard(pos: Vector3, facing: float) -> void:
+	_box(pos, Vector3(3.3, 1.7, 0.2), "dark", false)
+	var face := StandardMaterial3D.new()
+	face.albedo_texture = load("res://assets/textures/gym/scoreboard.png")
+	face.emission_enabled = true
+	face.emission_texture = load("res://assets/textures/gym/scoreboard_glow.png")
+	face.emission_energy_multiplier = 0.8
+	face.roughness = 0.6
+	var quad := QuadMesh.new()
+	quad.size = Vector2(3.2, 1.6)
+	var board := MeshInstance3D.new()
+	board.mesh = quad
+	board.material_override = face
+	board.position = pos + Vector3(0, 0, facing * 0.105)
+	board.rotation.y = 0.0 if facing > 0.0 else PI
+	add_child(board)
+
+
+## A cloth banner hung flat on a wall, facing `facing`.
+func _banner(art: String, pos: Vector3, facing: Vector3, size: Vector2) -> void:
+	var cloth := StandardMaterial3D.new()
+	cloth.albedo_texture = load("res://assets/textures/gym/%s.png" % art)
+	cloth.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	cloth.roughness = 0.95
+	var quad := QuadMesh.new()
+	quad.size = size
+	var banner := MeshInstance3D.new()
+	banner.mesh = quad
+	banner.material_override = cloth
+	banner.position = pos
+	banner.rotation.y = atan2(facing.x, facing.z)
+	add_child(banner)
+
+
+## Team benches, the scorer's table, a crate of balls, the clock and a fire alarm.
+func _build_gym_courtside() -> void:
+	# Home bench on the east side, visitors on the west, either side of the scorer's table.
+	for i in 5:
+		_gym_chair(Vector3(32.3, 0, -19.0 + i * 0.7), -PI * 0.5)
+		_gym_chair(Vector3(12.7, 0, -9.8 + i * 0.7), PI * 0.5)
+	_box(Vector3(12.5, 0.74, -14.0), Vector3(0.75, 0.05, 3.0), "desk")
+	_box(Vector3(12.9, 0.4, -14.0), Vector3(0.04, 0.68, 3.0), "pad", false)
+	for dz: float in [-1.4, 1.4]:
+		_box(Vector3(12.3, 0.36, -14.0 + dz), Vector3(0.05, 0.72, 0.05), "steel", false)
+	for i in 2:
+		_gym_chair(Vector3(12.0, 0, -14.6 + i * 1.2), PI * 0.5)
+	# Balls: a crate of them by the home bench, and a few left out.
+	_model("prop_plastic_crate_01", Vector3(33.4, 0, -20.4), 0.26, 0.3)
+	for spot: Vector3 in [Vector3(33.33, 0.39, -20.45), Vector3(33.5, 0.39, -20.3), Vector3(33.95, 0.12, -20.9),
+			Vector3(26.0, 0.12, -24.9), Vector3(18.4, 0.12, -6.2)]:
+		_ball(spot)
+	_box(Vector3(33.4, 0.13, -20.4), Vector3(0.3, 0.26, 0.41), "dark").visible = false
+	_model("prop_wall_clock", Vector3(5.125, 3.6, -21.5), 0.42, PI * 0.5)
+	_model("prop_fire_alarm", Vector3(12.0, 1.35, 3.875), 0.2, PI)
+	_model("prop_steel_frame_shelves_01", Vector3(34.2, 0, 3.6), 1.8, PI)
+	_box(Vector3(34.2, 0.9, 3.6), Vector3(0.95, 1.8, 0.45), "dark").visible = false
+
+
+func _gym_chair(pos: Vector3, turn: float) -> void:
+	if _model("prop_schoolchair_01", pos, 0.82, turn) == null:
+		_box(pos + Vector3(0, 0.22, 0), Vector3(0.45, 0.44, 0.45), "pad", false)
+	_box(pos + Vector3(0, 0.41, 0), Vector3(0.5, 0.82, 0.5), "dark").visible = false
+
+
+func _ball(pos: Vector3) -> void:
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.12
+	sphere.height = 0.24
+	var ball := MeshInstance3D.new()
+	ball.mesh = sphere
+	ball.material_override = _mats["basketball"]
+	ball.position = pos
+	ball.rotation = Vector3(randf() * TAU, randf() * TAU, 0.0)
+	add_child(ball)
 
 
 func _desk(pos: Vector3, width: float, depth: float) -> void:
@@ -711,11 +1029,13 @@ func _build_lights() -> void:
 	_light(Vector3(-15, CEILING, -20), 0.35, 12.0, true)
 	_light(Vector3(0, CEILING, -21), 0.35, 9.0)
 	_light(Vector3(0, CEILING, -4), 0.2, 7.0, true)
-	# Gym.
-	_light(Vector3(15, CEILING, -5), 0.4, 13.0)
-	_light(Vector3(30, CEILING, -5), 0.0, 13.0)
-	_light(Vector3(15, CEILING, -21), 0.0, 13.0)
-	_light(Vector3(30, CEILING, -21), 0.35, 13.0)
+	# Gym: high-bay lamps hanging from the roof. At night most are off.
+	_gym_lamp(15.0, -3.0, 0.45)
+	_gym_lamp(30.0, -3.0, 0.0)
+	_gym_lamp(15.0, -13.0, 0.0)
+	_gym_lamp(30.0, -13.0, 0.35, true)
+	_gym_lamp(15.0, -23.0, 0.0)
+	_gym_lamp(30.0, -23.0, 0.4)
 
 
 func _build_cameras() -> void:
@@ -726,7 +1046,7 @@ func _build_cameras() -> void:
 	_camera("Front Office", Vector3(-6.4, 3.2, 10.4), Vector3(-16, 0.3, 17))
 	_camera("Cafeteria", Vector3(-39.4, 3.2, 3.4), Vector3(-15, 0, -20))
 	_camera("Kitchen", Vector3(4.4, 3.2, -12.6), Vector3(-2, 0.3, -27))
-	_camera("Gym", Vector3(39.4, 3.2, -29.4), Vector3(12, 0.5, 0))
+	_camera("Gym", Vector3(39.4, 5.2, -29.4), Vector3(14, 0, -2))
 
 
 # --- The wings -----------------------------------------------------------------
@@ -781,7 +1101,9 @@ func _build_wing_shell(x1: float, x2: float) -> void:
 	var middle := (x1 + x2) * 0.5
 	var width := absf(x2 - x1)
 	_box(Vector3(middle, -0.1, 3.0), Vector3(width, 0.2, 34.0), "floor")
-	_box(Vector3(middle, WALL_H + 0.1, 3.0), Vector3(width + 0.5, 0.2, 34.5), "ceiling", false)
+	# Overhanging the far wall only: on the near side it would poke into the gym's tall hall.
+	var outward := signf(x2 - x1)
+	_box(Vector3(middle + outward * 0.125, WALL_H + 0.1, 3.0), Vector3(width + 0.25, 0.2, 34.5), "ceiling", false)
 	_wall_x(-14, minf(x1, x2), maxf(x1, x2), [], "brick")
 	_wall_x(20, minf(x1, x2), maxf(x1, x2), [], "brick")
 	_wall_z(x2, -14, 20, [], "brick")

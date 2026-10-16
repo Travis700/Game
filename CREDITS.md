@@ -19,6 +19,25 @@ required (credited anyway, with thanks). 1k diffuse + OpenGL normal maps, in `as
 | wood | wood_floor | Dimitrios Savva |
 | desk | kitchen_wood | Rob Tuytel |
 
+## Models: Poly Haven (CC0, public domain)
+
+From https://polyhaven.com, licensed CC0, fetched with `tools/polyhaven.py` (1k glTF) and slimmed
+with `tools/slim_glb.py`. In `assets/models/` as `prop_<asset>.glb`.
+
+| Poly Haven asset | Authors |
+| --- | --- |
+| Hanging Industrial Lamp | Kuutti Siitonen |
+| Wall Clock | PierreB3D |
+| Fire Alarm | Slinc |
+| Plastic Crate 01 | PierreB3D |
+| School Chair 01 | Ethan Place |
+| Steel Frame Shelves 01 | James Ray Cock |
+
+## Gym art: made for this game
+
+The court markings, scoreboard face, banners, basketball skin and net in `assets/textures/gym/`
+are drawn by `tools/gen_gym_art.py` (text in Bebas Neue, see Fonts).
+
 ## Sounds: Kenney (CC0, public domain)
 
 From https://kenney.nl (Impact Sounds, Interface Sounds and RPG Audio packs), licensed CC0. In

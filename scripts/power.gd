@@ -22,7 +22,7 @@ const CUT_GAP := 50.0
 const EMERGENCY_LIGHTS: Array[Vector3] = [
 	Vector3(13.0, 3.1, 15.0), Vector3(0.0, 3.1, 15.0), Vector3(0.0, 3.1, -4.0),
 	Vector3(-20.0, 3.1, 7.0), Vector3(0.0, 3.1, 7.0), Vector3(20.0, 3.1, 7.0),
-	Vector3(-22.0, 3.1, -13.0), Vector3(22.0, 3.1, -13.0),
+	Vector3(-22.0, 3.1, -13.0), Vector3(22.0, 6.9, -13.0),
 	Vector3(-60.0, 3.1, 7.0), Vector3(60.0, 3.1, 7.0),
 ]
 

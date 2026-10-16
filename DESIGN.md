@@ -44,6 +44,8 @@ The map is one high school. Each difficulty opens another wing, through red door
 
 Closed wings stay behind locked doors; their cameras, clipboard areas, anomalies and monsters are left out.
 
+The gym is the one big open space: a 7.5 m hall (the rest of the school is 3.5 m) with a painted court, glass backboards hung from the roof, two stands of bleachers you can climb, banners, scoreboards and high windows that let in a little moonlight. Most of its lamps go off at night, so it's mostly dark and wide open, the opposite of the hallways.
+
 ## 5. The guard room
 
 - **4 desks, each with 4 monitors.** Any player can sit at any desk. Each monitor cycles through camera views.
