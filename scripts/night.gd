@@ -208,6 +208,8 @@ func _on_shift_started() -> void:
 	_shift_team = players.get_child_count()
 	_stats.clear()
 	_logged.clear()
+	_first_logged_at.clear()
+	_on_screen.clear()
 	_callouts.clear()
 	_deaths = 0
 	save_run(number, true)
@@ -276,6 +278,7 @@ func _run_shift(delta: float) -> void:
 			var area := SchoolBuilder.area_at(guard.global_position)
 			if area != "":
 				(_visits.get_or_add(guard.name.to_int(), {}) as Dictionary)[area] = now
+		_track_screens(now)
 	shop.update(delta)
 	doors.update(delta)
 	finale.update(minutes)
@@ -367,9 +370,9 @@ func _receive_log(area: String, type: String, named := "") -> void:
 		if correct and director.guard_by_peer(peer) and "Mascot" not in director.guard_by_peer(peer).known_monsters:
 			director.guard_by_peer(peer).known_monsters.append("Mascot")
 		anomalies.last_was_first = director.last_log_was_first
-	var first_or_seen := (director.last_log_was_first if type == "Monster" else anomalies.last_was_first) or _could_see(peer, area, type)
-	if correct and first_or_seen:
-		bonus.on_correct_log(named != "" and named == found)
+	var was_first := director.last_log_was_first if type == "Monster" else anomalies.last_was_first
+	var seen_first_hand := was_first or _could_see(peer, area, type, float(_first_logged_at.get(entry, -1.0)))
+	if correct and seen_first_hand:
 		var logger := director.guard_by_peer(peer)
 		if logger and found != "" and found not in logger.known_monsters:
 			logger.known_monsters.append(found)
@@ -377,7 +380,11 @@ func _receive_log(area: String, type: String, named := "") -> void:
 		logged.append(entry)
 		_log_result(peer, true, "Noted: the other Twin, in %s. Same monster: you've logged it already." % area)
 		return
-	var first := (director.last_log_was_first if type == "Monster" else anomalies.last_was_first) or not correct
+	if correct and was_first:
+		# Only the first log of each thing counts toward the bonus: confirming isn't finding.
+		bonus.on_correct_log(named != "" and named == found)
+		_first_logged_at[entry] = Time.get_ticks_msec() / 1000.0
+	var first := was_first or not correct
 	var caller := _caller_for(area, peer) if correct else 0
 	if correct and first and caller != 0:
 		# Teamwork pays: whoever called it out gets a cut too.
@@ -388,7 +395,7 @@ func _receive_log(area: String, type: String, named := "") -> void:
 				logger_guard.player_name if logger_guard and logger_guard.player_name != "" else "Guard %d" % (logger_guard.slot if logger_guard else 0),
 				area, SPOTTER_POINTS])
 		bonus.on_callout()
-	if correct and not first and not _could_see(peer, area, type):
+	if correct and not first and not seen_first_hand:
 		# Only passed on by a teammate: noted, but nobody pays for hearsay.
 		logged.append(entry)
 		_log_result(peer, true, "Noted: %s, %s. A teammate logged it first, and you didn't see it yourself: no pay." % [area, type.to_lower()])
@@ -626,6 +633,31 @@ var _shift_team := 1
 ## Host: when each guard was last in each area (real seconds), for confirmations.
 var _visits: Dictionary = {}
 const SEEN_SECONDS := 90.0
+## Host: since when each seated guard has had each area on their own monitors (real seconds).
+var _on_screen: Dictionary = {}
+## Host: when each anomaly or monster ("area|type") was first logged tonight (real seconds).
+var _first_logged_at: Dictionary = {}
+
+
+## Host: notes which areas each seated guard has up on their monitors, and since when.
+func _track_screens(now: float) -> void:
+	for desk in GuardRoom.DESKS:
+		var peer: int = guard_room.occupants[desk]
+		if peer == 0:
+			continue
+		var showing: Dictionary = _on_screen.get_or_add(peer, {})
+		var areas: Array[String] = []
+		for monitor in range(desk * 4, desk * 4 + 4):
+			areas.append(cameras.area_of(guard_room.assignments[monitor]))
+		for area: String in showing.keys():
+			if area not in areas:
+				showing.erase(area)
+		for area in areas:
+			if area != "" and not showing.has(area):
+				showing[area] = now
+	for peer: int in _on_screen.keys():
+		if peer not in guard_room.occupants:
+			_on_screen.erase(peer)
 ## Host: today's daily, hosted for a team (scores go on the team boards, by team size).
 var team_daily := false
 ## Host: whether this run has had its one retry of the last night.
@@ -656,9 +688,10 @@ func on_principal_ignored(peer: int) -> void:
 
 
 ## Host: could this guard see `area` for themselves: standing in it, or sitting at a desk with
-## one of its cameras on their own monitors?
+## one of its cameras on their own monitors? With `since` (real seconds), the camera has to
+## have been up from before then: flicking to it after a teammate's log doesn't count.
 ## (A Noise isn't on any camera: only being there counts.)
-func _could_see(peer: int, area: String, type := "") -> bool:
+func _could_see(peer: int, area: String, type := "", since := -1.0) -> bool:
 	var guard := director.guard_by_peer(peer)
 	if guard == null:
 		return false
@@ -671,6 +704,9 @@ func _could_see(peer: int, area: String, type := "") -> bool:
 	var desk := guard_room.occupants.find(peer)
 	if desk < 0 or type == "Noise":
 		return false
+	if since >= 0.0:
+		var showing: Dictionary = _on_screen.get(peer, {})
+		return showing.has(area) and float(showing[area]) <= since
 	for monitor in range(desk * 4, desk * 4 + 4):
 		if cameras.area_of(guard_room.assignments[monitor]) == area:
 			return true
