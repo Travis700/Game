@@ -54,6 +54,28 @@ func scare() -> void:
 		state = "flee"
 
 
+var _rest := Transform3D.IDENTITY
+var _skitter := 0.0
+var _was_at := Vector3.INF
+
+
+## No walk cycle for something on all fours: it jerks and sways as it scuttles (every computer).
+func _process(delta: float) -> void:
+	super(delta)
+	if _model == null or delta <= 0.0:
+		return
+	var speed := 0.0
+	if _was_at != Vector3.INF:
+		speed = Vector2(global_position.x - _was_at.x, global_position.z - _was_at.z).length() / delta
+	_was_at = global_position
+	if speed < 0.1:
+		_model.transform = _model.transform.interpolate_with(_rest, minf(1.0, delta * 6.0))
+		return
+	_skitter += delta * (10.0 + speed * 6.0)
+	var sway := Basis(Vector3.FORWARD, sin(_skitter) * 0.08) * Basis(Vector3.UP, sin(_skitter * 0.5) * 0.12)
+	_model.transform = Transform3D(sway * _rest.basis, _rest.origin + Vector3(0, absf(sin(_skitter)) * 0.04, 0))
+
+
 func think(delta: float) -> void:
 	match state:
 		"flee":
@@ -125,7 +147,8 @@ func _on_state_changed(new_state: String) -> void:
 
 
 func _build_body() -> void:
-	if use_model("specimen", 0.6):
+	if use_model("specimen", 0.45):
+		_rest = _model.transform
 		return
 	var skin := Color(0.78, 0.76, 0.66)
 	var torso := part(capsule(0.2, 1.0), skin, Vector3(0, 0.3, 0))
