@@ -52,6 +52,7 @@ invite or the Steam overlay instead, with no ports to forward.
   back to night 1 with nothing. (A wipe in Overtime ends the run.)
 - **Continue saved run** appears once you've finished a night. The host's computer saves after every night
   report: the next night, the difficulty, upgrades, and each guard's points and item (by badge number).
+  Leaving in the middle of a shift counts as the whole team being caught.
   Survive night 9 and the run is won.
 
 ## How a night works

@@ -720,13 +720,30 @@ func _start_run() -> void:
 	night.saved_points = saved.get("points", {})
 	night.saved_items = saved.get("items", {})
 	if saved.get("in_progress", false):
-		# The last session quit in the middle of a night. Replaying it costs that night's
-		# survival pay, so quitting isn't a way out of a bad night.
-		for key: String in night.saved_points:
-			night.saved_points[key] = maxi(int(night.saved_points[key]) - Night.SURVIVAL_PAY, 0)
-		menu.show_status("Last time, the run was left mid-shift. Everyone loses %d points." % Night.SURVIVAL_PAY)
-		get_tree().create_timer(2.0).timeout.connect(func() -> void:
-			hud.show_message("Last time, the run was left mid-shift. Everyone loses %d points." % Night.SURVIVAL_PAY, 8.0))
+		# The last session walked out in the middle of a night. That counts as the team being
+		# caught, the same rules as a wipe, so quitting is never a way out of a bad night.
+		var text := ""
+		if bool(saved.get("hardcore", false)) or night.number > Night.LAST_NIGHT:
+			text = "Last time, the shift was abandoned. That counts as the whole team being caught: the run starts over from night 1."
+			night.number = 1
+			night.saved_points = {}
+			night.saved_items = {}
+			saved["write_ups"] = 0
+			saved["run_stats"] = {}
+			saved["run_nights"] = 0
+			saved["last_retried"] = false
+			if bool(saved.get("hardcore", false)) or not bool(saved.get("keep_gear", false)):
+				# Nothing carries over: a fresh run.
+				_tell_abandoned(text)
+				return
+		else:
+			var back := Night.checkpoint_for(night.number, night.grade)
+			text = "Last time, the shift was abandoned. That counts as the whole team being caught: back to night %d, the last checkpoint, with half your points." % back
+			night.number = back
+			for key: String in night.saved_points:
+				night.saved_points[key] = int(night.saved_points[key]) / 2
+			saved["write_ups"] = 0
+		_tell_abandoned(text)
 	var upgrades: Array = saved.get("upgrades", [])
 	for desk in mini(upgrades.size(), GuardRoom.DESKS):
 		if upgrades[desk]:
@@ -748,6 +765,12 @@ func _start_run() -> void:
 		if "flashlight" not in list:
 			list.append("flashlight")
 	print("[run] Continuing the saved run: ", RunSave.describe(saved))
+
+
+## Tells the host, on the menu and once the night starts, what walking out last time cost.
+func _tell_abandoned(text: String) -> void:
+	menu.show_status(text)
+	get_tree().create_timer(2.0).timeout.connect(func() -> void: hud.show_message(text, 10.0))
 
 
 ## The hat this player picked, if they've still got it unlocked.
@@ -1134,7 +1157,8 @@ func on_local_guard_ready(guard: Guard) -> void:
 			shop.request_use())
 	guard.pause_requested.connect(func() -> void:
 		guard.input_blocked = true
-		pause_menu.open(_mode == "solo", _mode == "Hosting"))
+		pause_menu.open(_mode == "solo", _mode == "Hosting", (_mode == "solo" or _mode == "Hosting")
+				and shift.state == Shift.State.ON_SHIFT and night.daily == "" and night.training == null))
 	doors.local_guard = guard
 	guard_room.local_guard = guard
 	if not guard_room.camera_pinged.is_connected(_on_camera_pinged):

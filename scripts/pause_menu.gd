@@ -209,9 +209,12 @@ func _ready() -> void:
 
 
 ## `solo` pauses the game; `hosting` means leaving ends the session for everyone.
-func open(solo: bool, hosting: bool) -> void:
+## `abandons`: leaving now walks out on a saved run mid-shift, which counts as a wipe.
+func open(solo: bool, hosting: bool, abandons := false) -> void:
 	_title.text = "PAUSED" if solo else "MENU"
 	_note.text = "Take your time." if solo else "The night doesn't stop while you're in here."
+	if abandons:
+		_note.text += "\nLeaving mid-shift counts as the whole team being caught."
 	get_tree().paused = solo
 	_fullscreen.set_pressed_no_signal(DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN)
 	_leave.text = "End the session (everyone leaves)" if hosting else "Leave to the main menu"

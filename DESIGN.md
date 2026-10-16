@@ -28,7 +28,7 @@ A first-person co-op light-horror game for 1–4 players. The players are night 
 - **Employee badge.** Each computer gets a badge number the first time it plays. Guards type it into the time clock to clock in, and saved points are linked to it.
 - **Difficulty.** Auto picks one level per guard (capped at 3). The host can pick 1–3 instead; each option has an explanation on the menu.
 - **Hardcore.** Off (default): a wipe goes back to the last checkpoint (nights 1, 4, 7) keeping gear, with points halved. On: back to night 1 with nothing.
-- **Saving.** The host's computer saves after every night report (next night, difficulty, upgrades, doors, and each badge's points, item and flashlight). The menu offers to continue it.
+- **Saving.** The host's computer saves after every night report (next night, difficulty, upgrades, doors, and each badge's points, item and flashlight). The menu offers to continue it. Walking out mid-shift (quitting, a crash) counts as the whole team being caught: the next Continue applies the wipe rules (the checkpoint with half points; night 1 on Hardcore or in Overtime). The Esc menu warns about it.
 
 - **Voice chat.** Proximity voice (push to talk on V, or open mic). The dead hear the living; only ghosts hear ghosts. Monsters hear voices too: louder carries further (Lunch Lady, Librarian, Hall Monitor react), so keeping quiet is sometimes the way to survive.
 
