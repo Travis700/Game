@@ -130,7 +130,7 @@ func _request_use(doorway: int) -> void:
 	if broken[doorway]:
 		director.tell(peer, "It won't shut. Give it a minute.")
 		return
-	_health[doorway] = STRENGTH
+	# Opening and shutting it again doesn't mend it: the damage stays until it gives way.
 	_set_state.rpc(doorway, true, not closed[doorway], false)
 
 

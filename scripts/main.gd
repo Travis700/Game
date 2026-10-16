@@ -666,6 +666,9 @@ func _begin_hosting() -> void:
 	_mode = "Hosting"
 	menu.set_busy(false)
 	director.bake_navigation()
+	# Before the run starts, so a team daily gets the daily's night length, not the host's.
+	if _team_daily:
+		night.daily = Daily.today()
 	_start_run()
 	_enter_school()
 	_spawn_guard(1, Profile.employee_number, _player_name(), Career.rank(), _hat(), _perk(), Career.monsters_seen())
@@ -708,12 +711,13 @@ func _start_run() -> void:
 	night.hardcore = options["hardcore"]
 	night.grade = options["grade"]
 	# A custom shift: the same shift notes every night.
-	if not (options["notes"] as Array).is_empty():
+	if not (options["notes"] as Array).is_empty() and night.daily == "":
 		night.conditions.forced.assign(options["notes"])
 	# The daily shift is the same length for everyone.
 	night.seconds_per_minute = Night.SECONDS_PER_MINUTE if night.daily != "" else options["seconds_per_minute"]
 	_password = options["password"]
-	if not options["continue"]:
+	# The daily is a night on its own: the saved run stays out of it.
+	if not options["continue"] or night.daily != "":
 		return
 	var saved := RunSave.read()
 	night.number = clampi(int(saved.get("night", 1)), 1, 99)

@@ -655,6 +655,14 @@ func guard_by_peer(peer_id: int) -> Guard:
 	return players.get_node_or_null(str(peer_id)) as Guard
 
 
+## True while the Coach is watching this guard and blowing its whistle at them to run.
+func coached(guard: Guard) -> bool:
+	for node in _container.get_children():
+		if node is Coach and (node as Coach)._watching == guard:
+			return true
+	return false
+
+
 func nearest_living_guard(from: Vector3) -> Guard:
 	var best: Guard = null
 	var best_distance := INF

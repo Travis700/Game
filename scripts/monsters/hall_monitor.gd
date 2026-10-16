@@ -36,7 +36,8 @@ func think(delta: float) -> void:
 		move_to(noise, PATROL_SPEED * 2.0)
 	else:
 		patrol_step(HALL_ENDS, delta, PATROL_SPEED, Vector2.ZERO)
-	var runner := find_guard(SIGHT_RANGE, true, func(guard: Guard) -> bool: return guard.is_running)
+	# Not one the Coach is making run: the hallway has two sets of rules, and that one wins.
+	var runner := find_guard(SIGHT_RANGE, true, func(guard: Guard) -> bool: return guard.is_running and not director.coached(guard))
 	if runner == null:
 		runner = find_guard(HEAR_SHOUT, false, func(guard: Guard) -> bool:
 			return director.voice_level(guard) > LOUD_VOICE and distance_to_guard(guard) < director.voice_reach(guard, 0.0, HEAR_SHOUT))
