@@ -218,6 +218,7 @@ func set_inventory(points: int, item_name: String) -> void:
 
 ## The faint blue look and reminder while you're a ghost.
 func set_ghost(on: bool) -> void:
+	_is_ghost = on
 	if on:
 		_fear_target = 0.0
 	_ghost_tint.visible = on
@@ -370,7 +371,7 @@ func set_emf(level: int) -> void:
 ## Your nerve (0-100), shown below 100 while on shift. Turns red as it runs low.
 func set_nerve(value: float) -> void:
 	_nerve_bar.value = value
-	_fear_target = clampf((FEAR_FROM - value) / FEAR_FROM, 0.0, 1.0)
+	_fear_target = 0.0 if _is_ghost else clampf((FEAR_FROM - value) / FEAR_FROM, 0.0, 1.0)
 	_nerve_box.visible = value < 99.5
 	_nerve_bar.modulate = Color(1, 1, 1).lerp(Color(1.0, 0.3, 0.25), clampf(1.0 - value / 60.0, 0.0, 1.0))
 
@@ -379,6 +380,7 @@ func set_nerve(value: float) -> void:
 const FEAR_FROM := 70.0
 var _fear: ColorRect
 var _fear_target := 0.0
+var _is_ghost := false
 var _fear_now := 0.0
 
 

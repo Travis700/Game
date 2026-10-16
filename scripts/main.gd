@@ -232,7 +232,7 @@ func _ready() -> void:
 	director.announcement.connect(func(text: String, sound: String) -> void: _announce.rpc(text, sound))
 	director.camera_signal_changed.connect(func(index: int, working: bool) -> void: _camera_signal.rpc(index, working))
 	director.bell_changed.connect(func(ringing: bool) -> void: _set_bell.rpc(ringing))
-	director.summons_changed.connect(func(peer: int, seconds: float) -> void: _show_summons.rpc(peer, seconds))
+	director.summons_changed.connect(func(peer: int, seconds: float, held: bool) -> void: _show_summons.rpc(peer, seconds, held))
 	director.lockdown_changed.connect(func(on: bool, rule: String) -> void: _set_lockdown.rpc(on, rule))
 	school.bell_panel.used.connect(func(by: Node) -> void:
 		if by != _local_guard or _local_guard.is_dead:
@@ -306,6 +306,9 @@ func _ready() -> void:
 		var guard := director.guard_by_peer(peer)
 		if guard:
 			_kicked[guard.employee_number] = true
+		# And the badge they came with, in case they were lent a spare.
+		if _badge_sent.has(peer):
+			_kicked[_badge_sent[peer]] = true
 		_reject(peer, "The host removed you from the session."))
 	pause_menu.closed.connect(func() -> void:
 		if night.report.visible:
@@ -760,6 +763,12 @@ func _start_run() -> void:
 		else:
 			var back := Night.checkpoint_for(night.number, night.grade)
 			text = "Last time, the shift was abandoned. That counts as the whole team being caught: back to night %d, the last checkpoint, with half your points." % back
+			# The last night gets one more go, once a run, just as after a wipe.
+			if night.number == Night.LAST_NIGHT and not bool(saved.get("last_retried", false)):
+				back = Night.LAST_NIGHT
+				saved["last_retried"] = true
+				text = "Last time, the shift was abandoned. That counts as the whole team being caught: the district gives you one more go at the last night, with half your points."
+			saved["run_nights"] = int(saved.get("run_nights", 0)) + 1
 			night.number = back
 			for key: String in night.saved_points:
 				night.saved_points[key] = int(night.saved_points[key]) / 2
@@ -935,6 +944,8 @@ func _catch_up_late_joiner(peer_id: int) -> void:
 		_set_lockdown.rpc_id(peer_id, true, director.drill_rule)
 	if director.bell_ringing:
 		_set_bell.rpc_id(peer_id, true)
+	if director._summoned != 0:
+		_show_summons.rpc_id(peer_id, director._summoned, director._summon_left, director.finale or director.lockdown_left > 0.0)
 	if finale.active:
 		finale._set_active.rpc_id(peer_id, true)
 		finale._set_key.rpc_id(peer_id, finale.key_area, finale.key_holder, finale._key.global_position, finale.unlocked)
@@ -1016,6 +1027,7 @@ func _register_employee(badge: int, password: String, player_name := "", rank :=
 	if _kicked.has(badge):
 		_reject(peer_id, "The host removed you from this session.")
 		return
+	_badge_sent[peer_id] = badge
 	# Two copies of the game on one computer share a badge. Lend the second one a spare.
 	while badge < 1000 or _badge_in_use(badge):
 		badge = randi_range(1000, 9999)
@@ -1140,11 +1152,13 @@ func _update_guards_required(left_alive := false) -> void:
 		_start_night.rpc(night.number, night.pick_difficulty(), false, night.grade)
 
 
-## Host: tells a player why they can't join, then disconnects them once the message is through.
 ## Host: badges removed from this session (they can't come back in).
 var _kicked: Dictionary = {}
+## Host: the badge each peer joined with, before any spare was lent (so a kick sticks).
+var _badge_sent: Dictionary = {}
 
 
+## Host: tells a player why they can't join, then disconnects them once the message is through.
 func _reject(peer_id: int, reason: String) -> void:
 	_turn_away.rpc_id(peer_id, reason)
 	get_tree().create_timer(1.0).timeout.connect(func() -> void:
@@ -1255,23 +1269,28 @@ var _badge_typed := false
 ## Who the Principal has called to the office (0: nobody), and when their time is up.
 var _summons_peer := 0
 var _summons_until := 0
+## The host's summons clock is stopped (a lockdown or the finale): the countdown stands still.
+var _summons_held := false
+var _summons_held_left := 0
 
 
 @rpc("authority", "call_local", "reliable")
-func _show_summons(peer: int, seconds: float) -> void:
+func _show_summons(peer: int, seconds: float, held := false) -> void:
 	_summons_peer = peer
 	_summons_until = Time.get_ticks_msec() + int(seconds * 1000.0)
+	_summons_held = held
+	_summons_held_left = ceili(seconds)
 
 
 ## The summons, for the objective line: the one called gets a countdown, the rest a heads-up.
 func _summons_text() -> String:
 	if _summons_peer == 0:
 		return ""
-	var left := ceili((_summons_until - Time.get_ticks_msec()) / 1000.0)
+	var left := _summons_held_left if _summons_held else ceili((_summons_until - Time.get_ticks_msec()) / 1000.0)
 	if left <= 0:
 		return ""
 	if _summons_peer == multiplayer.get_unique_id():
-		return "THE PRINCIPAL WANTS YOU: get to the front office (%d s)." % left
+		return "THE PRINCIPAL WANTS YOU: get to the front office (%d s%s)." % [left, ", on hold" if _summons_held else ""]
 	var called := director.guard_by_peer(_summons_peer)
 	return "The Principal has called Guard %d to the front office." % called.slot if called else ""
 

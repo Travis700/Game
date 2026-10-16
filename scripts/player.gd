@@ -277,12 +277,31 @@ const MODEL_HAT_SCALE := 0.6
 
 ## On the model's head (so it moves with it), or on the plain head without a model.
 func _wear_hat(worn: Node3D) -> void:
+	_fade_with_body(worn)
 	var on_head := ModelKit.bone_anchor(_model, self, "Head", Vector3(0, MODEL_HEIGHT * 100.0 * MODEL_EYES, 1.0)) if _model else null
 	if on_head == null:
 		head.add_child(worn)
 		return
 	on_head.add_child(worn)
 	worn.scale = Vector3.ONE * MODEL_HAT_SCALE
+
+
+## The hat's materials join the body's, so a ghost's hat is as faint as the rest of them.
+func _fade_with_body(node: Node) -> void:
+	if node is MeshInstance3D:
+		var mesh := node as MeshInstance3D
+		if mesh.material_override is BaseMaterial3D:
+			mesh.material_override = mesh.material_override.duplicate()
+			_model_materials.append(mesh.material_override)
+		elif mesh.mesh:
+			for surface in mesh.mesh.get_surface_count():
+				var source := mesh.get_active_material(surface) as BaseMaterial3D
+				if source:
+					var material := source.duplicate() as BaseMaterial3D
+					mesh.set_surface_override_material(surface, material)
+					_model_materials.append(material)
+	for child in node.get_children():
+		_fade_with_body(child)
 
 
 ## Shows or hides this guard for the player on this computer. Ghosts are only visible to

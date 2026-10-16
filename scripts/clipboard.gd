@@ -202,6 +202,16 @@ func mark_entry(log_id: int, correct: bool, pay := "") -> void:
 	entry.add_theme_color_override("font_color", Color(0.15, 0.45, 0.2) if correct else Color(0.65, 0.12, 0.1))
 
 
+## A log that was neither right nor wrong (too late, or a repeat): greyed out, no pay.
+func mark_neutral(log_id: int) -> void:
+	var entry := _by_id.get(log_id) as Label
+	if entry == null or not is_instance_valid(entry):
+		return
+	_by_id.erase(log_id)
+	entry.text = "–  " + entry.text
+	entry.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
+
+
 func clear_entries() -> void:
 	_by_id.clear()
 	for child in _entries.get_children():

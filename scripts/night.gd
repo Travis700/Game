@@ -310,6 +310,8 @@ func _run_shift(delta: float) -> void:
 		hiding.release_all()
 		clutter.reset_all()
 		anomalies.put_away()
+		# Through the night: leaving now isn't abandoning the shift (it costs the night's pay).
+		save_run(number)
 		_morning_at = Time.get_ticks_msec()
 		# Morning: nerves settle (kept for the night's awards first).
 		_morning_nerve = nerve.levels.duplicate()
@@ -359,7 +361,7 @@ func _receive_log(area: String, type: String, named := "", log_id := 0) -> void:
 	if shift.state != Shift.State.ON_SHIFT and not (shift.state == Shift.State.MORNING
 			and Time.get_ticks_msec() - _morning_at < LATE_LOG_MSEC):
 		if shift.state == Shift.State.MORNING:
-			director.tell(_sender(), "Too late: the log closes at 6 AM.")
+			_log_note(_sender(), "Too late: the log closes at 6 AM.")
 		return
 	var peer := _sender()
 	var stats: Dictionary = _stats.get_or_add(peer, {"correct": 0, "false": 0})
@@ -370,6 +372,10 @@ func _receive_log(area: String, type: String, named := "", log_id := 0) -> void:
 	if type == "Monster":
 		found = director.check_log(peer, area, named)
 		correct = found != ""
+		if not correct and shift.state == Shift.State.MORNING:
+			# Sent just before six, but the monsters went home at six: nobody can check it now.
+			_log_note(peer, "Too late: the monsters had gone by the time your log came in.")
+			return
 	else:
 		correct = anomalies.check_log(peer, area, type, minutes)
 	if not correct and type == "Missing object":
@@ -432,7 +438,7 @@ func _receive_log(area: String, type: String, named := "", log_id := 0) -> void:
 	elif entry in logged and entry not in stats.get("warned", []):
 		# Already logged and paid for; the first repeat is just a reminder...
 		stats.get_or_add("warned", []).append(entry)
-		director.tell(peer, "You've already logged that one. Log it again with nothing new there and it counts as a false report.")
+		_log_note(peer, "You've already logged that one. Log it again with nothing new there and it counts as a false report.")
 	else:
 		stats["false"] += 1
 		_log_result(peer, false, "Nothing like that in %s.  -%d" % [area, false_report_points()])
@@ -444,6 +450,20 @@ func _log_result(peer: int, correct: bool, text: String) -> void:
 		_show_log_result(correct, text, _replying_to)
 	else:
 		_show_log_result.rpc_id(peer, correct, text, _replying_to)
+
+
+## Host: a log that's neither right nor wrong. The message, and the clipboard line greyed out.
+func _log_note(peer: int, text: String) -> void:
+	if peer == multiplayer.get_unique_id():
+		_show_log_note(text, _replying_to)
+	else:
+		_show_log_note.rpc_id(peer, text, _replying_to)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _show_log_note(text: String, log_id := 0) -> void:
+	hud.show_message(text)
+	clipboard.mark_neutral(log_id)
 
 
 @rpc("authority", "call_remote", "reliable")

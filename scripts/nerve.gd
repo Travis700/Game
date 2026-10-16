@@ -50,7 +50,13 @@ var _next_vision := 0.0
 
 func reset() -> void:
 	levels.clear()
-	_send_all()
+	# Sent the sure way: nothing re-sends it in the morning, and a lost one would leave the fear on.
+	for guard: Guard in players.get_children():
+		var peer_id := guard.name.to_int()
+		if peer_id == multiplayer.get_unique_id():
+			_set_mine(MAX)
+		elif peer_id in multiplayer.get_peers():
+			_reset_mine.rpc_id(peer_id)
 
 
 func update(delta: float) -> void:
@@ -129,6 +135,10 @@ func _send_all() -> void:
 
 func _send_to(peer_id: int) -> void:
 	var value: float = levels.get(peer_id, MAX)
+	# A ghost has nothing left to be afraid of: no fear on their screen.
+	var guard := director.guard_by_peer(peer_id) if director else null
+	if guard and guard.is_dead:
+		value = MAX
 	if peer_id == multiplayer.get_unique_id():
 		_set_mine(value)
 	elif peer_id in multiplayer.get_peers():
@@ -136,6 +146,11 @@ func _send_to(peer_id: int) -> void:
 
 
 # --- This computer's guard -----------------------------------------------------------------
+
+@rpc("authority", "call_remote", "reliable")
+func _reset_mine() -> void:
+	_set_mine(MAX)
+
 
 @rpc("authority", "call_remote", "unreliable_ordered")
 func _set_mine(value: float) -> void:

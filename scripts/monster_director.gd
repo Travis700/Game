@@ -11,7 +11,8 @@ extends Node3D
 ## A lockdown started or ended (everyone hears the alarm).
 ## `rule`: what this lockdown's drill asks of the guards ("" when it's off, or a plain hunt).
 ## Host: the Principal has called a guard to the office (`peer` 0: nobody's called).
-signal summons_changed(peer: int, seconds: float)
+## `held`: its clock is stopped for now (a lockdown or the finale outranks the office).
+signal summons_changed(peer: int, seconds: float, held: bool)
 signal lockdown_changed(on: bool, rule: String)
 signal screen_flashed(peer_id: int, color: Color, seconds: float)
 signal guard_caught(peer_id: int, by: String, from: Vector3)
@@ -564,7 +565,7 @@ func end_night() -> void:
 	_principal_on = false
 	_principal_out = false
 	if _summoned != 0:
-		summons_changed.emit(0, 0.0)
+		summons_changed.emit(0, 0.0, false)
 	_summoned = 0
 	for camera_index: int in _blackouts.keys():
 		camera_signal_changed.emit(camera_index, true)
@@ -1160,11 +1161,21 @@ func check_log(peer_id: int, area: String, named := "") -> String:
 
 # --- The Principal and the Ghost (host) ---------------------------------------------------
 
+var _summons_sync := 0.0
+
+
 func _update_principal(minutes: float, delta: float) -> void:
 	if not _principal_on or _principal_out:
 		return
+	var held := finale or lockdown_left > 0.0
+	if _summoned != 0:
+		# Everyone's countdown kept in step with this one, which stops when it's held.
+		_summons_sync -= delta
+		if _summons_sync <= 0.0:
+			_summons_sync = 1.0
+			summons_changed.emit(_summoned, _summon_left, held)
 	# A lockdown or the finale outranks the office: the summons waits (its clock stopped).
-	if finale or lockdown_left > 0.0:
+	if held:
 		return
 	if _summoned == 0:
 		if minutes < _next_summon:
@@ -1175,13 +1186,13 @@ func _update_principal(minutes: float, delta: float) -> void:
 			return
 		_summoned = guard.name.to_int()
 		_summon_left = SUMMON_SECONDS
-		summons_changed.emit(_summoned, SUMMON_SECONDS)
+		summons_changed.emit(_summoned, SUMMON_SECONDS, false)
 		announcement.emit("The intercom crackles: \"Guard %d. My office. Now.\"" % guard.slot, "intercom")
 		return
 	var summoned := guard_by_peer(_summoned)
 	if summoned == null or summoned.is_dead:
 		_summoned = 0
-		summons_changed.emit(0, 0.0)
+		summons_changed.emit(0, 0.0, false)
 		_next_summon = minutes + randf_range(SUMMON_EVERY.x, SUMMON_EVERY.y)
 		return
 	if SchoolBuilder.area_at(summoned.global_position) == "Front Office":
@@ -1191,7 +1202,7 @@ func _update_principal(minutes: float, delta: float) -> void:
 			career.stamp(_summoned, "Principal", "handled")
 		_answered_at = Time.get_ticks_msec()
 		_summoned = 0
-		summons_changed.emit(0, 0.0)
+		summons_changed.emit(0, 0.0, false)
 		_next_summon = minutes + randf_range(SUMMON_EVERY.x, SUMMON_EVERY.y)
 		return
 	var before := _summon_left
@@ -1203,7 +1214,7 @@ func _update_principal(minutes: float, delta: float) -> void:
 		_principal_out = true
 		spawn("principal", FRONT_OFFICE, {"target": _summoned})
 		_summoned = 0
-		summons_changed.emit(0, 0.0)
+		summons_changed.emit(0, 0.0, false)
 
 
 ## The guard room as a refuge, while it still is one (the doors give way from night 7).

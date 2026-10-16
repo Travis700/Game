@@ -521,7 +521,7 @@ func _update_interference(delta: float) -> void:
 			_burst_left[monitor] = maxf(_burst_left[monitor] - delta, 0.0)
 			_materials[monitor].set_shader_parameter("burst", _burst_left[monitor] / BURST_SECONDS)
 	_burst_check -= delta
-	if _burst_check > 0.0 or not SecurityCameras.GUARD_ROOM.has_point(local_guard.global_position) or shop == null or shop.director == null:
+	if _burst_check > 0.0 or not is_instance_valid(local_guard) or not local_guard.is_inside_tree() or not SecurityCameras.GUARD_ROOM.has_point(local_guard.global_position) or shop == null or shop.director == null:
 		return
 	_burst_check = 0.25
 	var live := shop.director.get_node_or_null("Live")
@@ -529,7 +529,7 @@ func _update_interference(delta: float) -> void:
 		return
 	for node in live.get_children():
 		var monster := node as Monster
-		if monster == null or monster.harmless or monster.disguised() or monster.state == "hidden":
+		if monster == null or not monster.is_inside_tree() or monster.harmless or monster.disguised() or monster.state == "hidden":
 			continue
 		var area := SchoolBuilder.area_at(monster.global_position)
 		for monitor in assignments.size():
