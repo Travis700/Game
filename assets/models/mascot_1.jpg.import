@@ -18,9 +18,9 @@ dest_files=["res://.godot/imported/mascot_1.jpg-b2fcaa49d3c4e62bc341aee42a007090
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.8
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
