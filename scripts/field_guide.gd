@@ -38,7 +38,7 @@ const ENTRIES := {
 	},
 	"Principal": {
 		"name": "the Principal", "where": "Front office",
-		"signs": "A voice on the intercom calling a guard to the office.",
+		"signs": "A voice on the intercom calling a guard to the office. A tall man in a suit whose face never comes into focus.",
 		"rule": "When you're called, go to the front office before time runs out, or it comes to find you.",
 		"rumour": "The intercom still works. Someone still uses it.",
 		"lore": "Oct 2. The intercom called me to the office. Principal Danvers retired in 1987. I went anyway. Better than the alternative.",

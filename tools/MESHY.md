@@ -17,3 +17,9 @@ from a text description, so it looks exactly like the notebook:
    block body stays as the fallback). Heights must clear the 2.4 m door frames.
 
 Cost so far: about 45 credits a monster (9 clean copy, 15 model, 5 rig, plus retries).
+
+## Touch-ups done by hand (no Meshy)
+
+- **The Principal's face:** `tools/paint_head.py` repaints the head in skin; the face itself is
+  `assets/models/principal_face.png` (cropped from the notebook drawing and smeared) on a curved
+  patch carried by the Head bone, with `smeared_face.gdshader` making it drift so it never focuses.
