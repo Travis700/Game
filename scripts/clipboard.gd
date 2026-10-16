@@ -1,7 +1,7 @@
 extends CanvasLayer
 ## Your clipboard: the incident log for tonight. Each guard has their own.
 ## Open it with Tab, pick where and what, and log it. The time is filled in for you.
-## You only find out how accurate your log was in the morning report.
+## Each line gets a tick or a cross (and what it paid) as soon as the host has checked it.
 
 ## `named` is the monster kind picked for a Monster log, or "" for "not sure".
 signal log_submitted(area: String, type: String, named: String)
@@ -15,6 +15,8 @@ var is_open := false
 
 var _header: Label
 var _entries: VBoxContainer
+## Lines still waiting for the host's verdict, by log number.
+var _by_id: Dictionary = {}
 var _empty_note: Label
 var _area: OptionButton
 var _type: OptionButton
@@ -177,13 +179,26 @@ func close() -> void:
 	closed.emit()
 
 
-func add_entry(time_text: String, area: String, type: String) -> void:
+func add_entry(time_text: String, area: String, type: String, log_id := 0) -> void:
 	_empty_note.visible = false
 	var entry := _label("%s   %s   —   %s" % [time_text, area, type], 18)
 	_entries.add_child(entry)
+	if log_id != 0:
+		_by_id[log_id] = entry
+
+
+## Ticks or crosses a line once the host has checked it, with what it paid.
+func mark_entry(log_id: int, correct: bool, pay := "") -> void:
+	var entry := _by_id.get(log_id) as Label
+	if entry == null or not is_instance_valid(entry):
+		return
+	_by_id.erase(log_id)
+	entry.text = ("✓  " if correct else "✗  ") + entry.text + ("   " + pay if pay != "" else "")
+	entry.add_theme_color_override("font_color", Color(0.15, 0.45, 0.2) if correct else Color(0.65, 0.12, 0.1))
 
 
 func clear_entries() -> void:
+	_by_id.clear()
 	for child in _entries.get_children():
 		if child != _empty_note:
 			child.queue_free()

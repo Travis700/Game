@@ -331,11 +331,18 @@ func _run_shift(delta: float) -> void:
 
 
 func _on_log_submitted(area: String, type: String, named := "") -> void:
-	clipboard.add_entry(time_text(), area, type if named == "" else FieldGuide.display_name(named).capitalize())
+	# Each log carries a number so its line on the clipboard gets the right tick or cross.
+	_log_serial += 1
+	clipboard.add_entry(time_text(), area, type if named == "" else FieldGuide.display_name(named).capitalize(), _log_serial)
 	if multiplayer.is_server():
-		_receive_log(area, type, named)
+		_receive_log(area, type, named, _log_serial)
 	else:
-		_receive_log.rpc_id(1, area, type, named)
+		_receive_log.rpc_id(1, area, type, named, _log_serial)
+
+
+var _log_serial := 0
+## Host: the number of the log being answered right now (0: none).
+var _replying_to := 0
 
 
 ## How long after 6 AM a log that was on its way still counts.
@@ -344,9 +351,10 @@ var _morning_at := 0
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _receive_log(area: String, type: String, named := "") -> void:
+func _receive_log(area: String, type: String, named := "", log_id := 0) -> void:
 	if not multiplayer.is_server():
 		return
+	_replying_to = log_id
 	# A log sent just before 6 AM still counts; after that, the night's over.
 	if shift.state != Shift.State.ON_SHIFT and not (shift.state == Shift.State.MORNING
 			and Time.get_ticks_msec() - _morning_at < LATE_LOG_MSEC):
@@ -433,14 +441,17 @@ func _receive_log(area: String, type: String, named := "") -> void:
 ## Host: tells a guard straight away whether their log was right.
 func _log_result(peer: int, correct: bool, text: String) -> void:
 	if peer == multiplayer.get_unique_id():
-		_show_log_result(correct, text)
+		_show_log_result(correct, text, _replying_to)
 	else:
-		_show_log_result.rpc_id(peer, correct, text)
+		_show_log_result.rpc_id(peer, correct, text, _replying_to)
 
 
 @rpc("authority", "call_remote", "reliable")
-func _show_log_result(correct: bool, text: String) -> void:
+func _show_log_result(correct: bool, text: String, log_id := 0) -> void:
 	hud.show_message(("✓ " if correct else "✗ ") + text)
+	# The pay at the end of the message ("+25", "-10"), if any, goes on the clipboard line too.
+	var pay := RegEx.create_from_string("([+-]\\d+)\\s*$").search(text)
+	clipboard.mark_entry(log_id, correct, pay.get_string(1) if pay else "")
 	var tune: Array = [880.0, 1320.0] if correct else [220.0, 165.0]
 	SoundBank.play_flat(self, "ui_confirm" if correct else "ui_error", -2.0, Sfx.notes(tune, 0.1, 0.25, "sine" if correct else "square"))
 
