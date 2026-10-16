@@ -333,7 +333,19 @@ def locker():
     normal.save(os.path.join(OUT, 'locker_n.png'))
 
 
+def flag():
+    """The school's flag for the pole out front."""
+    w, h = 600, 400
+    img = Image.new('RGB', (w, h), NAVY)
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, h * 0.78, w, h], fill=GOLD)
+    lines(d, w, 40, ['W'], TITLE, 230, GOLD)
+    lines(d, w, h * 0.82, ['WESTFIELD'], TITLE, 56, NAVY)
+    img.save(os.path.join(OUT, 'flag.png'))
+
+
 posters()
+flag()
 menu()
 locker()
 bookcase()

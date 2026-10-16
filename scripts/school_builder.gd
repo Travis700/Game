@@ -132,6 +132,7 @@ func _ready() -> void:
 	# After the main building's cameras, so those come first on the monitors.
 	_build_classroom_wing()
 	_build_science_wing()
+	_build_facade()
 	_merge_static_meshes()
 
 
@@ -221,6 +222,8 @@ func _make_materials() -> void:
 	_add_mat("jar", Color(0.55, 0.75, 0.45), 0.1, Color(0.3, 0.5, 0.2), 0.6, 0.55)
 	_make_gym_materials()
 	_add_mat("linen", Color(0.85, 0.86, 0.84), 0.95)
+	_add_mat("window_out", Color(0.05, 0.06, 0.08), 0.08)
+	_add_mat("window_lit", Color(0.3, 0.25, 0.15), 0.2, Color(1.0, 0.82, 0.5), 0.9)
 	_add_mat("baseboard", Color(0.1, 0.1, 0.11), 0.7)
 	_add_mat("door_frame", Color(0.24, 0.27, 0.3), 0.45)
 	_add_mat("tray", Color(0.45, 0.6, 0.66), 0.5)
@@ -1083,6 +1086,72 @@ func _ball(pos: Vector3) -> void:
 	add_child(ball)
 
 
+# --- Outside -------------------------------------------------------------------
+
+## The front of the school, which the crew walks up to every night: a band of windows (dark
+## glass outside, moonlight inside; the guard room's are lit), a parapet along the roof, a canopy
+## over the doors with the school's name, a flagpole, and a covered car out on the street.
+func _build_facade() -> void:
+	# Where windows can't go: the doors, the classroom boards (and their clocks) on the front wall.
+	var skip: Array[Vector2] = [Vector2(-3.4, 3.4), Vector2(-49.8, -44.2), Vector2(-63.8, -58.2)]
+	var x := -78.4
+	while x < 79.0:
+		var clear := true
+		for span in skip:
+			if x + 0.9 > span.x and x - 0.9 < span.y:
+				clear = false
+		if clear:
+			_front_window(x, x > 6.0 and x < 20.0)
+		x += 3.2
+	_box(Vector3(0, WALL_H + 0.2, 20.05), Vector3(160.5, 0.5, 0.45), "concrete", false)
+	# The entrance canopy.
+	_box(Vector3(0, 3.0, 21.6), Vector3(6.4, 0.28, 3.0), "concrete", false)
+	_box(Vector3(0, 3.0, 23.07), Vector3(6.5, 0.5, 0.08), "concrete", false)
+	for side: float in [-1.0, 1.0]:
+		_box(Vector3(side * 2.95, 1.43, 22.8), Vector3(0.26, 2.86, 0.26), "concrete")
+	_flagpole(Vector3(8.0, 0, 27.0))
+	_solid_model("prop_covered_car", Vector3(-11.0, 0, 62.6), 1.35, PI * 0.5, Vector3(4.3, 1.35, 1.8))
+
+
+func _front_window(x: float, lit: bool) -> void:
+	const SIZE := Vector2(1.6, 0.8)
+	const Y := 2.6
+	_box(Vector3(x, Y, 20.0 + WALL_T * 0.5 + 0.01), Vector3(SIZE.x, SIZE.y, 0.02), "window_lit" if lit else "window_out", false)
+	_box(Vector3(x, Y, 20.0 - WALL_T * 0.5 - 0.01), Vector3(SIZE.x, SIZE.y, 0.02), "night_window", false)
+	for side: float in [-1.0, 1.0]:
+		var face := 20.0 + side * (WALL_T * 0.5 + 0.025)
+		_box(Vector3(x, Y, face), Vector3(0.04, SIZE.y, 0.03), "door_frame", false)
+		_box(Vector3(x, Y + SIZE.y * 0.5 + 0.025, face), Vector3(SIZE.x + 0.1, 0.05, 0.03), "door_frame", false)
+		_box(Vector3(x, Y - SIZE.y * 0.5 - 0.025, face), Vector3(SIZE.x + 0.1, 0.05, 0.03), "door_frame", false)
+	_box(Vector3(x, Y - SIZE.y * 0.5 - 0.07, 20.0 + WALL_T * 0.5 + 0.06), Vector3(SIZE.x + 0.2, 0.06, 0.14), "concrete", false)
+
+
+func _flagpole(base: Vector3) -> void:
+	const HEIGHT := 9.0
+	_box(base + Vector3(0, 0.15, 0), Vector3(0.8, 0.3, 0.8), "concrete")
+	var pole := CylinderMesh.new()
+	pole.top_radius = 0.04
+	pole.bottom_radius = 0.07
+	pole.height = HEIGHT
+	pole.radial_segments = 10
+	var mast := MeshInstance3D.new()
+	mast.mesh = pole
+	mast.material_override = _mats["steel"]
+	mast.position = base + Vector3(0, HEIGHT * 0.5 + 0.3, 0)
+	add_child(mast)
+	var cloth := StandardMaterial3D.new()
+	cloth.albedo_texture = load("res://assets/textures/school/flag.png")
+	cloth.cull_mode = BaseMaterial3D.CULL_DISABLED
+	cloth.roughness = 1.0
+	var quad := QuadMesh.new()
+	quad.size = Vector2(1.5, 1.0)
+	var flag := MeshInstance3D.new()
+	flag.mesh = quad
+	flag.material_override = cloth
+	flag.position = base + Vector3(0.8, HEIGHT - 0.4, 0)
+	add_child(flag)
+
+
 # --- Furnishing ---------------------------------------------------------------
 
 ## A ready-made model that's also solid: an invisible box of `solid` size, standing on the floor
@@ -1227,7 +1296,7 @@ func _chair(pos: Vector3, desk := -1, solid := true) -> void:
 
 
 func _build_signs() -> void:
-	_sign(SCHOOL_NAME, Vector3(0, 3.05, 20.2), Vector3.BACK, 72)
+	_sign(SCHOOL_NAME, Vector3(0, 3.0, 23.08), Vector3.BACK, 72)
 	_sign("STAFF ENTRANCE", Vector3(0, 2.75, 45.06), Vector3.BACK, 44, Color(1, 0.85, 0.4))
 	_sign("SECURITY", Vector3(5.85, 2.7, 15.0), Vector3.LEFT)
 	_sign("FRONT OFFICE", Vector3(-5.85, 2.7, 15.0), Vector3.RIGHT)

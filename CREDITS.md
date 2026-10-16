@@ -57,6 +57,7 @@ with `tools/slim_glb.py`. In `assets/models/` as `prop_<asset>.glb`.
 | Television 02 | Benny Weimer |
 | Plastic Broom | L |
 | Multi Cleaner 5 Litre | James Ray Cock |
+| Covered Car | MP |
 
 ## School art: made for this game
 
