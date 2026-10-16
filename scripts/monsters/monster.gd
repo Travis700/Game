@@ -163,7 +163,8 @@ func _build_body() -> void:
 
 # A rigged model's walk/run animations, driven by how fast it's really moving (every computer).
 var _moves: AnimationPlayer
-var _model_height := 1.8
+var _model: Node3D
+var _model_height := 0.0
 var _last_spot := Vector3.INF
 var _pace_seen := 0.0
 
@@ -173,6 +174,7 @@ func use_model(model_name: String, height: float) -> bool:
 	var model := ModelKit.add(self, model_name, height, PI, visual_layers)
 	if model == null:
 		return false
+	_model = model
 	_moves = ModelKit.moves(model)
 	_model_height = height
 	# Stand in the walk's first frame rather than the stiff arms-out pose it was rigged in.
@@ -181,6 +183,50 @@ func use_model(model_name: String, height: float) -> bool:
 		_moves.seek(0.0, true)
 		_moves.pause()
 	return true
+
+
+## The rigged model's skeleton, or null for a block body.
+func skeleton() -> Skeleton3D:
+	return _model.find_child("Skeleton3D", true, false) as Skeleton3D if _model != null else null
+
+
+## A spot that rides on one of the model's bones: `at` is where it sits in the rest pose, in
+## the skeleton's space (centimetres, model facing +Z). Children use ordinary monster space
+## (metres, facing -Z). Null if there's no such bone.
+func bone_anchor(bone: String, at: Vector3) -> Node3D:
+	var bones := skeleton()
+	if bones == null or bones.find_bone(bone) < 0:
+		return null
+	var attach := BoneAttachment3D.new()
+	attach.bone_name = bone
+	bones.add_child(attach)
+	var anchor := Node3D.new()
+	var rest := bones.get_bone_global_rest(bones.find_bone(bone))
+	var shrink := global_basis.get_scale().x / bones.global_basis.get_scale().x
+	anchor.transform = rest.affine_inverse() * Transform3D(Basis(Vector3.UP, PI).scaled(Vector3.ONE * shrink), at)
+	attach.add_child(anchor)
+	return anchor
+
+
+## Where a bone sits in the rest pose, in the skeleton's space (see bone_anchor).
+func bone_rest(bone: String) -> Vector3:
+	var bones := skeleton()
+	if bones == null or bones.find_bone(bone) < 0:
+		return Vector3.ZERO
+	return bones.get_bone_global_rest(bones.find_bone(bone)).origin
+
+
+## Bends a bone on top of the animation (see BoneTweak). Null without a rig.
+func tweak_bone(bone: String, axis: Vector3, angle: float) -> BoneTweak:
+	var bones := skeleton()
+	if bones == null or bones.find_bone(bone) < 0:
+		return null
+	var tweak := BoneTweak.new()
+	tweak.bone = bone
+	tweak.axis = axis
+	tweak.angle = angle
+	bones.add_child(tweak)
+	return tweak
 
 
 func _process(delta: float) -> void:
@@ -192,7 +238,7 @@ func _process(delta: float) -> void:
 		_pace_seen = lerpf(_pace_seen, moved, minf(1.0, delta * 8.0))
 	_last_spot = spot
 	# The clips were made at about 1.7 m tall: a taller body covers more ground per stride.
-	var stride := _model_height / 1.7
+	var stride := maxf(_model_height, 0.5) / 1.7
 	if _pace_seen < 0.15:
 		if _moves.is_playing():
 			_moves.pause()

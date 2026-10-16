@@ -52,6 +52,8 @@ func _on_state_changed(new_state: String) -> void:
 
 
 func _build_body() -> void:
+	if use_model("twin", 1.25):
+		return
 	var dress := Color(0.55, 0.62, 0.78)
 	part(capsule(0.22, 1.25), dress, Vector3(0, 0.62, 0))
 	part(box(Vector3(0.5, 0.45, 0.36)), dress.darkened(0.15), Vector3(0, 0.3, 0))

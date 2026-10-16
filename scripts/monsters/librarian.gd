@@ -120,6 +120,8 @@ func _on_state_changed(new_state: String) -> void:
 
 
 func _build_body() -> void:
+	if use_model("librarian", 1.95):
+		return
 	var cardigan := Color(0.25, 0.18, 0.22)
 	var body := part(capsule(0.3, 1.5), cardigan, Vector3(0, 0.75, 0.1))
 	body.rotation_degrees.x = 15.0

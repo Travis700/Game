@@ -132,6 +132,8 @@ func _on_state_changed(new_state: String) -> void:
 
 
 func _build_body() -> void:
+	if use_model("substitute", 1.8):
+		return
 	var cardigan := Color(0.33, 0.35, 0.2)
 	part(capsule(0.26, 1.9), cardigan, Vector3(0, 0.95, 0))
 	part(box(Vector3(0.5, 0.7, 0.36)), Color(0.55, 0.5, 0.42), Vector3(0, 0.45, 0))

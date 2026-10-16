@@ -66,6 +66,9 @@ func _process(delta: float) -> void:
 
 
 func _build_body() -> void:
+	if use_model("ghost", 1.9):
+		ModelKit.ghostly(_model, Color(0.7, 0.8, 1.0, 0.28), 0.5)
+		return
 	var pale := Color(0.75, 0.85, 1.0)
 	part(capsule(0.33, 1.75), pale, Vector3(0, 0.88, 0), 1.2, 0.55)
 	part(sphere(0.16), pale, Vector3(0, 1.85, 0), 1.5, 0.6)

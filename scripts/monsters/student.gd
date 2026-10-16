@@ -96,6 +96,8 @@ func _arrive() -> void:
 
 
 func _build_body() -> void:
+	if use_model("student", 1.35):
+		return
 	part(capsule(0.22, 1.25), Color(0.2, 0.35, 0.55), Vector3(0, 0.63, 0))
 	part(box(Vector3(0.36, 0.38, 0.14)), Color(0.55, 0.15, 0.15), Vector3(0, 0.95, 0.22))
 	part(sphere(0.13), Color(0.75, 0.62, 0.52), Vector3(0, 1.38, 0))

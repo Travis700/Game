@@ -47,13 +47,11 @@ commercial use before release.
 
 ## 3D models: generated for this game
 
-- `assets/models/hall_monitor.glb`, `lunch_lady.glb`, `principal.glb` (and their `_run.glb`
-  animations): made with Meshy from the field-guide drawings (clean copy, image to 3D, auto-rig
-  with walking and running clips); see `tools/MESHY.md`.
-- `assets/models/mascot.glb`: the Mascot, made with Meshy (meshy.ai) from a text description,
-  remeshed to about 12,500 triangles; textures shrunk to 1024 px JPEG by
-  `tools/slim_glb.py`. Make sure the Meshy account's plan gives commercial rights before
-  release (free-plan output is CC BY 4.0 and needs a credit line).
+- Every monster model in `assets/models/` (and the `_run.glb` animations): made with Meshy from the
+  field-guide drawings (clean copy, image to 3D, auto-rig with walking and running clips); see
+  `tools/MESHY.md`. The Principal's face is the notebook drawing itself, smudged.
+- Make sure the Meshy account's plan gives commercial rights before release (free-plan output is
+  CC BY 4.0 and needs a credit line).
 
 ## Icon, key art and store capsules
 

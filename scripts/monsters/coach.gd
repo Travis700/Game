@@ -90,6 +90,8 @@ func _on_state_changed(new_state: String) -> void:
 
 
 func _build_body() -> void:
+	if use_model("coach", 1.85):
+		return
 	var tracksuit := Color(0.12, 0.22, 0.5)
 	part(capsule(0.3, 1.85), tracksuit, Vector3(0, 0.92, 0))
 	part(box(Vector3(0.62, 0.1, 0.4)), Color(0.95, 0.95, 0.95), Vector3(0, 1.3, 0))

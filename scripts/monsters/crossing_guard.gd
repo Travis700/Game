@@ -25,6 +25,9 @@ var _stop_left := 0.0
 var _target: Guard
 var _charge_left := 0.0
 var _sign: Node3D
+var _arm: BoneTweak
+var _hand: Node3D
+var _raised := false
 
 
 func _init() -> void:
@@ -77,8 +80,9 @@ func _charge(delta: float) -> void:
 
 
 func _on_state_changed(new_state: String) -> void:
-	if _sign:
-		var raised := new_state == "stop" or new_state == "charge"
+	_raised = new_state == "stop" or new_state == "charge"
+	if _sign and _hand == null:
+		var raised := _raised
 		_sign.position = Vector3(0.35, 1.9, -0.2) if raised else Vector3(0.35, 0.9, -0.1)
 		_sign.rotation_degrees.x = 0.0 if raised else -70.0
 	if new_state == "stop":
@@ -91,13 +95,34 @@ func _on_state_changed(new_state: String) -> void:
 			clear.pitch_scale = 1.15
 
 
+## How far the arm swings up to hold the sign over its head (skeleton space, about the
+## model's forward axis).
+const ARM_RAISE := -115.0
+
+
+func _process(delta: float) -> void:
+	super(delta)
+	if _arm == null or _sign == null:
+		return
+	_arm.amount = move_toward(_arm.amount, 1.0 if _raised else 0.0, delta * 4.0)
+	# The sign is in the hand: held up high, or resting by its side with the pole on the floor.
+	var tilt := lerpf(-8.0, 0.0, _arm.amount)
+	_sign.global_transform = Transform3D(global_basis * Basis(Vector3.RIGHT, deg_to_rad(tilt)), _hand.global_position)
+
+
 func _build_body() -> void:
-	part(capsule(0.27, 1.7), Color(0.2, 0.2, 0.25), Vector3(0, 0.85, 0))
-	part(box(Vector3(0.58, 0.75, 0.4)), Color(1.0, 0.45, 0.05), Vector3(0, 1.15, 0), 0.5)
-	part(box(Vector3(0.6, 0.06, 0.42)), Color(0.9, 0.9, 0.7), Vector3(0, 1.1, 0), 1.2)
-	part(sphere(0.15), Color(0.7, 0.62, 0.55), Vector3(0, 1.85, 0))
-	part(box(Vector3(0.34, 0.08, 0.36)), Color(0.95, 0.95, 0.95), Vector3(0, 1.98, -0.03))
-	part(box(Vector3(0.3, 0.03, 0.14)), Color(0.95, 0.95, 0.95), Vector3(0, 1.95, -0.2))
+	if use_model("crossing_guard", 1.75):
+		_arm = tweak_bone("RightArm", Vector3(0, 0, 1), deg_to_rad(ARM_RAISE))
+		_hand = bone_anchor("RightHand", bone_rest("RightHand"))
+		if _arm != null:
+			_arm.amount = 0.0
+	else:
+		part(capsule(0.27, 1.7), Color(0.2, 0.2, 0.25), Vector3(0, 0.85, 0))
+		part(box(Vector3(0.58, 0.75, 0.4)), Color(1.0, 0.45, 0.05), Vector3(0, 1.15, 0), 0.5)
+		part(box(Vector3(0.6, 0.06, 0.42)), Color(0.9, 0.9, 0.7), Vector3(0, 1.1, 0), 1.2)
+		part(sphere(0.15), Color(0.7, 0.62, 0.55), Vector3(0, 1.85, 0))
+		part(box(Vector3(0.34, 0.08, 0.36)), Color(0.95, 0.95, 0.95), Vector3(0, 1.98, -0.03))
+		part(box(Vector3(0.3, 0.03, 0.14)), Color(0.95, 0.95, 0.95), Vector3(0, 1.95, -0.2))
 	_sign = Node3D.new()
 	add_child(_sign)
 	var pole := part(box(Vector3(0.04, 1.1, 0.04)), Color(0.6, 0.6, 0.6), Vector3.ZERO)

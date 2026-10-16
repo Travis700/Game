@@ -125,6 +125,8 @@ func _on_state_changed(new_state: String) -> void:
 
 
 func _build_body() -> void:
+	if use_model("specimen", 0.6):
+		return
 	var skin := Color(0.78, 0.76, 0.66)
 	var torso := part(capsule(0.2, 1.0), skin, Vector3(0, 0.3, 0))
 	torso.rotation_degrees.x = 90.0

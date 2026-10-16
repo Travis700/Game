@@ -89,11 +89,13 @@ func _build_sign() -> Node3D:
 
 
 func _build_person(with_cart: bool) -> void:
-	part(capsule(0.28, 1.65), Color(0.32, 0.4, 0.5), Vector3(0, 0.83, 0))
-	part(sphere(0.15), Color(0.72, 0.6, 0.5), Vector3(0, 1.78, 0))
-	part(box(Vector3(0.3, 0.08, 0.32)), Color(0.12, 0.15, 0.25), Vector3(0, 1.9, -0.03))
-	for side: float in [-1.0, 1.0]:
-		part(sphere(0.07), Color(0.95, 0.85, 0.1), Vector3(side * 0.3, 1.0, -0.15))
+	# Both cleaners wear the same model: telling them apart is the whole point.
+	if not use_model("other_cleaner", 1.8):
+		part(capsule(0.28, 1.65), Color(0.32, 0.4, 0.5), Vector3(0, 0.83, 0))
+		part(sphere(0.15), Color(0.72, 0.6, 0.5), Vector3(0, 1.78, 0))
+		part(box(Vector3(0.3, 0.08, 0.32)), Color(0.12, 0.15, 0.25), Vector3(0, 1.9, -0.03))
+		for side: float in [-1.0, 1.0]:
+			part(sphere(0.07), Color(0.95, 0.85, 0.1), Vector3(side * 0.3, 1.0, -0.15))
 	if with_cart:
 		part(box(Vector3(0.6, 0.5, 0.5)), Color(0.95, 0.8, 0.1), Vector3(0, 0.3, -0.75))
 		part(box(Vector3(0.04, 1.3, 0.04)), Color(0.5, 0.4, 0.3), Vector3(0.22, 0.95, -0.75))

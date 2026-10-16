@@ -94,6 +94,8 @@ func _process(delta: float) -> void:
 
 
 func _build_body() -> void:
+	if use_model("nurse", 1.7):
+		return
 	var white := Color(0.88, 0.88, 0.86)
 	part(capsule(0.27, 1.7), white, Vector3(0, 0.85, 0))
 	part(sphere(0.15), Color(0.8, 0.76, 0.72), Vector3(0, 1.85, 0))

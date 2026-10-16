@@ -27,6 +27,7 @@ var _still_for := 0.0
 var _warned := false
 var _step_left := 0.0
 var _uniform: StandardMaterial3D
+var _dyed: Array[BaseMaterial3D] = []
 var _next_line := randf_range(10.0, 25.0)
 
 
@@ -119,16 +120,22 @@ func _pick_target() -> Guard:
 
 ## Wears the uniform of whichever guard it's copying.
 func _on_state_changed(new_state: String) -> void:
-	if _uniform == null:
-		return
 	var slot := new_state.right(1).to_int()
 	if slot >= 1:
-		_uniform.albedo_color = Guard.UNIFORM_COLORS[(slot - 1) % Guard.UNIFORM_COLORS.size()]
+		var colour: Color = Guard.UNIFORM_COLORS[(slot - 1) % Guard.UNIFORM_COLORS.size()]
+		if _uniform != null:
+			_uniform.albedo_color = colour
+		# The model's texture is khaki; the tint (brightened, since it multiplies) dyes it.
+		for material in _dyed:
+			material.albedo_color = (colour * 1.8).clamp()
 	if new_state.begins_with("step"):
 		SoundBank.play_at(self, "rush_steps", 0.0, 25.0, Sfx.notes([196.0, 0.0, 196.0, 0.0, 196.0], 0.1, 0.3, "saw"))
 
 
 func _build_body() -> void:
+	if use_model("understudy", 1.8):
+		_dyed = ModelKit.own_materials(_model)
+		return
 	var body := part(capsule(0.35, 1.75), Guard.UNIFORM_COLORS[0], Vector3(0, 0.875, 0))
 	_uniform = body.material_override as StandardMaterial3D
 	part(box(Vector3(0.42, 0.14, 0.12)), Color(0.02, 0.02, 0.03), Vector3(0, 1.6, -0.3))

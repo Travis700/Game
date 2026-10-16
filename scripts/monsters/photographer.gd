@@ -134,6 +134,8 @@ func _whine() -> AudioStreamWAV:
 
 
 func _build_body() -> void:
+	if use_model("photographer", 2.05):
+		return
 	part(capsule(0.27, 1.75), Color(0.35, 0.3, 0.26), Vector3(0, 0.88, 0))
 	part(sphere(0.15), Color(0.78, 0.74, 0.68), Vector3(0, 1.88, 0))
 	# The camera, held up to where its face should be, and the flash on top.

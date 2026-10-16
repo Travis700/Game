@@ -75,6 +75,39 @@ static func _pin_in_place(animation: Animation) -> void:
 			animation.track_set_key_value(track, key, Vector3(start.x, at.y, start.z))
 
 
+## Makes every surface of the model see-through and faintly glowing, e.g. the Ghost.
+static func ghostly(model: Node3D, tint: Color, glow: float) -> void:
+	var meshes: Array[MeshInstance3D] = []
+	_collect(model, meshes)
+	for mesh in meshes:
+		for surface in mesh.mesh.get_surface_count():
+			var source := mesh.get_active_material(surface) as BaseMaterial3D
+			var material := (source.duplicate() if source else StandardMaterial3D.new()) as BaseMaterial3D
+			material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			material.albedo_color = tint
+			material.emission_enabled = true
+			material.emission = Color(tint, 1.0)
+			material.emission_energy_multiplier = glow
+			material.cull_mode = BaseMaterial3D.CULL_DISABLED
+			mesh.set_surface_override_material(surface, material)
+
+
+## Every material on the model, made unique so it can be recoloured (e.g. the Understudy).
+static func own_materials(model: Node3D) -> Array[BaseMaterial3D]:
+	var found: Array[BaseMaterial3D] = []
+	var meshes: Array[MeshInstance3D] = []
+	_collect(model, meshes)
+	for mesh in meshes:
+		for surface in mesh.mesh.get_surface_count():
+			var source := mesh.get_active_material(surface) as BaseMaterial3D
+			if source == null:
+				continue
+			var material := source.duplicate() as BaseMaterial3D
+			mesh.set_surface_override_material(surface, material)
+			found.append(material)
+	return found
+
+
 static func _collect(node: Node, into: Array[MeshInstance3D]) -> void:
 	if node is MeshInstance3D:
 		into.append(node)

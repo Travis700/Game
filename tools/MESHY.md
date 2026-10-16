@@ -16,7 +16,17 @@ from a text description, so it looks exactly like the notebook:
 5. **Use it:** in the monster's `_build_body()`, `if use_model("<name>", height): return` (the
    block body stays as the fallback). Heights must clear the 2.4 m door frames.
 
-Cost so far: about 45 credits a monster (9 clean copy, 15 model, 5 rig, plus retries).
+Cost: about 30 credits a monster (9 clean copy, 15 model, 5 rig).
+
+## Special cases
+
+- **Specimen:** crawling pose, no rig (`image-to-3d` without `--pose-mode`).
+- **Twins:** one girl's model, used for both.
+- **Cleaners:** the night cleaner and the Other Cleaner share `other_cleaner.glb`; the Other
+  Cleaner's head leans further (`tweak_bone`) and its eyes (`bone_anchor` on Head) glow red.
+- **Crossing Guard:** the STOP sign follows the RightHand bone; `BoneTweak` lifts the arm.
+- **Ghost:** `ModelKit.ghostly()` makes it see-through. **Understudy:** recoloured per guard.
+- Big held props (the mop, the heart monitor) are left out of the clean copy: they'd break the rig.
 
 ## Touch-ups done by hand (no Meshy)
 
