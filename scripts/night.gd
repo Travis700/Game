@@ -637,7 +637,12 @@ func fail_night() -> void:
 	save_run(1)
 
 
-## The team's work target tonight: each extra guard adds 60% of one guard's share, since a
+## How much of one guard's work target each extra guard adds (the team shares one school's
+## worth of anomalies and stations).
+const TEAM_SHARE := 0.4
+
+
+## The team's work target tonight: each extra guard adds 40% of one guard's share, since a
 ## team shares one school's worth of anomalies.
 ## Host: how many guards clocked in for tonight's shift.
 var _shift_team := 1
@@ -687,7 +692,7 @@ func shift_team() -> int:
 
 
 func quota_for(team: int) -> int:
-	return int((QUOTA_BASE + QUOTA_PER_NIGHT * number) * (1.0 + 0.6 * (maxi(team, 1) - 1)))
+	return int((QUOTA_BASE + QUOTA_PER_NIGHT * number) * (1.0 + TEAM_SHARE * (maxi(team, 1) - 1)))
 
 
 ## Host: a guard never answered the Principal's summons. It's noted on their pay.
@@ -733,7 +738,7 @@ func dock(peer: int, amount: int) -> void:
 ## Host: the team's work so far, less what the stations still unpunched would cost at 6 AM
 ## (a station's pay, scaled like the target is for the team's size).
 func _work_after_round() -> int:
-	var team_factor := 1.0 + 0.6 * (shift_team() - 1)
+	var team_factor := 1.0 + TEAM_SHARE * (shift_team() - 1)
 	return maxi(_team_work() - int(rounds.missed_count() * rounds.punch_points() * team_factor), 0)
 
 
@@ -759,7 +764,7 @@ func _send_quota() -> void:
 	var text := ""
 	if quota_target > 0:
 		text = "Work target: %d / %d" % [_team_work(), quota_target]
-		var owed := int(rounds.missed_count() * rounds.punch_points() * (1.0 + 0.6 * (shift_team() - 1)))
+		var owed := int(rounds.missed_count() * rounds.punch_points() * (1.0 + TEAM_SHARE * (shift_team() - 1)))
 		if _work_after_round() >= quota_target:
 			text += " (met)"
 		elif owed > 0:

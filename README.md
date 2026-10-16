@@ -72,7 +72,7 @@ invite or the Steam overlay instead, with no ports to forward.
    punched, -10 each per station missed, and -50 for every guard caught that night (everyone pays;
    a revive at a totem refunds it). It also shows the XP everyone earned.
 
-**Work target:** from night 2 the team must earn (30 + 22 × night) points from work, plus 60% of that for each
+**Work target:** from night 2 the team must earn (30 + 22 × night) points from work, plus 40% of that for each
 extra guard: correct logs, named monsters and punched stations, minus false reports (not clocking out). Miss it and everyone gets a write-up; three write-ups
 and the team is fired, back to the last checkpoint (night 1 on Hardcore). Shown under the clock and on the board.
 
