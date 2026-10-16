@@ -384,6 +384,26 @@ func _area_name(at: Vector3) -> String:
 ## Host: a run ended; spending counts from zero again.
 func reset_spending() -> void:
 	spent.clear()
+	_set_donuts.rpc(0)
+
+
+## Every computer: how many boxes of donuts the team has sent this run. Each one costs more:
+## the district's forgiveness wears thin.
+static var donuts_bought := 0
+const DONUTS_RISE := 100
+
+
+@rpc("authority", "call_local", "reliable")
+func _set_donuts(count: int) -> void:
+	donuts_bought = count
+
+
+## What an item costs right now.
+static func price_of(item: String) -> int:
+	var price: int = ITEMS[item]["price"]
+	if item == "donuts":
+		price += DONUTS_RISE * donuts_bought
+	return price
 
 
 ## Host: hands a guard an item without buying it, e.g. one they were carrying in a saved run.
@@ -427,7 +447,7 @@ func _request_buy(item: String) -> void:
 	var buyer := director.guard_by_peer(peer)
 	if buyer == null or buyer.is_dead:
 		return
-	var price: int = ITEMS[item]["price"]
+	var price := price_of(item)
 	if director.is_dark():
 		_tell(peer, "The vending machine is dead. No power.")
 		return
@@ -447,6 +467,8 @@ func _request_buy(item: String) -> void:
 	_spawn_drop.rpc(_next_drop, item)
 	_next_drop += 1
 	_tell(peer, "Clunk. %s drops into the tray." % item_name(item))
+	if item == "donuts":
+		_set_donuts.rpc(donuts_bought + 1)
 
 
 ## The rank a guard needs to buy this item.
@@ -546,6 +568,7 @@ func _send_wallet(peer_id: int) -> void:
 		_set_wallet(points)
 	else:
 		_set_wallet.rpc_id(peer_id, points)
+		_set_donuts.rpc_id(peer_id, donuts_bought)
 
 
 func _send_holding(peer_id: int) -> void:

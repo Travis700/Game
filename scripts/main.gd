@@ -714,6 +714,7 @@ func _join(typed: String) -> void:
 ## Host: applies the menu's run options, and loads the saved run if the host chose to continue it.
 func _start_run() -> void:
 	var options: Dictionary = menu.options()
+	Shop.donuts_bought = 0
 	night.difficulty_choice = options["difficulty"]
 	night.hardcore = options["hardcore"]
 	night.grade = options["grade"]
@@ -767,6 +768,7 @@ func _start_run() -> void:
 			doors.install(doorway)
 	night.saved_personal = saved.get("personal", {})
 	shop.spent = saved.get("spent", {})
+	Shop.donuts_bought = int(saved.get("donuts", 0))
 	night.run_team = int(saved.get("team", 0))
 	night._run_stats = saved.get("run_stats", {})
 	night._run_nights = int(saved.get("run_nights", 0))

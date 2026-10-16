@@ -149,7 +149,7 @@ Which monsters are unlocked on which night is still to be set (section 14).
 | Heavy-duty flashlight | 140 | Longer, wider beam for the rest of the run. |
 | Air horn | 70 | Freezes monsters within 15 m for 6 s; it's a loud noise everything within 60 m comes to check once the freeze ends. |
 | Decoy radio | 60 | Put down; 8 s later it plays music for 20 s, a noise sound-hunters go to. |
-| Box of donuts for the district | 300 | Removes one of the team's write-ups. |
+| Box of donuts for the district | 300 (+100 for each box already sent this run) | Removes one of the team's write-ups. |
 | Pocket EMF reader | 150 | Personal, for the run: 1–4 by distance to the nearest monster, 5 for the evidence monsters. |
 | Thermos of coffee | 30 | +40 nerve. |
 

@@ -213,6 +213,7 @@ a rank (in brackets); the machine shows which.
 - **Decoy radio (60, rank 2):** press G to put it down. Eight seconds later it blares music for twenty, and
   everything that hunts by sound goes to look.
 - **Box of donuts for the district (300, rank 3):** press G to send it: the district forgets one write-up.
+  Each box the team sends in a run costs 100 more than the last.
 
 Sensors and traps are cleared away each morning.
 

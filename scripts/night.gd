@@ -524,7 +524,7 @@ func save_run(next_night: int, in_progress := false) -> void:
 		"points": saved_points, "items": saved_items, "upgrades": guard_room.upgraded.duplicate(),
 		"run_stats": _run_stats, "run_nights": _run_nights, "write_ups": write_ups,
 		"doors": doors.installed.duplicate(), "personal": saved_personal, "in_progress": in_progress,
-		"spent": shop.spent, "team": run_team, "last_retried": _last_night_retried, "grade": grade,
+		"spent": shop.spent, "donuts": Shop.donuts_bought, "team": run_team, "last_retried": _last_night_retried, "grade": grade,
 	})
 
 

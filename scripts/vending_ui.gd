@@ -12,6 +12,7 @@ var _holding: Label
 var _coop_buttons: Dictionary = {}
 ## Item -> its Buy button.
 var _buy_buttons: Dictionary = {}
+var _name_labels: Dictionary = {}
 var _first_buy: Array = []
 ## The co-op-only items.
 const COOP_ONLY: Array[String] = ["lucky_charm"]
@@ -69,6 +70,7 @@ func _ready() -> void:
 		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var name_label := Label.new()
 		name_label.text = "%s   ·   %d points" % [info["name"], info["price"]]
+		_name_labels[item] = name_label
 		name_label.add_theme_font_size_override("font_size", 20)
 		text.add_child(name_label)
 		var about := Label.new()
@@ -100,6 +102,9 @@ func _ready() -> void:
 
 ## `solo` greys out the things that only help a team, and `rank` the ones this guard can't buy yet.
 func open(points: int, holding: String, solo := false, rank := 1) -> void:
+	# Prices can change during a run (the donuts).
+	for item: String in _name_labels:
+		(_name_labels[item] as Label).text = "%s   ·   %d points" % [Shop.ITEMS[item]["name"], Shop.price_of(item)]
 	for item: String in _buy_buttons:
 		var button: Button = _buy_buttons[item]
 		var needed := Shop.rank_needed(item)
