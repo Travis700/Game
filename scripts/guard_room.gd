@@ -455,7 +455,17 @@ func _set_camera(monitor: int, camera: int) -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _set_occupant(desk: int, peer_id: int) -> void:
+	# Everyone sees who's sitting: the one leaving stands, the one arriving sits.
+	var director := shop.director if shop else null
+	if director and occupants[desk] != 0 and occupants[desk] != peer_id:
+		var leaving := director.guard_by_peer(occupants[desk])
+		if leaving:
+			leaving.show_seated(false)
 	occupants[desk] = peer_id
+	if director and peer_id != 0:
+		var arriving := director.guard_by_peer(peer_id)
+		if arriving:
+			arriving.show_seated(true)
 	if peer_id != 0 and peer_id == multiplayer.get_unique_id() and local_guard:
 		local_guard.sit(desk, _chair_positions[desk])
 

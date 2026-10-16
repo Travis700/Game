@@ -161,12 +161,10 @@ func _build_body() -> void:
 	pass
 
 
-# A rigged model's walk/run animations, driven by how fast it's really moving (every computer).
+# A rigged model and its walk/run (driven by a Strider, on every computer).
 var _moves: AnimationPlayer
 var _model: Node3D
 var _model_height := 0.0
-var _last_spot := Vector3.INF
-var _pace_seen := 0.0
 
 
 ## Uses assets/models/<name>.glb for the body if it's there. False means build the blocks.
@@ -177,11 +175,8 @@ func use_model(model_name: String, height: float) -> bool:
 	_model = model
 	_moves = ModelKit.moves(model)
 	_model_height = height
-	# Stand in the walk's first frame rather than the stiff arms-out pose it was rigged in.
 	if _moves != null:
-		_moves.play("walk")
-		_moves.seek(0.0, true)
-		_moves.pause()
+		Strider.attach(self, _moves, height)
 	return true
 
 
@@ -194,18 +189,7 @@ func skeleton() -> Skeleton3D:
 ## the skeleton's space (centimetres, model facing +Z). Children use ordinary monster space
 ## (metres, facing -Z). Null if there's no such bone.
 func bone_anchor(bone: String, at: Vector3) -> Node3D:
-	var bones := skeleton()
-	if bones == null or bones.find_bone(bone) < 0:
-		return null
-	var attach := BoneAttachment3D.new()
-	attach.bone_name = bone
-	bones.add_child(attach)
-	var anchor := Node3D.new()
-	var rest := bones.get_bone_global_rest(bones.find_bone(bone))
-	var shrink := global_basis.get_scale().x / bones.global_basis.get_scale().x
-	anchor.transform = rest.affine_inverse() * Transform3D(Basis(Vector3.UP, PI).scaled(Vector3.ONE * shrink), at)
-	attach.add_child(anchor)
-	return anchor
+	return ModelKit.bone_anchor(_model, self, bone, at)
 
 
 ## Where a bone sits in the rest pose, in the skeleton's space (see bone_anchor).
@@ -229,25 +213,9 @@ func tweak_bone(bone: String, axis: Vector3, angle: float) -> BoneTweak:
 	return tweak
 
 
-func _process(delta: float) -> void:
-	if _moves == null or delta <= 0.0:
-		return
-	var spot := global_position
-	if _last_spot != Vector3.INF:
-		var moved := Vector2(spot.x - _last_spot.x, spot.z - _last_spot.z).length() / delta
-		_pace_seen = lerpf(_pace_seen, moved, minf(1.0, delta * 8.0))
-	_last_spot = spot
-	# The clips were made at about 1.7 m tall: a taller body covers more ground per stride.
-	var stride := maxf(_model_height, 0.5) / 1.7
-	if _pace_seen < 0.15:
-		if _moves.is_playing():
-			_moves.pause()
-		return
-	var running := _pace_seen > 2.6 * stride and _moves.has_animation("run")
-	var clip := "run" if running else "walk"
-	if _moves.current_animation != clip or not _moves.is_playing():
-		_moves.play(clip, 0.25)
-	_moves.speed_scale = clampf(_pace_seen / ((3.6 if running else 1.3) * stride), 0.4, 2.2)
+## Per-frame looks on every computer. Subclasses add to it (call super).
+func _process(_delta: float) -> void:
+	pass
 
 
 ## Reacts to a new state on every computer, e.g. to play a sound. Override as needed.

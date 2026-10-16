@@ -123,6 +123,7 @@ func _ready() -> void:
 	var uniform := StandardMaterial3D.new()
 	uniform.albedo_color = uniform_color()
 	body_mesh.material_override = uniform
+	_dress()
 	name_tag.text = _tag_text()
 
 	_footsteps = Footsteps.new()
@@ -146,7 +147,7 @@ func _ready() -> void:
 		camera.cull_mask &= ~SecurityCameras.SPECTRAL_LAYER
 	name_tag.visible = not local
 	# Your own hat is hidden from your eyes like your body, but the others and the cameras see it.
-	head.add_child(Hats.build(hat, SELF_LAYER if local else 1))
+	_wear_hat(Hats.build(hat, SELF_LAYER if local else 1))
 	name_tag.position.y += Hats.height(hat)
 	if local:
 		# Your own steps, quieter: you mostly hear everyone else's.
@@ -239,12 +240,60 @@ func set_dead(dead: bool) -> void:
 			camera.cull_mask &= ~SecurityCameras.SPECTRAL_LAYER
 
 
+## How tall the guard model stands.
+const MODEL_HEIGHT := 1.8
+
+## The guard's 3D model (null: the plain capsule), and its materials, for fading as a ghost.
+var _model: Node3D
+var _model_materials: Array[BaseMaterial3D] = []
+var _strider: Strider
+
+
+## Puts the guard in uniform: the 3D model, with the shirt in this guard's colour. Without the
+## model file it stays the coloured capsule.
+func _dress() -> void:
+	_model = ModelKit.add(body_mesh, "guard", MODEL_HEIGHT, PI, SELF_LAYER if is_local() else 1)
+	if _model == null:
+		return
+	_model.position.y -= body_mesh.position.y
+	body_mesh.mesh = null
+	visor.mesh = null
+	_model_materials = ModelKit.own_materials(_model)
+	var shirt := load("res://assets/models/guard_uniform_%d.jpg" % ((slot - 1) % UNIFORM_COLORS.size() + 1)) as Texture2D
+	if shirt:
+		for material in _model_materials:
+			if material.albedo_texture != null:
+				material.albedo_texture = shirt
+	var moves := ModelKit.moves(_model)
+	if moves:
+		_strider = Strider.attach(self, moves, MODEL_HEIGHT)
+
+
+## Where the eyes are on the model, as a share of its height (hats sit relative to eye level).
+const MODEL_EYES := 0.935
+## Hats were made for the old block head: on a real head they're this much smaller.
+const MODEL_HAT_SCALE := 0.6
+
+
+## On the model's head (so it moves with it), or on the plain head without a model.
+func _wear_hat(worn: Node3D) -> void:
+	var on_head := ModelKit.bone_anchor(_model, self, "Head", Vector3(0, MODEL_HEIGHT * 100.0 * MODEL_EYES, 1.0)) if _model else null
+	if on_head == null:
+		head.add_child(worn)
+		return
+	on_head.add_child(worn)
+	worn.scale = Vector3.ONE * MODEL_HAT_SCALE
+
+
 ## Shows or hides this guard for the player on this computer. Ghosts are only visible to
 ## other ghosts, and look faint.
 func update_visibility(viewer_is_dead: bool) -> void:
 	var material := body_mesh.material_override as StandardMaterial3D
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA if is_dead else BaseMaterial3D.TRANSPARENCY_DISABLED
 	material.albedo_color.a = 0.3 if is_dead else 1.0
+	for model_material in _model_materials:
+		model_material.transparency = material.transparency
+		model_material.albedo_color.a = material.albedo_color.a
 	if is_local():
 		# Your own body only shows on the security cameras, and not at all once you're a ghost.
 		body_mesh.visible = not is_dead
@@ -254,6 +303,12 @@ func update_visibility(viewer_is_dead: bool) -> void:
 	body_mesh.visible = shown
 	visor.visible = shown
 	name_tag.visible = shown
+
+
+## Shows the guard sitting at a desk (everyone's computer), or back on their feet.
+func show_seated(on: bool) -> void:
+	if _strider:
+		_strider.hold = "sit" if on else ""
 
 
 ## True on the computer of the player controlling this guard.

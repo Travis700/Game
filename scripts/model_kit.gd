@@ -31,7 +31,11 @@ static func add(parent: Node3D, model_name: String, height: float, turn := PI, l
 	return model
 
 
-## The model's AnimationPlayer, with "walk" and (if <name>_run.glb exists) "run", or null.
+## Clips that can come in their own files next to the model (see _setup_moves).
+const EXTRA_CLIPS: Array[String] = ["run", "sit"]
+
+
+## The model's AnimationPlayer, with "walk" and any EXTRA_CLIPS that exist, or null.
 static func moves(model: Node3D) -> AnimationPlayer:
 	return model.get_meta("moves") as AnimationPlayer if model != null and model.has_meta("moves") else null
 
@@ -45,15 +49,18 @@ static func _setup_moves(model: Node3D, model_name: String) -> void:
 	walk.loop_mode = Animation.LOOP_LINEAR
 	_pin_in_place(walk)
 	library.add_animation("walk", walk)
-	var run_path := "res://assets/models/%s_run.glb" % model_name
-	if ResourceLoader.exists(run_path):
-		var source := (load(run_path) as PackedScene).instantiate()
+	# Extra clips made on the same rig, each in its own file: <name>_run.glb, <name>_sit.glb.
+	for clip in EXTRA_CLIPS:
+		var clip_path := "res://assets/models/%s_%s.glb" % [model_name, clip]
+		if not ResourceLoader.exists(clip_path):
+			continue
+		var source := (load(clip_path) as PackedScene).instantiate()
 		var source_player := source.find_child("AnimationPlayer", true, false) as AnimationPlayer
 		if source_player != null and not source_player.get_animation_list().is_empty():
-			var run := source_player.get_animation(source_player.get_animation_list()[0]).duplicate() as Animation
-			run.loop_mode = Animation.LOOP_LINEAR
-			_pin_in_place(run)
-			library.add_animation("run", run)
+			var extra := source_player.get_animation(source_player.get_animation_list()[0]).duplicate() as Animation
+			extra.loop_mode = Animation.LOOP_LINEAR
+			_pin_in_place(extra)
+			library.add_animation(clip, extra)
 		source.free()
 	for old in player.get_animation_library_list():
 		player.remove_animation_library(old)
@@ -73,6 +80,24 @@ static func _pin_in_place(animation: Animation) -> void:
 		for key in keys:
 			var at: Vector3 = animation.track_get_key_value(track, key)
 			animation.track_set_key_value(track, key, Vector3(start.x, at.y, start.z))
+
+
+## A spot that rides on one of a rigged model's bones: `at` is where it sits in the rest pose,
+## in the skeleton's space (centimetres, model facing +Z). Children of it use the owner's
+## space (metres, facing -Z). Null if there's no such bone.
+static func bone_anchor(model: Node3D, owner: Node3D, bone: String, at: Vector3) -> Node3D:
+	var bones := model.find_child("Skeleton3D", true, false) as Skeleton3D if model else null
+	if bones == null or bones.find_bone(bone) < 0:
+		return null
+	var attach := BoneAttachment3D.new()
+	attach.bone_name = bone
+	bones.add_child(attach)
+	var anchor := Node3D.new()
+	var rest := bones.get_bone_global_rest(bones.find_bone(bone))
+	var shrink := owner.global_basis.get_scale().x / bones.global_basis.get_scale().x
+	anchor.transform = rest.affine_inverse() * Transform3D(Basis(Vector3.UP, PI).scaled(Vector3.ONE * shrink), at)
+	attach.add_child(anchor)
+	return anchor
 
 
 ## Makes every surface of the model see-through and faintly glowing, e.g. the Ghost.
