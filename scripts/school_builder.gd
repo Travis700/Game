@@ -269,6 +269,26 @@ func _box(pos: Vector3, size: Vector3, mat: String, solid := true) -> Node3D:
 	return body
 
 
+## A ready-made model (assets/models/<name>.glb) with its feet at `pos`, `height` tall, turned
+## by `turn` (0: its front faces +Z). Null if there's no such model: keep the boxes.
+func _model(model_name: String, pos: Vector3, height: float, turn := 0.0) -> Node3D:
+	if not ResourceLoader.exists("res://assets/models/%s.glb" % model_name):
+		return null
+	var holder := Node3D.new()
+	holder.position = pos
+	add_child(holder)
+	return ModelKit.add(holder, model_name, height, turn)
+
+
+## Hides the boxes drawn for something that now has a model (its collision stays).
+func _hide_boxes(node: Node) -> void:
+	if node is MeshInstance3D:
+		(node as MeshInstance3D).visible = false
+	for child in node.get_children():
+		if child is MeshInstance3D:
+			(child as MeshInstance3D).visible = false
+
+
 func _box_mesh(size: Vector3, mat: String) -> MeshInstance3D:
 	var box := BoxMesh.new()
 	box.size = size
@@ -535,11 +555,17 @@ func _build_guard_room() -> void:
 
 	# Clock machine on the east wall.
 	clock_machine = _interactable(Vector3(19.72, 1.4, 13.0), Vector3(0.3, 0.6, 0.5), "metal", "Clock in", "")
-	_box(Vector3(19.56, 1.52, 13.0), Vector3(0.02, 0.15, 0.35), "clock_screen", false)
+	var clock_screen := _box(Vector3(19.56, 1.52, 13.0), Vector3(0.02, 0.15, 0.35), "clock_screen", false)
+	if _model("prop_time_clock", Vector3(19.75, 1.1, 13.0), 0.6, -PI / 2.0):
+		_hide_boxes(clock_machine)
+		clock_screen.visible = false
 
 	# Vending machine on the east wall.
 	vending_machine = _interactable(Vector3(19.4, 1.0, 16.6), Vector3(0.9, 2.0, 1.1), "red", "Use the vending machine", "")
-	_box(Vector3(18.94, 1.2, 16.45), Vector3(0.02, 1.3, 0.7), "vending_glow", false)
+	var vending_glow := _box(Vector3(18.94, 1.2, 16.45), Vector3(0.02, 1.3, 0.7), "vending_glow", false)
+	if _model("prop_vending_machine", Vector3(19.45, 0, 16.6), 2.0, -PI / 2.0):
+		_hide_boxes(vending_machine)
+		vending_glow.visible = false
 
 	# Notice board on the back wall.
 	_box(Vector3(9.5, 1.6, 10.16), Vector3(2.4, 1.2, 0.05), "cork", false)
@@ -576,10 +602,14 @@ func _locker_row(x1: float, x2: float, z: float) -> void:
 func _build_cafeteria() -> void:
 	for z: float in [-1.5, -8.0, -14.5, -21.0]:
 		for x: float in [-33.0, -23.5]:
-			_box(Vector3(x, 0.74, z), Vector3(6.0, 0.06, 1.0), "desk")
-			_box(Vector3(x, 0.36, z), Vector3(5.6, 0.72, 0.15), "metal")
+			var parts: Array[Node3D] = [_box(Vector3(x, 0.74, z), Vector3(6.0, 0.06, 1.0), "desk"),
+					_box(Vector3(x, 0.36, z), Vector3(5.6, 0.72, 0.15), "metal")]
 			for side: float in [-1.0, 1.0]:
-				_box(Vector3(x, 0.22, z + side * 0.85), Vector3(6.0, 0.44, 0.35), "metal")
+				parts.append(_box(Vector3(x, 0.22, z + side * 0.85), Vector3(6.0, 0.44, 0.35), "metal"))
+			# Two real tables, end to end, where the boxes stand (they stay as the solid part).
+			if _model("prop_cafeteria_table", Vector3(x - 1.5, 0, z), 0.8) and _model("prop_cafeteria_table", Vector3(x + 1.5, 0, z), 0.8):
+				for part in parts:
+					_hide_boxes(part)
 	# Serving counter in front of the kitchen door.
 	_box(Vector3(-7.5, 0.5, -26.0), Vector3(0.8, 1.0, 6.0), "metal")
 	_box(Vector3(-7.5, 0.5, -16.5), Vector3(0.8, 1.0, 5.0), "metal")
@@ -620,9 +650,10 @@ func _desk(pos: Vector3, width: float, depth: float) -> void:
 
 ## A desk chair. Guard room chairs (desk >= 0) can be sat in.
 func _chair(pos: Vector3, desk := -1, solid := true) -> void:
-	_box(pos + Vector3(0, 0.25, 0), Vector3(0.1, 0.5, 0.1), "metal", false)
-	_box(pos + Vector3(0, 0.5, 0), Vector3(0.55, 0.08, 0.55), "dark", false)
-	_box(pos + Vector3(0, 0.85, -0.25), Vector3(0.55, 0.6, 0.06), "dark", false)
+	if _model("prop_office_chair", pos, 1.15) == null:
+		_box(pos + Vector3(0, 0.25, 0), Vector3(0.1, 0.5, 0.1), "metal", false)
+		_box(pos + Vector3(0, 0.5, 0), Vector3(0.55, 0.08, 0.55), "dark", false)
+		_box(pos + Vector3(0, 0.85, -0.25), Vector3(0.55, 0.6, 0.06), "dark", false)
 	var size := Vector3(0.6, 1.15, 0.6)
 	if desk < 0:
 		if solid:
@@ -823,6 +854,10 @@ func _classroom(centre: Vector3, facing: float, rows := 3) -> void:
 	for row in rows:
 		for col in 4:
 			var spot := Vector3(centre.x - 3.6 + col * 2.4, 0, board_z - facing * (3.4 + row * 2.2))
+			# A desk with its chair attached, facing the board; the box keeps it solid.
+			if _model("prop_student_desk", spot - Vector3(0, 0, facing * 0.25), 0.8, 0.0 if facing > 0.0 else PI):
+				_box(spot + Vector3(0, 0.4, -facing * 0.25), Vector3(0.7, 0.8, 1.0), "desk").visible = false
+				continue
 			_desk(spot, 0.7, 0.5)
 			_chair(spot - Vector3(0, 0, facing * 0.55), -1, false)
 

@@ -519,7 +519,19 @@ func _prop(prop_name: String, pos: Vector3, parts: Array, visible_at_start := tr
 	add_child(body)
 	_props[prop_name] = body
 	_home[prop_name] = body.transform
+	# A real model, if there is one (assets/models/prop_<name>.glb), as tall as its boxes.
+	var model_name := "prop_" + str(PROP_MODELS.get(prop_name, prop_name))
+	if str(PROP_MODELS.get(prop_name, prop_name)) != "" and ResourceLoader.exists("res://assets/models/%s.glb" % model_name):
+		var top := 0.0
+		for part: Array in parts:
+			top = maxf(top, (part[0] as Vector3).y + (part[1] as Vector3).y * 0.5)
+		_dress(prop_name, model_name, top)
 	_set_visible(body, visible_at_start)
+
+
+## Props that share another one's model ("": keep the boxes; the "wet floor sign" is really a
+## stack of chairs).
+const PROP_MODELS := {"hall_bin": "trash_can", "wet_floor_sign": ""}
 
 
 ## Swaps a prop's boxes for its real model, if there is one (the boxes stay as its collision).

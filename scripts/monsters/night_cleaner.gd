@@ -68,6 +68,8 @@ func _exit_tree() -> void:
 func _build_sign() -> Node3D:
 	var stand := Node3D.new()
 	stand.name = "WetFloorSign"
+	if ModelKit.add(stand, "prop_wet_floor_sign", 0.65, 0.0) != null:
+		return stand
 	var yellow := StandardMaterial3D.new()
 	yellow.albedo_color = Color(1.0, 0.85, 0.05)
 	for side: float in [-1.0, 1.0]:
@@ -96,6 +98,14 @@ func _build_person(with_cart: bool) -> void:
 		part(box(Vector3(0.3, 0.08, 0.32)), Color(0.12, 0.15, 0.25), Vector3(0, 1.9, -0.03))
 		for side: float in [-1.0, 1.0]:
 			part(sphere(0.07), Color(0.95, 0.85, 0.1), Vector3(side * 0.3, 1.0, -0.15))
+	if with_cart and _model != null:
+		# The mop bucket on wheels, pushed in front.
+		var cart := Node3D.new()
+		cart.position = Vector3(0, 0, -0.75)
+		add_child(cart)
+		if ModelKit.add(cart, "prop_mop_bucket", 1.3, PI * 0.5, visual_layers) != null:
+			return
+		cart.queue_free()
 	if with_cart:
 		part(box(Vector3(0.6, 0.5, 0.5)), Color(0.95, 0.8, 0.1), Vector3(0, 0.3, -0.75))
 		part(box(Vector3(0.04, 1.3, 0.04)), Color(0.5, 0.4, 0.3), Vector3(0.22, 0.95, -0.75))
