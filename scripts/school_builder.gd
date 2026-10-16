@@ -325,7 +325,16 @@ func _model(model_name: String, pos: Vector3, height: float, turn := 0.0) -> Nod
 	var holder := Node3D.new()
 	holder.position = pos
 	add_child(holder)
-	return ModelKit.add(holder, model_name, height, turn)
+	var model := ModelKit.add(holder, model_name, height, turn)
+	# Small things aren't drawn from across the school (bigger ones, a little further).
+	if model:
+		for mesh in model.find_children("*", "MeshInstance3D", true, false):
+			(mesh as GeometryInstance3D).visibility_range_end = PROP_DRAW_DISTANCE * clampf(height, 0.5, 2.0)
+	return model
+
+
+## How far away a 1 m prop is still drawn (see _model).
+const PROP_DRAW_DISTANCE := 22.0
 
 
 ## Hides the boxes drawn for something that now has a model (its collision stays).
@@ -405,6 +414,14 @@ func _wall_piece(along_x: bool, fixed: float, from: float, to: float, bottom: fl
 		_box(Vector3(middle, bottom + height * 0.5, fixed), Vector3(length, height, WALL_T), mat)
 	else:
 		_box(Vector3(fixed, bottom + height * 0.5, middle), Vector3(WALL_T, height, length), mat)
+	# Walls hide what's behind them from the renderer (the props in other rooms aren't drawn).
+	if height >= 1.0 and length >= 1.0:
+		var shape := BoxOccluder3D.new()
+		shape.size = Vector3(length, height, WALL_T * 0.8) if along_x else Vector3(WALL_T * 0.8, height, length)
+		var occluder := OccluderInstance3D.new()
+		occluder.occluder = shape
+		occluder.position = Vector3(middle, bottom + height * 0.5, fixed) if along_x else Vector3(fixed, bottom + height * 0.5, middle)
+		add_child(occluder)
 	# Painted walls get a dark rubber baseboard along both sides.
 	if bottom == 0.0 and mat == "wall":
 		var skirt := Vector3(length, 0.1, WALL_T + 0.024) if along_x else Vector3(WALL_T + 0.024, 0.1, length)
@@ -468,7 +485,11 @@ func _gym_lamp(x: float, z: float, night_energy: float, flicker := false) -> voi
 	var bottom := GYM_H - LAMP_H
 	var light := _light(Vector3(x, bottom - 0.3, z), night_energy, 17.0, flicker, false,
 			Color(1.0, 0.94, 0.82), maxf(night_energy * 4.0, 3.2))
-	_model("prop_hanging_industrial_lamp", Vector3(x, bottom, z), LAMP_H)
+	var lamp := _model("prop_hanging_industrial_lamp", Vector3(x, bottom, z), LAMP_H)
+	if lamp:
+		# Seen right across the gym.
+		for mesh in lamp.find_children("*", "MeshInstance3D", true, false):
+			(mesh as GeometryInstance3D).visibility_range_end = 0.0
 	var disc := CylinderMesh.new()
 	disc.top_radius = 0.2
 	disc.bottom_radius = 0.2
@@ -1178,6 +1199,7 @@ func _poster(art: String, pos: Vector3, facing: Vector3, size := Vector2(0.6, 0.
 	sheet.mesh = quad
 	sheet.material_override = paper
 	sheet.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	sheet.visibility_range_end = PROP_DRAW_DISTANCE * 1.5
 	sheet.position = pos + facing * 0.012
 	sheet.rotation.y = atan2(facing.x, facing.z)
 	add_child(sheet)

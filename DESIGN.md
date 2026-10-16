@@ -237,7 +237,8 @@ What keeps a player coming back after the first run:
 
 - **Godot 4**, scripts in GDScript.
 - **Multiplayer:** Godot's built-in multiplayer with the host in charge of game state. Local testing uses a direct connection; release uses **GodotSteam** for Steam lobbies, room codes and Steam's free relay servers. Development uses Steam's test app ID until the game has its own.
-- **Art:** blocky placeholder shapes first, then free 3D asset packs (e.g. Kenney, Quaternius) for school props.
+- **Art:** the building is made of boxes in code (merged into a few meshes per material), with photo textures from Poly Haven. Monsters and some props are Meshy models made from the notebook drawings; furniture and fittings are CC0 models from Poly Haven; posters, the court and other flat art are drawn by scripts in `tools/`.
+- **Drawing less:** walls are occluders (occlusion culling is on), so other rooms' furniture isn't drawn, and small props fade out beyond about 20 m.
 - **Testing:** Claude writes the project; the user runs it in Godot and reports back.
 
 ## 13. Build order
