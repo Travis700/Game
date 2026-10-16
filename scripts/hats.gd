@@ -90,12 +90,24 @@ static func requirement(hat: String) -> String:
 	return "Rank %d: %s" % [rank, Career.rank_title(rank)]
 
 
+## Hats with a model: [how high its base sits above eye level, its height] in head units.
+const MODELS := {"cap": [0.1, 0.2]}
+
+
 ## The hat as boxes, to put on a guard's head. `layers` hides your own hat from your eyes.
 static func build(hat: String, layers := 1) -> Node3D:
 	var holder := Node3D.new()
 	holder.name = "Hat"
 	if not HATS.has(hat):
 		return holder
+	# A real model if there is one (assets/models/hat_<name>.glb), sitting where its boxes did.
+	if MODELS.has(hat):
+		var spot := Node3D.new()
+		spot.position = Vector3(0, MODELS[hat][0], 0)
+		holder.add_child(spot)
+		if ModelKit.add(spot, "hat_" + hat, MODELS[hat][1], PI, layers) != null:
+			return holder
+		spot.free()
 	for part: Array in HATS[hat]["parts"]:
 		var mesh := MeshInstance3D.new()
 		var box := BoxMesh.new()
