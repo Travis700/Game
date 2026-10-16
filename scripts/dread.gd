@@ -237,7 +237,8 @@ func jumpscare(from: Vector3) -> void:
 	var camera := local_guard.camera
 	local_guard.input_blocked = true
 	if from != Vector3.INF:
-		var look := from + Vector3(0, 1.55, 0)
+		# `from` is the face of whatever caught you.
+		var look := from
 		if camera.global_position.distance_to(look) > 0.3:
 			camera.look_at(look, Vector3.UP)
 	var start_fov := camera.fov

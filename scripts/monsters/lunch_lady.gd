@@ -63,7 +63,7 @@ func think(delta: float) -> void:
 func _catch_audible() -> void:
 	for guard in director.targetable_guards():
 		if distance_to_guard(guard) < KILL_DISTANCE and (director.guard_speed(guard) > 0.8 or director.voice_reach(guard, HEAR_WHISPER, HEAR_SHOUT) > 0.0):
-			director.kill(guard, display_name, global_position)
+			director.kill(guard, display_name, face_point())
 			return
 
 

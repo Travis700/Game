@@ -401,12 +401,17 @@ func catch_nearby() -> bool:
 		return false
 	for guard in director.targetable_guards():
 		if distance_to_guard(guard) < KILL_DISTANCE:
-			director.kill(guard, display_name, global_position)
+			director.kill(guard, display_name, face_point())
 			return true
 	return false
 
 
 ## Roughly where its eyes are, for line-of-sight checks.
+## Where its face is, for the jumpscare: the camera snaps to look right at it.
+func face_point() -> Vector3:
+	return global_position + Vector3(0, _model_height * 0.92 if _model_height > 0.0 else 1.55, 0)
+
+
 func eye_position() -> Vector3:
 	return global_position + Vector3(0, 1.6, 0)
 
