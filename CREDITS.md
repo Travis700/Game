@@ -50,6 +50,10 @@ commercial use before release.
 - Every monster model in `assets/models/` (and the `_run.glb` animations): made with Meshy from the
   field-guide drawings (clean copy, image to 3D, auto-rig with walking and running clips); see
   `tools/MESHY.md`. The Principal's face is the notebook drawing itself, smudged.
+- The guard (`guard.glb`, its run and sit clips and `guard_uniform_*.jpg` shirt colours): made with
+  Meshy from the key art.
+- Props (`assets/models/prop_*.glb`): made with Meshy from generated reference images (vending
+  machine, time clock, chairs, desks, cafeteria tables and the anomaly props).
 - Make sure the Meshy account's plan gives commercial rights before release (free-plan output is
   CC BY 4.0 and needs a credit line).
 

@@ -33,3 +33,12 @@ Cost: about 30 credits a monster (9 clean copy, 15 model, 5 rig).
 - **The Principal's face:** `tools/paint_head.py` repaints the head in skin; the face itself is
   `assets/models/principal_face.png` (cropped from the notebook drawing and smeared) on a curved
   patch carried by the Head bone, with `smeared_face.gdshader` making it drift so it never focuses.
+
+## Props
+
+Props have no drawings: a reference image is made first (Meshy text-to-image, nano-banana-2, "a
+single object on a plain white background, three-quarter view, slightly worn, old American high
+school"), then image-to-3d with smart topology at about 4,000 triangles, slimmed to 512 px
+textures. About 21 credits each. An anomaly prop picks up `assets/models/prop_<name>.glb`
+automatically (its boxes stay as collision); fixed furniture is placed with
+`SchoolBuilder._model()`.
