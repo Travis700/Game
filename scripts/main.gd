@@ -171,6 +171,13 @@ func _ready() -> void:
 	menu_camera.rotation_degrees = Vector3(-3, 12, 0)
 	add_child(menu_camera)
 	menu_camera.current = true
+	# Behind the menu: a slow, uneasy drift along the fence, as if someone's watching the school.
+	var drift := menu_camera.create_tween().set_loops()
+	drift.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	drift.tween_property(menu_camera, "position", Vector3(4.0, 2.4, 51.0), 24.0)
+	drift.parallel().tween_property(menu_camera, "rotation_degrees", Vector3(-4, 4, 0), 24.0)
+	drift.tween_property(menu_camera, "position", Vector3(9, 2.2, 52), 24.0)
+	drift.parallel().tween_property(menu_camera, "rotation_degrees", Vector3(-3, 12, 0), 24.0)
 
 	hud = HUD.new()
 	hud.name = "HUD"
