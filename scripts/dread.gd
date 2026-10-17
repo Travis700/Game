@@ -16,6 +16,8 @@ const DRONE_RANGE := 22.0
 const FLICKER_RANGE := 9.0
 ## Ceiling lights this close to a monster stutter.
 const LAMP_FLICKER_RANGE := 6.0
+## How far round the local guard the lights stutter in a lockdown.
+const LOCKDOWN_FLICKER_RANGE := 24.0
 
 var director: MonsterDirector
 var players: Node3D
@@ -29,6 +31,8 @@ var school: SchoolBuilder
 var lighting: ShiftLighting
 ## Ceiling lights stuttering near a monster right now, and their steady brightness.
 var _stuttering: Dictionary = {}
+## A lockdown is on (set by Main on every computer): the lights round the guard stutter too.
+var lockdown := false
 
 var _heart: AudioStreamPlayer
 var _drone: AudioStreamPlayer
@@ -117,9 +121,11 @@ func _flicker_flashlights() -> void:
 		guard.flashlight.light_energy = base * (0.05 if randf() < 0.35 else randf_range(0.4, 1.0)) if near else base
 
 
-## Ceiling lights near a monster stutter too (not the ones already failing on their own). Only
-## once the night's lights have settled, so nothing else is setting their brightness.
+## Ceiling lights near a monster stutter too, and in a lockdown the ones round you (not the ones
+## already failing on their own). Only once the night's lights have settled, so nothing else is
+## setting their brightness.
 func _flicker_lamps() -> void:
+	# Each stuttering lamp, and how often it drops out (near a monster: often).
 	var near: Dictionary = {}
 	if director != null and lighting != null and lighting.is_dark():
 		var monsters: Array[Node3D] = []
@@ -127,15 +133,18 @@ func _flicker_lamps() -> void:
 			var monster := node as Monster
 			if monster and not monster.harmless and monster.state != "hidden" and not monster.disguised():
 				monsters.append(monster)
-		if not monsters.is_empty():
+		var me := local_guard.global_position if local_guard and is_instance_valid(local_guard) else Vector3.INF
+		if not monsters.is_empty() or (lockdown and me != Vector3.INF):
 			for node in get_tree().get_nodes_in_group(ShiftLighting.SCHOOL_LIGHTS):
 				var lamp := node as Light3D
 				if lamp == null or not lamp.visible or lamp is FlickerLight:
 					continue
 				for monster in monsters:
 					if monster.global_position.distance_to(lamp.global_position) < LAMP_FLICKER_RANGE:
-						near[lamp] = true
+						near[lamp] = 0.3
 						break
+				if not near.has(lamp) and lockdown and me.distance_to(lamp.global_position) < LOCKDOWN_FLICKER_RANGE:
+					near[lamp] = 0.1
 	for lamp: Light3D in _stuttering.keys():
 		if not near.has(lamp) or not is_instance_valid(lamp):
 			if is_instance_valid(lamp):
@@ -144,7 +153,7 @@ func _flicker_lamps() -> void:
 	for lamp: Light3D in near:
 		if not _stuttering.has(lamp):
 			_stuttering[lamp] = lamp.light_energy
-		lamp.light_energy = _stuttering[lamp] * (0.04 if randf() < 0.3 else randf_range(0.6, 1.0))
+		lamp.light_energy = _stuttering[lamp] * (0.04 if randf() < near[lamp] else randf_range(0.6, 1.0))
 
 
 ## The local guard was caught: the camera snaps to whatever caught them, with a scream.

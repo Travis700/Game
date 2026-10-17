@@ -5,12 +5,14 @@ The full plan is in [DESIGN.md](DESIGN.md).
 
 ## Status
 
-Version 1.0.0. Every monster and the guards are 3D models made from the notebook drawings and the
+Version 1.1.0. Every monster and the guards are 3D models made from the notebook drawings and the
 key art (Meshy), the school has photo textures, and the sounds are a mix of recordings and generated
-effects (see [CREDITS.md](CREDITS.md)); the furniture is real models from Poly Haven (CC0) and Sketchfab (CC BY). Everything is in:
+effects (see [CREDITS.md](CREDITS.md)); the furniture is real models from Poly Haven (CC0) and Sketchfab (CC BY), and every room is
+dressed with the clutter of a school day (books, bags, mugs, computers, cobwebs). Everything is in:
 nine nights with a last-bell finale, then Overtime; three difficulties (main building, classroom
 wing, science wing); 18 monsters with moods, a field guide and R. Hale's notebook; the guard room
-and its 16 cameras; watchman rounds, power cuts, shift notes and nightly bonuses; a training shift,
+and its 16 cameras; light switches in every room and TVs that monsters switch on; watchman rounds,
+power cuts, shift notes (a thunderstorm among them) and nightly bonuses; a training shift,
 close calls and incident photos; ranks with hats and perks; the vending machine; saving and
 checkpoints; a daily shift (solo or as a team); achievements and records; proximity voice chat,
 walkie-talkies and the desk's base station (and a monster that copies your voice); marks; joining

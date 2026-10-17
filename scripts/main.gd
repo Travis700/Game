@@ -109,6 +109,8 @@ var _local_guard: Guard
 var _mode := ""
 ## True once this player has clocked in for the coming night (before it starts).
 var _clocked_in := false
+## Behind the menu, the camera drifts between two views: [position, rotation, position, rotation].
+const MENU_VIEW := [Vector3(-14.0, 2.3, 52.0), Vector3(-3, -22, 0), Vector3(-9.0, 2.5, 50.5), Vector3(-4, -28, 0)]
 ## Command-line test sessions (--host/--join) always use direct connections, even with Steam.
 var _direct_only := false
 
@@ -174,17 +176,19 @@ func _ready() -> void:
 	# A view of the floodlit school to sit behind the menu.
 	var menu_camera := Camera3D.new()
 	menu_camera.name = "MenuCamera"
-	menu_camera.position = Vector3(9, 2.2, 52)
-	menu_camera.rotation_degrees = Vector3(-3, 12, 0)
+	# From across the road, off to the west, so the school fills the right of the screen beside the
+	# menu.
+	menu_camera.position = MENU_VIEW[0]
+	menu_camera.rotation_degrees = MENU_VIEW[1]
 	add_child(menu_camera)
 	menu_camera.current = true
 	# Behind the menu: a slow, uneasy drift along the fence, as if someone's watching the school.
 	var drift := menu_camera.create_tween().set_loops()
 	drift.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	drift.tween_property(menu_camera, "position", Vector3(4.0, 2.4, 51.0), 24.0)
-	drift.parallel().tween_property(menu_camera, "rotation_degrees", Vector3(-4, 4, 0), 24.0)
-	drift.tween_property(menu_camera, "position", Vector3(9, 2.2, 52), 24.0)
-	drift.parallel().tween_property(menu_camera, "rotation_degrees", Vector3(-3, 12, 0), 24.0)
+	drift.tween_property(menu_camera, "position", MENU_VIEW[2], 24.0)
+	drift.parallel().tween_property(menu_camera, "rotation_degrees", MENU_VIEW[3], 24.0)
+	drift.tween_property(menu_camera, "position", MENU_VIEW[0], 24.0)
+	drift.parallel().tween_property(menu_camera, "rotation_degrees", MENU_VIEW[1], 24.0)
 
 	hud = HUD.new()
 	hud.name = "HUD"
@@ -1763,6 +1767,7 @@ var _drill_rule := ""
 @rpc("authority", "call_local", "reliable")
 func _set_lockdown(on: bool, rule := "") -> void:
 	_drill_rule = rule if on else ""
+	dread.lockdown = on
 	if on:
 		if _siren == null:
 			_siren = AudioStreamPlayer.new()

@@ -64,13 +64,20 @@ func _fit_menu() -> void:
 
 func _ready() -> void:
 	var shade := ColorRect.new()
-	shade.color = Color(0.02, 0.03, 0.06, 0.55)
+	shade.color = Color(0.02, 0.03, 0.06, 0.3)
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(shade)
 
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(center)
+	# The menu down the left-hand side, the school at night on the right.
+	var side := MarginContainer.new()
+	side.set_anchors_preset(Control.PRESET_FULL_RECT)
+	side.add_theme_constant_override("margin_left", 56)
+	side.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(side)
+	var center := VBoxContainer.new()
+	center.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	side.add_child(center)
 
 	var column := VBoxContainer.new()
 	column.custom_minimum_size = Vector2(420, 0)
@@ -82,6 +89,7 @@ func _ready() -> void:
 	style.set_corner_radius_all(12)
 	style.set_content_margin_all(28)
 	panel.add_theme_stylebox_override("panel", style)
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	center.add_child(panel)
 	# On a short screen the panel scrolls rather than running off the bottom.
 	_menu_scroll = ScrollContainer.new()
