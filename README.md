@@ -361,7 +361,7 @@ it runs; that's normal for games that aren't signed (Steam builds don't show it)
 | Mouse | Look |
 | F | Flashlight |
 | E | Use. Press E on the time clock in the guard room to clock in and start the night. Hold E on punch stations and the breaker. |
-| Esc | Menu: mouse sensitivity, field of view, brightness, volume, voice chat, captions, change keys, graphics (resolution, anti-aliasing, shadows, ambient occlusion and haze, V-sync), fullscreen, leave the game (pauses solo; in a group the night keeps going) |
+| Esc | Menu: mouse sensitivity, field of view, brightness, volume, voice chat, captions, change keys, graphics (resolution, anti-aliasing, shadows, ambient occlusion and haze, bounced light, V-sync), fullscreen, leave the game (pauses solo; in a group the night keeps going) |
 | Tab | Clipboard: log anything odd you spot (after clocking in); its Field guide button shows what you know about each monster |
 | G | Use or put down what you're carrying (sensors, traps, energy drink, coffee, flashlight, EMF reader, air horn, decoy radio, donuts). As a ghost: watch through a teammate's eyes |
 | Q | Mark a spot for the team (at a desk: flag the camera) |
