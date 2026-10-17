@@ -2109,6 +2109,17 @@ func _make_environment() -> Environment:
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.glow_enabled = true
 	env.fog_enabled = true
+	# Soft shadow where things meet (walls and floor, furniture), and a thin haze in the air that
+	# catches the flashlight beams. Both switched by the "Ambient occlusion and haze" setting.
+	env.ssao_radius = 1.1
+	env.ssao_intensity = 1.8
+	env.ssao_power = 1.4
+	env.volumetric_fog_density = 0.006
+	env.volumetric_fog_albedo = Color(0.7, 0.72, 0.75)
+	env.volumetric_fog_length = 40.0
+	env.volumetric_fog_ambient_inject = 0.0
+	env.ssao_enabled = Profile.effects
+	env.volumetric_fog_enabled = Profile.effects
 
 	var world_env := WorldEnvironment.new()
 	world_env.environment = env
@@ -2124,5 +2135,6 @@ func _make_environment() -> Environment:
 	moon.add_to_group(Profile.SHADOW_LIGHTS)
 	moon.shadow_enabled = Profile.shadows
 	moon.rotation_degrees = Vector3(-40, 35, 0)
+	moon.light_volumetric_fog_energy = 0.4
 	add_child(moon)
 	return env

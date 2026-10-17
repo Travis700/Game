@@ -184,6 +184,13 @@ func _ready() -> void:
 		Profile.shadows = on
 		Profile.apply_graphics())
 	graphics.add_child(shadows)
+	var effects := CheckBox.new()
+	effects.text = "Ambient occlusion and haze"
+	effects.button_pressed = Profile.effects
+	effects.toggled.connect(func(on: bool) -> void:
+		Profile.effects = on
+		Profile.apply_graphics())
+	graphics.add_child(effects)
 	var vsync := CheckBox.new()
 	vsync.text = "V-sync"
 	vsync.button_pressed = Profile.vsync

@@ -42,9 +42,6 @@ var _bang_cooldown: Array[float] = [0.0, 0.0]
 
 
 func _ready() -> void:
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.3, 0.32, 0.36)
-	material.roughness = 0.5
 	for i in DOORWAYS.size():
 		var info := DOORWAYS[i]
 		var centre: Vector3 = info["centre"]
@@ -68,17 +65,11 @@ func _ready() -> void:
 		hinge.position = centre - (Vector3(WIDTH * 0.5, 0, 0) if along_x else Vector3(0, 0, WIDTH * 0.5))
 		var size := Vector3(WIDTH, HEIGHT, 0.08) if along_x else Vector3(0.08, HEIGHT, WIDTH)
 		var offset := Vector3(WIDTH * 0.5, HEIGHT * 0.5, 0) if along_x else Vector3(0, HEIGHT * 0.5, WIDTH * 0.5)
-		var mesh := MeshInstance3D.new()
-		mesh.mesh = Monster.box(size)
-		mesh.material_override = material
-		mesh.position = offset
-		hinge.add_child(mesh)
-		var window := MeshInstance3D.new()
-		window.mesh = Monster.box(Vector3(0.4, 0.3, 0.1) if along_x else Vector3(0.1, 0.3, 0.4))
-		window.material_override = StandardMaterial3D.new()
-		(window.material_override as StandardMaterial3D).albedo_color = Color(0.05, 0.07, 0.08)
-		window.position = offset + Vector3(0, 0.5, 0)
-		hinge.add_child(window)
+		# The same wooden door with a window as the rest of the school's (SchoolDoors).
+		var leaf := SchoolDoors.leaf_mesh(WIDTH - 0.012, HEIGHT, false)
+		if not along_x:
+			leaf.rotation.y = -PI * 0.5
+		hinge.add_child(leaf)
 		var shape := BoxShape3D.new()
 		shape.size = size
 		var collider := CollisionShape3D.new()

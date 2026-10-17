@@ -36,15 +36,10 @@ var _swing: PackedInt32Array = []
 var _wing_difficulty := 1
 ## Set while the doors are first hung, so they don't all bang at once.
 var _quiet := false
-var _wood: StandardMaterial3D
-var _steel: StandardMaterial3D
-var _glass: StandardMaterial3D
-var _black: StandardMaterial3D
 
 
 ## Hangs the doors in the school's doorways (every computer, as the school is built).
 func build(doorways: Array[Dictionary]) -> void:
-	_make_materials()
 	for doorway in doorways:
 		var centre: Vector3 = doorway["centre"]
 		var width: float = doorway["width"]
@@ -231,7 +226,6 @@ func _wing_of(centre: Vector3) -> int:
 
 
 ## One door leaf, in its hinge's space: it runs from the hinge along +X, `width` wide.
-## Made of the wood round a window (left, right, above, below), the glass, and the fittings.
 func _leaf(width: float, height: float, in_pair: bool) -> Interactable:
 	var body := Interactable.new()
 	body.prompt = "Open the door"
@@ -241,6 +235,16 @@ func _leaf(width: float, height: float, in_pair: bool) -> Interactable:
 	collider.shape = shape
 	collider.position = Vector3(width * 0.5, height * 0.5, 0)
 	body.add_child(collider)
+	body.add_child(leaf_mesh(width, height, in_pair))
+	return body
+
+
+## The look of a door leaf (also the guard room's): the wood round a window (left, right,
+## above, below), the glass, a rubber bead, kick plates, lever handles and hinges, as one mesh
+## with a surface per material. It runs from x = 0 (the hinge) to `width`, from the floor up.
+static func leaf_mesh(width: float, height: float, in_pair: bool) -> MeshInstance3D:
+	if _wood == null:
+		_make_materials()
 	_pieces.clear()
 	# The window sits towards the handle on a single door, in the middle of each of a pair.
 	var window_x := width * (0.5 if in_pair else 0.62)
@@ -248,45 +252,45 @@ func _leaf(width: float, height: float, in_pair: bool) -> Interactable:
 	var right := window_x + WINDOW_SIZE.x * 0.5
 	var top := height - WINDOW_FROM_TOP
 	var bottom := top - WINDOW_SIZE.y
-	_part(body, Vector3(left * 0.5, height * 0.5, 0), Vector3(left, height, THICKNESS), _wood)
-	_part(body, Vector3((right + width) * 0.5, height * 0.5, 0), Vector3(width - right, height, THICKNESS), _wood)
-	_part(body, Vector3(window_x, (top + height) * 0.5, 0), Vector3(WINDOW_SIZE.x, height - top, THICKNESS), _wood)
-	_part(body, Vector3(window_x, bottom * 0.5, 0), Vector3(WINDOW_SIZE.x, bottom, THICKNESS), _wood)
-	_part(body, Vector3(window_x, (top + bottom) * 0.5, 0), Vector3(WINDOW_SIZE.x, WINDOW_SIZE.y, 0.008), _glass)
-	# A black rubber bead round the glass on both faces.
+	_part(Vector3(left * 0.5, height * 0.5, 0), Vector3(left, height, THICKNESS), _wood)
+	_part(Vector3((right + width) * 0.5, height * 0.5, 0), Vector3(width - right, height, THICKNESS), _wood)
+	_part(Vector3(window_x, (top + height) * 0.5, 0), Vector3(WINDOW_SIZE.x, height - top, THICKNESS), _wood)
+	_part(Vector3(window_x, bottom * 0.5, 0), Vector3(WINDOW_SIZE.x, bottom, THICKNESS), _wood)
+	_part(Vector3(window_x, (top + bottom) * 0.5, 0), Vector3(WINDOW_SIZE.x, WINDOW_SIZE.y, 0.008), _glass)
 	for face: float in [-1.0, 1.0]:
 		var z := face * (THICKNESS * 0.5 + 0.004)
-		_part(body, Vector3(window_x, top + 0.012, z), Vector3(WINDOW_SIZE.x + 0.05, 0.024, 0.01), _black)
-		_part(body, Vector3(window_x, bottom - 0.012, z), Vector3(WINDOW_SIZE.x + 0.05, 0.024, 0.01), _black)
-		_part(body, Vector3(left - 0.012, (top + bottom) * 0.5, z), Vector3(0.024, WINDOW_SIZE.y, 0.01), _black)
-		_part(body, Vector3(right + 0.012, (top + bottom) * 0.5, z), Vector3(0.024, WINDOW_SIZE.y, 0.01), _black)
+		_part(Vector3(window_x, top + 0.012, z), Vector3(WINDOW_SIZE.x + 0.05, 0.024, 0.01), _black)
+		_part(Vector3(window_x, bottom - 0.012, z), Vector3(WINDOW_SIZE.x + 0.05, 0.024, 0.01), _black)
+		_part(Vector3(left - 0.012, (top + bottom) * 0.5, z), Vector3(0.024, WINDOW_SIZE.y, 0.01), _black)
+		_part(Vector3(right + 0.012, (top + bottom) * 0.5, z), Vector3(0.024, WINDOW_SIZE.y, 0.01), _black)
 		# Kick plate, and a lever handle by the free edge.
-		_part(body, Vector3(width * 0.5, 0.13, face * (THICKNESS * 0.5 + 0.002)), Vector3(width - 0.06, 0.25, 0.004), _steel)
+		_part(Vector3(width * 0.5, 0.13, face * (THICKNESS * 0.5 + 0.002)), Vector3(width - 0.06, 0.25, 0.004), _steel)
 		var handle_x := width - 0.08
-		_part(body, Vector3(handle_x, 1.0, face * (THICKNESS * 0.5 + 0.01)), Vector3(0.06, 0.06, 0.02), _steel)
-		_part(body, Vector3(handle_x - 0.06, 1.0, face * (THICKNESS * 0.5 + 0.045)), Vector3(0.14, 0.022, 0.022), _steel)
-		_part(body, Vector3(handle_x, 1.0, face * (THICKNESS * 0.5 + 0.03)), Vector3(0.022, 0.022, 0.04), _steel)
-	# Three hinges down the hinge edge.
+		_part(Vector3(handle_x, 1.0, face * (THICKNESS * 0.5 + 0.01)), Vector3(0.06, 0.06, 0.02), _steel)
+		_part(Vector3(handle_x - 0.06, 1.0, face * (THICKNESS * 0.5 + 0.045)), Vector3(0.14, 0.022, 0.022), _steel)
+		_part(Vector3(handle_x, 1.0, face * (THICKNESS * 0.5 + 0.03)), Vector3(0.022, 0.022, 0.04), _steel)
 	for hinge_y: float in [0.25, height * 0.5, height - 0.25]:
-		_part(body, Vector3(0.0, hinge_y, 0), Vector3(0.025, 0.11, THICKNESS + 0.012), _steel)
-	# All of it as one mesh, a surface per material (four draw calls a leaf, not thirty).
-	var leaf_mesh := ArrayMesh.new()
+		_part(Vector3(0.0, hinge_y, 0), Vector3(0.025, 0.11, THICKNESS + 0.012), _steel)
+	var mesh := ArrayMesh.new()
 	for material: Material in _pieces:
 		var tool: SurfaceTool = _pieces[material]
-		tool.commit(leaf_mesh)
-		leaf_mesh.surface_set_material(leaf_mesh.get_surface_count() - 1, material)
+		tool.commit(mesh)
+		mesh.surface_set_material(mesh.get_surface_count() - 1, material)
 	var leaf := MeshInstance3D.new()
-	leaf.mesh = leaf_mesh
+	leaf.mesh = mesh
 	leaf.visibility_range_end = 40.0
-	body.add_child(leaf)
-	return body
+	return leaf
 
 
 ## The parts of the leaf being built, by material.
-var _pieces: Dictionary = {}
+static var _pieces: Dictionary = {}
+static var _wood: StandardMaterial3D
+static var _steel: StandardMaterial3D
+static var _glass: StandardMaterial3D
+static var _black: StandardMaterial3D
 
 
-func _part(_body: Node3D, at: Vector3, size: Vector3, material: Material) -> void:
+static func _part(at: Vector3, size: Vector3, material: Material) -> void:
 	if not _pieces.has(material):
 		var tool := SurfaceTool.new()
 		tool.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -296,14 +300,14 @@ func _part(_body: Node3D, at: Vector3, size: Vector3, material: Material) -> voi
 	(_pieces[material] as SurfaceTool).append_from(box, 0, Transform3D(Basis.IDENTITY, at))
 
 
-func _make_materials() -> void:
+static func _make_materials() -> void:
 	_wood = StandardMaterial3D.new()
 	_wood.albedo_texture = load("res://assets/textures/door_wood.jpg")
 	_wood.normal_enabled = true
 	_wood.normal_texture = load("res://assets/textures/door_wood_n.jpg")
 	_wood.roughness_texture = load("res://assets/textures/door_wood_orm.jpg")
 	_wood.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_GREEN
-	# Mapped on the door itself (not the world), so the grain swings with it; vertical grain.
+	# Mapped on the door itself (not the world), so the grain swings with it.
 	_wood.uv1_triplanar = true
 	_wood.uv1_scale = Vector3.ONE / 0.8
 	_wood.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
