@@ -361,7 +361,7 @@ it runs; that's normal for games that aren't signed (Steam builds don't show it)
 | Mouse | Look |
 | F | Flashlight |
 | E | Use. Press E on the time clock in the guard room to clock in and start the night. Hold E on punch stations and the breaker. |
-| Esc | Menu: mouse sensitivity, field of view, brightness, volume, voice chat, captions, change keys, graphics (resolution, anti-aliasing, shadows, ambient occlusion and haze, bounced light, V-sync), fullscreen, leave the game (pauses solo; in a group the night keeps going) |
+| Esc | Menu: mouse sensitivity, field of view, brightness, volume, voice chat, captions, change keys, graphics (resolution, anti-aliasing, shadows, ambient occlusion and haze, bounced light, long grass, V-sync), fullscreen, leave the game (pauses solo; in a group the night keeps going) |
 | Tab | Clipboard: log anything odd you spot (after clocking in); its Field guide button shows what you know about each monster |
 | G | Use or put down what you're carrying (sensors, traps, energy drink, coffee, flashlight, EMF reader, air horn, decoy radio, donuts). As a ghost: watch through a teammate's eyes |
 | Q | Mark a spot for the team (at a desk: flag the camera) |
@@ -404,6 +404,7 @@ Back clipboard, RB use item, LB push to talk, RT walkie-talkie, Start menu. In m
 - `scripts/monster_director.gd` — which monsters come out each night, navigation, catching guards.
 - `scripts/monsters/` — one script per monster.
 - `scripts/lockers.gd` — the hallway locker doors and the Locker Thing.
+- `scripts/grass.gd`, `shaders/grass.gdshader` — the long grass on the lawns outside.
 - `scripts/shop.gd`, `scripts/vending_ui.gd` — the vending machine and carrying items.
 - `scripts/totems.gd` — revive totems.
 - `scripts/sfx.gd` — simple generated sounds (whistle, humming, lockers).

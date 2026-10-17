@@ -198,6 +198,13 @@ func _ready() -> void:
 		Profile.bounce_light = on
 		Profile.apply_graphics())
 	graphics.add_child(bounce)
+	var grass := CheckBox.new()
+	grass.text = "Long grass"
+	grass.button_pressed = Profile.long_grass
+	grass.toggled.connect(func(on: bool) -> void:
+		Profile.long_grass = on
+		Profile.apply_graphics())
+	graphics.add_child(grass)
 	var vsync := CheckBox.new()
 	vsync.text = "V-sync"
 	vsync.button_pressed = Profile.vsync

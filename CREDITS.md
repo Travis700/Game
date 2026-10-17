@@ -105,6 +105,18 @@ textures shrunk with `tools/slim_glb.py`. In `assets/models/`:
 | prop_bulletin_board | Bulletin Board | lydia.la | https://sketchfab.com/3d-models/bulletin-board-9a2ef796667449cfbace0ff446557738 |
 | prop_whiteboard | Whiteboard | Darren McNerney 3D | https://sketchfab.com/3d-models/whiteboard-d92927c453a14702bb5b5ba3fb6a044a |
 | prop_projector | Projector | GokouFG | https://sketchfab.com/3d-models/projector-0f1c6b1fa0bd4d5bbe5ac10e9eee31de |
+| prop_tree | Realistic Tree | Daniel | https://sketchfab.com/3d-models/realistic-tree-d989c0f801d847b9a74992ec4ddcfdfc |
+| prop_park_bench | Park Bench | RBG_illustrations | https://sketchfab.com/3d-models/park-bench-2ee2bc87756d4bf0932d83ab860ddb8f |
+| prop_picnic_table | Wooden Picnic Table - 4096px² | Mark Peters | https://sketchfab.com/3d-models/wooden-picnic-table-4096px2-c7d39c0bcee04553894d0de081d3aa9c |
+| prop_bike_rack | Bike Rack | Igrium | https://sketchfab.com/3d-models/bike-rack-bb71ca627c5c44aba68c610fbfa24cd2 |
+| prop_dumpster | Dumpster | Chenchanchong | https://sketchfab.com/3d-models/dumpster-2d634c793e4c4b948c58cc07c33f1c3b |
+| prop_fire_hydrant | Fire Hydrant | Denko | https://sketchfab.com/3d-models/fire-hydrant-91acc6e821a74ed3a3c0ae72643958a5 |
+| prop_school_bus | School Bus | Macaroni | https://sketchfab.com/3d-models/school-bus-a959ee8ce17d434f9fdbc93cad199a21 |
+
+## Long grass: made for this game
+
+The grass outside is made in code (`scripts/grass.gd`, `shaders/grass.gdshader`): one tuft of
+blades, drawn thousands of times.
 
 ## School art: made for this game
 

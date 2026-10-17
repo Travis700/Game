@@ -640,6 +640,8 @@ func _build_grounds() -> void:
 	# Street outside the gate.
 	_box(Vector3(0, -0.11, 66), Vector3(220, 0.2, 10), "asphalt")
 	_build_fence()
+	_build_yard()
+	_build_grass()
 
 
 func _build_fence() -> void:
@@ -685,6 +687,58 @@ func _lamp_post(base: Vector3, night_energy: float, day_energy: float) -> void:
 		_hide_boxes(post)
 		head.visible = false
 	_light(base + Vector3(0, 4.3, 0), night_energy, 16.0, false, false, Color(1.0, 0.72, 0.42), day_energy)
+
+
+## Trees (`[x, z, height, turn]`) in the yard and along the road.
+const TREES := [[-15.0, 37.0, 9.0, 0.4], [18.5, 35.5, 8.0, 2.1], [-35.0, 41.0, 8.5, 4.0], [35.5, 25.5, 9.5, 1.2],
+		[-26.0, 54.0, 10.0, 5.1], [24.0, 53.5, 9.0, 3.3], [-52.0, 52.0, 9.5, 0.8], [50.0, 54.5, 10.5, 2.7]]
+
+
+## Things in the front yard and out on the street: trees, picnic tables, the bike rack, a
+## dumpster, and by the kerb a bench, a hydrant and a school bus.
+func _build_yard() -> void:
+	for tree: Array in TREES:
+		if _model("prop_tree", Vector3(tree[0], 0, tree[1]), tree[2], tree[3]):
+			_box(Vector3(tree[0], 1.5, tree[1]), Vector3(0.45, 3.0, 0.45), "dark").visible = false
+	_solid_model("prop_park_bench", Vector3(10.0, 0, 59.4), 0.75, 0.0, Vector3(2.5, 0.75, 0.6))
+	_solid_model("prop_picnic_table", Vector3(-22.0, 0, 29.0), 0.75, 0.2, Vector3(1.8, 0.75, 1.8))
+	_solid_model("prop_picnic_table", Vector3(-15.5, 0, 30.5), 0.75, -0.15, Vector3(1.8, 0.75, 1.8))
+	_solid_model("prop_bike_rack", Vector3(-9.0, 0, 21.0), 0.76, 0.0, Vector3(2.1, 0.76, 0.12))
+	_solid_model("prop_dumpster", Vector3(38.6, 0, 22.0), 1.4, 0.0, Vector3(2.0, 1.4, 1.1))
+	_solid_model("prop_fire_hydrant", Vector3(6.5, 0, 59.6), 0.8, 0.6, Vector3(0.4, 0.8, 0.4))
+	_solid_model("prop_school_bus", Vector3(16.0, 0, 63.3), 3.0, PI * 0.5, Vector3(10.6, 3.0, 2.5))
+
+
+## Long grass over the lawns (see Grass), kept off the building, paths, street and anything
+## standing on the lawn.
+func _build_grass() -> void:
+	var grass := Grass.new()
+	grass.name = "Grass"
+	add_child(grass)
+	var lawns: Array[Rect2] = [Rect2(-105, -60, 210, 120.5)]
+	var gaps: Array[Rect2] = [
+		Rect2(-40.4, -30.4, 80.8, 50.8),  # the main building
+		Rect2(-80.4, -14.4, 40.0, 34.8), Rect2(40.4, -14.4, 40.0, 34.8),  # the wings
+		Rect2(-2.2, 20.0, 4.4, 41.0),  # the path to the gate
+		Rect2(-9.4, 35.6, 3.8, 0.8),  # the school's sign
+	]
+	for hedge_x: float in HEDGES:
+		gaps.append(Rect2(hedge_x - 2.1, 20.4, 4.2, 1.4))
+	var clearings: Array[Vector3] = [Vector3(8.0, 0.4, 27.0), Vector3(4.0, 0.5, 42.0)]  # flagpole, punch post
+	for side: float in [-1.0, 1.0]:
+		clearings.append_array([Vector3(side * 22.0, 0.3, 40.0), Vector3(side * 30.0, 0.7, 32.0),  # floodlight, totem
+				Vector3(side * 2.95, 0.4, 22.8), Vector3(side * 2.5, 0.3, 45.0), Vector3(side * 4.0, 0.3, 47.0),
+				Vector3(side * 5.2, 0.8, 27.0)])  # benches
+	for tree: Array in TREES:
+		clearings.append(Vector3(tree[0], 0.5, tree[1]))
+	var x := -50.0
+	while x <= 50.0:
+		clearings.append(Vector3(x, 0.3, 60.5))
+		x += 20.0
+	for hole: Vector3 in [Vector3(-22.0, 1.3, 29.0), Vector3(-15.5, 1.3, 30.5), Vector3(38.6, 1.2, 22.0), Vector3(6.5, 0.3, 59.6),
+			Vector3(10.0, 1.4, 59.4)]:
+		clearings.append(hole)
+	grass.build(lawns, gaps, clearings)
 
 
 func _build_walls() -> void:
@@ -1502,9 +1556,13 @@ func _build_facade() -> void:
 	_solid_model("prop_covered_car", Vector3(-11.0, 0, 62.6), 1.35, PI * 0.5, Vector3(4.3, 1.35, 1.8))
 
 
+## Where the clipped hedges along the front wall are centred (x; each is 4 m long).
+const HEDGES: Array[float] = [-70.0, -56.0, -34.0, -24.0, -14.0, 14.0, 24.0, 34.0, 56.0, 70.0]
+
+
 ## Clipped hedges along the front wall, either side of the doors and the wings.
 func _build_landscaping() -> void:
-	for hedge_x: float in [-70.0, -56.0, -34.0, -24.0, -14.0, 14.0, 24.0, 34.0, 56.0, 70.0]:
+	for hedge_x: float in HEDGES:
 		# A clipped box hedge: the body, and a slightly narrower top so its edges look rounded.
 		_box(Vector3(hedge_x, 0.5, 21.15), Vector3(4.0, 1.0, 1.1), "hedge")
 		_box(Vector3(hedge_x, 1.05, 21.15), Vector3(3.85, 0.1, 0.95), "hedge", false)

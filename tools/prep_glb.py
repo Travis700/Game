@@ -7,7 +7,7 @@ about the vertical axis (models should face +Z), --tris decimates to about that 
 (UVs kept). Everything left is joined into one mesh with its transforms applied.
 """
 import argparse, math
-import bpy
+import bpy, mathutils
 
 parser = argparse.ArgumentParser()
 parser.add_argument('src')
@@ -45,8 +45,9 @@ bpy.context.view_layer.objects.active = meshes[0]
 if len(meshes) > 1:
     bpy.ops.object.join()
 model = bpy.context.view_layer.objects.active
-model.rotation_euler = (0.0, 0.0, math.radians(args.turn))
-bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+# Blender's up is Z, so turning about it turns the model about glTF's up (Y).
+model.data.transform(mathutils.Matrix.Rotation(math.radians(args.turn), 4, 'Z'))
 
 model.data.calc_loop_triangles()
 tris = len(model.data.loop_triangles)
