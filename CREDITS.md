@@ -158,14 +158,16 @@ From https://kenney.nl (Impact Sounds, Interface Sounds and RPG Audio packs), li
 
 ## Sounds: generated for this game
 
-Made for Night Shift with ElevenLabs Sound Effects v2 through Creative Claw (creativeclaw.co),
-on the project owner's account, then levelled and converted to mono OGG. Check the provider's
-current terms for commercial use before release. In `assets/sounds/`: whistles (`whistle_*`),
-`lunch_hum`, `monitor_beep`, `flash_charge`, `flash_pop`, `shush`, `hiss`, `skitter`, `giggle`,
-`wet_voice`, `ghost_breath`, `phone_ring`, `school_bell`, `siren`, `intercom`, `punch_clock`,
-`power_down`, `power_up`, `scream`, `stinger`, `ambience`, `heartbeat`, `door_bang`, `gate`,
-`air_horn`, `hand_bell`, `radio`, `whispers`, `ball_bounce`, `principal_steps`, `rush_steps`,
-`squelch`, `vend`, `menu_theme` (title music), `chase` (chase music).
+Made for Night Shift with ElevenLabs Sound Effects v2 through Creative Claw (creativeclaw.co), on
+the project owner's account, then levelled and converted to mono OGG. Check the provider's current
+terms for commercial use before release. In `assets/sounds/`: whistles (`whistle_*`), `lunch_hum`,
+`monitor_beep`, `flash_charge`, `flash_pop`, `shush`, `hiss`, `skitter`, `giggle`, `wet_voice`,
+`ghost_breath`, `phone_ring`, `school_bell`, `siren`, `intercom`, `punch_clock`, `power_down`,
+`power_up`, `scream`, `stinger`, `ambience`, `heartbeat`, `door_bang`, `gate`, `air_horn`,
+`hand_bell`, `radio`, `whispers`, `ball_bounce`, `principal_steps`, `rush_steps`, `squelch`, `vend`,
+`menu_theme` (title music), `chase` (chase music), and the storm and the building at night: `rain`,
+`thunder_*`, `pipe_knock_*`, `panting`, `tv_hum` (the hum made seamless and every one levelled to
+-18 LUFS).
 
 ## Field guide illustrations: generated for this game
 
@@ -204,7 +206,5 @@ version of a SpriteCook image (`keyart_raw.png`, superseded). Capsule titles are
 ## Generated in code
 
 `floor`, `ceiling`, `metal`, `locker`, `cork`, `board` textures: `tools/gen_textures.py`. The flashlight's
-beam pattern (`assets/textures/flashlight_cookie.png`): `tools/gen_flashlight.py`. The storm's `rain` and
-`thunder_*`, the heating's `pipe_knock_*` and a winded guard's `panting` in `assets/sounds/`: synthesised by
-`tools/gen_night_sounds.py`. Fallback sounds (used where there's no recording): `scripts/sfx.gd`, synthesised
-at runtime.
+beam pattern (`assets/textures/flashlight_cookie.png`): `tools/gen_flashlight.py`. Fallback sounds (used where
+there's no recording): `scripts/sfx.gd`, synthesised at runtime.

@@ -60,9 +60,10 @@ func build(spots: Array[Dictionary]) -> void:
 		glow.visible = false
 		holder.add_child(glow)
 		var hum := AudioStreamPlayer3D.new()
-		hum.stream = Sfx.notes([120.0], 1.0, 0.03, "saw", true)
-		hum.volume_db = -20.0
-		hum.max_distance = 7.0
+		# A set's whine, only heard up close, where you can see it's the TV.
+		hum.stream = SoundBank.get_sound("tv_hum", Sfx.notes([120.0], 1.0, 0.03, "saw", true), true)
+		hum.volume_db = -14.0
+		hum.max_distance = 6.0
 		holder.add_child(hum)
 		_sets.append({"screen": screen, "glow": glow, "body": body, "hum": hum})
 		_on.append(false)
