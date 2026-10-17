@@ -470,6 +470,7 @@ func _ready() -> void:
 	nerve.director = director
 	nerve.players = players
 	nerve.power = power
+	nerve.light_switches = light_switches
 	nerve.hiding = hiding
 	nerve.hud = hud
 	add_child(nerve)

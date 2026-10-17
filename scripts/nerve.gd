@@ -1,8 +1,8 @@
 class_name Nerve
 extends Node
 ## Nerve: how steady each guard is, 100 (calm) to 0 (falling apart). It wears down in the dark,
-## alone, near monsters, and when a teammate is caught; it comes back in the lit guard room, near
-## teammates, and with coffee.
+## alone, near monsters, and when a teammate is caught; it comes back in the lit guard room, a
+## little in any room with its lights switched on, near teammates, and with coffee.
 ##
 ## Low nerve is dangerous: monsters notice you from further away, and you start to hear and
 ## see things that aren't there (footsteps behind you, whispers, a figure at the edge of the
@@ -19,6 +19,8 @@ const MONSTER_DRAIN := 0.7
 ## Crouched in the dark in a cupboard, listening.
 const HIDING_DRAIN := 1.0
 const GUARD_ROOM_GAIN := 0.5
+## In a room with its lights on (see LightSwitches): enough to hold steady, not to recover much.
+const LIT_ROOM_GAIN := 0.1
 const COMPANY_GAIN := 0.08
 const MONSTER_RANGE := 12.0
 const COMPANY_RANGE := 8.0
@@ -32,6 +34,7 @@ const SHAKEN_REACH := 1.3
 var director: MonsterDirector
 var players: Node3D
 var power: Power
+var light_switches: LightSwitches
 var hiding: Hiding
 var hud: CanvasLayer
 ## The local guard. Set by Main.
@@ -70,6 +73,8 @@ func update(delta: float) -> void:
 			change += GUARD_ROOM_GAIN
 		elif not power.on:
 			change -= DARK_DRAIN
+		elif light_switches and light_switches.lit_at(at):
+			change += LIT_ROOM_GAIN
 		var company := false
 		for other in living:
 			if other != guard and other.global_position.distance_to(at) < COMPANY_RANGE:

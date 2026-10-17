@@ -182,6 +182,14 @@ func _request_flip(index: int) -> void:
 	flip(index, not _is_on(index))
 
 
+## Is this point in a room (other than the guard room) with its lights on?
+func lit_at(point: Vector3) -> bool:
+	for i in _rooms.size():
+		if _rooms[i]["name"] != "Guard Room" and (ROOMS[_rooms[i]["name"]] as AABB).has_point(point):
+			return _is_on(i)
+	return false
+
+
 ## The switch this physics body is, or -1.
 func index_of(body: Object) -> int:
 	for i in _rooms.size():
