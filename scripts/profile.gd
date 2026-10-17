@@ -15,6 +15,8 @@ var render_scale := 1.0
 var shadows := true
 ## Ambient occlusion and the light haze that shows flashlight beams (the Forward+ renderer).
 var effects := true
+## Light bouncing off walls and floors (SDFGI and screen-space indirect light, Forward+ only).
+var bounce_light := true
 var antialiasing := 1
 ## Field of view, in degrees.
 var fov := 75.0
@@ -59,6 +61,7 @@ func _enter_tree() -> void:
 		render_scale = config.get_value("graphics", "render_scale", 1.0)
 		shadows = config.get_value("graphics", "shadows", true)
 		effects = config.get_value("graphics", "effects", true)
+		bounce_light = config.get_value("graphics", "bounce_light", true)
 		antialiasing = config.get_value("graphics", "antialiasing", 1)
 		fov = config.get_value("graphics", "fov", 75.0)
 		brightness = config.get_value("graphics", "brightness", 1.0)
@@ -98,6 +101,7 @@ func save_settings() -> void:
 	config.set_value("graphics", "render_scale", render_scale)
 	config.set_value("graphics", "shadows", shadows)
 	config.set_value("graphics", "effects", effects)
+	config.set_value("graphics", "bounce_light", bounce_light)
 	config.set_value("graphics", "antialiasing", antialiasing)
 	config.set_value("graphics", "fov", fov)
 	config.set_value("graphics", "brightness", brightness)
@@ -144,6 +148,8 @@ func apply_graphics() -> void:
 		var env := (node as WorldEnvironment).environment
 		env.ssao_enabled = effects
 		env.volumetric_fog_enabled = effects
+		env.sdfgi_enabled = bounce_light
+		env.ssil_enabled = bounce_light
 
 
 ## Writes a new file and swaps it in, so a crash mid-save can't lose the settings and badge.

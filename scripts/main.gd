@@ -2118,6 +2118,17 @@ func _make_environment() -> Environment:
 	env.volumetric_fog_albedo = Color(0.7, 0.72, 0.75)
 	env.volumetric_fog_length = 40.0
 	env.volumetric_fog_ambient_inject = 0.0
+	# Light bouncing round the rooms: a lit classroom spills a warm glow into the dark hall, and a
+	# flashlight on a wall lights the room a little. Switched by the "Bounced light" setting.
+	env.sdfgi_use_occlusion = true
+	env.sdfgi_cascades = 4
+	env.sdfgi_min_cell_size = 0.2
+	env.sdfgi_y_scale = Environment.SDFGI_Y_SCALE_50_PERCENT
+	env.sdfgi_energy = 1.0
+	env.ssil_radius = 4.0
+	env.ssil_intensity = 0.8
+	env.sdfgi_enabled = Profile.bounce_light
+	env.ssil_enabled = Profile.bounce_light
 	env.ssao_enabled = Profile.effects
 	env.volumetric_fog_enabled = Profile.effects
 

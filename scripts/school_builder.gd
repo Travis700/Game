@@ -135,6 +135,7 @@ func _ready() -> void:
 	_build_facade()
 	_build_floors()
 	_build_fixtures()
+	_build_wear()
 	_merge_static_meshes()
 
 
@@ -593,6 +594,11 @@ func get_material(mat_name: String) -> StandardMaterial3D:
 func _camera(camera_name: String, pos: Vector3, target: Vector3, difficulty := 1) -> void:
 	var housing := _box(pos, Vector3(0.18, 0.14, 0.3), "dark", false)
 	housing.look_at(target)
+	# The real camera, if its model is there, in place of the box (the red light stays).
+	var body := ModelKit.add(housing, "prop_security_camera_01", 0.24, PI)
+	if body:
+		(housing as MeshInstance3D).mesh = null
+		body.position.y -= 0.12
 	var led := _box_mesh(Vector3(0.03, 0.03, 0.01), "led")
 	led.position = Vector3(0.05, 0.04, -0.155)
 	housing.add_child(led)
@@ -1265,6 +1271,106 @@ func _build_floors() -> void:
 		_box(Vector3((area[1] + area[2]) * 0.5, 0.003, (area[3] + area[4]) * 0.5), size, area[0], false)
 
 
+# --- Wear ----------------------------------------------------------------------
+
+## Decals (made by tools/gen_wear.py) and a few loose sheets of paper, so the school looks used:
+## scuffs and spills on the floors (more in the halls, where the traffic is), water rings on the
+## ceiling tiles, grime along the bottom of the hall walls. Placed from a fixed seed, so the
+## school looks the same every night and for every player.
+const WEAR_DRAW_DISTANCE := 24.0
+const HALL_WALLS := [[-80.0, 80.0, 4.0], [-80.0, 80.0, 10.0]]
+
+
+func _build_wear() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1987
+	var floor_marks: Array[Texture2D] = []
+	for name in ["scuff0", "scuff1", "scuff2", "stain0", "stain1", "stain2"]:
+		floor_marks.append(load("res://assets/textures/wear/%s.png" % name))
+	var water: Array[Texture2D] = [load("res://assets/textures/wear/ceiling_stain0.png"),
+			load("res://assets/textures/wear/ceiling_stain1.png")]
+	var paper := StandardMaterial3D.new()
+	paper.albedo_texture = load("res://assets/textures/wear/paper.png")
+	paper.roughness = 0.95
+	for area: String in AREAS:
+		if area == "Front Gate" or area == "Gym":
+			continue
+		var box: AABB = AREAS[area]
+		var floor_area := box.size.x * box.size.z
+		var hall := area.contains("Hall") or area == "Lobby"
+		for i in int(floor_area / (10.0 if hall else 22.0)):
+			var at := _random_spot(rng, box, 0.8)
+			var mark := floor_marks[rng.randi() % floor_marks.size()]
+			var size := rng.randf_range(0.8, 1.6) if mark.resource_path.contains("scuff") else rng.randf_range(0.6, 1.3)
+			_decal(mark, at, size, rng.randf() * TAU, false, rng.randf_range(0.45, 0.85))
+		for i in int(floor_area / 70.0):
+			if rng.randf() < 0.6:
+				_decal(water[rng.randi() % water.size()], _random_spot(rng, box, 1.0) + Vector3(0, WALL_H, 0),
+						rng.randf_range(0.5, 1.2), rng.randf() * TAU, true, rng.randf_range(0.5, 0.9))
+		for i in int(floor_area / (60.0 if hall else 90.0)):
+			var sheet := MeshInstance3D.new()
+			var quad := PlaneMesh.new()
+			quad.size = Vector2(0.216, 0.279)
+			sheet.mesh = quad
+			sheet.material_override = paper
+			sheet.position = _random_spot(rng, box, 1.0) + Vector3(0, 0.004, 0)
+			sheet.rotation.y = rng.randf() * TAU
+			sheet.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			sheet.visibility_range_end = WEAR_DRAW_DISTANCE
+			add_child(sheet)
+	# Grime along the foot of the hall walls, in uneven lengths, broken at every doorway.
+	var grime: Texture2D = load("res://assets/textures/wear/wall_grime.png")
+	for wall: Array in HALL_WALLS:
+		var x: float = wall[0]
+		while x < wall[1]:
+			var length := rng.randf_range(2.0, 4.5)
+			var middle := x + length * 0.5
+			if not _near_doorway(middle, wall[2], length * 0.5 + 0.2):
+				var decal := Decal.new()
+				decal.texture_albedo = grime
+				decal.size = Vector3(length, 0.8, rng.randf_range(0.5, 0.9))
+				# Projects sideways into the wall: the decal's -Y faces it, its Z runs up the wall.
+				decal.position = Vector3(middle, decal.size.z * 0.5, wall[2])
+				decal.rotation_degrees = Vector3(90, 0, 0)
+				decal.normal_fade = 0.5
+				decal.modulate = Color(1, 1, 1, rng.randf_range(0.5, 0.9))
+				_fade_decal(decal)
+				add_child(decal)
+			x += length + rng.randf_range(0.5, 3.0)
+
+
+func _random_spot(rng: RandomNumberGenerator, box: AABB, inset: float) -> Vector3:
+	return Vector3(rng.randf_range(box.position.x + inset, box.end.x - inset), 0.0,
+			rng.randf_range(box.position.z + inset, box.end.z - inset))
+
+
+func _near_doorway(x: float, z: float, reach: float) -> bool:
+	for doorway in doorways:
+		var centre: Vector3 = doorway["centre"]
+		if doorway["along_x"] and absf(centre.z - z) < 0.5 and absf(centre.x - x) < reach + float(doorway["width"]) * 0.5:
+			return true
+	return false
+
+
+## A square decal lying on the floor, or on the ceiling looking down.
+func _decal(texture: Texture2D, at: Vector3, size: float, turn: float, on_ceiling: bool, strength: float) -> void:
+	var decal := Decal.new()
+	decal.texture_albedo = texture
+	decal.size = Vector3(size, 0.3, size)
+	decal.position = at
+	decal.rotation = Vector3(PI if on_ceiling else 0.0, turn, 0.0)
+	decal.modulate = Color(1, 1, 1, strength)
+	decal.normal_fade = 0.4
+	_fade_decal(decal)
+	add_child(decal)
+
+
+func _fade_decal(decal: Decal) -> void:
+	decal.distance_fade_enabled = true
+	decal.distance_fade_begin = WEAR_DRAW_DISTANCE - 6.0
+	decal.distance_fade_length = 6.0
+
+
 # --- Outside -------------------------------------------------------------------
 
 ## The front of the school, which the crew walks up to every night: a band of windows (dark
@@ -1702,6 +1808,13 @@ func _classroom(centre: Vector3, facing: float, rows := 3, half_width := 7.0, po
 	_box(Vector3(centre.x, 1.6, board_z), Vector3(4.0, 1.2, 0.06), "board", false)
 	_steel_desk(Vector3(centre.x + 3.0, 0, board_z - facing * 1.6), PI if facing < 0.0 else 0.0)
 	_school_chair(Vector3(centre.x + 3.0, 0, board_z - facing * 0.75), PI if facing > 0.0 else 0.0)
+	# What the teacher left on the desk: a binder, a clipboard, the stapler, an apple.
+	var top := Vector3(centre.x + 3.0, 0.77, board_z - facing * 1.6)
+	var tilt := fmod(absf(centre.x) * 0.37, 1.0) - 0.5
+	_model("prop_binder_notebook", top + Vector3(-0.55, 0, facing * 0.1), 0.025, tilt)
+	_model("prop_clipboard", top + Vector3(-0.1, 0, -facing * 0.15), 0.042, PI * 0.5 + tilt * 0.6)
+	_model("prop_vintage_stapler", top + Vector3(0.45, 0, facing * 0.2), 0.095, tilt * 2.0)
+	_model("prop_food_apple_01", top + Vector3(0.75, 0, -facing * 0.2), 0.085, tilt * 5.0)
 	_model("prop_wall_clock", Vector3(centre.x, 2.38, board_wall), 0.34, PI if facing > 0.0 else 0.0)
 	# The TV cart in the corner by the board, on the side away from the teacher's desk.
 	var side := -1.0 if facing > 0.0 else 1.0
@@ -1710,6 +1823,8 @@ func _classroom(centre: Vector3, facing: float, rows := 3, half_width := 7.0, po
 	_model("prop_television_02", cart + Vector3(0, 0.87, 0), 0.42, PI * 0.5 * -side)
 	_solid_model("prop_shelf_01", Vector3(centre.x - side * 4.5, 0, back_wall + facing * 0.14), 2.0,
 			0.0 if facing > 0.0 else PI, Vector3(0.96, 2.0, 0.26))
+	_solid_model("prop_drawer_cabinet", Vector3(centre.x + side * (half_width - 0.75), 0, back_wall + facing * 0.4), 1.6,
+			0.0 if facing > 0.0 else PI, Vector3(1.0, 1.6, 0.45))
 	if poster != "":
 		_poster(poster, Vector3(centre.x - side * (half_width - 0.125), 1.6, centre.z), Vector3(side, 0, 0))
 	# Spaced so a monster (or a guard) can get between any two desks.

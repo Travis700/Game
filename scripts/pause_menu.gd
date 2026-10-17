@@ -191,6 +191,13 @@ func _ready() -> void:
 		Profile.effects = on
 		Profile.apply_graphics())
 	graphics.add_child(effects)
+	var bounce := CheckBox.new()
+	bounce.text = "Bounced light"
+	bounce.button_pressed = Profile.bounce_light
+	bounce.toggled.connect(func(on: bool) -> void:
+		Profile.bounce_light = on
+		Profile.apply_graphics())
+	graphics.add_child(bounce)
 	var vsync := CheckBox.new()
 	vsync.text = "V-sync"
 	vsync.button_pressed = Profile.vsync
