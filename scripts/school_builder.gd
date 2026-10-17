@@ -292,7 +292,7 @@ func _make_gym_materials() -> void:
 
 
 ## Textures that are too bright as they come.
-const TEXTURE_TINT := {"concrete": Color(0.68, 0.68, 0.66), "grass": Color(0.75, 0.8, 0.72), "quarry": Color(0.62, 0.52, 0.48)}
+const TEXTURE_TINT := {"concrete": Color(0.68, 0.68, 0.66), "grass": Color(0.75, 0.8, 0.72)}
 
 
 func _add_mat(mat_name: String, color: Color, roughness := 0.9, emission := Color.BLACK,
@@ -935,6 +935,18 @@ func _build_kitchen_and_closet() -> void:
 	_solid_model("prop_steel_frame_shelves_01", Vector3(4.55, 0, -23.3), 1.8, -PI * 0.5, Vector3(0.45, 1.8, 0.95))
 	_solid_model("prop_plastic_container", Vector3(4.45, 0, -22.0), 0.4, PI * 0.5, Vector3(0.6, 0.4, 0.84))
 	_solid_model("prop_industrial_storage_cart", Vector3(2.5, 0, -12.6), 0.9, PI, Vector3(1.05, 0.9, 0.72))
+	# A stainless prep table down the middle, with the pots left out on it, and a hood over the stoves.
+	_box(Vector3(0, 0.9, -24.0), Vector3(3.0, 0.04, 1.0), "steel")
+	_box(Vector3(0, 0.25, -24.0), Vector3(2.9, 0.03, 0.9), "steel", false)
+	for leg: Vector2 in [Vector2(-1.45, -0.45), Vector2(1.45, -0.45), Vector2(-1.45, 0.45), Vector2(1.45, 0.45)]:
+		_box(Vector3(leg.x, 0.45, -24.0 + leg.y), Vector3(0.04, 0.9, 0.04), "steel", false)
+	_model("prop_pot_enamel_01", Vector3(-0.9, 0.92, -24.1), 0.18, 0.3)
+	_model("prop_pot_enamel_01", Vector3(-0.5, 0.27, -23.9), 0.18, 1.9)
+	_model("prop_wooden_cutting_board", Vector3(0.3, 0.92, -24.0), 0.04, 0.2)
+	_model("prop_metal_jug", Vector3(1.1, 0.92, -24.2), 0.29, 2.4)
+	_box(Vector3(-4.45, 2.55, -25.2), Vector3(1.0, 0.5, 1.6), "steel", false)
+	_box(Vector3(-4.75, 3.15, -25.2), Vector3(0.4, 0.7, 0.4), "steel", false)
+	_solid_model("prop_trash_can", Vector3(2.0, 0, -18.0), 0.8, 0.0, Vector3(0.5, 0.8, 0.5))
 	# Custodian's closet shelves. The mop bucket belongs to Anomalies.
 	var shelves := _box(Vector3(-4.5, 1.0, -6.0), Vector3(0.6, 2.0, 6.0), "metal")
 	var shelf_z := -8.4

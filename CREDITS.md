@@ -23,7 +23,7 @@ normal map, and roughness + ambient occlusion packed into `<name>_orm.jpg`). In 
 | wall (block, painted cream for the school) | Bricks066 |
 | terrazzo (halls and lobby) | Terrazzo005 |
 | checker (cafeteria, recoloured cream and slate) | Tiles014 |
-| quarry (kitchen) | Tiles047 |
+| quarry (kitchen, recoloured terracotta) | Tiles047 |
 | carpet (library) | Carpet012 |
 | white_tile (locker rooms, nurse) | Tiles107 |
 | gym_floor | WoodFloor040 |
@@ -78,6 +78,9 @@ with `tools/slim_glb.py`. In `assets/models/` as `prop_<asset>.glb`.
 | Food Apple 01 | Oliver Harries |
 | Drawer Cabinet | Ulan Cabanilla |
 | Security Camera 01 | Alexander Otterbeck, Yann Kervran |
+| Pot Enamel 01 | Kuutti Siitonen |
+| Wooden Cutting Board | Kuutti Siitonen |
+| Metal Jug | Anzor Lezhava |
 
 ## Models: Sketchfab (CC BY 4.0)
 
