@@ -1262,8 +1262,8 @@ func _build_fixtures() -> void:
 		# A faint red wash on the wall and floor under it, there all night: it's on the battery.
 		var glow := OmniLight3D.new()
 		glow.position = at + facing * 0.25 - Vector3(0, 0.15, 0)
-		glow.light_color = Color(1.0, 0.12, 0.08)
-		glow.light_energy = 0.5
+		glow.light_color = Color(1.0, 0.03, 0.04)
+		glow.light_energy = 0.3
 		glow.omni_range = 2.6
 		glow.omni_attenuation = 1.6
 		glow.light_specular = 0.2
