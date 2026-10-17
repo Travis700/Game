@@ -208,6 +208,10 @@ func _build_station(index: int) -> void:
 	_part(station, Vector3(0.36, 0.46, 0.14), Vector3.ZERO, Color(0.22, 0.24, 0.22))
 	_part(station, Vector3(0.22, 0.12, 0.02), Vector3(0, 0.08, 0.075), Color(0.85, 0.82, 0.7))
 	_part(station, Vector3(0.05, 0.12, 0.05), Vector3(0, -0.12, 0.09), Color(0.1, 0.1, 0.1))
+	# The box itself isn't drawn from across the school; its lamp is, so you can find it.
+	for part in station.get_children():
+		if part is MeshInstance3D:
+			(part as MeshInstance3D).visibility_range_end = 40.0
 	var lamp := _part(station, Vector3(0.06, 0.06, 0.04), Vector3(0, 0.25, 0.06), LAMP_OFF)
 	_lamps.append(lamp.material_override as StandardMaterial3D)
 	var glow := OmniLight3D.new()

@@ -148,6 +148,9 @@ func _build_cupboard(index: int) -> void:
 	var metal := StandardMaterial3D.new()
 	metal.albedo_color = Color(0.32, 0.35, 0.33)
 	metal.roughness = 0.7
+	# Every panel and slat goes into one mesh (one draw call), not drawn from across the school.
+	var shape_tool := SurfaceTool.new()
+	shape_tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	# Back and sides are solid; the guard stands inside, between them.
 	for part: Array in [[Vector3(1.1, 2.1, 0.05), Vector3(0, 1.05, -0.5)], [Vector3(0.05, 2.1, 1.0), Vector3(-0.55, 1.05, 0)],
 			[Vector3(0.05, 2.1, 1.0), Vector3(0.55, 1.05, 0)], [Vector3(1.1, 0.05, 1.0), Vector3(0, 2.1, 0)]]:
@@ -157,10 +160,7 @@ func _build_cupboard(index: int) -> void:
 		box.size = part[0]
 		shape.shape = box
 		body.add_child(shape)
-		var mesh := MeshInstance3D.new()
-		mesh.mesh = Monster.box(part[0])
-		mesh.material_override = metal
-		body.add_child(mesh)
+		shape_tool.append_from(Monster.box(part[0]), 0, Transform3D(Basis(), part[1]))
 		body.position = part[1]
 		holder.add_child(body)
 	# The doors: slats you can press E on, from outside or in.
@@ -172,14 +172,16 @@ func _build_cupboard(index: int) -> void:
 	door_shape.shape = door_box
 	door.add_child(door_shape)
 	door.collision_layer = Interactable.TALK_LAYER
-	for slat in 9:
-		var mesh := MeshInstance3D.new()
-		mesh.mesh = Monster.box(Vector3(1.05, 0.1, 0.04))
-		mesh.material_override = metal
-		mesh.position = Vector3(0, -0.9 + slat * 0.225, 0)
-		door.add_child(mesh)
 	door.position = Vector3(0, 1.05, 0.5)
+	for slat in 9:
+		shape_tool.append_from(Monster.box(Vector3(1.05, 0.1, 0.04)), 0,
+				Transform3D(Basis(), door.position + Vector3(0, -0.9 + slat * 0.225, 0)))
 	holder.add_child(door)
+	var cupboard := MeshInstance3D.new()
+	cupboard.mesh = shape_tool.commit()
+	cupboard.material_override = metal
+	cupboard.visibility_range_end = 40.0
+	holder.add_child(cupboard)
 	door.used.connect(func(by: Node) -> void:
 		if by is Guard and (by as Guard).is_local():
 			if multiplayer.is_server():

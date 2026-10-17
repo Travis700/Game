@@ -1933,7 +1933,7 @@ func _classroom(centre: Vector3, facing: float, rows := 3, half_width := 7.0, po
 			var spot := Vector3(centre.x - 3.6 + col * 2.4, 0, board_z - facing * (3.4 + row * 2.2))
 			# A desk with its chair attached, facing the board; the box keeps it solid.
 			if _model("prop_student_desk", spot - Vector3(0, 0, facing * 0.25), 0.86, 0.0 if facing > 0.0 else PI):
-				_box(spot + Vector3(0, 0.4, -facing * 0.25), Vector3(0.7, 0.8, 1.0), "desk").visible = false
+				_box(spot + Vector3(0, 0.4, -facing * 0.25), Vector3(0.7, 0.8, 0.85), "desk").visible = false
 				continue
 			_desk(spot, 0.7, 0.5)
 			_chair(spot - Vector3(0, 0, facing * 0.55), -1, false)

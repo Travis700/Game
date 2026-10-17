@@ -219,12 +219,13 @@ func build() -> void:
 ## Host: works out where monsters can walk, from the school's floors, walls and furniture.
 func bake_navigation() -> void:
 	var mesh := NavigationMesh.new()
-	# Sizes are whole multiples of the 0.25 m grid the navigation mesh is built on.
-	mesh.agent_radius = 0.5
-	mesh.agent_height = 1.75
-	mesh.agent_max_climb = 0.25
-	mesh.cell_size = 0.25
-	mesh.cell_height = 0.25
+	# Sizes are whole multiples of the 0.2 m grid the navigation mesh is built on. A radius of 0.4
+	# (a monster's body is 0.35) keeps the aisles between classroom desks open.
+	mesh.agent_radius = 0.4
+	mesh.agent_height = 1.8
+	mesh.agent_max_climb = 0.2
+	mesh.cell_size = 0.2
+	mesh.cell_height = 0.2
 	mesh.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
 	mesh.geometry_source_geometry_mode = NavigationMesh.SOURCE_GEOMETRY_GROUPS_WITH_CHILDREN
 	mesh.geometry_source_group_name = SchoolBuilder.NAV_SOURCE_GROUP
