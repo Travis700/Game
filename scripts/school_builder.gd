@@ -267,7 +267,7 @@ func _make_materials() -> void:
 const TEXTURE_METRES := {
 	"floor": 1.22, "wall": 1.2, "ceiling": 3.85, "brick": 2.4, "concrete": 1.1, "asphalt": 3.0,
 	"grass": 2.0, "gym_floor": 1.9, "wood": 1.8, "desk": 0.6, "metal": 1.0, "locker": 1.2,
-	"cork": 1.0, "board": 2.0, "terrazzo": 1.6, "carpet": 2.0, "checker": 1.6, "quarry": 2.0,
+	"cork": 1.0, "board": 2.0, "terrazzo": 0.9, "carpet": 2.0, "checker": 1.6, "quarry": 2.0,
 	"white_tile": 1.0,
 }
 
@@ -292,7 +292,7 @@ func _make_gym_materials() -> void:
 
 
 ## Textures that are too bright as they come.
-const TEXTURE_TINT := {"concrete": Color(0.68, 0.68, 0.66), "grass": Color(0.75, 0.8, 0.72), "quarry": Color(0.85, 0.72, 0.66)}
+const TEXTURE_TINT := {"concrete": Color(0.68, 0.68, 0.66), "grass": Color(0.75, 0.8, 0.72), "quarry": Color(0.62, 0.52, 0.48), "checker": Color(0.82, 0.8, 0.76)}
 
 
 func _add_mat(mat_name: String, color: Color, roughness := 0.9, emission := Color.BLACK,
