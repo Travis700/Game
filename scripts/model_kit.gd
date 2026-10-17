@@ -31,6 +31,41 @@ static func add(parent: Node3D, model_name: String, height: float, turn := PI, l
 	return model
 
 
+## A one-mesh model's mesh, for drawing many copies (a MultiMesh): {"mesh", "box" (its bounds,
+## in the model's space), "transform" (where the mesh sits in the model)}. Empty if there's no model.
+static func mesh_of(model_name: String) -> Dictionary:
+	if _meshes.has(model_name):
+		return _meshes[model_name]
+	var path := "res://assets/models/%s.glb" % model_name
+	var found := {}
+	if ResourceLoader.exists(path):
+		var model := (load(path) as PackedScene).instantiate() as Node3D
+		var instances := model.find_children("*", "MeshInstance3D", true, false)
+		if not instances.is_empty():
+			var instance := instances[0] as MeshInstance3D
+			var placed := instance.transform
+			var parent := instance.get_parent() as Node3D
+			while parent != null and parent != model:
+				placed = parent.transform * placed
+				parent = parent.get_parent() as Node3D
+			found = {"mesh": instance.mesh, "box": placed * instance.get_aabb(), "transform": placed}
+		model.free()
+	_meshes[model_name] = found
+	return found
+
+
+## Where a mesh_of() piece goes to fill a box of `size` centred on `centre`, turned by `turn`
+## (stretched to fit: the pieces of a row of lockers share it out evenly).
+static func fit(piece: Dictionary, centre: Vector3, size: Vector3, turn := 0.0) -> Transform3D:
+	var box: AABB = piece["box"]
+	var stretch := Basis.from_scale(size / box.size.max(Vector3.ONE * 0.001))
+	return Transform3D(Basis(Vector3.UP, turn) * stretch, centre) * Transform3D(Basis(), -box.get_center()) \
+			* (piece["transform"] as Transform3D)
+
+
+static var _meshes := {}
+
+
 ## Clips that can come in their own files next to the model (see _setup_moves).
 const EXTRA_CLIPS: Array[String] = ["run", "sit"]
 

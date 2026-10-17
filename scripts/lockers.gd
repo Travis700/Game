@@ -13,6 +13,8 @@ const DOORS: Array[Array] = [
 	[-36.35, 4.63, 1.0], [-25.35, 4.63, 1.0], [-6.55, 4.63, 1.0], [9.25, 4.63, 1.0],
 	[27.45, 4.63, 1.0], [35.45, 4.63, 1.0],
 ]
+## How wide each door is (SchoolBuilder leaves a slot this wide in the row for it).
+const DOOR_WIDTH := 0.46
 const GRAB_DISTANCE := 1.2
 ## In-game minutes between doors opening.
 const OPEN_EVERY := Vector2(25.0, 45.0)
@@ -26,6 +28,9 @@ var active := false
 var credited: Array[int] = []
 
 var _hinges: Array[Node3D] = []
+var _gaps: Array[Node3D] = []
+## Door index -> the whole locker model standing in for it while it's shut (if there's a model).
+var _wholes := {}
 var _glows: Dictionary = {}
 var _handles: Array[Interactable] = []
 var _open: Array[bool] = []
@@ -56,15 +61,33 @@ func build(locker_material: Material, dark_material: Material) -> void:
 		panel.material_override = locker_material
 		panel.position = Vector3(0.23 * facing, 0, 0)
 		hinge.add_child(panel)
-		# Painted like the rest of the row (see SchoolBuilder._locker_row).
-		var front := MeshInstance3D.new()
-		var quad := QuadMesh.new()
-		quad.size = Vector2(0.46, 1.84)
-		front.mesh = quad
-		front.material_override = _door_paint()
-		front.position = Vector3(0, 0, facing * 0.011)
-		front.rotation.y = 0.0 if facing > 0.0 else PI
-		panel.add_child(front)
+		# The front of a real locker, pressed flat (the model the rest of the row is made of), or
+		# else painted like the rest of the row (see SchoolBuilder._locker_row).
+		var piece := ModelKit.mesh_of("prop_school_locker")
+		if not piece.is_empty():
+			panel.mesh = null
+			var front := MeshInstance3D.new()
+			front.mesh = piece["mesh"]
+			front.transform = ModelKit.fit(piece, Vector3.ZERO, Vector3(DOOR_WIDTH, 1.9, 0.02), 0.0 if facing > 0.0 else PI)
+			panel.add_child(front)
+			# Shut, it's a whole locker like its neighbours (the pressed-flat door only shows while it moves).
+			var whole := MeshInstance3D.new()
+			whole.mesh = piece["mesh"]
+			whole.transform = ModelKit.fit(piece, face + Vector3(0, 0.95, -facing * 0.25), Vector3(DOOR_WIDTH, 1.9, 0.5),
+					0.0 if facing > 0.0 else PI)
+			add_child(whole)
+			_wholes[i] = whole
+			hinge.visible = false
+			gap.visible = false
+		else:
+			var front := MeshInstance3D.new()
+			var quad := QuadMesh.new()
+			quad.size = Vector2(0.46, 1.84)
+			front.mesh = quad
+			front.material_override = _door_paint()
+			front.position = Vector3(0, 0, facing * 0.011)
+			front.rotation.y = 0.0 if facing > 0.0 else PI
+			panel.add_child(front)
 		# Something to press E on while the door is open.
 		var handle := Interactable.new()
 		handle.prompt = "Close the locker"
@@ -78,6 +101,7 @@ func build(locker_material: Material, dark_material: Material) -> void:
 		handle.used.connect(func(_by: Node) -> void: request_close(i))
 		hinge.add_child(handle)
 		_hinges.append(hinge)
+		_gaps.append(gap)
 		_handles.append(handle)
 		_open.append(false)
 
@@ -162,6 +186,11 @@ func _set_open(index: int, open: bool) -> void:
 	# Both rows swing out into the hallway with the same turn, because their hinges sit on opposite sides.
 	var tween := create_tween()
 	tween.tween_property(_hinges[index], "rotation_degrees:y", -100.0 if open else 0.0, 0.6 if open else 0.12)
+	if _wholes.has(index):
+		if open:
+			_show_door(index, true)
+		else:
+			tween.finished.connect(func() -> void: _show_door(index, _open[index]))
 	(_handles[index].get_child(0) as CollisionShape3D).disabled = not open
 	Sfx.play_at(_hinges[index], _creak if open else _slam, 0.0, 25.0)
 	if open:
@@ -178,6 +207,13 @@ func _set_open(index: int, open: bool) -> void:
 	elif not open and _glows.has(index):
 		(_glows[index] as Node).queue_free()
 		_glows.erase(index)
+
+
+## Swaps the whole locker for the swinging door and the dark inside (or back).
+func _show_door(index: int, door: bool) -> void:
+	(_wholes[index] as Node3D).visible = not door
+	_hinges[index].visible = door
+	_gaps[index].visible = door
 
 
 func _open_one() -> void:

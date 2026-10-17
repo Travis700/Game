@@ -1,6 +1,6 @@
 # Night Shift — Design Document
 
-*Status: version 1.0.0, feature complete, with 3D models for every monster and the guards, photo textures and recorded sounds. Left: the school's props are still simple shapes; then the Steamworks steps in STEAM.md and the store page. Numbers marked (tunable) are starting points to adjust during playtesting.*
+*Status: version 1.0.0, feature complete, with 3D models for every monster and the guards, photo textures and recorded sounds. School furniture: Poly Haven and Sketchfab models. Left: the Steamworks steps in STEAM.md and the store page. Numbers marked (tunable) are starting points to adjust during playtesting.*
 
 ## 1. Overview
 
@@ -241,7 +241,7 @@ What keeps a player coming back after the first run:
 
 - **Godot 4**, scripts in GDScript.
 - **Multiplayer:** Godot's built-in multiplayer with the host in charge of game state. Local testing uses a direct connection; release uses **GodotSteam** for Steam lobbies, room codes and Steam's free relay servers. Development uses Steam's test app ID until the game has its own.
-- **Art:** the building is made of boxes in code (merged into a few meshes per material), with photo textures from Poly Haven. Monsters and some props are Meshy models made from the notebook drawings; furniture and fittings are CC0 models from Poly Haven; posters, the court and other flat art are drawn by scripts in `tools/`.
+- **Art:** the building is made of boxes in code (merged into a few meshes per material), with photo textures from Poly Haven. Monsters and some props are Meshy models made from the notebook drawings; furniture and fittings are CC0 models from Poly Haven and CC BY models from Sketchfab (lockers, desks, chairs, cafeteria tables, the vending machine, whiteboards; fetched with `tools/sketchfab.py`, tidied with `tools/prep_glb.py`, credited in CREDITS.md and on the Credits page); posters, the court and other flat art are drawn by scripts in `tools/`.
 - **Drawing less:** walls are occluders (occlusion culling is on), so other rooms' furniture isn't drawn, and small props fade out beyond about 20 m.
 - **Testing:** Claude writes the project; the user runs it in Godot and reports back.
 

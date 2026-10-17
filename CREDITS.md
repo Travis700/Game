@@ -45,9 +45,7 @@ with `tools/slim_glb.py`. In `assets/models/` as `prop_<asset>.glb`.
 | Wall Clock | PierreB3D |
 | Fire Alarm | Slinc |
 | Plastic Crate 01 | PierreB3D |
-| School Chair 01 | Ethan Place |
 | Steel Frame Shelves 01 | James Ray Cock |
-| Metal Office Desk | Ulan Cabanilla |
 | Classic Laptop | Arrangemonk |
 | Hanging Picture Frame 01 | James Ray Cock |
 | Shelf 01 | Gabriel Radić |
@@ -80,6 +78,29 @@ with `tools/slim_glb.py`. In `assets/models/` as `prop_<asset>.glb`.
 | Food Apple 01 | Oliver Harries |
 | Drawer Cabinet | Ulan Cabanilla |
 | Security Camera 01 | Alexander Otterbeck, Yann Kervran |
+
+## Models: Sketchfab (CC BY 4.0)
+
+From https://sketchfab.com, licensed Creative Commons Attribution 4.0
+(https://creativecommons.org/licenses/by/4.0/): free for commercial use as long as the authors are
+credited, here and on the in-game Credits page. Fetched with `tools/sketchfab.py`, then changed for
+the game: trimmed, turned to face +Z and (the fountain) decimated with `tools/prep_glb.py`, and
+textures shrunk with `tools/slim_glb.py`. In `assets/models/`:
+
+| File | Sketchfab model | Author | Link |
+| --- | --- | --- | --- |
+| prop_student_desk | School chair | N-Gon | https://sketchfab.com/3d-models/school-chair-9c35c03f6d614aa5874494e908a41904 |
+| prop_school_locker | Metal School Lockers (the closed one) | Zixel | https://sketchfab.com/3d-models/metal-school-lockers-7f1460adacd346a4a68c3e5f7a5d0d43 |
+| prop_cafeteria_table | School Cafeteria Table | Avot | https://sketchfab.com/3d-models/school-cafeteria-table-e0a0be3011da4e19963467d20daeaf61 |
+| prop_vending_machine | Vending Machine | Emanuel Silva | https://sketchfab.com/3d-models/vending-machine-4bfb493631f84f8a9adc00bb69831000 |
+| prop_trash_can | Trash Can | Yury Misiyuk | https://sketchfab.com/3d-models/trash-can-0ad3407cd8104ba58f71885c0e58ca9a |
+| prop_school_chair | School Chair | heloisebelisle | https://sketchfab.com/3d-models/school-chair-4c846ff6d8d74b25b7da7078c091c365 |
+| prop_teacher_desk | Teachers Desk | cig3d | https://sketchfab.com/3d-models/teachers-desk-9ee8608e76704de7aa67d022c81e42cc |
+| prop_drinking_fountain | Drinking Fountain | FLUXIUM3D | https://sketchfab.com/3d-models/drinking-fountain-69f0147a64354ba9aaf2f63e86169322 |
+| prop_fire_extinguisher | Fire Extinguisher | Loïc | https://sketchfab.com/3d-models/fire-extinguisher-5676b179b3b744c0aaae53a3dcea2300 |
+| prop_bulletin_board | Bulletin Board | lydia.la | https://sketchfab.com/3d-models/bulletin-board-9a2ef796667449cfbace0ff446557738 |
+| prop_whiteboard | Whiteboard | Darren McNerney 3D | https://sketchfab.com/3d-models/whiteboard-d92927c453a14702bb5b5ba3fb6a044a |
+| prop_projector | Projector | GokouFG | https://sketchfab.com/3d-models/projector-0f1c6b1fa0bd4d5bbe5ac10e9eee31de |
 
 ## School art: made for this game
 
@@ -126,8 +147,8 @@ commercial use before release.
   `tools/MESHY.md`. The Principal's face is the notebook drawing itself, smudged.
 - The guard (`guard.glb`, its run and sit clips and `guard_uniform_*.jpg` shirt colours): made with
   Meshy from the key art.
-- Props (`assets/models/prop_*.glb`): made with Meshy from generated reference images (vending
-  machine, time clock, chairs, desks, cafeteria tables and the anomaly props).
+- Props (`assets/models/prop_*.glb`, those not credited above): made with Meshy from generated
+  reference images (time clock, office chair and the anomaly props).
 - Make sure the Meshy account's plan gives commercial rights before release (free-plan output is
   CC BY 4.0 and needs a credit line).
 

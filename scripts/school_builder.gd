@@ -781,6 +781,8 @@ func _build_guard_room() -> void:
 
 	# Notice board on the back wall.
 	_box(Vector3(9.5, 1.6, 10.16), Vector3(2.4, 1.2, 0.05), "cork", false)
+	# And a bulletin board beside it, papered over long ago.
+	_model("prop_bulletin_board", Vector3(12.6, 1.15, 10.143), 1.0)
 
 
 func _build_hallway() -> void:
@@ -803,7 +805,6 @@ func _build_hallway() -> void:
 func _locker_row(x1: float, x2: float, z: float, facing := 0.0) -> void:
 	const DEPTH := 0.5
 	const HEIGHT := 1.9
-	_box(Vector3((x1 + x2) * 0.5, HEIGHT * 0.5, z), Vector3(x2 - x1, HEIGHT, DEPTH), "locker", false)
 	var body := StaticBody3D.new()
 	var shape := BoxShape3D.new()
 	shape.size = Vector3(x2 - x1, HEIGHT, DEPTH)
@@ -812,9 +813,13 @@ func _locker_row(x1: float, x2: float, z: float, facing := 0.0) -> void:
 	body.position = Vector3((x1 + x2) * 0.5, HEIGHT * 0.5, z)
 	body.add_child(collider)
 	add_child(body)
-	# The doors: one painted locker door, repeated along the row's front.
 	if facing == 0.0:
 		facing = 1.0 if z < 7.0 else -1.0
+	# Real lockers along the front, leaving a slot for each of the Locker Thing's doors (see Lockers).
+	if _locker_models(x1, x2, z + facing * DEPTH * 0.5, facing, Vector3(0, HEIGHT, DEPTH)):
+		return
+	# No model: a box with one painted locker door repeated along its front.
+	_box(Vector3((x1 + x2) * 0.5, HEIGHT * 0.5, z), Vector3(x2 - x1, HEIGHT, DEPTH), "locker", false)
 	var doors := int(round((x2 - x1) / 0.5))
 	var key := "lockers_%d" % doors
 	if not _mats.has(key):
@@ -836,17 +841,61 @@ func _locker_row(x1: float, x2: float, z: float, facing := 0.0) -> void:
 	add_child(face)
 
 
+## About how wide one hallway locker is (each stretch is shared out evenly).
+const LOCKER_WIDTH := 0.42
+
+
+## Fills x1..x2 with locker models (prop_school_locker) whose fronts sit at depth `face_z`,
+## `size` tall and deep (x unused), skipping the slots of the Locker Thing's doors. False if
+## there's no model. The lockers are drawn in batches of a few metres, each one MultiMesh.
+func _locker_models(x1: float, x2: float, face_z: float, facing: float, size: Vector3) -> bool:
+	var piece := ModelKit.mesh_of("prop_school_locker")
+	if piece.is_empty():
+		return false
+	# The stretches between the Locker Thing's doors.
+	var cuts: Array[float] = [x1]
+	for door: Array in Lockers.DOORS:
+		if absf(float(door[1]) - face_z) < 0.05 and float(door[0]) > x1 and float(door[0]) < x2:
+			cuts.append_array([float(door[0]) - Lockers.DOOR_WIDTH * 0.5, float(door[0]) + Lockers.DOOR_WIDTH * 0.5])
+	cuts.append(x2)
+	cuts.sort()
+	var spots: Array[Transform3D] = []
+	for i in range(0, cuts.size(), 2):
+		var length := cuts[i + 1] - cuts[i]
+		if length < 0.15:
+			continue
+		var count := maxi(1, int(round(length / LOCKER_WIDTH)))
+		for n in count:
+			var width := length / count
+			var centre := Vector3(cuts[i] + width * (n + 0.5), size.y * 0.5, face_z - facing * size.z * 0.5)
+			spots.append(ModelKit.fit(piece, centre, Vector3(width, size.y, size.z), 0.0 if facing > 0.0 else PI))
+	const BATCH := 10
+	for start in range(0, spots.size(), BATCH):
+		var batch := MultiMesh.new()
+		batch.transform_format = MultiMesh.TRANSFORM_3D
+		batch.mesh = piece["mesh"]
+		var count := mini(BATCH, spots.size() - start)
+		batch.instance_count = count
+		for n in count:
+			batch.set_instance_transform(n, spots[start + n])
+		var row := MultiMeshInstance3D.new()
+		row.multimesh = batch
+		row.visibility_range_end = PROP_DRAW_DISTANCE * 2.5
+		add_child(row)
+	return true
+
+
 func _build_cafeteria() -> void:
 	for z: float in [-1.5, -8.0, -14.5, -21.0]:
 		for x: float in [-33.0, -23.5, -14.0]:
-			var parts: Array[Node3D] = [_box(Vector3(x, 0.74, z), Vector3(6.0, 0.06, 1.0), "desk"),
-					_box(Vector3(x, 0.36, z), Vector3(5.6, 0.72, 0.15), "metal")]
+			# Two folding tables with their benches, end to end (a box keeps them solid).
+			if _model("prop_cafeteria_table", Vector3(x - 1.82, 0, z), 0.74) and _model("prop_cafeteria_table", Vector3(x + 1.82, 0, z), 0.74):
+				_box(Vector3(x, 0.37, z), Vector3(7.28, 0.74, 1.3), "dark").visible = false
+				continue
+			_box(Vector3(x, 0.74, z), Vector3(6.0, 0.06, 1.0), "desk")
+			_box(Vector3(x, 0.36, z), Vector3(5.6, 0.72, 0.15), "metal")
 			for side: float in [-1.0, 1.0]:
-				parts.append(_box(Vector3(x, 0.22, z + side * 0.85), Vector3(6.0, 0.44, 0.35), "metal"))
-			# Two real tables, end to end, where the boxes stand (they stay as the solid part).
-			if _model("prop_cafeteria_table", Vector3(x - 1.5, 0, z), 0.8) and _model("prop_cafeteria_table", Vector3(x + 1.5, 0, z), 0.8):
-				for part in parts:
-					_hide_boxes(part)
+				_box(Vector3(x, 0.22, z + side * 0.85), Vector3(6.0, 0.44, 0.35), "metal")
 	# Serving counter in front of the kitchen door, with a sneeze guard and a tray rail.
 	for counter: Vector2 in [Vector2(-26.0, 6.0), Vector2(-16.5, 5.0)]:
 		_box(Vector3(-7.5, 0.5, counter.x), Vector3(0.8, 1.0, counter.y), "metal")
@@ -864,7 +913,8 @@ func _build_cafeteria() -> void:
 		_box(Vector3(-8.05, 0.88 + tray * 0.018, -14.35), Vector3(0.32, 0.014, 0.45), "tray", false)
 	_poster("menu", Vector3(-5.125, 1.7, -21.5 + 3.1), Vector3.LEFT, Vector2(0.9, 1.2))
 	# The other trash can (by the hallway) belongs to Anomalies.
-	_box(Vector3(-38.8, 0.45, -27.5), Vector3(0.6, 0.9, 0.6), "dark")
+	if _solid_model("prop_trash_can", Vector3(-38.8, 0, -27.5), 0.9, 0.0, Vector3(0.6, 0.9, 0.6)) == null:
+		_box(Vector3(-38.8, 0.45, -27.5), Vector3(0.6, 0.9, 0.6), "dark")
 	_model("prop_wall_clock", Vector3(-22.5, 2.5, 3.875), 0.4, PI)
 	_poster("poster_dance", Vector3(-30.0, 1.7, 3.875), Vector3.FORWARD)
 	_poster("poster_president", Vector3(-34.0, 1.7, 3.875), Vector3.FORWARD)
@@ -1179,7 +1229,7 @@ func _build_gym_courtside() -> void:
 
 
 func _gym_chair(pos: Vector3, turn: float) -> void:
-	if _model("prop_schoolchair_01", pos, 0.82, turn) == null:
+	if _model("prop_school_chair", pos, 0.82, turn) == null:
 		_box(pos + Vector3(0, 0.22, 0), Vector3(0.45, 0.44, 0.45), "pad", false)
 	_box(pos + Vector3(0, 0.41, 0), Vector3(0.5, 0.82, 0.5), "dark").visible = false
 
@@ -1272,10 +1322,15 @@ func _build_fixtures() -> void:
 		glow.distance_fade_length = 6.0
 		add_child(glow)
 	# The lobby's drinking fountain, on the wall by the guard room door.
-	_box(Vector3(5.7, 0.9, 12.7), Vector3(0.36, 0.1, 0.44), "steel")
-	_box(Vector3(5.84, 1.0, 12.7), Vector3(0.04, 0.42, 0.48), "steel", false)
-	_box(Vector3(5.74, 0.72, 12.7), Vector3(0.22, 0.26, 0.3), "steel", false)
-	_box(Vector3(5.66, 0.97, 12.62), Vector3(0.03, 0.05, 0.03), "metal", false)
+	if _solid_model("prop_drinking_fountain", Vector3(5.61, 0.42, 12.7), 0.6, -PI * 0.5, Vector3(0.53, 0.6, 0.48)) == null:
+		_box(Vector3(5.7, 0.9, 12.7), Vector3(0.36, 0.1, 0.44), "steel")
+		_box(Vector3(5.84, 1.0, 12.7), Vector3(0.04, 0.42, 0.48), "steel", false)
+		_box(Vector3(5.74, 0.72, 12.7), Vector3(0.22, 0.26, 0.3), "steel", false)
+		_box(Vector3(5.66, 0.97, 12.62), Vector3(0.03, 0.05, 0.03), "metal", false)
+	# Fire extinguishers on their wall hooks.
+	for spot: Array in [[Vector3(-4.4, 0.55, 10.215), 0.0], [Vector3(13.0, 0.55, 3.785), PI], [Vector3(-26.5, 0.55, 3.785), PI],
+			[Vector3(-41.0, 0.55, 4.215), 0.0], [Vector3(41.0, 0.55, 9.785), PI]]:
+		_model("prop_fire_extinguisher", spot[0], 0.6, spot[1])
 
 
 # --- Floors --------------------------------------------------------------------
@@ -1497,8 +1552,8 @@ func _poster(art: String, pos: Vector3, facing: Vector3, size := Vector2(0.6, 0.
 
 ## The teacher's (or nurse's) steel desk, `turn` 0 when whoever sits at it is on its +Z side.
 func _steel_desk(pos: Vector3, turn: float) -> void:
-	var across := Vector3(2.0, 0.77, 0.95) if is_zero_approx(fmod(absf(turn), PI)) else Vector3(0.95, 0.77, 2.0)
-	if _solid_model("prop_metal_office_desk", pos, 0.77, turn, across) == null:
+	var across := Vector3(1.6, 0.77, 0.76) if is_zero_approx(fmod(absf(turn), PI)) else Vector3(0.76, 0.77, 1.6)
+	if _solid_model("prop_teacher_desk", pos, 0.77, turn, across) == null:
 		_desk(pos, 1.6, 0.8)
 
 
@@ -1766,7 +1821,8 @@ func _build_classroom_wing() -> void:
 		for side: float in [-1.0, 1.0]:
 			for along: float in [-0.6, 0.6]:
 				_school_chair(table + Vector3(along, 0, side * 0.9), 0.0 if side < 0.0 else PI)
-	_box(Vector3(-79.6, 1.6, -3.0), Vector3(0.1, 1.6, 4.0), "cork", false)
+	if _model("prop_bulletin_board", Vector3(-79.855, 0.95, -3.0), 1.3, PI * 0.5) == null:
+		_box(Vector3(-79.6, 1.6, -3.0), Vector3(0.1, 1.6, 4.0), "cork", false)
 	_poster("poster_read", Vector3(-79.875, 1.6, -8.0), Vector3.RIGHT)
 	_poster("poster_quiet", Vector3(-70.0, 1.6, -13.875), Vector3.BACK)
 	_model("prop_wall_clock", Vector3(-66.0, 2.3, 3.875), 0.36, PI)
@@ -1825,13 +1881,15 @@ func _build_classroom_wing() -> void:
 	_camera("Nurse's Office", Vector3(-68.4, 3.2, 10.4), Vector3(-77, 0, 17), 2)
 
 
-## A classroom: rows of student desks facing a chalkboard and the teacher's desk.
+## A classroom: rows of student desks facing a whiteboard and the teacher's desk.
 ## `facing` is +1 when the board is on the south wall, -1 when it's on the north wall.
 func _classroom(centre: Vector3, facing: float, rows := 3, half_width := 7.0, poster := "") -> void:
 	var board_z := centre.z + facing * 4.75
 	var board_wall := centre.z + facing * 4.875
 	var back_wall := centre.z - facing * 4.875
-	_box(Vector3(centre.x, 1.6, board_z), Vector3(4.0, 1.2, 0.06), "board", false)
+	if _model("prop_whiteboard", Vector3(centre.x, 0.85, board_wall - facing * 0.09), 1.45, PI if facing > 0.0 else 0.0) == null:
+		_box(Vector3(centre.x, 1.6, board_z), Vector3(4.0, 1.2, 0.06), "board", false)
+	_model("prop_projector", Vector3(centre.x, WALL_H - 1.1, board_z - facing * 4.2), 1.1, 0.0 if facing > 0.0 else PI)
 	_steel_desk(Vector3(centre.x + 3.0, 0, board_z - facing * 1.6), PI if facing < 0.0 else 0.0)
 	_school_chair(Vector3(centre.x + 3.0, 0, board_z - facing * 0.75), PI if facing > 0.0 else 0.0)
 	# What the teacher left on the desk: a binder, a clipboard, the stapler, an apple.
@@ -1840,7 +1898,7 @@ func _classroom(centre: Vector3, facing: float, rows := 3, half_width := 7.0, po
 	_model("prop_binder_notebook", top + Vector3(-0.55, 0, facing * 0.1), 0.025, tilt)
 	_model("prop_clipboard", top + Vector3(-0.1, 0, -facing * 0.15), 0.042, PI * 0.5 + tilt * 0.6)
 	_model("prop_vintage_stapler", top + Vector3(0.45, 0, facing * 0.2), 0.095, tilt * 2.0)
-	_model("prop_food_apple_01", top + Vector3(0.75, 0, -facing * 0.2), 0.085, tilt * 5.0)
+	_model("prop_food_apple_01", top + Vector3(0.62, 0, -facing * 0.2), 0.085, tilt * 5.0)
 	_model("prop_wall_clock", Vector3(centre.x, 2.38, board_wall), 0.34, PI if facing > 0.0 else 0.0)
 	# The TV cart in the corner by the board, on the side away from the teacher's desk.
 	var side := -1.0 if facing > 0.0 else 1.0
@@ -1858,7 +1916,7 @@ func _classroom(centre: Vector3, facing: float, rows := 3, half_width := 7.0, po
 		for col in 4:
 			var spot := Vector3(centre.x - 3.6 + col * 2.4, 0, board_z - facing * (3.4 + row * 2.2))
 			# A desk with its chair attached, facing the board; the box keeps it solid.
-			if _model("prop_student_desk", spot - Vector3(0, 0, facing * 0.25), 0.8, 0.0 if facing > 0.0 else PI):
+			if _model("prop_student_desk", spot - Vector3(0, 0, facing * 0.25), 0.86, 0.0 if facing > 0.0 else PI):
 				_box(spot + Vector3(0, 0.4, -facing * 0.25), Vector3(0.7, 0.8, 1.0), "desk").visible = false
 				continue
 			_desk(spot, 0.7, 0.5)

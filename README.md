@@ -7,7 +7,7 @@ The full plan is in [DESIGN.md](DESIGN.md).
 
 Version 1.0.0. Every monster and the guards are 3D models made from the notebook drawings and the
 key art (Meshy), the school has photo textures, and the sounds are a mix of recordings and generated
-effects (see [CREDITS.md](CREDITS.md)); the school's props are still simple shapes. Everything is in:
+effects (see [CREDITS.md](CREDITS.md)); the furniture is real models from Poly Haven (CC0) and Sketchfab (CC BY). Everything is in:
 nine nights with a last-bell finale, then Overtime; three difficulties (main building, classroom
 wing, science wing); 18 monsters with moods, a field guide and R. Hale's notebook; the guard room
 and its 16 cameras; watchman rounds, power cuts, shift notes and nightly bonuses; a training shift,
