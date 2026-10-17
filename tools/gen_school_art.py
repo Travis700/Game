@@ -6,6 +6,7 @@ painting_*.png    the art class's canvases
 periodic.png      the periodic table for the science lab
 school_map_*.png  the fire evacuation plan by the doors: the whole school, with YOU ARE HERE
 eye_chart.png     the nurse's eye chart
+poster_missing.png  a missing-person flyer for R. Hale, the last night guard
 
 Name some of them (e.g. `gen_school_art.py school_map`) to paint just those.
 """
@@ -439,6 +440,23 @@ def school_map():
         aged(img).save(os.path.join(OUT, 'school_map_%s.png' % name))
 
 
+def silhouette(d, w, h):
+    # A washed-out badge photo: a head and shoulders in a guard's cap, too dark to make out.
+    d.rectangle([w * 0.2, h * 0.3, w * 0.8, h * 0.78], fill=(118, 118, 112))
+    cx = w / 2
+    d.ellipse([cx - 70, h * 0.36, cx + 70, h * 0.36 + 170], fill=(46, 46, 44))
+    d.rectangle([cx - 88, h * 0.36 - 6, cx + 88, h * 0.36 + 34], fill=(32, 32, 34))
+    d.pieslice([cx - 140, h * 0.62, cx + 140, h * 0.62 + 240], 180, 360, fill=(40, 40, 42))
+    d.rectangle([w * 0.2, h * 0.3, w * 0.8, h * 0.78], outline=(20, 20, 20), width=4)
+
+
+def missing():
+    """A photocopied missing-person flyer for R. Hale, the last guard (see the field guide)."""
+    poster('missing', (246, 246, 240), ['MISSING'], (20, 20, 20),
+            ['R. HALE, night security, #0451', 'Last seen Dec 20, on shift.', 'Call the district office.'],
+            (30, 30, 30), silhouette)
+
+
 def eye_chart():
     """The nurse's eye chart: rows of letters getting smaller. The last row isn't random."""
     w, h = 600, 1000
@@ -459,7 +477,7 @@ def eye_chart():
 
 PAINT = {'posters': posters, 'fixtures': fixtures, 'flag': flag, 'menu': menu, 'locker': locker,
          'bookcase': bookcase, 'paintings': paintings, 'periodic': periodic, 'school_map': school_map,
-         'eye_chart': eye_chart}
+         'eye_chart': eye_chart, 'missing': missing}
 for job in (sys.argv[1:] or PAINT):
     PAINT[job]()
 print('written to', os.path.normpath(OUT))

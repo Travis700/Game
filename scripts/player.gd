@@ -164,7 +164,6 @@ func _ready() -> void:
 	if local:
 		interact_ray.add_exception(self)
 		_make_dust()
-		_make_torch()
 		camera.current = true
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		get_tree().call_group("game", "on_local_guard_ready", self)
@@ -210,10 +209,6 @@ func _process(delta: float) -> void:
 	var aim := camera.global_basis.orthonormalized()
 	_beam_basis = _beam_basis.slerp(aim, minf(1.0, BEAM_FOLLOW * delta)).orthonormalized()
 	flashlight.global_basis = _beam_basis
-	if _torch:
-		_torch.visible = not is_dead
-		_torch.global_basis = _beam_basis
-		_torch_lens.material_override = _lens_on if flashlight.visible else _lens_off
 	# The field of view from the Esc menu (Profile looked up by path, see _look).
 	if is_local():
 		var profile := get_node_or_null("/root/Profile")
@@ -259,61 +254,6 @@ func _make_dust() -> void:
 	dust.draw_pass_1 = speck
 	dust.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	camera.add_child(dust)
-
-
-## The torch in your hand, bottom right, its lens where the beam comes from. Only made for your
-## own guard, and kept off the security cameras.
-var _torch: Node3D
-var _torch_lens: MeshInstance3D
-var _lens_on: StandardMaterial3D
-var _lens_off: StandardMaterial3D
-
-
-func _make_torch() -> void:
-	_torch = Node3D.new()
-	_torch.name = "Torch"
-	_torch.position = flashlight.position + Vector3(0.0, -0.025, 0.06)
-	camera.add_child(_torch)
-	var metal := StandardMaterial3D.new()
-	metal.albedo_color = Color(0.08, 0.08, 0.09)
-	metal.metallic = 0.6
-	metal.roughness = 0.45
-	# Lying along the beam: the head at the front (towards -Z), the grip behind it.
-	for part: Array in [[0.019, 0.019, 0.2, 0.13], [0.03, 0.021, 0.05, 0.01], [0.031, 0.031, 0.018, -0.022]]:
-		var tube := CylinderMesh.new()
-		tube.top_radius = part[0]
-		tube.bottom_radius = part[1]
-		tube.height = part[2]
-		tube.radial_segments = 14
-		var piece := MeshInstance3D.new()
-		piece.mesh = tube
-		piece.material_override = metal
-		piece.rotation.x = -PI * 0.5
-		piece.position = Vector3(0, 0, part[3])
-		_torch.add_child(piece)
-	_lens_on = StandardMaterial3D.new()
-	_lens_on.albedo_color = Color(1.0, 0.95, 0.85)
-	_lens_on.emission_enabled = true
-	_lens_on.emission = Color(1.0, 0.94, 0.82)
-	_lens_on.emission_energy_multiplier = 3.0
-	_lens_off = StandardMaterial3D.new()
-	_lens_off.albedo_color = Color(0.25, 0.25, 0.22)
-	_lens_off.metallic = 0.3
-	_lens_off.roughness = 0.2
-	var disc := CylinderMesh.new()
-	disc.top_radius = 0.027
-	disc.bottom_radius = 0.027
-	disc.height = 0.004
-	disc.radial_segments = 14
-	_torch_lens = MeshInstance3D.new()
-	_torch_lens.mesh = disc
-	_torch_lens.rotation.x = -PI * 0.5
-	_torch_lens.position = Vector3(0, 0, -0.032)
-	_torch.add_child(_torch_lens)
-	for piece in _torch.get_children():
-		var mesh := piece as MeshInstance3D
-		mesh.layers = SecurityCameras.HIDDEN_FROM_CAMERAS
-		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 ## Redraws the name tag (e.g. after a promotion).
@@ -596,6 +536,29 @@ func _update_stamina(delta: float) -> void:
 			stamina = minf(stamina + STAMINA_REGEN * delta, 1.0)
 	if winded and stamina >= WINDED_UNTIL:
 		winded = false
+	_update_panting(delta)
+
+
+## Out of breath, you hear yourself gasping (only you: it's on this computer), fading as you
+## get your breath back.
+var _panting: AudioStreamPlayer
+
+
+func _update_panting(delta: float) -> void:
+	var gasping := (winded or stamina < 0.25) and not is_dead
+	if _panting == null:
+		if not gasping:
+			return
+		_panting = AudioStreamPlayer.new()
+		_panting.stream = SoundBank.get_sound("panting", null, true)
+		_panting.volume_db = -60.0
+		add_child(_panting)
+	var target := lerpf(-8.0, -20.0, clampf(stamina / 0.3, 0.0, 1.0)) if gasping else -60.0
+	_panting.volume_db = move_toward(_panting.volume_db, target, delta * 30.0)
+	if _panting.volume_db > -59.0 and not _panting.playing and _panting.stream:
+		_panting.play()
+	elif _panting.volume_db <= -59.0 and _panting.playing:
+		_panting.stop()
 
 
 func show_message(text: String, seconds := -1.0) -> void:

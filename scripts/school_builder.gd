@@ -1476,6 +1476,11 @@ func _build_clutter() -> void:
 	for plan: Array in [["guard", Vector3(6.125, 1.6, 12.0), Vector3.RIGHT], ["lobby", Vector3(-5.875, 1.6, 17.8), Vector3.RIGHT],
 			["west", Vector3(-51.0, 1.55, 4.125), Vector3.BACK], ["east", Vector3(52.5, 1.55, 9.875), Vector3.FORWARD]]:
 		_poster("school_map_" + plan[0], plan[1], plan[2], Vector2(1.75, 1.125))
+	# The last guard's missing-person flyer: on the guard room's notice board, the lobby's, and
+	# over the lockers at each end of the main hall.
+	for flyer: Array in [[Vector3(9.0, 1.65, 10.185), Vector3.BACK, 0.42], [Vector3(4.15, 1.62, 10.24), Vector3.BACK, 0.3],
+			[Vector3(-36.0, 2.5, 4.125), Vector3.BACK, 0.5], [Vector3(36.5, 2.5, 9.875), Vector3.FORWARD, 0.5]]:
+		_poster("poster_missing", flyer[0], flyer[1], Vector2(flyer[2], flyer[2] * 1.4))
 	# Lobby: the notice board, a bin, the visitors' sign-in table.
 	_model("prop_bulletin_board", Vector3(4.4, 1.0, 10.143), 1.0)
 	_solid_model("prop_trash_can", Vector3(3.5, 0, 10.55), 0.75, 0.0, Vector3(0.5, 0.75, 0.5))

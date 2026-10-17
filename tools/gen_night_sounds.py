@@ -4,6 +4,7 @@
 rain.ogg        a seamless 20 s loop of heavy rain on the roof and windows, heard from inside
 thunder_0..3    distant and near thunder: a crack (for the near ones) and a long rolling rumble
 pipe_knock_0..2 the heating pipes knocking as they cool, heard through a wall
+panting.ogg     a seamless loop of hard breathing, for a guard who has run out of breath
 """
 import os, subprocess, tempfile, wave
 import numpy as np
@@ -120,3 +121,25 @@ def knock(hits):
 
 for i, hits in enumerate([2, 4, 6]):
     save('pipe_knock_%d' % i, knock(hits))
+
+
+def panting(breaths=6, gap=0.52):
+    """In through the mouth, out harder: breathy noise shaped by a mouth-ish resonance."""
+    n = int(breaths * gap * 2 * RATE)
+    t = np.arange(n) / RATE
+    x = np.zeros(n)
+    for i in range(breaths * 2):
+        start = int(i * gap * RATE)
+        length = int(gap * RATE * rng.uniform(0.75, 0.95))
+        exhale = i % 2 == 1
+        tt = np.arange(length) / RATE
+        env = np.clip(np.sin(np.pi * tt / tt[-1]), 0.0, 1.0) ** (1.5 if exhale else 2.5)
+        noise = rng.standard_normal(length)
+        # Breath is mostly 500-2500 Hz; an exhale is a little lower and louder.
+        band = fast_lowpass(highpass(noise, 450 if exhale else 700), 2200 if exhale else 2800)
+        x[start:start + length] += band * env * (1.0 if exhale else 0.6)
+    # Seamless: the loop is a whole number of breaths.
+    return x
+
+
+save('panting', panting())
