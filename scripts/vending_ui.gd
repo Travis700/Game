@@ -101,7 +101,7 @@ func _ready() -> void:
 
 
 ## `solo` greys out the things that only help a team, and `rank` the ones this guard can't buy yet.
-func open(points: int, holding: String, solo := false, rank := 1) -> void:
+func open(points: int, holding: Array[String], solo := false, rank := 1) -> void:
 	# Prices can change during a run (the donuts).
 	for item: String in _name_labels:
 		(_name_labels[item] as Label).text = "%s   ·   %d points" % [Shop.ITEMS[item]["name"], Shop.price_of(item)]
@@ -126,9 +126,12 @@ func open(points: int, holding: String, solo := false, rank := 1) -> void:
 		(_first_buy[0] as Button).grab_focus.call_deferred()
 
 
-func refresh(points: int, holding: String) -> void:
+func refresh(points: int, holding: Array[String]) -> void:
 	_points.text = "Your points: %d" % points
-	_holding.text = "Carrying: %s" % (Shop.item_name(holding) if holding != "" else "nothing")
+	var names: Array[String] = []
+	for item in holding:
+		names.append(Shop.item_name(item))
+	_holding.text = "Carrying (%d of %d): %s" % [holding.size(), Shop.BAG_SIZE, ", ".join(names) if not names.is_empty() else "nothing"]
 
 
 func close() -> void:

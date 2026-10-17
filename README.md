@@ -198,8 +198,10 @@ empty until you fit a door kit from the vending machine.
 ## The vending machine
 
 Press E on the vending machine in the guard room to spend points. Purchases drop into the tray; press E
-to pick them up. You can carry one thing at a time (shown in the bottom-right corner). Some items need
-a rank (in brackets); the machine shows which.
+to pick them up. What you carry shows on the hotbar along the bottom of the screen: your flashlight in
+slot 1, then up to four things you've bought. Pick a slot with 1-5 or the mouse wheel, and G uses what's
+in it (with the flashlight's slot picked, G uses the first thing you carry). Some items need a rank (in
+brackets); the machine shows which.
 
 - **Spectral camera kit (220, rank 2):** stand by a desk's chair with it and press G, then stay there for 10
   seconds. That desk's monitors switch to spectral feeds, which show the Ghost.
@@ -221,7 +223,8 @@ a rank (in brackets); the machine shows which.
   and the surest way to tell the Other Cleaner from the real one.
 - **Thermos of coffee (30):** press G to drink it: +40 nerve.
 - **Energy drink (25):** press G to drink it and run faster for 30 seconds.
-- **Heavy-duty flashlight (140, rank 3):** press G to fit it. A longer, wider beam for the rest of the run.
+- **Heavy-duty flashlight (140, rank 3):** replaces your flashlight in hotbar slot 1 as you pick it up. A longer,
+  wider beam for the rest of the run.
 - **Air horn (70, rank 4):** press G to blast it. Every monster within 15 metres freezes for 6 seconds,
   but everything in the school hears it, and comes to look once the freeze wears off.
 - **Decoy radio (60, rank 2):** press G to put it down. Eight seconds later it blares music for twenty, and
@@ -364,11 +367,12 @@ it runs; that's normal for games that aren't signed (Steam builds don't show it)
 | W A S D / arrow keys | Walk |
 | Shift | Run |
 | Mouse | Look |
-| F | Flashlight |
+| F / left mouse button | Flashlight on or off |
+| 1-5 / mouse wheel | Pick a hotbar slot (slot 1 is the flashlight) |
 | E | Use. Press E on the time clock in the guard room to clock in and start the night. Hold E on punch stations and the breaker. Press E on a light switch (just inside each room's door) to turn the room's lights on or off. |
 | Esc | Menu: mouse sensitivity, field of view, brightness, volume, voice chat, captions, change keys, graphics (resolution, anti-aliasing, shadows, ambient occlusion and haze, bounced light, long grass, film grain, V-sync), fullscreen, leave the game (pauses solo; in a group the night keeps going) |
 | Tab | Clipboard: log anything odd you spot (after clocking in); its Field guide button shows what you know about each monster |
-| G | Use or put down what you're carrying (sensors, traps, energy drink, coffee, flashlight, EMF reader, air horn, decoy radio, donuts). As a ghost: watch through a teammate's eyes |
+| G | Use or put down the thing in the picked hotbar slot (sensors, traps, energy drink, coffee, EMF reader, air horn, decoy radio, donuts). As a ghost: watch through a teammate's eyes |
 | Q | Mark a spot for the team (at a desk: flag the camera) |
 | R | At a desk, full screen: compare the camera with tonight's photo |
 | V | Push to talk (voice chat) |

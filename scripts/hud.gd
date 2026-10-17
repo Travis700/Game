@@ -22,6 +22,8 @@ var _nerve_bar: ProgressBar
 var _emf: Label
 var _stamina: ProgressBar
 var _inventory: Label
+## The flashlight and what the guard is carrying, along the bottom.
+var hotbar: Hotbar
 var _ghost_tint: ColorRect
 var _ghost_note: Label
 var _flash: ColorRect
@@ -43,6 +45,9 @@ var solo := false
 
 func _ready() -> void:
 	_build_fear()
+	hotbar = Hotbar.new()
+	hotbar.name = "Hotbar"
+	add_child(hotbar)
 	Controls.device_changed.connect(func() -> void:
 		refresh_key_hint()
 		_hint_time = HINT_SECONDS
@@ -62,7 +67,7 @@ func _ready() -> void:
 	_prompt.offset_top = 110
 
 	_message = _make_label(22, HORIZONTAL_ALIGNMENT_CENTER, VERTICAL_ALIGNMENT_BOTTOM)
-	_message.offset_bottom = -70
+	_message.offset_bottom = -104
 	_message.modulate.a = 0.0
 
 	_hint = _make_label(18, HORIZONTAL_ALIGNMENT_LEFT, VERTICAL_ALIGNMENT_TOP)
@@ -144,8 +149,9 @@ func _ready() -> void:
 	_stamina.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_stamina.offset_left = -90
 	_stamina.offset_right = 90
-	_stamina.offset_top = -30
-	_stamina.offset_bottom = -22
+	# Just above the hotbar.
+	_stamina.offset_top = -94
+	_stamina.offset_bottom = -86
 	_stamina.max_value = 1.0
 	_stamina.show_percentage = false
 	_stamina.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -211,9 +217,49 @@ func set_clock(text: String) -> void:
 	_clock.text = text
 
 
-## Your points and what you're carrying, in the bottom-right corner.
+## Your points, and anything picked up off the floor, in the bottom-right corner (the hotbar
+## shows the rest).
 func set_inventory(points: int, item_name: String) -> void:
-	_inventory.text = "%d points%s" % [points, ("   ·   Carrying: " + item_name) if item_name != "" else ""]
+	_inventory.text = "%d points%s" % [points, ("   ·   " + item_name) if item_name != "" else ""]
+
+
+## Someone's flashlight in your eyes (0 none, 1 blinded), and where on screen it is.
+var _glare_wash: ColorRect
+var _glare_bloom: TextureRect
+
+
+func set_glare(amount: float, at: Vector2) -> void:
+	if _glare_wash == null:
+		_glare_wash = ColorRect.new()
+		_glare_wash.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_glare_wash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_glare_wash.color = Color(1.0, 0.98, 0.92, 0.0)
+		add_child(_glare_wash)
+		var glow := Gradient.new()
+		glow.set_color(0, Color(1.0, 1.0, 0.96, 1.0))
+		glow.set_color(1, Color(1.0, 0.96, 0.85, 0.0))
+		glow.add_point(0.2, Color(1.0, 0.98, 0.92, 0.85))
+		var texture := GradientTexture2D.new()
+		texture.gradient = glow
+		texture.fill = GradientTexture2D.FILL_RADIAL
+		texture.fill_from = Vector2(0.5, 0.5)
+		texture.fill_to = Vector2(1.0, 0.5)
+		texture.width = 256
+		texture.height = 256
+		_glare_bloom = TextureRect.new()
+		_glare_bloom.texture = texture
+		_glare_bloom.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_glare_bloom.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		add_child(_glare_bloom)
+	_glare_wash.visible = amount > 0.01
+	_glare_bloom.visible = amount > 0.01
+	if amount <= 0.01:
+		return
+	_glare_wash.color.a = amount * 0.6
+	var size := Vector2.ONE * lerpf(250.0, 1400.0, amount)
+	_glare_bloom.size = size
+	_glare_bloom.position = at - size * 0.5
+	_glare_bloom.modulate.a = minf(1.0, amount * 1.5)
 
 
 ## The faint blue look and reminder while you're a ghost.

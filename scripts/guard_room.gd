@@ -273,7 +273,7 @@ func _on_chair_used(by: Node, desk: int) -> void:
 ## G while carrying the spectral camera kit: starts installing it at the nearest desk.
 ## Returns false if you're not carrying the kit (so G does its usual thing).
 func try_install() -> bool:
-	if shop == null or shop.local_item != "camera_kit" or local_guard == null:
+	if shop == null or not shop.has_local("camera_kit") or local_guard == null:
 		return false
 	if _installing >= 0 or local_guard.seated_desk >= 0:
 		return true
@@ -298,7 +298,7 @@ func _stand_up() -> void:
 
 
 func _can_install_at(desk: int) -> bool:
-	return shop != null and shop.local_item == "camera_kit" and not upgraded[desk] and occupants[desk] == 0
+	return shop != null and shop.has_local("camera_kit") and not upgraded[desk] and occupants[desk] == 0
 
 
 func _update_chair_prompts() -> void:

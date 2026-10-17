@@ -89,7 +89,7 @@ func _process(_delta: float) -> void:
 		var label: String = DOORWAYS[i]["name"]
 		var prompt := ""
 		if not installed[i]:
-			prompt = "Fit the door kit in the %s" % label if shop.local_item == "door_kit" else "Empty doorway (a door kit from the vending machine fits here)"
+			prompt = "Fit the door kit in the %s" % label if shop.has_local("door_kit") else "Empty doorway (a door kit from the vending machine fits here)"
 		elif broken[i]:
 			prompt = "The %s is hanging off its hinges" % label
 		else:

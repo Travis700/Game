@@ -164,6 +164,7 @@ func _ready() -> void:
 	if local:
 		interact_ray.add_exception(self)
 		_make_dust()
+		_make_viewmodel()
 		camera.current = true
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		get_tree().call_group("game", "on_local_guard_ready", self)
@@ -209,6 +210,12 @@ func _process(delta: float) -> void:
 	var aim := camera.global_basis.orthonormalized()
 	_beam_basis = _beam_basis.slerp(aim, minf(1.0, BEAM_FOLLOW * delta)).orthonormalized()
 	flashlight.global_basis = _beam_basis
+	if _viewmodel:
+		_viewmodel.visible = not is_dead and not hiding and seated_desk < 0
+		_viewmodel.global_basis = _beam_basis
+		_viewmodel_lens.material_override = _lens_on if flashlight.visible else _lens_off
+	elif not is_local():
+		_update_flare()
 	# The field of view from the Esc menu (Profile looked up by path, see _look).
 	if is_local():
 		var profile := get_node_or_null("/root/Profile")
@@ -254,6 +261,97 @@ func _make_dust() -> void:
 	dust.draw_pass_1 = speck
 	dust.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	camera.add_child(dust)
+
+
+## Your own arm, bottom right, holding the flashlight: its lens is where the beam comes from.
+## Drawn at half size and half the distance, so it doesn't poke into walls you stand against,
+## and kept off the security cameras.
+const VIEWMODEL := preload("res://assets/models/viewmodel_flashlight.glb")
+const VIEWMODEL_AT := Vector3(0.12, -0.125, -0.27)
+var _viewmodel: Node3D
+var _viewmodel_lens: MeshInstance3D
+var _lens_on: StandardMaterial3D
+var _lens_off: StandardMaterial3D
+
+
+func _make_viewmodel() -> void:
+	_viewmodel = Node3D.new()
+	_viewmodel.name = "Viewmodel"
+	_viewmodel.position = VIEWMODEL_AT
+	camera.add_child(_viewmodel)
+	var model := VIEWMODEL.instantiate() as Node3D
+	model.scale = Vector3.ONE * 0.5
+	_viewmodel.add_child(model)
+	# The lens: a disc over the torch's glass, lit while the flashlight is on.
+	_lens_on = StandardMaterial3D.new()
+	_lens_on.albedo_color = Color(1.0, 0.96, 0.88)
+	_lens_on.emission_enabled = true
+	_lens_on.emission = Color(1.0, 0.94, 0.82)
+	_lens_on.emission_energy_multiplier = 4.0
+	_lens_off = StandardMaterial3D.new()
+	_lens_off.albedo_color = Color(0.18, 0.18, 0.17)
+	_lens_off.metallic = 0.4
+	_lens_off.roughness = 0.2
+	var disc := CylinderMesh.new()
+	disc.top_radius = 0.0068
+	disc.bottom_radius = 0.0068
+	disc.height = 0.001
+	disc.radial_segments = 16
+	_viewmodel_lens = MeshInstance3D.new()
+	_viewmodel_lens.mesh = disc
+	_viewmodel_lens.rotation.x = PI * 0.5
+	_viewmodel_lens.position = Vector3(0, 0, -0.001)
+	_viewmodel.add_child(_viewmodel_lens)
+	for mesh: MeshInstance3D in _viewmodel.find_children("*", "MeshInstance3D", true, false):
+		mesh.layers = SecurityCameras.HIDDEN_FROM_CAMERAS
+		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# The beam comes out of it.
+	flashlight.position = VIEWMODEL_AT + Vector3(0, 0, -0.02)
+
+
+## Someone else's flashlight, seen from here: a glare on its lens, brighter the more squarely
+## it's pointed at you.
+var _flare: MeshInstance3D
+
+
+func _update_flare() -> void:
+	if _flare == null:
+		_flare = MeshInstance3D.new()
+		var quad := QuadMesh.new()
+		quad.size = Vector2(1, 1)
+		_flare.mesh = quad
+		_flare.material_override = _flare_material()
+		_flare.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		flashlight.add_sibling(_flare)
+		_flare.position = flashlight.position
+	var eye := get_viewport().get_camera_3d()
+	var facing := 0.0
+	if flashlight.visible and eye and not is_dead:
+		var to_eye := eye.global_position - flashlight.global_position
+		facing = clampf(((-flashlight.global_basis.z).dot(to_eye.normalized()) - 0.75) / 0.25, 0.0, 1.0)
+	_flare.visible = facing > 0.0
+	if _flare.visible:
+		_flare.scale = Vector3.ONE * lerpf(0.12, 0.7, facing * facing)
+		(_flare.material_override as StandardMaterial3D).albedo_color.a = lerpf(0.35, 1.0, facing)
+
+
+func _flare_material() -> StandardMaterial3D:
+	var glow := Gradient.new()
+	glow.set_color(0, Color(1.0, 0.97, 0.9, 1.0))
+	glow.set_color(1, Color(1.0, 0.9, 0.75, 0.0))
+	glow.add_point(0.12, Color(1.0, 0.96, 0.88, 0.9))
+	var texture := GradientTexture2D.new()
+	texture.gradient = glow
+	texture.fill = GradientTexture2D.FILL_RADIAL
+	texture.fill_from = Vector2(0.5, 0.5)
+	texture.fill_to = Vector2(1.0, 0.5)
+	var look := StandardMaterial3D.new()
+	look.albedo_texture = texture
+	look.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	look.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	look.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	look.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	return look
 
 
 ## Redraws the name tag (e.g. after a promotion).

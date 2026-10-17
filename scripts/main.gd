@@ -103,6 +103,7 @@ var _left_alive: Dictionary = {}
 var power: Power
 var light_switches: LightSwitches
 var televisions: Televisions
+var glare: Glare
 var pause_menu: CanvasLayer
 var spawner: MultiplayerSpawner
 var _local_guard: Guard
@@ -302,7 +303,9 @@ func _ready() -> void:
 	vending.buy_requested.connect(shop.request_buy)
 	vending.closed.connect(_on_ui_closed)
 	shop.wallet_changed.connect(func(_points: int) -> void: _refresh_inventory())
-	shop.holding_changed.connect(func(_item: String) -> void: _refresh_inventory())
+	shop.holding_changed.connect(func(items: Array[String]) -> void:
+		hud.hotbar.set_items(items)
+		_refresh_inventory())
 	school.vending_machine.used.connect(_on_vending_used)
 
 	keypad = KeypadUI.new()
@@ -404,6 +407,11 @@ func _ready() -> void:
 	add_child(light_switches)
 	light_switches.build(school)
 	night.light_switches = light_switches
+	glare = Glare.new()
+	glare.name = "Glare"
+	glare.players = players
+	glare.hud = hud
+	add_child(glare)
 	televisions = Televisions.new()
 	televisions.name = "Televisions"
 	televisions.power = power
@@ -1218,6 +1226,8 @@ func _turn_away(reason: String) -> void:
 ## Called by each guard's own computer when it spawns, to hook up that player's HUD.
 func on_local_guard_ready(guard: Guard) -> void:
 	_local_guard = guard
+	hud.hotbar.guard = guard
+	glare.local_guard = guard
 	guard.prompt_changed.connect(hud.set_prompt)
 	guard.message_shown.connect(hud.show_message)
 	guard.desk_action.connect(guard_room.on_desk_action)
@@ -1263,7 +1273,7 @@ func on_local_guard_ready(guard: Guard) -> void:
 	guard.spectate_requested.connect(_spectate_next)
 	guard.item_use_requested.connect(func() -> void:
 		if not guard_room.try_install():
-			shop.request_use())
+			shop.request_use(hud.hotbar.item_slot()))
 	guard.pause_requested.connect(func() -> void:
 		guard.input_blocked = true
 		var others: Array = []
@@ -2021,19 +2031,18 @@ func _on_vending_used(by: Node) -> void:
 		hud.show_message("The vending machine is dead. No power.")
 		return
 	_local_guard.input_blocked = true
-	vending.open(shop.local_points, shop.local_item, _mode == "solo", _local_guard.rank)
+	vending.open(shop.local_points, shop.local_bag, _mode == "solo", _local_guard.rank)
 
 
 func _refresh_inventory() -> void:
-	var carrying := Shop.item_name(shop.local_item)
-	if shop.local_item in Shop.USED_WITH_G:
-		carrying += "  (%s to use)" % Controls.key_name("use_item")
+	# What's bought is on the hotbar; this is for something picked up off the floor.
+	var carrying := ""
 	var in_hand := clutter.carried_name(multiplayer.get_unique_id()) if clutter and multiplayer.multiplayer_peer else ""
 	if in_hand != "":
-		carrying = ("%s, and " % carrying if carrying != "" else "") + "a %s (%s to throw)" % [in_hand, Controls.key_name("interact")]
+		carrying = "Carrying a %s (%s to throw)" % [in_hand, Controls.key_name("interact")]
 	hud.set_inventory(shop.local_points, carrying)
 	if vending.is_open:
-		vending.refresh(shop.local_points, shop.local_item)
+		vending.refresh(shop.local_points, shop.local_bag)
 
 
 ## Host: sends a message to one player's screen.

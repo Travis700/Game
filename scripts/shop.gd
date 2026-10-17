@@ -1,14 +1,17 @@
 class_name Shop
 extends Node
 ## The vending machine in the guard room. Guards spend the points they've earned; the item
-## drops into the tray, and they pick it up and carry it (one thing at a time). Some things are
-## fitted where they go with E (camera kit, door kit); the rest are used or put down with G.
+## drops into the tray, and they pick it up into their hotbar (the flashlight's slot, then up to
+## BAG_SIZE things). Some things are fitted where they go with E (camera kit, door kit); the rest
+## are used or put down with G, whichever is picked on the hotbar. A heavy-duty flashlight goes
+## straight into the flashlight's slot.
 ##
 ## The host holds everyone's points (Night keeps the totals), what each guard is carrying, and
 ## the sensors and traps guards have put down tonight.
 
 signal wallet_changed(points: int)
-signal holding_changed(item: String)
+## What the local guard is carrying changed (see local_bag).
+signal holding_changed(items: Array[String])
 
 const ITEMS := {
 	"camera_kit": {
@@ -45,7 +48,7 @@ const ITEMS := {
 	},
 	"flashlight": {
 		"name": "Heavy-duty flashlight", "price": 140, "rank": 3,
-		"about": "Press {item} to swap it for your flashlight. A longer, wider beam, for good. (The Librarian will notice it from further away too.)",
+		"about": "Pick it up and it replaces the flashlight in your first hotbar slot: a longer, wider beam, for good. (The Librarian will notice it from further away too.)",
 	},
 	"emf": {
 		"name": "Pocket EMF reader", "price": 150, "rank": 2,
@@ -70,6 +73,8 @@ const ITEMS := {
 }
 ## Every item needs at least this rank to buy, unless it says otherwise.
 const DEFAULT_RANK := 1
+## How many things a guard can carry besides their flashlight.
+const BAG_SIZE := 4
 ## Items used or put down with G (the rest are fitted with E).
 const USED_WITH_G: Array[String] = ["camera_kit", "portable_camera", "radio", "motion_sensor", "glue_trap", "energy_drink", "flashlight", "air_horn", "coffee", "emf", "decoy_radio", "donuts"]
 ## The decoy radio: seconds before it starts, and how long it plays.
@@ -95,11 +100,11 @@ var career: Career
 ## Host: points spent this run, by badge (for the Big spender achievement). Saved with the run.
 var spent: Dictionary = {}
 var guard_room: GuardRoom
-## What this player is carrying ("" for nothing). Updated by the host.
-var local_item := ""
+## What this player is carrying, in hotbar order after the flashlight. Updated by the host.
+var local_bag: Array[String] = []
 var local_points := 0
 
-# Host only: peer -> item id.
+# Host only: peer -> Array[String] of item ids, in hotbar order.
 var _held: Dictionary = {}
 var _drops: Dictionary = {}
 var _next_drop := 1
@@ -132,35 +137,49 @@ func request_buy(item: String) -> void:
 		_request_buy.rpc_id(1, item)
 
 
+## Is the local guard carrying one of these?
+func has_local(item: String) -> bool:
+	return item in local_bag
+
+
+func _bag(peer_id: int) -> Array:
+	if not _held.has(peer_id):
+		_held[peer_id] = []
+	return _held[peer_id]
+
+
 ## Host: takes an item from a guard (e.g. installing the camera kit). True if they had it.
 func take(peer_id: int, item: String) -> bool:
-	if _held.get(peer_id, "") != item:
+	var bag := _bag(peer_id)
+	if not item in bag:
 		return false
-	_held.erase(peer_id)
+	bag.erase(item)
 	_send_holding(peer_id)
 	return true
 
 
-## Uses or puts down whatever the local guard is carrying (G).
-func request_use() -> void:
+## Uses or puts down the `index`th thing carried (0 for the first; the hotbar's slot 2) (G).
+func request_use(index: int) -> void:
 	if multiplayer.is_server():
-		_request_use()
+		_request_use(index)
 	else:
-		_request_use.rpc_id(1)
+		_request_use.rpc_id(1, index)
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _request_use() -> void:
+func _request_use(index: int) -> void:
 	if not multiplayer.is_server():
 		return
 	var peer := _sender()
 	var guard := director.guard_by_peer(peer)
-	var item: String = _held.get(peer, "")
+	var bag := _bag(peer)
+	var item: String = bag[index] if index >= 0 and index < bag.size() else ""
 	if guard == null or guard.is_dead:
 		return
 	match item:
 		"":
-			_tell(peer, "You're not carrying anything. Buy something at the vending machine.")
+			_tell(peer, "Nothing in that slot. Buy something at the vending machine." if not bag.is_empty()
+					else "You're not carrying anything. Buy something at the vending machine.")
 		"camera_kit":
 			_tell(peer, "Stand by a desk chair in the guard room and press {item} to install it.")
 		"lucky_charm":
@@ -247,10 +266,15 @@ func _request_use() -> void:
 				_tell(peer, "You've already got one of those.")
 				return
 			if take(peer, item):
-				set_owned(peer, item, true)
-				_tell(peer, {"flashlight": "You swap in the heavy-duty flashlight. That's a proper beam.",
-						"emf": "You clip the EMF reader to your pocket. Its lights are quiet. For now."}.get(item,
-						"You clip the walkie-talkie to your belt. Hold %s to talk on it." % _key("radio_talk")))
+				_fit(peer, item)
+
+
+## Host: a personal upgrade goes on for the run.
+func _fit(peer: int, item: String) -> void:
+	set_owned(peer, item, true)
+	_tell(peer, {"flashlight": "You swap in the heavy-duty flashlight. That's a proper beam.",
+			"emf": "You clip the EMF reader to your pocket. Its lights are quiet. For now."}.get(item,
+			"You clip the walkie-talkie to your belt. Hold %s to talk on it." % _key("radio_talk")))
 
 
 func _connected_peers() -> Array:
@@ -408,14 +432,16 @@ static func price_of(item: String) -> int:
 
 ## Host: hands a guard an item without buying it, e.g. one they were carrying in a saved run.
 func give(peer_id: int, item: String) -> void:
-	if ITEMS.has(item):
-		_held[peer_id] = item
+	if ITEMS.has(item) and _bag(peer_id).size() < BAG_SIZE:
+		_bag(peer_id).append(item)
 		_send_holding(peer_id)
 
 
-## Host: what a guard is carrying ("" for nothing).
-func held_by(peer_id: int) -> String:
-	return _held.get(peer_id, "")
+## Host: what a guard is carrying, in hotbar order.
+func held_by(peer_id: int) -> Array[String]:
+	var items: Array[String] = []
+	items.assign(_bag(peer_id))
+	return items
 
 
 ## Host: tells every player their current points, e.g. after the night report.
@@ -511,8 +537,13 @@ func _request_pickup(drop_id: int) -> void:
 	if not multiplayer.is_server() or not _drops.has(drop_id):
 		return
 	var peer := _sender()
-	if _held.has(peer):
-		_tell(peer, "Your hands are full. You're carrying the %s." % item_name(_held[peer]).to_lower())
+	var item: String = _drops[drop_id]["item"]
+	# The heavy-duty flashlight goes straight into the flashlight's slot.
+	if item == "flashlight" and owns(peer, item):
+		_tell(peer, "You've already got the heavy-duty flashlight.")
+		return
+	if item != "flashlight" and _bag(peer).size() >= BAG_SIZE:
+		_tell(peer, "Your pockets are full. Use or put down something first.")
 		return
 	# Whoever paid for it gets it (anyone may, if it's been sitting there a while).
 	var buyer: Array = _drop_buyers.get(drop_id, [peer, 0.0])
@@ -521,8 +552,11 @@ func _request_pickup(drop_id: int) -> void:
 		_tell(peer, "That's someone else's. Give them a moment to pick it up.")
 		return
 	_drop_buyers.erase(drop_id)
-	_held[peer] = _drops[drop_id]["item"]
 	_remove_drop.rpc(drop_id)
+	if item == "flashlight":
+		_fit(peer, item)
+		return
+	_bag(peer).append(item)
 	_send_holding(peer)
 
 
@@ -572,11 +606,11 @@ func _send_wallet(peer_id: int) -> void:
 
 
 func _send_holding(peer_id: int) -> void:
-	var item: String = _held.get(peer_id, "")
+	var items := PackedStringArray(_bag(peer_id))
 	if peer_id == multiplayer.get_unique_id():
-		_set_holding(item)
+		_set_holding(items)
 	else:
-		_set_holding.rpc_id(peer_id, item)
+		_set_holding.rpc_id(peer_id, items)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -586,9 +620,9 @@ func _set_wallet(points: int) -> void:
 
 
 @rpc("authority", "call_remote", "reliable")
-func _set_holding(item: String) -> void:
-	local_item = item
-	holding_changed.emit(item)
+func _set_holding(items: PackedStringArray) -> void:
+	local_bag.assign(Array(items))
+	holding_changed.emit(local_bag)
 
 
 ## A player's key for an action (Controls is an autoload, looked up by path). Note this is the

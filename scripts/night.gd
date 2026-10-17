@@ -506,7 +506,10 @@ func restore_guard(peer_id: int, badge: int) -> void:
 		_totals[peer_id] = int(saved_points[key])
 		shop.send_wallet(peer_id)
 	if saved_items.has(key):
-		shop.give(peer_id, str(saved_items[key]))
+		# A list of what they carried (saves from before the hotbar hold just the one thing).
+		var carried = saved_items[key]
+		for item in (carried if carried is Array else [carried]):
+			shop.give(peer_id, str(item))
 	for upgrade: String in saved_personal.get(key, []):
 		shop.set_owned(peer_id, upgrade, true)
 
@@ -523,9 +526,9 @@ func remember_guard(guard: Guard) -> void:
 		return
 	var key := str(guard.employee_number)
 	saved_points[key] = points_of(peer)
-	var item := shop.held_by(peer)
-	if item != "":
-		saved_items[key] = item
+	var items := shop.held_by(peer)
+	if not items.is_empty():
+		saved_items[key] = items
 	else:
 		saved_items.erase(key)
 	saved_personal[key] = shop.owned_by(peer)
@@ -542,9 +545,9 @@ func save_run(next_night: int, in_progress := false) -> void:
 		var key := str(guard.employee_number)
 		var peer := guard.name.to_int()
 		saved_points[key] = points_of(peer)
-		var item := shop.held_by(peer)
-		if item != "":
-			saved_items[key] = item
+		var items := shop.held_by(peer)
+		if not items.is_empty():
+			saved_items[key] = items
 		else:
 			saved_items.erase(key)
 		saved_personal[key] = shop.owned_by(peer)

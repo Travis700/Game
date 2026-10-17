@@ -91,7 +91,8 @@ From https://sketchfab.com, licensed Creative Commons Attribution 4.0
 credited, here and on the in-game Credits page. Fetched with `tools/sketchfab.py`, then changed for
 the game: trimmed, turned to face +Z and (the fountain) decimated with `tools/prep_glb.py`, and
 textures shrunk with `tools/slim_glb.py` (the cobwebs and crumpled papers are single pieces cut
-from their packs). In `assets/models/`:
+from their packs; the first-person arm is the right one of the pair, its fingers posed round the torch in
+Blender and the two baked into one model). In `assets/models/`:
 
 | File | Sketchfab model | Author | Link |
 | --- | --- | --- | --- |
@@ -130,6 +131,8 @@ from their packs). In `assets/models/`:
 | prop_toolbox | Toolbox Photoscan LOWPOLY | EFX | https://sketchfab.com/3d-models/toolbox-photoscan-lowpoly-52c36208571b4664a89d8607f58c6a45 |
 | prop_box_fan | animal company - box fan | Romeo rios vr | https://sketchfab.com/3d-models/animal-company-box-fan-23307ce851cc47cfaa91d65346ae3508 |
 | prop_towel | Folded Towel | Nicothin | https://sketchfab.com/3d-models/folded-towel-c5f9e72edf7d4b5eaa2ec9b95c3b099d |
+| viewmodel_flashlight (the arm) | First Person hands rigged | David Fischer | https://sketchfab.com/3d-models/first-person-hands-rigged-547a45535f0c4fe787948f7a7a6a88db |
+| viewmodel_flashlight (the torch) | Flashlight Swiss Arms | TheSolomon | https://sketchfab.com/3d-models/flashlight-swiss-arms-d996eb16f53f47df9b13ddbf8fd279bb |
 
 ## Long grass: made for this game
 

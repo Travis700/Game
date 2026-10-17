@@ -22,6 +22,12 @@ const BINDINGS := {
 	"monitor_2": [KEY_2],
 	"monitor_3": [KEY_3],
 	"monitor_4": [KEY_4],
+	# The hotbar (the same keys as the monitors: at a desk they pick a monitor instead).
+	"slot_1": [KEY_1],
+	"slot_2": [KEY_2],
+	"slot_3": [KEY_3],
+	"slot_4": [KEY_4],
+	"slot_5": [KEY_5],
 }
 ## Controller buttons (Xbox layout names; Godot maps PlayStation and Switch pads the same).
 const JOY_BUTTONS := {
@@ -50,6 +56,10 @@ const JOY_AXES := {
 }
 const MOUSE_BINDINGS := {
 	"zoom": [MOUSE_BUTTON_LEFT],
+	# Left click switches the flashlight (at a desk it's the full-screen camera, checked first).
+	"flashlight": [MOUSE_BUTTON_LEFT],
+	"slot_next": [MOUSE_BUTTON_WHEEL_DOWN],
+	"slot_prev": [MOUSE_BUTTON_WHEEL_UP],
 }
 
 

@@ -38,7 +38,7 @@ func _ready() -> void:
 ## Host: hides tonight's totems in random spots.
 ## Shows better odds on the totems while you carry the lucky rabbit's foot.
 func _process(_delta: float) -> void:
-	var lucky := shop != null and shop.local_item == "lucky_charm"
+	var lucky := shop != null and shop.has_local("lucky_charm")
 	var odds := REVIVE_ON_OR_BELOW + (1 if lucky else 0)
 	for stone: Interactable in _stones.values():
 		stone.prompt = PROMPT % [odds, 6 - odds] + ("  · uses your rabbit's foot" if lucky else "")
