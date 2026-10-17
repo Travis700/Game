@@ -90,7 +90,6 @@ textures shrunk with `tools/slim_glb.py`. In `assets/models/`:
 | File | Sketchfab model | Author | Link |
 | --- | --- | --- | --- |
 | prop_student_desk | School chair | N-Gon | https://sketchfab.com/3d-models/school-chair-9c35c03f6d614aa5874494e908a41904 |
-| prop_school_locker | Metal School Lockers (the closed one) | Zixel | https://sketchfab.com/3d-models/metal-school-lockers-7f1460adacd346a4a68c3e5f7a5d0d43 |
 | prop_cafeteria_table | School Cafeteria Table | Avot | https://sketchfab.com/3d-models/school-cafeteria-table-e0a0be3011da4e19963467d20daeaf61 |
 | prop_vending_machine | Vending Machine | Emanuel Silva | https://sketchfab.com/3d-models/vending-machine-4bfb493631f84f8a9adc00bb69831000 |
 | prop_trash_can | Trash Can | Yury Misiyuk | https://sketchfab.com/3d-models/trash-can-0ad3407cd8104ba58f71885c0e58ca9a |

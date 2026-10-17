@@ -11,7 +11,7 @@ A game by %s.
 
 Made with Godot Engine.
 Textures from Poly Haven (polyhaven.com, CC0) by Charlotte Baglioni, Dimitrios Savva, Rob Tuytel and Dario Barresi.
-School furniture models from Sketchfab (sketchfab.com), CC BY 4.0, changed for the game: School chair by N-Gon, Metal School Lockers by Zixel, School Cafeteria Table by Avot, Vending Machine by Emanuel Silva, Trash Can by Yury Misiyuk, School Chair by heloisebelisle, Teachers Desk by cig3d, Drinking Fountain by FLUXIUM3D, Fire Extinguisher by Loïc, Bulletin Board by lydia.la, Whiteboard by Darren McNerney 3D, Projector by GokouFG. Other models from Poly Haven (CC0).
+School furniture models from Sketchfab (sketchfab.com), CC BY 4.0, changed for the game: School chair by N-Gon, School Cafeteria Table by Avot, Vending Machine by Emanuel Silva, Trash Can by Yury Misiyuk, School Chair by heloisebelisle, Teachers Desk by cig3d, Drinking Fountain by FLUXIUM3D, Fire Extinguisher by Loïc, Bulletin Board by lydia.la, Whiteboard by Darren McNerney 3D, Projector by GokouFG. Other models from Poly Haven (CC0).
 Sound effects from Kenney (kenney.nl, CC0), and made with ElevenLabs.
 Field guide sketches made with SpriteCook and Nano Banana.
 Steam features use GodotSteam (MIT licence) and the Steamworks SDK (Valve Corporation)."""
