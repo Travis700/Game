@@ -1984,8 +1984,34 @@ func _build_science_wing() -> void:
 	for hung: Array in [[66.0, 1], [76.0, 3]]:
 		_box(Vector3(hung[0], 1.7, 3.85), Vector3(0.7, 0.9, 0.04), "wood", false)
 		_poster("painting_%d" % hung[1], Vector3(hung[0], 1.7, 3.83), Vector3.FORWARD, Vector2(0.6, 0.8))
+	# More work tables down the west side, with stools, and what the last class left on them.
+	for table_z: float in [-6.5, -1.5]:
+		_desk(Vector3(64.0, 0, table_z), 1.2, 2.4)
+		for along: float in [-0.6, 0.6]:
+			_solid_model("prop_painted_wooden_stool", Vector3(65.05, 0, table_z + along), 0.5, PI * 0.5,
+					Vector3(0.36, 0.5, 0.38))
+	_model("prop_spray_paint_bottles", Vector3(63.8, 0.77, -7.2), 0.2, 0.4)
+	_model("prop_ceramic_vase_01", Vector3(64.1, 0.77, -1.0), 0.28, 2.0)
+	_model("prop_cardboard_box_01", Vector3(63.9, 0.77, -2.3), 0.22, 0.7)
+	# The sink counter on the west wall, a drying rack and a stack of supply boxes on the east.
+	_box(Vector3(62.45, 0.44, -10.5), Vector3(0.6, 0.88, 2.4), "wood")
+	_box(Vector3(62.45, 0.9, -10.5), Vector3(0.64, 0.04, 2.44), "steel", false)
+	_box(Vector3(62.45, 0.86, -10.5), Vector3(0.4, 0.06, 0.5), "dark", false)
+	_box(Vector3(62.2, 1.1, -10.5), Vector3(0.04, 0.35, 0.04), "metal", false)
+	_solid_model("prop_steel_frame_shelves_01", Vector3(79.55, 0, 1.5), 1.8, -PI * 0.5, Vector3(0.45, 1.8, 0.95))
+	for box_spot: Vector3 in [Vector3(62.8, 0, 2.9), Vector3(63.5, 0, 3.0), Vector3(62.9, 0.42, 2.95)]:
+		_model("prop_cardboard_box_01", box_spot, 0.42, box_spot.x)
+	for hung: Array in [[-3.0, 2], [0.5, 4]]:
+		_box(Vector3(62.15, 1.7, hung[0]), Vector3(0.04, 0.9, 0.7), "wood", false)
+		_poster("painting_%d" % hung[1], Vector3(62.17, 1.7, hung[0]), Vector3.RIGHT, Vector2(0.6, 0.8))
 	self_portrait_easel = _interactable(Vector3(71.0, 1.2, -12.8), Vector3(1.3, 1.6, 0.12), "canvas", "Look at the canvas", "")
 	_box(Vector3(71.0, 0.2, -12.8), Vector3(0.9, 0.4, 0.5), "wood")
+
+	# The East Hall's bare side: notice boards and posters between the doors.
+	for board_x: float in [45.0, 60.0, 76.0]:
+		_model("prop_bulletin_board", Vector3(board_x, 1.0, 9.855), 1.0, PI)
+	for item: Array in [["poster_wash_hands", 55.0], ["poster_quiet", 65.0], ["poster_lost_found", 41.8]]:
+		_poster(item[0], Vector3(item[1], 1.6, 9.875), Vector3.FORWARD)
 
 	# Locker rooms: benches, showers along the back wall.
 	# Lockers along the front wall, either side of each door.
