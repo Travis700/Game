@@ -22,7 +22,7 @@ normal map, and roughness + ambient occlusion packed into `<name>_orm.jpg`). In 
 | ceiling (acoustic tiles) | OfficeCeiling001 |
 | wall (block, painted cream for the school) | Bricks066 |
 | terrazzo (halls and lobby) | Terrazzo005 |
-| checker (cafeteria) | Tiles014 |
+| checker (cafeteria, recoloured cream and slate) | Tiles014 |
 | quarry (kitchen) | Tiles047 |
 | carpet (library) | Carpet012 |
 | white_tile (locker rooms, nurse) | Tiles107 |

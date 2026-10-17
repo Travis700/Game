@@ -292,7 +292,7 @@ func _make_gym_materials() -> void:
 
 
 ## Textures that are too bright as they come.
-const TEXTURE_TINT := {"concrete": Color(0.68, 0.68, 0.66), "grass": Color(0.75, 0.8, 0.72), "quarry": Color(0.62, 0.52, 0.48), "checker": Color(0.82, 0.8, 0.76)}
+const TEXTURE_TINT := {"concrete": Color(0.68, 0.68, 0.66), "grass": Color(0.75, 0.8, 0.72), "quarry": Color(0.62, 0.52, 0.48)}
 
 
 func _add_mat(mat_name: String, color: Color, roughness := 0.9, emission := Color.BLACK,
