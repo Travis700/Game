@@ -61,9 +61,9 @@ const DEFINITIONS: Array[Dictionary] = [
 	# Classroom wing (difficulty 2).
 	{"area": "Room 101", "type": "Extra object", "night": 1, "kind": "show", "prop": "backpack", "alts": [Vector3(-44.0, 0, 16.0), Vector3(-50.0, 0, 18.0)]},
 	{"area": "Room 103", "type": "Moved object", "night": 1, "kind": "move", "prop": "globe", "alts": [Vector3(-55.0, 0, -10.0), Vector3(-44.0, 0, -2.0)],
-		"to": Vector3(-52.0, 0, -4.0), "turn": 0.0},
+		"to": Vector3(-49.0, 0, -4.85), "turn": 0.0},
 	{"area": "Room 103", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_classroom", "alts": [Vector3(-55.0, 0, -1.0)]},
-	{"area": "Library", "type": "Moved object", "night": 1, "kind": "move", "prop": "book_cart", "alts": [Vector3(-74.5, 0, -7.5), Vector3(-66.5, 0, -9.5)],
+	{"area": "Library", "type": "Moved object", "night": 1, "kind": "move", "prop": "book_cart", "alts": [Vector3(-75.5, 0, -7.5), Vector3(-66.5, 0, -9.5)],
 		"to": Vector3(-72.0, 0, -2.5), "turn": 60.0},
 	{"area": "Library", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_library", "alts": [Vector3(-60.0, 0, -12.0)]},
 	{"area": "Nurse's Office", "type": "Missing object", "night": 1, "kind": "hide", "prop": "wheelchair"},
@@ -201,7 +201,7 @@ func _build_wing_props() -> void:
 		[Vector3(0, 0.45, 0), Vector3(0.2, 0.3, 0.22), "clay"]], false)
 	_prop("duffel_bag", Vector3(55.0, 0.44, 14.0), [[Vector3(0, 0.15, 0), Vector3(0.8, 0.3, 0.35), "plant"]], false)
 	_figure("figure_classroom", Vector3(-44.0, 0, -7.0), 160.0)
-	_figure("figure_library", Vector3(-70.0, 0, -7.5), 30.0)
+	_figure("figure_library", Vector3(-69.5, 0, -7.5), 30.0)
 	_figure("figure_showers", Vector3(66.0, 0, 18.4), 90.0)
 	_figure("figure_east_hall", Vector3(66.0, 0, 6.5), 90.0)
 	_figure("walker_west", Vector3(-24.0, 0, 5.5), 0.0)
@@ -211,7 +211,7 @@ func _build_wing_props() -> void:
 	_noise("noise_office", Vector3(-12.0, 1.0, 14.0), "static")
 	_noise("noise_cafeteria", Vector3(-24.0, 1.0, -14.0), "whisper")
 	_noise("noise_gym", Vector3(20.0, 0.3, -14.0), "ball")
-	_noise("noise_library", Vector3(-68.0, 1.0, -6.0), "whisper")
+	_noise("noise_library", Vector3(-69.5, 1.0, -6.0), "whisper")
 	_noise("noise_classroom", Vector3(-48.0, 1.0, 16.0), "static")
 	_noise("noise_lab", Vector3(52.0, 1.0, -6.0), "radio")
 

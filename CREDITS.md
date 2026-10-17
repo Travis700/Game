@@ -74,6 +74,7 @@ with `tools/slim_glb.py`. In `assets/models/` as `prop_<asset>.glb`.
 | Plastic Broom | L |
 | Multi Cleaner 5 Litre | James Ray Cock |
 | Covered Car | MP |
+| Wooden Ladder | Miroslav Turura |
 
 ## School art: made for this game
 

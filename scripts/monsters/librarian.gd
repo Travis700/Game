@@ -18,7 +18,8 @@ const WARNING_SECONDS := 2.0
 ## Real seconds of dark and quiet before it calms down.
 const CALM_AFTER := 3.0
 const STOPS: Array[Vector3] = [
-	Vector3(-74, 0, -3), Vector3(-70, 0, -10), Vector3(-66, 0, -3), Vector3(-62, 0, -10),
+	Vector3(-75.5, 0, -3), Vector3(-69.5, 0, -10), Vector3(-66.5, 0, -3), Vector3(-62, 0, -10),
+	Vector3(-72.5, 0, -11),
 	Vector3(-63, 0, 1.5), Vector3(-60, 0, 7), Vector3(-75, 0, 7),
 ]
 

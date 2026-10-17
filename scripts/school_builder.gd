@@ -705,6 +705,9 @@ func _build_front_office() -> void:
 	for desk_pos: Vector3 in [Vector3(-14, 0, 13), Vector3(-14, 0, 17.5), Vector3(-18, 0, 15)]:
 		_steel_desk(desk_pos, PI)
 	_model("prop_classic_laptop", Vector3(-18.0, 0.77, 15.05), 0.24, PI)
+	# Chairs at the two desks the moving office chair (Anomalies) doesn't sit at, facing them.
+	for seat: Vector3 in [Vector3(-14, 0, 16.6), Vector3(-18, 0, 14.1)]:
+		_chair(seat)
 	# Filing cabinets: four drawers each, with handles.
 	for i in 4:
 		var cabinet_x := -19.2 + i * 0.6
@@ -775,7 +778,9 @@ func _build_hallway() -> void:
 	_model("prop_wall_clock", Vector3(21.0, 2.35, 4.125), 0.36)
 
 
-func _locker_row(x1: float, x2: float, z: float) -> void:
+## A row of lockers from x1 to x2 against a wall at depth z. They face into the hallway (the
+## middle of the main hall is z 7) unless `facing` says otherwise (1 for +Z, -1 for -Z).
+func _locker_row(x1: float, x2: float, z: float, facing := 0.0) -> void:
 	const DEPTH := 0.5
 	const HEIGHT := 1.9
 	_box(Vector3((x1 + x2) * 0.5, HEIGHT * 0.5, z), Vector3(x2 - x1, HEIGHT, DEPTH), "locker", false)
@@ -788,7 +793,8 @@ func _locker_row(x1: float, x2: float, z: float) -> void:
 	body.add_child(collider)
 	add_child(body)
 	# The doors: one painted locker door, repeated along the row's front.
-	var facing := 1.0 if z < 7.0 else -1.0
+	if facing == 0.0:
+		facing = 1.0 if z < 7.0 else -1.0
 	var doors := int(round((x2 - x1) / 0.5))
 	var key := "lockers_%d" % doors
 	if not _mats.has(key):
@@ -812,7 +818,7 @@ func _locker_row(x1: float, x2: float, z: float) -> void:
 
 func _build_cafeteria() -> void:
 	for z: float in [-1.5, -8.0, -14.5, -21.0]:
-		for x: float in [-33.0, -23.5]:
+		for x: float in [-33.0, -23.5, -14.0]:
 			var parts: Array[Node3D] = [_box(Vector3(x, 0.74, z), Vector3(6.0, 0.06, 1.0), "desk"),
 					_box(Vector3(x, 0.36, z), Vector3(5.6, 0.72, 0.15), "metal")]
 			for side: float in [-1.0, 1.0]:
@@ -877,6 +883,11 @@ func _build_kitchen_and_closet() -> void:
 	_model("prop_cardboard_box_01", Vector3(-4.35, 0.34, -10.55), 0.28, 0.4)
 	_model("prop_plastic_broom", Vector3(4.6, 0, -11.5), 1.2, -PI * 0.5)
 
+
+## The library's stacks: where each row of bookcases stands (they run from z -13 to -4), and
+## how tall they are (the ceiling is at 3.5 m).
+const LIBRARY_ROWS: Array[float] = [-77.0, -74.0, -71.0, -68.0, -65.0]
+const LIBRARY_SHELF_H := 3.25
 
 ## How high the nurse's cot mattresses sit on their bed frames.
 const NURSE_MATTRESS_Y := 0.36
@@ -1364,25 +1375,35 @@ func _school_chair(pos: Vector3, turn: float) -> void:
 	_gym_chair(pos, turn)
 
 
-## A double-sided library bookcase running north-south, 2 m tall: shelves full of books on both
-## faces (one painted texture, tiled), wooden ends and a top.
-func _bookcase_row(centre: Vector3, length: float) -> void:
-	const HEIGHT := 2.0
-	const DEPTH := 0.6
-	_box(centre + Vector3(0, HEIGHT * 0.5, 0), Vector3(DEPTH, HEIGHT, length), "wood")
+## A library bookcase: shelves full of books (one painted texture, tiled) on each face in `faces`,
+## wooden ends and a top. It runs north-south, or east-west if `along_x`; a face of 1 looks
+## towards +X (or +Z), -1 the other way. The core is solid; tall ones reach almost to the ceiling.
+func _bookcase(centre: Vector3, length: float, height: float, along_x := false, faces: Array[float] = [-1.0, 1.0],
+		depth := 0.6) -> void:
+	var size := Vector3(length, height, depth) if along_x else Vector3(depth, height, length)
+	_box(centre + Vector3(0, height * 0.5, 0), size, "wood")
+	var across := Vector3(0, 0, 1) if along_x else Vector3(1, 0, 0)
+	var lengthwise := Vector3(1, 0, 0) if along_x else Vector3(0, 0, 1)
 	for end: float in [-1.0, 1.0]:
-		_box(centre + Vector3(0, (HEIGHT + 0.05) * 0.5, end * (length * 0.5 + 0.025)),
-				Vector3(DEPTH + 0.04, HEIGHT + 0.05, 0.05), "wood", false)
-	_box(centre + Vector3(0, HEIGHT + 0.03, 0), Vector3(DEPTH + 0.06, 0.06, length + 0.1), "wood", false)
-	for side: float in [-1.0, 1.0]:
+		var panel := across * (depth + 0.04) + lengthwise * 0.05 + Vector3(0, height + 0.05, 0)
+		_box(centre + lengthwise * end * (length * 0.5 + 0.025) + Vector3(0, (height + 0.05) * 0.5, 0), panel, "wood", false)
+	_box(centre + Vector3(0, height + 0.03, 0), across * (depth + 0.06) + lengthwise * (length + 0.1) + Vector3(0, 0.06, 0),
+			"wood", false)
+	# Books on each open face; the shelves texture is one 1.5 x 2 m bay.
+	var key := "books_%d_%d" % [roundi(length * 10.0), roundi(height * 10.0)]
+	if not _mats.has(key):
+		var books := (_mats["books"] as StandardMaterial3D).duplicate() as StandardMaterial3D
+		books.uv1_scale = Vector3(length / 1.5, height / 2.0, 1)
+		_mats[key] = books
+	for side in faces:
 		var quad := QuadMesh.new()
-		quad.size = Vector2(length, HEIGHT - 0.04)
-		var books := MeshInstance3D.new()
-		books.mesh = quad
-		books.material_override = _mats["books"]
-		books.position = centre + Vector3(side * (DEPTH * 0.5 + 0.004), HEIGHT * 0.5, 0)
-		books.rotation.y = side * PI * 0.5
-		add_child(books)
+		quad.size = Vector2(length, height - 0.04)
+		var shelf := MeshInstance3D.new()
+		shelf.mesh = quad
+		shelf.material_override = _mats[key]
+		shelf.position = centre + across * side * (depth * 0.5 + 0.004) + Vector3(0, height * 0.5, 0)
+		shelf.rotation.y = atan2(across.x * side, across.z * side)
+		add_child(shelf)
 
 
 ## A science lab bench, 4 x 1.2 m: painted cupboards under a black top, doors down both sides.
@@ -1596,15 +1617,19 @@ func _build_classroom_wing() -> void:
 
 	_classroom(Vector3(-47.0, 0, 15.0), 1.0, 3, 7.0, "poster_stay_in_class")
 	_classroom(Vector3(-61.0, 0, 15.0), 1.0, 3, 7.0, "poster_read")
-	_classroom(Vector3(-49.0, 0, -9.0), -1.0, 3, 9.0, "poster_science_fair")
+	_classroom(Vector3(-49.0, 0, -9.0), -1.0, 5, 9.0, "poster_science_fair")
 
-	# Library: rows of bookcases, the checkout desk and reading tables.
-	for i in 4:
-		_bookcase_row(Vector3(-76.0 + i * 4.0, 0, -9.0), 6.0)
+	# Library: the stacks, five rows of bookcases nearly up to the ceiling with narrow aisles
+	# between (and a gap behind them along the back wall), shelves along the front wall, the
+	# checkout desk and reading tables by the door.
+	for row_x: float in LIBRARY_ROWS:
+		_bookcase(Vector3(row_x, 0, -8.5), 9.0, LIBRARY_SHELF_H)
+	_bookcase(Vector3(-73.8, 0, 3.675), 11.6, LIBRARY_SHELF_H, true, [-1.0], 0.4)
+	_model("prop_wooden_ladder", Vector3(-72.5, 0, -6.2), 1.7, PI * 0.5)
 	_box(Vector3(-62.0, 0.55, 0.5), Vector3(3.0, 1.1, 0.8), "wood")
 	_model("prop_desk_lamp_arm_01", Vector3(-61.0, 1.1, 0.6), 0.5, PI)
 	_model("prop_classic_laptop", Vector3(-62.4, 1.1, 0.45), 0.24, PI)
-	for table: Vector3 in [Vector3(-70, 0, -1.0), Vector3(-61, 0, -9.0)]:
+	for table: Vector3 in [Vector3(-70, 0, -1.0), Vector3(-75.5, 0, -1.0), Vector3(-61, 0, -9.0)]:
 		_desk(table, 2.4, 1.2)
 		for side: float in [-1.0, 1.0]:
 			for along: float in [-0.6, 0.6]:
@@ -1651,7 +1676,7 @@ func _build_classroom_wing() -> void:
 	_light(Vector3(-61.0, WALL_H - 0.3, 15.0), 0.25, 9.0, true)
 	_light(Vector3(-74.0, WALL_H - 0.3, 15.0), 0.35, 8.0, false, true, Color(0.85, 1.0, 0.95))
 	_light(Vector3(-49.0, WALL_H - 0.3, -5.0), 0.0, 11.0)
-	_light(Vector3(-74.0, WALL_H - 0.3, -5.0), 0.2, 11.0)
+	_light(Vector3(-72.5, WALL_H - 0.3, -5.0), 0.2, 11.0)
 	_light(Vector3(-63.0, WALL_H - 0.3, -5.0), 0.0, 11.0)
 
 	_sign("ROOM 101", Vector3(-47.0, 2.7, 9.85), Vector3.FORWARD, 40)
@@ -1760,13 +1785,16 @@ func _build_science_wing() -> void:
 	_box(Vector3(71.0, 0.2, -12.8), Vector3(0.9, 0.4, 0.5), "wood")
 
 	# Locker rooms: benches, showers along the back wall.
+	# Lockers along the front wall, either side of each door.
+	for span: Vector2 in [Vector2(40.4, 48.8), Vector2(51.2, 59.6), Vector2(60.4, 68.8), Vector2(71.2, 79.6)]:
+		_locker_row(span.x, span.y, 10.375, 1.0)
 	for bench_x: float in [46.0, 54.0, 66.0, 74.0]:
 		_box(Vector3(bench_x, 0.22, 14.0), Vector3(4.0, 0.44, 0.45), "wood")
 	for shower_x in [44.0, 48.0, 52.0, 56.0, 64.0, 68.0, 72.0, 76.0]:
 		_box(Vector3(shower_x, 2.1, 19.7), Vector3(0.2, 0.1, 0.3), "metal", false)
 		_box(Vector3(shower_x + 2.0, 1.0, 19.0), Vector3(0.05, 2.0, 1.6), "wall")
 
-	_model("prop_trash_can", Vector3(42.0, 0, 10.6), 0.9)
+	_model("prop_trash_can", Vector3(58.8, 0, 11.3), 0.9)
 	_poster("poster_science_fair", Vector3(56.0, 2.5, 4.125), Vector3.BACK)
 	_poster("poster_no_running", Vector3(76.0, 2.5, 4.125), Vector3.BACK)
 	_poster("poster_basketball", Vector3(60.0, 2.5, 9.875), Vector3.FORWARD)
