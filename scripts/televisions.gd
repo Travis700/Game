@@ -138,7 +138,9 @@ func update(delta: float) -> void:
 		return
 	for node in director.get_node("Live").get_children():
 		var monster := node as Monster
-		if monster == null or monster.is_queued_for_deletion():
+		# Not the real cleaner, and nothing in disguise: that would give it away.
+		if monster == null or monster.is_queued_for_deletion() or monster.harmless or monster.disguised() \
+				or monster.state == "hidden":
 			continue
 		for i in _sets.size():
 			if not _on[i] and randf() < MONSTER_CHANCE \

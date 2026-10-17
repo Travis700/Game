@@ -163,8 +163,11 @@ root-overrides/paths for the save folder:
 - Proximity voice chat and walkie-talkies, and a monster that mimics your teammates' voices.
 - 18 monsters across three wings, each with its own rule, a field guide to fill in, and moods
   that change how hard they bite.
-- A different night every time: random anomalies and places, shift notes (fog, a full moon,
-  camera faults...), nightly bonus objectives and a work target from the district.
+- A school that looks lived in, in the dark: books and bags left on the desks, lessons still on
+  the whiteboards, cobwebs in the corners. A light switch in every room, and old TVs that
+  something keeps switching on.
+- A different night every time: random anomalies and places, shift notes (fog, a thunderstorm,
+  a full moon, camera faults...), nightly bonus objectives and a work target from the district.
 - A nine-night run with checkpoints and a finale, then endless Overtime. Hardcore if you dare.
 - A daily shift that's the same for everyone, with friends' scores.
 - Ranks, perks and hats to unlock, 36 achievements and career records.

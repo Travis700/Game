@@ -268,7 +268,9 @@ func update(delta: float) -> void:
 	_monster_timer = MONSTER_CHECK_SECONDS
 	for node in director.get_node("Live").get_children():
 		var monster := node as Monster
-		if monster == null or monster.is_queued_for_deletion():
+		# Not the real cleaner, and nothing in disguise: that would give it away.
+		if monster == null or monster.is_queued_for_deletion() or monster.harmless or monster.disguised() \
+				or monster.state == "hidden":
 			continue
 		for i in _rooms.size():
 			if (ROOMS[_rooms[i]["name"]] as AABB).has_point(monster.global_position + Vector3(0, 0.5, 0)) and _is_on(i) \
