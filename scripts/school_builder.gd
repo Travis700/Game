@@ -2124,9 +2124,9 @@ func _build_classroom_wing() -> void:
 	for span: Vector2 in [Vector2(-79.6, -75.2), Vector2(-72.8, -62.2), Vector2(-59.8, -48.2), Vector2(-45.8, -40.4)]:
 		_locker_row(span.x, span.y, 9.62)
 
-	_classroom(Vector3(-47.0, 0, 15.0), 1.0, 3, 7.0, "poster_stay_in_class")
-	_classroom(Vector3(-61.0, 0, 15.0), 1.0, 3, 7.0, "poster_read")
-	_classroom(Vector3(-49.0, 0, -9.0), -1.0, 5, 9.0, "poster_science_fair", 17.75)
+	_classroom(Vector3(-47.0, 0, 15.0), 1.0, 3, 7.0, "poster_stay_in_class", 9.75, "board_101")
+	_classroom(Vector3(-61.0, 0, 15.0), 1.0, 3, 7.0, "poster_read", 9.75, "board_102")
+	_classroom(Vector3(-49.0, 0, -9.0), -1.0, 5, 9.0, "poster_science_fair", 17.75, "board_103")
 
 	# Library: the stacks, five rows of bookcases nearly up to the ceiling with narrow aisles
 	# between (and a gap behind them along the back wall), shelves along the front wall, the
@@ -2205,13 +2205,31 @@ func _build_classroom_wing() -> void:
 
 ## A classroom: rows of student desks facing a whiteboard and the teacher's desk.
 ## `facing` is +1 when the board is on the south wall, -1 when it's on the north wall.
-func _classroom(centre: Vector3, facing: float, rows := 3, half_width := 7.0, poster := "", depth := 9.75) -> void:
+## `writing` is what's on the board (assets/textures/school/<writing>.png), or "".
+func _classroom(centre: Vector3, facing: float, rows := 3, half_width := 7.0, poster := "", depth := 9.75,
+		writing := "") -> void:
 	var board_z := centre.z + facing * 4.75
 	var board_wall := centre.z + facing * 4.875
 	# `depth` is from the board wall to the back wall (Room 103 is twice as deep as the others).
 	var back_wall := board_wall - facing * depth
 	if _model("prop_whiteboard", Vector3(centre.x, 0.85, board_wall - facing * 0.09), 1.45, PI if facing > 0.0 else 0.0) == null:
 		_box(Vector3(centre.x, 1.6, board_z), Vector3(4.0, 1.2, 0.06), "board", false)
+	elif writing != "":
+		# Today's lesson, in marker, on the board's face.
+		var ink := StandardMaterial3D.new()
+		ink.albedo_texture = load("res://assets/textures/school/%s.png" % writing)
+		ink.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		ink.roughness = 0.4
+		var quad := QuadMesh.new()
+		quad.size = Vector2(2.6, 1.19)
+		var sheet := MeshInstance3D.new()
+		sheet.mesh = quad
+		sheet.material_override = ink
+		sheet.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		sheet.visibility_range_end = PROP_DRAW_DISTANCE * 1.5
+		sheet.position = Vector3(centre.x, 1.6, board_wall - facing * 0.1)
+		sheet.rotation.y = 0.0 if facing < 0.0 else PI
+		add_child(sheet)
 	_model("prop_projector", Vector3(centre.x, WALL_H - 1.1, board_z - facing * 4.2), 1.1, 0.0 if facing > 0.0 else PI)
 	_steel_desk(Vector3(centre.x + 3.0, 0, board_z - facing * 1.6), PI if facing < 0.0 else 0.0)
 	_school_chair(Vector3(centre.x + 3.0, 0, board_z - facing * 0.75), PI if facing > 0.0 else 0.0)

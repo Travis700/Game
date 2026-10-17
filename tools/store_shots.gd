@@ -13,6 +13,8 @@ var SCENES := [
 	["librarian", Vector3(-69, 0.1, -1.5), 0.0, -0.04, [["librarian", Vector3(-69.3, 0, -5.0), PI]]],
 	["team", Vector3(9, 0.1, 7), -PI / 2, -0.02, [["photographer", Vector3(18.5, 0, 7.0), PI / 2]]],
 ]
+## Frames each shot is given to settle (monsters in place, shadows and bounced light).
+const SETTLE := 24
 ## The flashlight sits above the eye line: look down a little so it lands on the monster.
 const AIM_DOWN := 0.14
 var _scene := -1
@@ -50,9 +52,18 @@ func _process(_d: float) -> bool:
 		main.director.tonight.clear(); main.director._lockdown_times.clear()
 		for child in main.director._container.get_children():
 			child.queue_free()
+	# On a slow (software) renderer each frame only moves the clock a little: run the lights-out
+	# to its end.
+	if f >= 12 and f <= 20:
+		for tween: Tween in main.lighting._tweens:
+			if tween.is_valid():
+				tween.custom_step(30.0)
+	# Every shot is indoors: the grass outside is never seen, so don't spend time drawing it.
+	for grass in get_nodes_in_group("long_grass"):
+		grass.visible = false
 	if f < 50:
 		return false
-	if _scene < 0 or f - _start == 70:
+	if _scene < 0 or f - _start == SETTLE:
 		if _scene >= 0:
 			var shot := root.get_viewport().get_texture().get_image()
 			shot.save_png(ProjectSettings.globalize_path(OUT + "%d_%s.png" % [_order[_scene] + 1, SCENES[_order[_scene]][0]]))

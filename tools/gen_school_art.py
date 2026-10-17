@@ -7,6 +7,8 @@ periodic.png      the periodic table for the science lab
 school_map_*.png  the fire evacuation plan by the doors: the whole school, with YOU ARE HERE
 eye_chart.png     the nurse's eye chart
 poster_missing.png  a missing-person flyer for R. Hale, the last night guard
+board_*.png       marker writing for the classroom whiteboards (see on transparent), in the font from
+                  tools/fonts/ (Permanent Marker; only used here, so it isn't part of the game)
 
 Name some of them (e.g. `gen_school_art.py school_map`) to paint just those.
 """
@@ -17,6 +19,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, '..', 'assets', 'textures', 'school')
 TITLE = os.path.join(HERE, '..', 'assets', 'fonts', 'BebasNeue.ttf')
 TYPED = os.path.join(HERE, '..', 'assets', 'fonts', 'SpecialElite.ttf')
+MARKER = os.path.join(HERE, 'fonts', 'PermanentMarker.ttf')
 os.makedirs(OUT, exist_ok=True)
 random.seed(7)
 
@@ -457,6 +460,58 @@ def missing():
             (30, 30, 30), silhouette)
 
 
+def boards():
+    """What the day's lessons left on the classroom whiteboards: marker on a transparent sheet, with
+    the grey ghosts of things half wiped off."""
+    BLUE, BLACK, RED, GREEN = (30, 60, 160, 255), (25, 25, 30, 255), (190, 30, 30, 255), (30, 120, 60, 255)
+    pages = {
+        '101': [((60, 40), 'Mon 12/19', 60, BLACK), ((60, 140), 'ENGLISH 10', 110, BLUE),
+                ((60, 290), 'Of Mice and Men: ch. 4-6', 80, BLACK), ((60, 400), '- Who is lonely? Why?', 64, BLACK),
+                ((60, 490), '- Foreshadowing (the dog!)', 64, BLACK), ((1100, 620), 'ESSAY DUE MONDAY!!', 76, RED),
+                ((60, 780), 'No phones during the quiz', 58, GREEN)],
+        '102': [((60, 40), 'ALGEBRA II', 110, BLUE), ((60, 210), 'x^2 - 5x + 6 = 0', 90, BLACK),
+                ((60, 330), '(x - 2)(x - 3) = 0', 90, BLACK), ((60, 450), 'x = 2   or   x = 3', 90, BLACK),
+                ((60, 640), 'HW: p. 112  #1-29 odd', 78, RED), ((1300, 760), 'Wait for the bell.', 56, BLACK)],
+        '103': [((60, 40), 'BIOLOGY', 110, GREEN), ((60, 200), '6CO2 + 6H2O', 84, BLACK),
+                ((60, 300), '      + light  ->  C6H12O6 + 6O2', 76, BLACK), ((60, 460), 'Lab reports due FRIDAY', 76, BLUE),
+                ((1430, 66), 'DO NOT ERASE', 64, RED), ((60, 800), 'who keeps erasing my notes?', 44, (80, 80, 90, 255))],
+    }
+    for name, rows in pages.items():
+        w, h = 2048, 940
+        img = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        rng = random.Random(name)
+        # Half-wiped smudges from earlier lessons.
+        for _ in range(9):
+            x, y = rng.randint(0, w - 400), rng.randint(0, h - 200)
+            smear = Image.new('RGBA', (rng.randint(320, 680), rng.randint(120, 240)), (0, 0, 0, 0))
+            ImageDraw.Draw(smear).rectangle([40, 40, smear.width - 40, smear.height - 40], fill=(90, 95, 110, rng.randint(16, 32)))
+            img.alpha_composite(smear.filter(ImageFilter.GaussianBlur(18)), (x, y))
+        for (x, y), text, size, ink in rows:
+            font = ImageFont.truetype(MARKER, size)
+            # A slight wobble: nobody writes level on a board.
+            layer = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+            ImageDraw.Draw(layer).text((x, y), text, font=font, fill=ink)
+            img.alpha_composite(layer.rotate(rng.uniform(-1.2, 1.2), center=(x, y + size / 2)))
+        if name == '101':
+            d.line([1100, 720, 1840, 712], fill=RED, width=10)
+        if name == '102':
+            # A parabola through 2 and 3, and its axis.
+            ox, oy, sc = 1500, 520, 60
+            d.line([ox - 330, oy, ox + 330, oy], fill=BLACK, width=6)
+            d.line([ox - 300, oy - 330, ox - 300, oy + 120], fill=BLACK, width=6)
+            pts = [(ox - 300 + (2.5 + t / 10) * sc * 1.2, oy - ((2.5 + t / 10 - 2) * (2.5 + t / 10 - 3)) * sc * 3.2)
+                   for t in range(-12, 13)]
+            d.line(pts, fill=BLUE, width=8)
+        if name == '103':
+            # A leaf, with the sun on it.
+            d.ellipse([1500, 300, 1820, 520], outline=GREEN, width=8)
+            d.line([1500, 410, 1820, 410], fill=GREEN, width=6)
+            d.ellipse([1720, 160, 1820, 260], outline=(220, 160, 20, 255), width=8)
+            d.rectangle([1400, 40, 1980, 160], outline=RED, width=8)
+        img.save(os.path.join(OUT, 'board_%s.png' % name))
+
+
 def eye_chart():
     """The nurse's eye chart: rows of letters getting smaller. The last row isn't random."""
     w, h = 600, 1000
@@ -477,7 +532,7 @@ def eye_chart():
 
 PAINT = {'posters': posters, 'fixtures': fixtures, 'flag': flag, 'menu': menu, 'locker': locker,
          'bookcase': bookcase, 'paintings': paintings, 'periodic': periodic, 'school_map': school_map,
-         'eye_chart': eye_chart, 'missing': missing}
+         'eye_chart': eye_chart, 'missing': missing, 'boards': boards}
 for job in (sys.argv[1:] or PAINT):
     PAINT[job]()
 print('written to', os.path.normpath(OUT))

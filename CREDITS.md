@@ -197,7 +197,9 @@ version of a SpriteCook image (`keyart_raw.png`, superseded). Capsule titles are
 
 - Bebas Neue (titles) by Dharma Type, SIL Open Font License 1.1.
 - Special Elite (the clipboard and notices) by Astigmatic, Apache License 2.0.
-  Both from Google Fonts, in `assets/fonts/`.
+- Permanent Marker (the writing on the classroom whiteboards) by Font Diner, Apache License 2.0;
+  only used to paint that texture, so it lives in `tools/fonts/` and isn't part of the game.
+  All from Google Fonts; the first two are in `assets/fonts/`.
 
 ## Generated in code
 
