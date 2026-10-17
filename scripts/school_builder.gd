@@ -264,7 +264,7 @@ func _make_materials() -> void:
 ## mapped in world space, so every box tiles at the same scale. The .jpg ones are CC0 photo
 ## textures from Poly Haven (see CREDITS.md); the .png ones are made by tools/gen_textures.py.
 const TEXTURE_METRES := {
-	"floor": 2.4, "wall": 1.2, "ceiling": 3.85, "brick": 2.4, "concrete": 1.1, "asphalt": 3.0,
+	"floor": 1.22, "wall": 1.2, "ceiling": 3.85, "brick": 2.4, "concrete": 1.1, "asphalt": 3.0,
 	"grass": 2.0, "gym_floor": 1.9, "wood": 1.8, "desk": 0.6, "metal": 1.0, "locker": 1.2,
 	"cork": 1.0, "board": 2.0, "terrazzo": 1.6, "carpet": 2.0, "checker": 1.6, "quarry": 2.0,
 	"white_tile": 1.0,
