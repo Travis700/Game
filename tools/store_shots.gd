@@ -10,7 +10,7 @@ var SCENES := [
 	["lunch_lady", Vector3(-15, 0.1, -2), 0.0, -0.08, [["lunch_lady", Vector3(-15.3, 0, -5.0), PI]]],
 	["twins", Vector3(-47, 0.1, 11), PI, -0.12, [["twin", Vector3(-47.8, 0, 13.8), 0.0], ["twin", Vector3(-46.3, 0, 14.4), 0.0]]],
 	["mascot", Vector3(22, 0.1, -8), 0.0, -0.02, [["mascot", Vector3(22, 0, -11.2), PI]]],
-	["librarian", Vector3(-69, 0.1, -1.5), 0.0, -0.04, [["librarian", Vector3(-69.3, 0, -5.0), PI]]],
+	["librarian", Vector3(-69, 0.1, -1.5), 0.1, -0.04, [["librarian", Vector3(-69.3, 0, -5.0), PI]]],
 	["team", Vector3(9, 0.1, 7), -PI / 2, -0.02, [["photographer", Vector3(18.5, 0, 7.0), PI / 2]]],
 ]
 ## Frames each shot is given to settle (monsters in place, shadows and bounced light).
@@ -100,11 +100,15 @@ func _process(_d: float) -> bool:
 			var spec: Array = s[4][mini(i, s[4].size() - 1)]
 			m.global_position = spec[1]; m.rotation.y = spec[2]
 	if since > 2:
+		# Flashlights stutter near monsters (Dread): hold them steady for the photo.
+		main.dread.process_mode = Node.PROCESS_MODE_DISABLED
 		g.flashlight.visible = true
+		g.flashlight.light_energy = g.flashlight_energy()
 		var spots := [Vector3(12.5, 0.1, 5.8), Vector3(13.6, 0.1, 8.0), Vector3(15.2, 0.1, 6.6)]
 		for i in others.size():
 			others[i].global_position = spots[i]; others[i].rotation.y = -PI / 2 + (i - 1) * 0.25
 			others[i].flashlight.visible = true
+			others[i].flashlight.light_energy = others[i].flashlight_energy()
 			others[i].name_tag.visible = false
 		_hide_ui(main)
 	return false

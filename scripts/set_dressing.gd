@@ -2,13 +2,14 @@ class_name SetDressing
 extends Node3D
 ## The odds and ends that make the school look like people were here this afternoon: books and
 ## papers on the desks, bags left under them, mugs and computers in the offices, milk cartons on
-## the lunch tables, cobwebs in the corners, radiators under the windows. None of it does
+## the lunch tables, cobwebs in the corners, radiators on the walls. None of it does
 ## anything; it's there so the rooms feel full, and so a flashlight beam has things to throw
 ## shadows from.
 ##
 ## Small things are drawn in batches (one MultiMesh per model per 20-metre square) so a few
 ## hundred of them cost a few dozen draw calls. Placed from a fixed seed, so the school looks the
-## same every night and for every player. Built by SchoolBuilder after the rooms.
+## same every night and for every player. SchoolBuilder puts things as it builds each room, and
+## commits the lot once the school is done.
 
 ## Batches are split into squares this big, so the ones out of sight are skipped.
 const CELL := 20.0
