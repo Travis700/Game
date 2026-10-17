@@ -346,7 +346,41 @@ def flag():
     img.save(os.path.join(OUT, 'flag.png'))
 
 
+def fixtures():
+    """Ceiling fittings: a 2x4 troffer's prismatic lens, an air diffuser, and the EXIT sign."""
+    # Troffer lens, 1.2 x 0.6 m: a fine prism grid, brighter down the middle where the tubes are.
+    w, h = 512, 256
+    img = Image.new('RGB', (w, h), (232, 234, 236))
+    d = ImageDraw.Draw(img)
+    for y in range(h):
+        glow = 1.0 - abs(y - h / 2) / (h / 2)
+        shade = int(205 + 50 * glow)
+        d.line([0, y, w, y], fill=(shade, shade, min(255, shade + 4)))
+    for x in range(0, w, 6):
+        d.line([x, 0, x, h], fill=(214, 216, 220), width=1)
+    for y in range(0, h, 6):
+        d.line([0, y, w, y], fill=(214, 216, 220), width=1)
+    d.rectangle([0, 0, w - 1, h - 1], outline=(180, 182, 186), width=10)
+    img.save(os.path.join(OUT, 'troffer.png'))
+    # Square air diffuser: nested louvred squares round a dark centre.
+    s_ = 256
+    img = Image.new('RGB', (s_, s_), (205, 207, 210))
+    d = ImageDraw.Draw(img)
+    for k in range(5):
+        m = 14 + k * 22
+        d.rectangle([m, m, s_ - m, s_ - m], outline=(120, 122, 126), width=6)
+    d.rectangle([118, 118, 138, 138], fill=(60, 62, 66))
+    img.save(os.path.join(OUT, 'vent.png'))
+    # EXIT sign face: red letters on a dark face.
+    w, h = 512, 256
+    img = Image.new('RGB', (w, h), (18, 18, 20))
+    d = ImageDraw.Draw(img)
+    lines(d, w, 50, ['EXIT'], TITLE, 170, (255, 40, 30))
+    img.save(os.path.join(OUT, 'exit.png'))
+
+
 posters()
+fixtures()
 flag()
 menu()
 locker()

@@ -134,6 +134,7 @@ func _ready() -> void:
 	_build_science_wing()
 	_build_facade()
 	_build_floors()
+	_build_fixtures()
 	_merge_static_meshes()
 
 
@@ -224,6 +225,20 @@ func _make_materials() -> void:
 	_add_mat("night_window", Color(0.03, 0.04, 0.07), 0.1, Color(0.16, 0.22, 0.38), 0.7)
 	_add_mat("jar", Color(0.55, 0.75, 0.45), 0.1, Color(0.3, 0.5, 0.2), 0.6, 0.55)
 	_make_gym_materials()
+	var lens: Texture2D = load("res://assets/textures/school/troffer.png")
+	for panel_name in ["light_panel", "light_panel_off"]:
+		(_mats[panel_name] as StandardMaterial3D).albedo_texture = lens
+	(_mats["light_panel"] as StandardMaterial3D).emission_texture = lens
+	var exit_face := StandardMaterial3D.new()
+	exit_face.albedo_texture = load("res://assets/textures/school/exit.png")
+	exit_face.emission_enabled = true
+	exit_face.emission_texture = exit_face.albedo_texture
+	exit_face.emission_energy_multiplier = 2.2
+	_mats["exit_sign"] = exit_face
+	var vent := StandardMaterial3D.new()
+	vent.albedo_texture = load("res://assets/textures/school/vent.png")
+	vent.roughness = 0.6
+	_mats["vent"] = vent
 	_add_mat("linen", Color(0.85, 0.86, 0.84), 0.95)
 	_add_mat("window_out", Color(0.05, 0.06, 0.08), 0.08)
 	_add_mat("window_lit", Color(0.3, 0.25, 0.15), 0.2, Color(1.0, 0.82, 0.5), 0.9)
@@ -497,8 +512,24 @@ func _light(pos: Vector3, night_energy := 0.6, light_range := 8.0, flicker := fa
 	light.add_to_group(ShiftLighting.SCHOOL_LIGHTS)
 	add_child(light)
 	if panel:
-		light.set_meta("panel", _box(Vector3(pos.x, WALL_H - 0.03, pos.z), Vector3(1.2, 0.04, 0.3), "light_panel", false))
+		light.set_meta("panel", _troffer(Vector3(pos.x, WALL_H, pos.z)))
 	return light
+
+
+## A 2x4 ceiling light: a prismatic lens in a white frame, set into the ceiling at `at` (its
+## underside). The lens is what ShiftLighting dims and switches.
+func _troffer(at: Vector3) -> MeshInstance3D:
+	_box(at + Vector3(0, -0.012, 0), Vector3(1.26, 0.024, 0.66), "paint_white", false)
+	var quad := QuadMesh.new()
+	quad.size = Vector2(1.2, 0.6)
+	var lens := MeshInstance3D.new()
+	lens.mesh = quad
+	lens.material_override = _mats["light_panel"]
+	lens.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	lens.position = at + Vector3(0, -0.026, 0)
+	lens.rotation.x = PI * 0.5
+	add_child(lens)
+	return lens
 
 
 ## One of the gym's hanging lamps: the model, a glowing lens under it that dims with the light,
@@ -1132,6 +1163,76 @@ func _ball(pos: Vector3) -> void:
 	ball.position = pos
 	ball.rotation = Vector3(randf() * TAU, randf() * TAU, 0.0)
 	add_child(ball)
+
+
+# --- Fittings -------------------------------------------------------------------
+
+## Ceiling air diffusers (one mesh for the lot), smoke detectors, EXIT signs over the ways out,
+## and a drinking fountain in the lobby.
+const VENTS: Array[Vector2] = [
+	Vector2(-13, 15), Vector2(13, 17.8), Vector2(0, 13), Vector2(-47, 12.5), Vector2(-61, 12.5),
+	Vector2(-49, -6), Vector2(-69, 0), Vector2(-74, 12), Vector2(-22, -12), Vector2(-32, -25),
+	Vector2(0, -16), Vector2(51, -1), Vector2(51, -11), Vector2(71, 0), Vector2(45, 12), Vector2(65, 12),
+]
+## [where, which way it faces]
+const EXIT_SIGNS := [
+	[Vector3(1.6, 2.95, 19.86), Vector3.FORWARD],
+	[Vector3(-39.86, 2.68, 7.0), Vector3.RIGHT], [Vector3(39.86, 2.68, 7.0), Vector3.LEFT],
+	[Vector3(15.0, 2.68, 3.86), Vector3.FORWARD], [Vector3(-15.0, 2.68, 3.86), Vector3.FORWARD],
+]
+
+
+func _build_fixtures() -> void:
+	var spots: Array[Vector2] = VENTS.duplicate()
+	var x := -32.0
+	while x <= 32.0:
+		spots.append(Vector2(x, 7.0))
+		x += 8.0
+	for wing_x: float in [-48.0, -56.0, -64.0, -72.0, 48.0, 56.0, 64.0, 72.0]:
+		spots.append(Vector2(wing_x, 7.0))
+	var vents := SurfaceTool.new()
+	vents.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var detectors := SurfaceTool.new()
+	detectors.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var plate := QuadMesh.new()
+	plate.size = Vector2(0.6, 0.6)
+	var puck := CylinderMesh.new()
+	puck.top_radius = 0.07
+	puck.bottom_radius = 0.075
+	puck.height = 0.035
+	puck.radial_segments = 12
+	var face_down := Basis(Vector3.RIGHT, PI * 0.5)
+	for i in spots.size():
+		var spot := spots[i]
+		vents.append_from(plate, 0, Transform3D(face_down, Vector3(spot.x, WALL_H - 0.004, spot.y)))
+		# A smoke detector by every other vent.
+		if i % 2 == 0:
+			detectors.append_from(puck, 0, Transform3D(Basis.IDENTITY, Vector3(spot.x + 1.4, WALL_H - 0.018, spot.y)))
+	for pair: Array in [[vents, "vent"], [detectors, "paint_white"]]:
+		var batch := MeshInstance3D.new()
+		batch.mesh = (pair[0] as SurfaceTool).commit()
+		batch.material_override = _mats[pair[1]]
+		batch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(batch)
+	for sign: Array in EXIT_SIGNS:
+		var at: Vector3 = sign[0]
+		var facing: Vector3 = sign[1]
+		var housing := _box(at - facing * 0.03, Vector3(0.36, 0.2, 0.06) if absf(facing.z) > 0.5 else Vector3(0.06, 0.2, 0.36),
+				"paint_white", false)
+		housing.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var quad := QuadMesh.new()
+		quad.size = Vector2(0.32, 0.16)
+		var face := MeshInstance3D.new()
+		face.mesh = quad
+		face.material_override = _mats["exit_sign"]
+		face.position = at + facing * 0.003
+		face.rotation.y = atan2(facing.x, facing.z)
+		add_child(face)
+	# The lobby's drinking fountain, on the wall by the guard room door.
+	_box(Vector3(5.7, 0.9, 12.7), Vector3(0.36, 0.1, 0.44), "steel")
+	_box(Vector3(5.84, 1.0, 12.7), Vector3(0.04, 0.42, 0.48), "steel", false)
+	_box(Vector3(5.74, 0.72, 12.7), Vector3(0.22, 0.26, 0.3), "steel", false)
+	_box(Vector3(5.66, 0.97, 12.62), Vector3(0.03, 0.05, 0.03), "metal", false)
 
 
 # --- Floors --------------------------------------------------------------------
