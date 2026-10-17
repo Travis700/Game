@@ -510,9 +510,12 @@ func _light(pos: Vector3, night_energy := 0.6, light_range := 8.0, flicker := fa
 	light.light_color = color
 	# Real shadows under desks and chairs, from the lights near you (they fade out with distance,
 	# so only a handful are ever drawn). The Shadows setting switches them with the rest.
-	var profile := get_node_or_null("/root/Profile")
-	light.shadow_enabled = profile == null or profile.shadows
-	light.add_to_group("shadow_lights")
+	# Not on the Compatibility (OpenGL) renderer: it can't take this many shadowed lights and the
+	# whole picture breaks up.
+	if RenderingServer.get_current_rendering_method() != "gl_compatibility":
+		var profile := get_node_or_null("/root/Profile")
+		light.shadow_enabled = profile == null or profile.shadows
+		light.add_to_group("shadow_lights")
 	light.shadow_bias = 0.05
 	light.shadow_normal_bias = 1.5
 	light.distance_fade_enabled = true
