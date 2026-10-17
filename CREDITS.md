@@ -74,6 +74,12 @@ with `tools/slim_glb.py`. In `assets/models/` as `prop_<asset>.glb`.
 | Multi Cleaner 5 Litre | James Ray Cock |
 | Covered Car | MP |
 | Wooden Ladder | Miroslav Turura |
+| Binder Notebook | DaDrood |
+| Clipboard | ProgrammerOnCoffee |
+| Vintage Stapler | Mateusz Sadek |
+| Food Apple 01 | Oliver Harries |
+| Drawer Cabinet | Ulan Cabanilla |
+| Security Camera 01 | Alexander Otterbeck, Yann Kervran |
 
 ## School art: made for this game
 
