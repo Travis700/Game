@@ -71,6 +71,7 @@ var totems: Totems
 var shop: Shop
 var guard_room: GuardRoom
 var doors: GuardRoomDoors
+var school_doors: SchoolDoors
 var career: Career
 var rounds: Rounds
 var power: Power
@@ -213,6 +214,7 @@ func _on_shift_started() -> void:
 	_callouts.clear()
 	_deaths = 0
 	save_run(number, true)
+	school_doors.reset_for_night()
 	if training:
 		training.begin()
 		return
@@ -281,6 +283,7 @@ func _run_shift(delta: float) -> void:
 		_track_screens(now)
 	shop.update(delta)
 	doors.update(delta)
+	school_doors.update(delta)
 	finale.update(minutes)
 	if finale.active and (phone.ringing or not power.on):
 		# The last bell: the phone goes dead and the emergency lighting comes on.

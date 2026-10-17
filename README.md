@@ -181,6 +181,16 @@ whatever got you.
 Logging the same thing twice isn't counted as a false report. Anomalies nobody logs fade after a while
 (and can come back later). Points never drop below zero.
 
+## Doors
+
+Every doorway in the school has a door: wooden, with a narrow window you can see through. Press E
+on one to open or shut it; it swings away from you. When the shift starts the classroom and office
+doors are shut and the big double doors (cafeteria, gym, library, locker rooms) are propped open.
+Monsters push doors open as they come through, so **a door swinging open on its own means something
+is right behind it**. A shut door won't stop a monster, but it shows you what's coming through the
+glass first. (The Ghost doesn't need doors at all.) The guard room's own two doorways are still
+empty until you fit a door kit from the vending machine.
+
 ## The vending machine
 
 Press E on the vending machine in the guard room to spend points. Purchases drop into the tray; press E
@@ -400,6 +410,7 @@ Back clipboard, RB use item, LB push to talk, RT walkie-talkie, Start menu. In m
 - `scripts/hud.gd` — crosshair, prompts and messages.
 - `scripts/controls.gd` — key bindings.
 - `scripts/guard_room_doors.gd` — the guard room's two fittable doors.
+- `scripts/school_doors.gd` — the doors in every other doorway.
 - `scripts/self_portrait.gd` — the art room canvas that paints a guard.
 - `scripts/profile.gd` — your badge number and settings. `scripts/run_save.gd` — the saved run.
 - `scripts/keypad_ui.gd` — the time clock keypad. `scripts/pause_menu.gd` — the Esc menu.

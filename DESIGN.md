@@ -44,6 +44,8 @@ The map is one high school. Each difficulty opens another wing, through red door
 
 Closed wings stay behind locked doors; their cameras, clipboard areas, anomalies and monsters are left out.
 
+Every doorway has a door (wooden, with a narrow vision window): guards open and shut them, and monsters shove them open as they come, so a door opening by itself is a warning. Doors don't stop monsters; they slow sight lines and give the crew a glimpse through the glass. The guard room's doorways stay empty until a door kit is fitted (section 11).
+
 The gym is the one big open space: a 7.5 m hall (the rest of the school is 3.5 m) with a painted court, glass backboards hung from the roof, two stands of bleachers you can climb, banners, scoreboards and high windows that let in a little moonlight. Most of its lamps go off at night, so it's mostly dark and wide open, the opposite of the hallways.
 
 ## 5. The guard room

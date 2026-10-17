@@ -133,6 +133,7 @@ func _ready() -> void:
 	_build_classroom_wing()
 	_build_science_wing()
 	_build_facade()
+	_build_floors()
 	_merge_static_meshes()
 
 
@@ -188,6 +189,8 @@ func _make_materials() -> void:
 	_add_mat("brick", Color(0.4, 0.22, 0.17))
 	_add_mat("wall", Color(0.62, 0.6, 0.52))
 	_add_mat("floor", Color(0.5, 0.48, 0.42), 0.6)
+	for floor_name in ["terrazzo", "carpet", "checker", "quarry", "white_tile"]:
+		_add_mat(floor_name, Color.WHITE)
 	_add_mat("gym_floor", Color(0.6, 0.43, 0.24), 0.45)
 	_add_mat("ceiling", Color(0.45, 0.44, 0.4))
 	_add_mat("wood", Color(0.33, 0.25, 0.17))
@@ -246,9 +249,10 @@ func _make_materials() -> void:
 ## mapped in world space, so every box tiles at the same scale. The .jpg ones are CC0 photo
 ## textures from Poly Haven (see CREDITS.md); the .png ones are made by tools/gen_textures.py.
 const TEXTURE_METRES := {
-	"floor": 2.4, "wall": 1.8, "ceiling": 1.2, "brick": 1.0, "concrete": 2.5, "asphalt": 2.1,
-	"grass": 2.5, "gym_floor": 1.7, "wood": 1.7, "desk": 0.6, "metal": 1.0, "locker": 1.2,
-	"cork": 1.0, "board": 2.0,
+	"floor": 2.4, "wall": 1.2, "ceiling": 3.85, "brick": 2.4, "concrete": 1.1, "asphalt": 3.0,
+	"grass": 2.0, "gym_floor": 1.9, "wood": 1.8, "desk": 0.6, "metal": 1.0, "locker": 1.2,
+	"cork": 1.0, "board": 2.0, "terrazzo": 1.6, "carpet": 2.0, "checker": 1.6, "quarry": 2.0,
+	"white_tile": 1.0,
 }
 
 
@@ -271,6 +275,10 @@ func _make_gym_materials() -> void:
 	_mats["basketball"] = ball
 
 
+## Textures that are too bright as they come.
+const TEXTURE_TINT := {"concrete": Color(0.68, 0.68, 0.66), "grass": Color(0.75, 0.8, 0.72), "quarry": Color(0.85, 0.72, 0.66)}
+
+
 func _add_mat(mat_name: String, color: Color, roughness := 0.9, emission := Color.BLACK,
 		emission_energy := 0.0, alpha := 1.0) -> void:
 	var mat := StandardMaterial3D.new()
@@ -279,8 +287,8 @@ func _add_mat(mat_name: String, color: Color, roughness := 0.9, emission := Colo
 	var ext := "jpg" if ResourceLoader.exists("res://assets/textures/%s.jpg" % mat_name) else "png"
 	var path := "res://assets/textures/%s.%s" % [mat_name, ext]
 	if TEXTURE_METRES.has(mat_name) and ResourceLoader.exists(path):
-		# The texture carries the colour itself.
-		mat.albedo_color = Color.WHITE
+		# The texture carries the colour itself (a few are toned down a little).
+		mat.albedo_color = TEXTURE_TINT.get(mat_name, Color.WHITE)
 		mat.albedo_texture = load(path)
 		mat.normal_enabled = true
 		mat.normal_texture = load("res://assets/textures/%s_n.%s" % [mat_name, ext])
@@ -288,6 +296,16 @@ func _add_mat(mat_name: String, color: Color, roughness := 0.9, emission := Colo
 		mat.uv1_world_triplanar = true
 		mat.uv1_triplanar_sharpness = 8.0
 		mat.uv1_scale = Vector3.ONE / float(TEXTURE_METRES[mat_name])
+		# Roughness (green) and ambient occlusion (red) packed in one map, where there is one.
+		var orm := "res://assets/textures/%s_orm.jpg" % mat_name
+		if ResourceLoader.exists(orm):
+			var packed: Texture2D = load(orm)
+			mat.roughness = 1.0
+			mat.roughness_texture = packed
+			mat.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_GREEN
+			mat.ao_enabled = true
+			mat.ao_texture = packed
+			mat.ao_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
 		# A locker texture is one locker tall, so its vents sit at the top of every door.
 		if mat_name == "locker":
 			mat.uv1_scale = Vector3(1.0 / 2.0, 1.0 / 1.9, 1.0 / 2.0)
@@ -401,6 +419,8 @@ func _wall(along_x: bool, fixed: float, from: float, to: float, openings: Array,
 			_wall_piece(along_x, fixed, cursor, gap_start, 0.0, WALL_H, mat)
 		_wall_piece(along_x, fixed, gap_start, gap_end, height, WALL_H, mat)
 		_door_frame(along_x, fixed, gap_start, gap_end, height)
+		var centre := Vector3(opening[0], 0, fixed) if along_x else Vector3(fixed, 0, opening[0])
+		doorways.append({"centre": centre, "along_x": along_x, "width": width, "height": height})
 		cursor = gap_end
 	if end > cursor:
 		_wall_piece(along_x, fixed, cursor, end, 0.0, WALL_H, mat)
@@ -521,6 +541,10 @@ func _floodlight(pos: Vector3, rotation_deg: Vector3, energy: float, light_range
 	light.add_to_group(ShiftLighting.FLOODLIGHTS)
 	add_child(light)
 
+
+## Every doorway cut in a wall: {centre (on the floor), along_x (the wall's direction), width,
+## height}. SchoolDoors hangs doors in them.
+var doorways: Array[Dictionary] = []
 
 ## Posters' materials, one per picture (see _poster).
 var _posters: Dictionary = {}
@@ -1105,6 +1129,25 @@ func _ball(pos: Vector3) -> void:
 	ball.position = pos
 	ball.rotation = Vector3(randf() * TAU, randf() * TAU, 0.0)
 	add_child(ball)
+
+
+# --- Floors --------------------------------------------------------------------
+
+## Floors that aren't the plain classroom tile: [material, x1, x2, z1, z2].
+const FLOORS := [
+	["terrazzo", -40.0, 40.0, 4.0, 10.0], ["terrazzo", -6.0, 6.0, 10.0, 20.0],
+	["terrazzo", -80.0, -40.0, 4.0, 10.0], ["terrazzo", 40.0, 80.0, 4.0, 10.0],
+	["checker", -40.0, -5.0, -30.0, 4.0], ["quarry", -5.0, 5.0, -30.0, -12.0],
+	["carpet", -80.0, -58.0, -14.0, 4.0],
+	["white_tile", 40.0, 80.0, 10.0, 20.0], ["white_tile", -80.0, -68.0, 10.0, 20.0],
+]
+
+
+## Each one is a thin sheet laid on the floor, stopping at the middle of the walls round it.
+func _build_floors() -> void:
+	for area: Array in FLOORS:
+		var size := Vector3(area[2] - area[1], 0.006, area[4] - area[3])
+		_box(Vector3((area[1] + area[2]) * 0.5, 0.003, (area[3] + area[4]) * 0.5), size, area[0], false)
 
 
 # --- Outside -------------------------------------------------------------------

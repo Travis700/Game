@@ -51,5 +51,6 @@ window/size/min_height=576
 [rendering]
 
 occlusion_culling/use_occlusion_culling=true
+textures/default_filters/anisotropic_filtering_level=4
 
 anti_aliasing/quality/msaa_3d=2

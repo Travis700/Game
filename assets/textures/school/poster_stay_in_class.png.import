@@ -3,27 +3,28 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://6fu3jxw08me0"
-path="res://.godot/imported/poster_stay_in_class.png-aad674ec12d2b0feece1c9b8f0f83859.ctex"
+path.bptc="res://.godot/imported/poster_stay_in_class.png-aad674ec12d2b0feece1c9b8f0f83859.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/textures/school/poster_stay_in_class.png"
-dest_files=["res://.godot/imported/poster_stay_in_class.png-aad674ec12d2b0feece1c9b8f0f83859.ctex"]
+dest_files=["res://.godot/imported/poster_stay_in_class.png-aad674ec12d2b0feece1c9b8f0f83859.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

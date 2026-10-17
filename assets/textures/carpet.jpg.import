@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bjw114dvx87hw"
-path.s3tc="res://.godot/imported/ceiling_n.png-9d06af25a3c9968608ead6dbef8092dd.s3tc.ctex"
+uid="uid://dh1iy6lgfg86x"
+path.bptc="res://.godot/imported/carpet.jpg-3e52100ffd516e2f55712c33b52d1756.bptc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,18 +11,18 @@ metadata={
 
 [deps]
 
-source_file="res://assets/textures/ceiling_n.png"
-dest_files=["res://.godot/imported/ceiling_n.png-9d06af25a3c9968608ead6dbef8092dd.s3tc.ctex"]
+source_file="res://assets/textures/carpet.jpg"
+dest_files=["res://.godot/imported/carpet.jpg-3e52100ffd516e2f55712c33b52d1756.bptc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
-compress/normal_map=1
+compress/normal_map=0
 compress/channel_pack=0
 mipmaps/generate=true
 mipmaps/limit=-1
@@ -38,4 +38,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=0
+detect_3d/compress_to=1

@@ -10,14 +10,30 @@ required (credited anyway, with thanks). 1k diffuse + OpenGL normal maps, in `as
 
 | File | Poly Haven asset | Authors |
 | --- | --- | --- |
-| wall | concrete_pavement | Charlotte Baglioni |
-| brick | red_brick_03 | Rob Tuytel |
-| concrete | brushed_concrete | Dario Barresi, Dimitrios Savva |
-| asphalt | clean_asphalt | Dimitrios Savva |
-| grass | grass_ground | Charlotte Baglioni |
-| gym_floor | laminate_floor_02 | Dario Barresi, Charlotte Baglioni |
-| wood | wood_floor | Dimitrios Savva |
 | desk | kitchen_wood | Rob Tuytel |
+
+## Textures: ambientCG (CC0, public domain)
+
+From https://ambientcg.com, licensed CC0, fetched at 2K with `tools/ambientcg.py` (colour, OpenGL
+normal map, and roughness + ambient occlusion packed into `<name>_orm.jpg`). In `assets/textures/`:
+
+| File | ambientCG asset |
+| --- | --- |
+| ceiling (acoustic tiles) | OfficeCeiling001 |
+| wall (block, painted cream for the school) | Bricks066 |
+| floor (classroom tile) | Tiles013 |
+| terrazzo (halls and lobby) | Terrazzo005 |
+| checker (cafeteria) | Tiles014 |
+| quarry (kitchen) | Tiles047 |
+| carpet (library) | Carpet012 |
+| white_tile (locker rooms, nurse) | Tiles107 |
+| gym_floor | WoodFloor040 |
+| brick | Bricks085 |
+| concrete | Concrete034 |
+| wood | WoodFloor051 |
+| grass | Grass004 |
+| asphalt | Asphalt033 |
+| door_wood (the doors) | Wood058 |
 
 ## Models: Poly Haven (CC0, public domain)
 

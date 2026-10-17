@@ -3,27 +3,28 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b0gyyx2l4rh4s"
-path="res://.godot/imported/poster_science_fair.png-e6288d8b918062a820c522f8b9f742cd.ctex"
+path.bptc="res://.godot/imported/poster_science_fair.png-e6288d8b918062a820c522f8b9f742cd.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/textures/school/poster_science_fair.png"
-dest_files=["res://.godot/imported/poster_science_fair.png-e6288d8b918062a820c522f8b9f742cd.ctex"]
+dest_files=["res://.godot/imported/poster_science_fair.png-e6288d8b918062a820c522f8b9f742cd.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

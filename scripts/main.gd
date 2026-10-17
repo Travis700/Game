@@ -66,6 +66,7 @@ var lockers: Lockers
 var totems: Totems
 var shop: Shop
 var doors: GuardRoomDoors
+var school_doors: SchoolDoors
 var vending: CanvasLayer
 var keypad: CanvasLayer
 var ambience: Ambience
@@ -123,6 +124,10 @@ func _ready() -> void:
 	wing_doors.name = "WingDoors"
 	add_child(wing_doors)
 	school.build_wing_doors(wing_doors)
+	school_doors = SchoolDoors.new()
+	school_doors.name = "SchoolDoors"
+	add_child(school_doors)
+	school_doors.build(school.doorways)
 
 	shift = Shift.new()
 	shift.name = "Shift"
@@ -281,6 +286,7 @@ func _ready() -> void:
 	doors.shop = shop
 	doors.director = director
 	add_child(doors)
+	school_doors.director = director
 	totems.shop = shop
 	guard_room.shop = shop
 	vending = VendingUI.new()
@@ -355,6 +361,7 @@ func _ready() -> void:
 	night.shop = shop
 	night.guard_room = guard_room
 	night.doors = doors
+	night.school_doors = school_doors
 	night.career = career
 	rounds = Rounds.new()
 	rounds.name = "Rounds"
@@ -1045,6 +1052,7 @@ func _register_employee(badge: int, password: String, player_name := "", rank :=
 	if shift.state == Shift.State.ON_SHIFT:
 		_catch_up_late_joiner(peer_id)
 	doors.send_state_to(peer_id)
+	school_doors.send_state_to(peer_id)
 	_sync_session.rpc_id(peer_id, night.number, night.difficulty)
 	_update_guards_required()
 
@@ -1460,6 +1468,7 @@ func _sync_session(number: int, difficulty: int) -> void:
 func _apply_difficulty(difficulty: int, open_doors := true) -> void:
 	if open_doors:
 		school.open_wings(difficulty)
+		school_doors.set_open_wings(difficulty)
 	cameras.difficulty = difficulty
 	anomalies.difficulty = difficulty
 	director.difficulty = difficulty
