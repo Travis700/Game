@@ -46,7 +46,7 @@ var players: Node3D
 
 ## One entry per room: {"name", "lights": Array[Light3D], "switch": Interactable, "lever": Node3D}.
 var _rooms: Array[Dictionary] = []
-## Host, during a shift: rooms switched from how the night left them (index -> on), for joiners.
+## Host: rooms switched by hand (or by a monster) since the last morning (index -> on), for joiners.
 var _changed: Dictionary = {}
 var _monster_timer := 0.0
 ## Host: when each ghost (by peer id) may next flick a switch.
@@ -212,8 +212,7 @@ func request_ghost_flip(index: int) -> void:
 
 ## Host: switches a room's lights on or off, for everyone.
 func flip(index: int, on: bool) -> void:
-	if lighting and lighting.is_dark():
-		_changed[index] = on
+	_changed[index] = on
 	_set_room.rpc(index, on)
 
 
