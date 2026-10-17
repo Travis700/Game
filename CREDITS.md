@@ -82,6 +82,7 @@ with `tools/slim_glb.py`. In `assets/models/` as `prop_<asset>.glb`.
 | Wooden Cutting Board | Kuutti Siitonen |
 | Metal Jug | Anzor Lezhava |
 | Street Lamp 01 | Josh Dean |
+| Painted Wooden Bench | Kirill Sannikov |
 
 ## Models: Sketchfab (CC BY 4.0)
 

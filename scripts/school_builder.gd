@@ -1508,6 +1508,18 @@ func _build_landscaping() -> void:
 		# A clipped box hedge: the body, and a slightly narrower top so its edges look rounded.
 		_box(Vector3(hedge_x, 0.5, 21.15), Vector3(4.0, 1.0, 1.1), "hedge")
 		_box(Vector3(hedge_x, 1.05, 21.15), Vector3(3.85, 0.1, 0.95), "hedge", false)
+	# The school's sign on the lawn by the path: a brick base, a dark panel, the name in white.
+	var sign_at := Vector3(-7.5, 0, 36.0)
+	_box(sign_at + Vector3(0, 0.45, 0), Vector3(3.4, 0.9, 0.5), "brick")
+	_box(sign_at + Vector3(0, 1.35, 0), Vector3(3.0, 0.9, 0.3), "dark")
+	_box(sign_at + Vector3(0, 1.84, 0), Vector3(3.5, 0.08, 0.55), "concrete", false)
+	for facing: float in [-1.0, 1.0]:
+		_sign(SCHOOL_NAME + "\nHome of the Bulldogs", sign_at + Vector3(0, 1.38, facing * 0.16),
+				Vector3(0, 0, facing), 44)
+	# Benches either side of the entrance, facing the path.
+	for side: float in [-1.0, 1.0]:
+		_solid_model("prop_painted_wooden_bench", Vector3(side * 5.2, 0, 27.0), 0.89, -side * PI * 0.5,
+				Vector3(0.5, 0.89, 1.2))
 
 
 func _front_window(x: float, lit: bool) -> void:
