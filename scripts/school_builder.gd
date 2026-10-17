@@ -468,6 +468,9 @@ func _sign(text: String, pos: Vector3, facing: Vector3, font_size := 56, color :
 	label.modulate = color
 	label.outline_size = 8
 	label.double_sided = false
+	# Painted on, so it's only as bright as the light on it: dark at night until the torch finds it.
+	label.shaded = true
+	label.outline_modulate = Color(0.08, 0.08, 0.08)
 	label.position = pos
 	label.rotation.y = atan2(facing.x, facing.z)
 	add_child(label)

@@ -289,38 +289,40 @@ def menu():
 
 def locker():
     """One locker door, 0.5 x 1.9 m: louvres top and bottom, a handle, a number plate, worn paint.
-    Also its normal map (locker_n.png), worked out from a height map."""
-    w, h = 200, 760
+    Also its normal map (locker_n.png), worked out from a height map. Drawn at 400 x 1520."""
+    k = 2
+    w, h = 200 * k, 760 * k
     paint = (52, 86, 140)
     img = Image.new('RGB', (w, h), paint)
     height = Image.new('L', (w, h), 128)
     d, hd = ImageDraw.Draw(img), ImageDraw.Draw(height)
     # Pressed edge round the door, and the gap to the next locker.
-    d.rectangle([0, 0, w - 1, h - 1], outline=(18, 26, 40), width=3)
-    hd.rectangle([0, 0, w - 1, h - 1], outline=60, width=3)
-    hd.rectangle([10, 10, w - 11, h - 11], outline=150, width=4)
-    d.rectangle([10, 10, w - 11, h - 11], outline=tuple(min(255, c + 18) for c in paint), width=2)
-    for top in (40, h - 130):
-        for k in range(6):
-            y = top + k * 15
-            d.rectangle([40, y, w - 40, y + 7], fill=(14, 18, 26))
-            hd.rectangle([40, y, w - 40, y + 7], fill=40)
-            hd.line([40, y + 8, w - 40, y + 8], fill=190, width=2)
+    d.rectangle([0, 0, w - 1, h - 1], outline=(18, 26, 40), width=3 * k)
+    hd.rectangle([0, 0, w - 1, h - 1], outline=60, width=3 * k)
+    hd.rectangle([10 * k, 10 * k, w - 11 * k, h - 11 * k], outline=150, width=4 * k)
+    d.rectangle([10 * k, 10 * k, w - 11 * k, h - 11 * k], outline=tuple(min(255, c + 18) for c in paint), width=2 * k)
+    for top in (40 * k, h - 130 * k):
+        for n in range(6):
+            y = top + n * 15 * k
+            d.rectangle([40 * k, y, w - 40 * k, y + 7 * k], fill=(14, 18, 26))
+            hd.rectangle([40 * k, y, w - 40 * k, y + 7 * k], fill=40)
+            hd.line([40 * k, y + 8 * k, w - 40 * k, y + 8 * k], fill=190, width=2 * k)
     # Handle recess and latch.
-    d.rectangle([w - 58, 340, w - 30, 430], fill=(36, 60, 100))
-    hd.rectangle([w - 58, 340, w - 30, 430], fill=80)
-    d.rectangle([w - 50, 360, w - 38, 410], fill=(150, 152, 156))
-    hd.rectangle([w - 50, 360, w - 38, 410], fill=220)
+    d.rectangle([w - 58 * k, 340 * k, w - 30 * k, 430 * k], fill=(36, 60, 100))
+    hd.rectangle([w - 58 * k, 340 * k, w - 30 * k, 430 * k], fill=80)
+    d.rectangle([w - 50 * k, 360 * k, w - 38 * k, 410 * k], fill=(150, 152, 156))
+    hd.rectangle([w - 50 * k, 360 * k, w - 38 * k, 410 * k], fill=220)
     # Number plate.
-    d.rectangle([w / 2 - 30, 150, w / 2 + 30, 172], fill=(196, 190, 170))
-    hd.rectangle([w / 2 - 30, 150, w / 2 + 30, 172], fill=170)
-    # Scuffs and a few dents low down.
-    for k in range(60):
-        x, y = random.randint(12, w - 12), random.randint(h // 2, h - 14)
-        d.line([x, y, x + random.randint(-14, 14), y + random.randint(-3, 3)], fill=(84, 110, 150), width=1)
+    d.rectangle([w / 2 - 30 * k, 150 * k, w / 2 + 30 * k, 172 * k], fill=(196, 190, 170))
+    hd.rectangle([w / 2 - 30 * k, 150 * k, w / 2 + 30 * k, 172 * k], fill=170)
+    # Scuffs low down, and a faint sheen of grime.
+    for n in range(120):
+        x, y = random.randint(12 * k, w - 12 * k), random.randint(h // 2, h - 14 * k)
+        d.line([x, y, x + random.randint(-14, 14) * k, y + random.randint(-3, 3) * k], fill=(84, 110, 150), width=k)
+    img = img.filter(ImageFilter.GaussianBlur(0.6))
     img.save(os.path.join(OUT, 'locker.png'))
     # Normal map from the height map.
-    hp = height.filter(ImageFilter.GaussianBlur(1)).load()
+    hp = height.filter(ImageFilter.GaussianBlur(k)).load()
     normal = Image.new('RGB', (w, h))
     np_ = normal.load()
     for y in range(h):

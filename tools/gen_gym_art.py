@@ -40,7 +40,7 @@ def centred_text(draw, xy, text, size, fill, angle=0, img=None):
 
 # --- The court -------------------------------------------------------------------------------
 # A high school court, 25.6 x 15.2 m, with its length along the image's width.
-PX = 64                    # pixels per metre
+PX = 96                    # pixels per metre
 MARGIN = 1.0               # metres of floor round the court that the image also covers
 LENGTH, WIDTH = 25.6, 15.2
 W, H = int((LENGTH + 2 * MARGIN) * PX), int((WIDTH + 2 * MARGIN) * PX)
