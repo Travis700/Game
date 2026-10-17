@@ -281,8 +281,10 @@ func update(delta: float) -> void:
 				or monster.state == "hidden":
 			continue
 		for i in _rooms.size():
+			# The Librarian can't stand the light: it puts it out almost at once.
+			var chance := 0.6 if monster is Librarian else MONSTER_CHANCE
 			if (ROOMS[_rooms[i]["name"]] as AABB).has_point(monster.global_position + Vector3(0, 0.5, 0)) and _is_on(i) \
-					and randf() < MONSTER_CHANCE:
+					and randf() < chance:
 				flip(i, false)
 
 
