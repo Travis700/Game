@@ -400,6 +400,7 @@ func _ready() -> void:
 	light_switches.lighting = lighting
 	light_switches.power = power
 	light_switches.director = director
+	light_switches.players = players
 	add_child(light_switches)
 	light_switches.build(school)
 	night.light_switches = light_switches
@@ -1232,7 +1233,14 @@ func on_local_guard_ready(guard: Guard) -> void:
 			_request_mark.rpc_id(1, at))
 	guard.ghost_ping_requested.connect(func(at: Vector3, touched: Object) -> void:
 		var item := clutter.index_of(touched)
-		if item >= 0:
+		var switch := light_switches.index_of(touched)
+		if switch >= 0 and guard.global_position.distance_to((touched as Node3D).global_position) < LightSwitches.GHOST_REACH:
+			# Or flick the lights.
+			if multiplayer.is_server():
+				light_switches.request_ghost_flip(switch)
+			else:
+				light_switches.request_ghost_flip.rpc_id(1, switch)
+		elif item >= 0:
 			# A ghost can knock things over instead.
 			if multiplayer.is_server():
 				clutter.request_knock(item)

@@ -6,7 +6,8 @@ extends Node3D
 ## through now and then, so a classroom that was lit a minute ago and isn't any more is a sign.
 ##
 ## The halls and the lobby have no switches: their lights are on a timer. During a power cut the
-## switches do nothing. The host decides; every computer shows it.
+## switches do nothing. Ghosts can flick them too, now and then: one more way to say "over here".
+## The host decides; every computer shows it.
 
 ## Rooms with a switch, and where each one is (the corridors are left out).
 const ROOMS := {
@@ -32,17 +33,24 @@ const SWITCH_HEIGHT := 1.25
 ## Host: how often a monster might reach for the switch of a lit room it's in, and the chance.
 const MONSTER_CHECK_SECONDS := 4.0
 const MONSTER_CHANCE := 0.12
+## Host: how close a ghost has to be to flick a switch, and how often each one can.
+const GHOST_REACH := 4.0
+const GHOST_EVERY := 8.0
 
 var lighting: ShiftLighting
 var power: Power
 var director: MonsterDirector
 var school: SchoolBuilder
+## The guards, by peer id (for ghosts flicking switches). Set by Main.
+var players: Node3D
 
 ## One entry per room: {"name", "lights": Array[Light3D], "switch": Interactable, "lever": Node3D}.
 var _rooms: Array[Dictionary] = []
 ## Host, during a shift: rooms switched from how the night left them (index -> on), for joiners.
 var _changed: Dictionary = {}
 var _monster_timer := 0.0
+## Host: when each ghost (by peer id) may next flick a switch.
+var _ghost_next: Dictionary = {}
 
 
 ## Every computer, once the school is built: a switch by one door of each room.
@@ -170,6 +178,34 @@ func _request_flip(index: int) -> void:
 		_click.rpc(index)
 		if director:
 			director.tell(peer, "Nothing happens. The power's out.")
+		return
+	flip(index, not _is_on(index))
+
+
+## The switch this physics body is, or -1.
+func index_of(body: Object) -> int:
+	for i in _rooms.size():
+		if _rooms[i]["switch"] == body:
+			return i
+	return -1
+
+
+## A ghost pressed E on a switch: it flicks, if they're close enough and haven't just done it.
+@rpc("any_peer", "call_remote", "reliable")
+func request_ghost_flip(index: int) -> void:
+	if not multiplayer.is_server() or index < 0 or index >= _rooms.size() or players == null:
+		return
+	var peer := multiplayer.get_remote_sender_id()
+	if peer == 0:
+		peer = 1
+	var ghost := players.get_node_or_null(str(peer)) as Guard
+	var now := Time.get_ticks_msec() / 1000.0
+	if ghost == null or not ghost.is_dead or now < float(_ghost_next.get(peer, 0.0)) \
+			or ghost.global_position.distance_to((_rooms[index]["switch"] as Node3D).global_position) > GHOST_REACH:
+		return
+	_ghost_next[peer] = now + GHOST_EVERY
+	if power and not power.on:
+		_click.rpc(index)
 		return
 	flip(index, not _is_on(index))
 

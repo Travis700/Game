@@ -306,7 +306,8 @@ The real **night cleaner** works every night pushing a mop cart. They're harmles
 
 **Getting caught:** you become a ghost. You can walk around and watch, but can't use anything, and
 only other ghosts can see you. Press E to leave a cold spot where you're looking: a blue glow and a
-chill the living can see, so you can still point things out to them. Press G to watch through a living teammate's eyes
+chill the living can see, so you can still point things out to them. E on a light switch you're standing by
+flicks it (once every few seconds). Press G to watch through a living teammate's eyes
 (G again for the next, and back to yourself). Each death costs every guard 50 points. If the whole team is caught,
 the run goes back to the last checkpoint (nights 1, 4 and 7) with your gear and half your points; on
 Hardcore, back to night 1 with nothing.
