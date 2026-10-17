@@ -508,6 +508,17 @@ func _light(pos: Vector3, night_energy := 0.6, light_range := 8.0, flicker := fa
 	light.light_energy = day_energy
 	light.omni_range = light_range
 	light.light_color = color
+	# Real shadows under desks and chairs, from the lights near you (they fade out with distance,
+	# so only a handful are ever drawn). The Shadows setting switches them with the rest.
+	var profile := get_node_or_null("/root/Profile")
+	light.shadow_enabled = profile == null or profile.shadows
+	light.add_to_group("shadow_lights")
+	light.shadow_bias = 0.05
+	light.shadow_normal_bias = 1.5
+	light.distance_fade_enabled = true
+	light.distance_fade_begin = 32.0
+	light.distance_fade_shadow = 16.0
+	light.distance_fade_length = 6.0
 	light.set_meta("day_energy", day_energy)
 	light.set_meta("night_energy", night_energy)
 	light.add_to_group(ShiftLighting.SCHOOL_LIGHTS)
@@ -1245,6 +1256,18 @@ func _build_fixtures() -> void:
 		face.position = at + facing * 0.003
 		face.rotation.y = atan2(facing.x, facing.z)
 		add_child(face)
+		# A faint red wash on the wall and floor under it, there all night: it's on the battery.
+		var glow := OmniLight3D.new()
+		glow.position = at + facing * 0.25 - Vector3(0, 0.15, 0)
+		glow.light_color = Color(1.0, 0.12, 0.08)
+		glow.light_energy = 0.5
+		glow.omni_range = 2.6
+		glow.omni_attenuation = 1.6
+		glow.light_specular = 0.2
+		glow.distance_fade_enabled = true
+		glow.distance_fade_begin = 30.0
+		glow.distance_fade_length = 6.0
+		add_child(glow)
 	# The lobby's drinking fountain, on the wall by the guard room door.
 	_box(Vector3(5.7, 0.9, 12.7), Vector3(0.36, 0.1, 0.44), "steel")
 	_box(Vector3(5.84, 1.0, 12.7), Vector3(0.04, 0.42, 0.48), "steel", false)

@@ -15,7 +15,7 @@ const DIM_SECONDS := 3.0
 const PRE_SHIFT := {
 	"background_color": Color(0.07, 0.09, 0.15),
 	"ambient_light_color": Color(0.42, 0.44, 0.5),
-	"ambient_light_energy": 1.0,
+	"ambient_light_energy": 0.45,
 	"fog_light_color": Color(0.14, 0.15, 0.2),
 	"fog_density": 0.002,
 }
