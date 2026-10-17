@@ -1804,7 +1804,7 @@ func _build_classroom_wing() -> void:
 
 	_classroom(Vector3(-47.0, 0, 15.0), 1.0, 3, 7.0, "poster_stay_in_class")
 	_classroom(Vector3(-61.0, 0, 15.0), 1.0, 3, 7.0, "poster_read")
-	_classroom(Vector3(-49.0, 0, -9.0), -1.0, 5, 9.0, "poster_science_fair")
+	_classroom(Vector3(-49.0, 0, -9.0), -1.0, 5, 9.0, "poster_science_fair", 17.75)
 
 	# Library: the stacks, five rows of bookcases nearly up to the ceiling with narrow aisles
 	# between (and a gap behind them along the back wall), shelves along the front wall, the
@@ -1883,10 +1883,11 @@ func _build_classroom_wing() -> void:
 
 ## A classroom: rows of student desks facing a whiteboard and the teacher's desk.
 ## `facing` is +1 when the board is on the south wall, -1 when it's on the north wall.
-func _classroom(centre: Vector3, facing: float, rows := 3, half_width := 7.0, poster := "") -> void:
+func _classroom(centre: Vector3, facing: float, rows := 3, half_width := 7.0, poster := "", depth := 9.75) -> void:
 	var board_z := centre.z + facing * 4.75
 	var board_wall := centre.z + facing * 4.875
-	var back_wall := centre.z - facing * 4.875
+	# `depth` is from the board wall to the back wall (Room 103 is twice as deep as the others).
+	var back_wall := board_wall - facing * depth
 	if _model("prop_whiteboard", Vector3(centre.x, 0.85, board_wall - facing * 0.09), 1.45, PI if facing > 0.0 else 0.0) == null:
 		_box(Vector3(centre.x, 1.6, board_z), Vector3(4.0, 1.2, 0.06), "board", false)
 	_model("prop_projector", Vector3(centre.x, WALL_H - 1.1, board_z - facing * 4.2), 1.1, 0.0 if facing > 0.0 else PI)
@@ -1911,6 +1912,9 @@ func _classroom(centre: Vector3, facing: float, rows := 3, half_width := 7.0, po
 			0.0 if facing > 0.0 else PI, Vector3(1.0, 1.6, 0.45))
 	if poster != "":
 		_poster(poster, Vector3(centre.x - side * (half_width - 0.125), 1.6, centre.z), Vector3(side, 0, 0))
+	# A pinned-up board on the back wall, clear of the door and the shelf.
+	_model("prop_bulletin_board", Vector3(centre.x - side * 2.2, 1.0, back_wall + facing * 0.02), 1.0,
+			0.0 if facing > 0.0 else PI)
 	# Spaced so a monster (or a guard) can get between any two desks.
 	for row in rows:
 		for col in 4:
