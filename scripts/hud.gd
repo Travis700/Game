@@ -384,7 +384,7 @@ var _is_ghost := false
 var _fear_now := 0.0
 
 
-## The full-screen effect for low nerve (under everything else on the HUD).
+## The full-screen effect: the camera look, and low nerve (under everything else on the HUD).
 func _build_fear() -> void:
 	_fear = ColorRect.new()
 	_fear.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -392,7 +392,6 @@ func _build_fear() -> void:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://assets/shaders/fear.gdshader")
 	_fear.material = material
-	_fear.visible = false
 	add_child(_fear)
 	move_child(_fear, 0)
 
@@ -400,7 +399,8 @@ func _build_fear() -> void:
 func _update_fear(delta: float) -> void:
 	_fear_now = move_toward(_fear_now, _fear_target, delta * 0.5)
 	(_fear.material as ShaderMaterial).set_shader_parameter("fear", _fear_now)
-	_fear.visible = _fear_now > 0.01
+	(_fear.material as ShaderMaterial).set_shader_parameter("film", 1.0 if Profile.film_grain else 0.0)
+	_fear.visible = _fear_now > 0.01 or Profile.film_grain
 
 
 ## Session info in the top-right corner, e.g. "Hosting · 2 guards".

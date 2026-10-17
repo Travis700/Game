@@ -227,13 +227,8 @@ func _build(index: int) -> void:
 	box.size = (info["size"] as Vector3) + Vector3(0.1, 0.1, 0.1)
 	shape.shape = box
 	prop.add_child(shape)
-	var mesh := MeshInstance3D.new()
-	mesh.mesh = Monster.box(info["size"])
-	var material := StandardMaterial3D.new()
-	material.albedo_color = info["color"]
-	mesh.material_override = material
-	prop.add_child(mesh)
 	add_child(prop)
+	_dress(prop, info)
 	prop.global_position = info["at"] + Vector3(0, info["size"].y * 0.5, 0)
 	prop.used.connect(func(by: Node) -> void:
 		if by is Guard and (by as Guard).is_local():
@@ -242,3 +237,42 @@ func _build(index: int) -> void:
 			else:
 				request_pick_up.rpc_id(1, index))
 	_props.append(prop)
+
+
+## How an item looks: its real model (standing in its box, feet at the bottom), a ball, or a
+## plain painted box for the odd things there's no model for.
+const LOOKS := {"traffic cone": "prop_cone", "cardboard box": "prop_cardboard_box_01", "stack of books": "prop_book_stack",
+	"library book": "prop_book_stack", "basketball": "ball", "dodgeball": "ball"}
+
+
+func _dress(prop: Node3D, info: Dictionary) -> void:
+	var size: Vector3 = info["size"]
+	var look: String = LOOKS.get(info["name"], "")
+	if look == "ball":
+		var sphere := SphereMesh.new()
+		sphere.radius = size.x * 0.5
+		sphere.height = size.x
+		var ball := MeshInstance3D.new()
+		ball.mesh = sphere
+		var skin := StandardMaterial3D.new()
+		if info["name"] == "basketball":
+			skin.albedo_texture = load("res://assets/textures/gym/basketball.png")
+		else:
+			skin.albedo_color = info["color"]
+		skin.roughness = 0.75
+		ball.material_override = skin
+		prop.add_child(ball)
+		return
+	if look != "":
+		var feet := Node3D.new()
+		feet.position = Vector3(0, -size.y * 0.5, 0)
+		prop.add_child(feet)
+		if ModelKit.add(feet, look, size.y, 0.4) != null:
+			return
+		feet.queue_free()
+	var mesh := MeshInstance3D.new()
+	mesh.mesh = Monster.box(size)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = info["color"]
+	mesh.material_override = material
+	prop.add_child(mesh)

@@ -66,6 +66,8 @@ invite or the Steam overlay instead, with no ports to forward.
    You hear straight away whether you were right (✓ or ✗).
 4. Someone has to go out on **tonight's round** (top of the screen): punch stations with amber lamps
    around the school. Hold E at one to punch it. The station's bell rings, and monsters nearby hear it.
+   Every room has a light switch just inside the door: switch the lights on to search a room, off to
+   stay out of sight. Monsters switch them off too, so a room gone dark on the cameras means something.
 5. At 6:00 AM the lights come back on. Clock out at the time clock within about 90 seconds.
 6. The report shows everyone's pay: 100 for clocking out, +25 per correct log (+25 more for naming
    the monster), -10 per false report, +20 per station you punched, +50 each if the whole round was
@@ -360,8 +362,8 @@ it runs; that's normal for games that aren't signed (Steam builds don't show it)
 | Shift | Run |
 | Mouse | Look |
 | F | Flashlight |
-| E | Use. Press E on the time clock in the guard room to clock in and start the night. Hold E on punch stations and the breaker. |
-| Esc | Menu: mouse sensitivity, field of view, brightness, volume, voice chat, captions, change keys, graphics (resolution, anti-aliasing, shadows, ambient occlusion and haze, bounced light, long grass, V-sync), fullscreen, leave the game (pauses solo; in a group the night keeps going) |
+| E | Use. Press E on the time clock in the guard room to clock in and start the night. Hold E on punch stations and the breaker. Press E on a light switch (just inside each room's door) to turn the room's lights on or off. |
+| Esc | Menu: mouse sensitivity, field of view, brightness, volume, voice chat, captions, change keys, graphics (resolution, anti-aliasing, shadows, ambient occlusion and haze, bounced light, long grass, film grain, V-sync), fullscreen, leave the game (pauses solo; in a group the night keeps going) |
 | Tab | Clipboard: log anything odd you spot (after clocking in); its Field guide button shows what you know about each monster |
 | G | Use or put down what you're carrying (sensors, traps, energy drink, coffee, flashlight, EMF reader, air horn, decoy radio, donuts). As a ghost: watch through a teammate's eyes |
 | Q | Mark a spot for the team (at a desk: flag the camera) |

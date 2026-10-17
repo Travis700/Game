@@ -30,6 +30,8 @@ const CATALOGUE := {
 		"about": "A third of the cameras are down until the engineer comes in the morning. Some things you'll have to check in person."},
 	"drill": {"name": "Lockdown drill", "night": 4,
 		"about": "There's a lockdown drill tonight. When the alarm goes, everything in here takes it seriously."},
+	"storm": {"name": "Thunderstorm", "night": 3,
+		"about": "A storm's coming in. The rain on the roof covers your voices, but the lightning shows you things you'd rather not see."},
 	"early_start": {"name": "Early start", "night": 3,
 		"about": "Nothing's waiting for the small hours tonight: everything will be out by 2 AM."},
 }
@@ -41,6 +43,7 @@ const XP_BONUS := 0.15
 var lighting: ShiftLighting
 var players: Node3D
 var hud: CanvasLayer
+var storm: Storm
 
 ## Tonight's conditions (keys of CATALOGUE). On every computer.
 var active: Array[String] = []
@@ -61,6 +64,9 @@ func pick(night_number: int) -> void:
 		if CATALOGUE[key]["night"] <= night_number:
 			pool.append(key)
 	pool.shuffle()
+	# A storm and a still night don't go together.
+	if pool.find("storm") >= 0 and pool.find("sharp_ears") >= 0:
+		pool.erase("sharp_ears" if randf() < 0.5 else "storm")
 	var picked := pool.slice(0, mini(count, pool.size()))
 	if not forced.is_empty():
 		# (Each still waits for its own first night, even in a custom shift.)
@@ -109,6 +115,8 @@ func _set_conditions(keys: PackedStringArray, night_number: int) -> void:
 	active.assign(Array(keys))
 	lighting.set_night_overrides({"fog_density": 0.075, "fog_light_color": Color(0.07, 0.075, 0.09)} if has("fog") else {})
 	apply_to_guards()
+	if storm:
+		storm.set_active(has("storm"))
 	if active.is_empty():
 		return
 	var lines: Array[String] = []

@@ -205,6 +205,13 @@ func _ready() -> void:
 		Profile.long_grass = on
 		Profile.apply_graphics())
 	graphics.add_child(grass)
+	var film := CheckBox.new()
+	film.text = "Film grain"
+	film.button_pressed = Profile.film_grain
+	film.toggled.connect(func(on: bool) -> void:
+		Profile.film_grain = on
+		Profile.apply_graphics())
+	graphics.add_child(film)
 	var vsync := CheckBox.new()
 	vsync.text = "V-sync"
 	vsync.button_pressed = Profile.vsync

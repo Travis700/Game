@@ -39,6 +39,7 @@ def add(data):
     new_views.append({'buffer': 0, 'byteOffset': off, 'byteLength': len(data)})
     return len(new_views) - 1
 
+j.setdefault('images', [])
 image_views = {j['images'][i]['bufferView'] for i in range(len(j['images']))}
 remap = {}
 for i, v in enumerate(j['bufferViews']):

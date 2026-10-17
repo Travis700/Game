@@ -130,6 +130,11 @@ func _ready() -> void:
 	_footsteps.name = "Footsteps"
 	add_child(_footsteps)
 	flashlight.set_meta("base_energy", flashlight.light_energy)
+	# A torch's beam, not an even cone: a hot centre and a ring from the reflector, dust in the air.
+	flashlight.light_projector = BEAM_PATTERN
+	flashlight.spot_angle_attenuation = 0.7
+	flashlight.light_volumetric_fog_energy = 0.6
+	_beam_basis = flashlight.global_basis
 	# The Shadows setting (Profile is an autoload; looked up by path, see _look).
 	flashlight.add_to_group("shadow_lights")
 	var profile := get_node_or_null("/root/Profile")
@@ -158,6 +163,8 @@ func _ready() -> void:
 	interact_ray.collision_mask = 1 | Interactable.TALK_LAYER
 	if local:
 		interact_ray.add_exception(self)
+		_make_dust()
+		_make_torch()
 		camera.current = true
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		get_tree().call_group("game", "on_local_guard_ready", self)
@@ -184,7 +191,7 @@ func set_bright_flashlight(on: bool) -> void:
 func apply_flashlight() -> void:
 	var reach := lerpf(0.6, 1.0, battery) * (1.2 if perk == "spare_batteries" else 1.0)
 	flashlight.spot_range = (32.0 if bright_flashlight else 22.0) * reach
-	flashlight.spot_angle = 34.0 if bright_flashlight else 26.0
+	flashlight.spot_angle = 46.0 if bright_flashlight else 38.0
 	flashlight.light_energy = flashlight_energy()
 
 
@@ -193,12 +200,120 @@ func flashlight_energy() -> float:
 	return flashlight.get_meta("base_energy", flashlight.light_energy) * (1.5 if bright_flashlight else 1.0) * battery
 
 
-func _process(_delta: float) -> void:
+const BEAM_PATTERN := preload("res://assets/textures/flashlight_cookie.png")
+## How quickly the beam catches up with where the guard looks (a hand-held torch trails a little).
+const BEAM_FOLLOW := 16.0
+var _beam_basis := Basis.IDENTITY
+
+
+func _process(delta: float) -> void:
+	var aim := camera.global_basis.orthonormalized()
+	_beam_basis = _beam_basis.slerp(aim, minf(1.0, BEAM_FOLLOW * delta)).orthonormalized()
+	flashlight.global_basis = _beam_basis
+	if _torch:
+		_torch.visible = not is_dead
+		_torch.global_basis = _beam_basis
+		_torch_lens.material_override = _lens_on if flashlight.visible else _lens_off
 	# The field of view from the Esc menu (Profile looked up by path, see _look).
 	if is_local():
 		var profile := get_node_or_null("/root/Profile")
 		if profile:
 			camera.fov = float(profile.get("fov"))
+
+
+## Dust hanging in the air round the guard: lit specks, so only seen where a light (mostly the
+## flashlight) falls on them. Only made for your own guard.
+func _make_dust() -> void:
+	var dust := GPUParticles3D.new()
+	dust.name = "Dust"
+	dust.amount = 260
+	dust.lifetime = 9.0
+	dust.preprocess = 9.0
+	dust.local_coords = false
+	dust.visibility_aabb = AABB(Vector3(-5, -3, -5), Vector3(10, 6, 10))
+	var motion := ParticleProcessMaterial.new()
+	motion.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	motion.emission_box_extents = Vector3(4.0, 1.6, 4.0)
+	motion.direction = Vector3(0, -1, 0)
+	motion.spread = 180.0
+	motion.initial_velocity_min = 0.0
+	motion.initial_velocity_max = 0.05
+	motion.gravity = Vector3(0, -0.01, 0)
+	motion.turbulence_enabled = true
+	motion.turbulence_noise_strength = 0.4
+	motion.turbulence_noise_scale = 3.0
+	motion.turbulence_influence_min = 0.02
+	motion.turbulence_influence_max = 0.06
+	motion.scale_min = 0.5
+	motion.scale_max = 1.4
+	dust.process_material = motion
+	var speck := QuadMesh.new()
+	speck.size = Vector2(0.008, 0.008)
+	var look := StandardMaterial3D.new()
+	look.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	look.albedo_color = Color(0.85, 0.82, 0.75)
+	look.roughness = 1.0
+	look.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	look.albedo_color.a = 0.7
+	speck.material = look
+	dust.draw_pass_1 = speck
+	dust.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	camera.add_child(dust)
+
+
+## The torch in your hand, bottom right, its lens where the beam comes from. Only made for your
+## own guard, and kept off the security cameras.
+var _torch: Node3D
+var _torch_lens: MeshInstance3D
+var _lens_on: StandardMaterial3D
+var _lens_off: StandardMaterial3D
+
+
+func _make_torch() -> void:
+	_torch = Node3D.new()
+	_torch.name = "Torch"
+	_torch.position = flashlight.position + Vector3(0.0, -0.025, 0.06)
+	camera.add_child(_torch)
+	var metal := StandardMaterial3D.new()
+	metal.albedo_color = Color(0.08, 0.08, 0.09)
+	metal.metallic = 0.6
+	metal.roughness = 0.45
+	# Lying along the beam: the head at the front (towards -Z), the grip behind it.
+	for part: Array in [[0.019, 0.019, 0.2, 0.13], [0.03, 0.021, 0.05, 0.01], [0.031, 0.031, 0.018, -0.022]]:
+		var tube := CylinderMesh.new()
+		tube.top_radius = part[0]
+		tube.bottom_radius = part[1]
+		tube.height = part[2]
+		tube.radial_segments = 14
+		var piece := MeshInstance3D.new()
+		piece.mesh = tube
+		piece.material_override = metal
+		piece.rotation.x = -PI * 0.5
+		piece.position = Vector3(0, 0, part[3])
+		_torch.add_child(piece)
+	_lens_on = StandardMaterial3D.new()
+	_lens_on.albedo_color = Color(1.0, 0.95, 0.85)
+	_lens_on.emission_enabled = true
+	_lens_on.emission = Color(1.0, 0.94, 0.82)
+	_lens_on.emission_energy_multiplier = 3.0
+	_lens_off = StandardMaterial3D.new()
+	_lens_off.albedo_color = Color(0.25, 0.25, 0.22)
+	_lens_off.metallic = 0.3
+	_lens_off.roughness = 0.2
+	var disc := CylinderMesh.new()
+	disc.top_radius = 0.027
+	disc.bottom_radius = 0.027
+	disc.height = 0.004
+	disc.radial_segments = 14
+	_torch_lens = MeshInstance3D.new()
+	_torch_lens.mesh = disc
+	_torch_lens.rotation.x = -PI * 0.5
+	_torch_lens.position = Vector3(0, 0, -0.032)
+	_torch.add_child(_torch_lens)
+	for piece in _torch.get_children():
+		var mesh := piece as MeshInstance3D
+		mesh.layers = SecurityCameras.HIDDEN_FROM_CAMERAS
+		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 ## Redraws the name tag (e.g. after a promotion).

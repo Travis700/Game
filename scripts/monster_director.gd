@@ -1016,6 +1016,9 @@ func voice_level(guard: Guard) -> float:
 func voice_reach(guard: Guard, whisper: float, shout: float) -> float:
 	var level := voice_level(guard)
 	var carries := 1.5 if conditions and conditions.has("sharp_ears") else 1.0
+	# Rain on the roof drowns voices out.
+	if conditions and conditions.has("storm"):
+		carries *= 0.7
 	return 0.0 if level <= 0.0 else lerpf(whisper, shout, level) * carries
 
 

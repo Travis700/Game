@@ -4,8 +4,12 @@ poster_*.png      posters for the walls (some of them are hints)
 bookcase.png      one bay of a library bookcase seen from the front: shelves full of books
 painting_*.png    the art class's canvases
 periodic.png      the periodic table for the science lab
+school_map_*.png  the fire evacuation plan by the doors: the whole school, with YOU ARE HERE
+eye_chart.png     the nurse's eye chart
+
+Name some of them (e.g. `gen_school_art.py school_map`) to paint just those.
 """
-import os, random
+import os, random, sys
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -379,12 +383,83 @@ def fixtures():
     img.save(os.path.join(OUT, 'exit.png'))
 
 
-posters()
-fixtures()
-flag()
-menu()
-locker()
-bookcase()
-paintings()
-periodic()
+# The school's rooms as SchoolBuilder.AREAS has them (x, z, width, depth), plus the closet.
+ROOMS = [
+    ('LOBBY', -6, 10, 12, 10), ('FRONT OFFICE', -20, 10, 14, 10), ('SECURITY', 6, 10, 14, 10),
+    ('MAIN HALL', -40, 4, 80, 6), ('CAFETERIA', -40, -30, 35, 34), ('KITCHEN', -5, -30, 10, 18),
+    ('CUSTODIAN', -5, -12, 10, 16), ('GYM', 5, -30, 35, 34), ('WEST HALL', -80, 4, 40, 6),
+    ('101', -54, 10, 14, 10), ('102', -68, 10, 14, 10), ('NURSE', -80, 10, 12, 10),
+    ('ROOM 103', -58, -14, 18, 18), ('LIBRARY', -80, -14, 22, 18), ('EAST HALL', 40, 4, 40, 6),
+    ('SCIENCE LAB', 40, -14, 22, 18), ('ART', 62, -14, 18, 18), ('LOCKER ROOMS', 40, 10, 40, 10),
+]
+
+
+def school_map():
+    """A fire evacuation plan, as pinned up by the doors: every room, the exits, and a red dot."""
+    # Each sheet's red dot is where that sheet hangs (see SchoolBuilder._build_clutter).
+    for name, here in [('guard', (7, 12)), ('lobby', (-5, 17.8)), ('west', (-51, 5)), ('east', (52.5, 9))]:
+        w, h = 1400, 900
+        img = Image.new('RGB', (w, h), (236, 232, 218))
+        d = ImageDraw.Draw(img)
+        lines(d, w, 30, ['FIRE EVACUATION PLAN'], TITLE, 86, RED)
+        lines(d, w, 128, ['Westfield High School  ·  ground floor'], TYPED, 34, (40, 40, 40))
+        # The plan spans x -80..80 and z -30..20: fitted into the sheet below the title.
+        left, top, scale = 60, 220, (w - 120) / 160.0
+
+        def at(x, z):
+            return left + (x + 80) * scale, top + (z + 30) * scale
+        for label, x, z, rw, rd in ROOMS:
+            x1, y1 = at(x, z)
+            x2, y2 = at(x + rw, z + rd)
+            hall = 'HALL' in label
+            d.rectangle([x1, y1, x2, y2], fill=(250, 248, 240) if not hall else (226, 222, 205),
+                    outline=(30, 30, 30), width=4)
+            font = fit(d, label, TITLE, 40 if rd > 8 else 26, (x2 - x1) * 0.86)
+            box = d.textbbox((0, 0), label, font=font)
+            d.text(((x1 + x2 - box[2]) / 2, (y1 + y2 - box[3]) / 2), label, font=font, fill=(30, 30, 30))
+        # Exits: the front doors, and green arrows along the halls towards them.
+        fx, fy = at(0, 20)
+        d.rectangle([fx - 40, fy - 6, fx + 40, fy + 6], fill=(30, 140, 60))
+        lines(d, w, fy + 16, ['EXIT'], TITLE, 40, (30, 140, 60))
+        for x in (-72, -48, -22, 22, 48, 72):
+            ax, ay = at(x, 7)
+            step = 26 if x < 0 else -26
+            d.polygon([(ax + step, ay), (ax - step * 0.3, ay - 14), (ax - step * 0.3, ay + 14)], fill=(30, 140, 60))
+        hx, hy = at(*here)
+        d.ellipse([hx - 18, hy - 18, hx + 18, hy + 18], fill=RED, outline=(255, 255, 255), width=4)
+        # The label on a white tag below the dot, so it reads over the plan.
+        font = ImageFont.truetype(TITLE, 40)
+        box = d.textbbox((0, 0), 'YOU ARE HERE', font=font)
+        tx, ty = hx - (box[2] - box[0]) / 2, hy + 120
+        d.line([hx, hy + 18, hx, ty], fill=RED, width=4)
+        d.rectangle([tx - 10, ty - 4, tx + box[2] + 10, ty + box[3] + 8], fill=(255, 255, 255), outline=RED, width=3)
+        d.text((tx, ty), 'YOU ARE HERE', font=font, fill=RED)
+        lines(d, w, h - 70, ['In case of fire, leave by the nearest exit. Do not use the gym doors.'], TYPED, 30,
+                (60, 60, 60))
+        aged(img).save(os.path.join(OUT, 'school_map_%s.png' % name))
+
+
+def eye_chart():
+    """The nurse's eye chart: rows of letters getting smaller. The last row isn't random."""
+    w, h = 600, 1000
+    img = Image.new('RGB', (w, h), (244, 242, 236))
+    d = ImageDraw.Draw(img)
+    rng = random.Random(20)
+    y = 50
+    sizes = [200, 150, 115, 90, 72, 58, 46, 36, 28, 22]
+    for row, size in enumerate(sizes):
+        count = min(row + 1, 8)
+        text = ' '.join(rng.choice('EFPTOZLDC') for _ in range(count))
+        if row == len(sizes) - 1:
+            text = 'I  S E E  Y O U  T O O'
+        y = lines(d, w, y, [text], TITLE, size, (12, 12, 12), 1.0) + 12
+        d.text((22, y - size * 0.7), str(row + 1), font=ImageFont.truetype(TYPED, 18), fill=(150, 30, 30))
+    aged(img).save(os.path.join(OUT, 'eye_chart.png'))
+
+
+PAINT = {'posters': posters, 'fixtures': fixtures, 'flag': flag, 'menu': menu, 'locker': locker,
+         'bookcase': bookcase, 'paintings': paintings, 'periodic': periodic, 'school_map': school_map,
+         'eye_chart': eye_chart}
+for job in (sys.argv[1:] or PAINT):
+    PAINT[job]()
 print('written to', os.path.normpath(OUT))

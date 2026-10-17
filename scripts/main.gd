@@ -101,6 +101,8 @@ var _second_wind_used := false
 var _shift_badges: Dictionary = {}
 var _left_alive: Dictionary = {}
 var power: Power
+var light_switches: LightSwitches
+var televisions: Televisions
 var pause_menu: CanvasLayer
 var spawner: MultiplayerSpawner
 var _local_guard: Guard
@@ -257,6 +259,7 @@ func _ready() -> void:
 	dread = Dread.new()
 	dread.name = "Dread"
 	dread.director = director
+	dread.lighting = lighting
 	dread.hud = hud
 	dread.players = players
 	dread.shift = shift
@@ -388,6 +391,21 @@ func _ready() -> void:
 	director.power = power
 	anomalies.director_noise = director.make_noise
 	night.power = power
+	light_switches = LightSwitches.new()
+	light_switches.name = "LightSwitches"
+	light_switches.lighting = lighting
+	light_switches.power = power
+	light_switches.director = director
+	add_child(light_switches)
+	light_switches.build(school)
+	night.light_switches = light_switches
+	televisions = Televisions.new()
+	televisions.name = "Televisions"
+	televisions.power = power
+	televisions.director = director
+	add_child(televisions)
+	televisions.build(school.tv_spots)
+	night.televisions = televisions
 	var conditions := Conditions.new()
 	conditions.name = "Conditions"
 	conditions.lighting = lighting
@@ -395,6 +413,13 @@ func _ready() -> void:
 	conditions.hud = hud
 	add_child(conditions)
 	night.conditions = conditions
+	var storm := Storm.new()
+	storm.name = "Storm"
+	storm.moon = get_node("Moon")
+	storm.environment = lighting.environment
+	storm.window_glass = school.get_material("night_window")
+	add_child(storm)
+	conditions.storm = storm
 	director.conditions = conditions
 	rounds.conditions = conditions
 	power.conditions = conditions
@@ -1053,6 +1078,11 @@ func _register_employee(badge: int, password: String, player_name := "", rank :=
 		_catch_up_late_joiner(peer_id)
 	doors.send_state_to(peer_id)
 	school_doors.send_state_to(peer_id)
+	televisions.send_state_to(peer_id)
+	# After their own lights-out has run.
+	get_tree().create_timer(12.0).timeout.connect(func() -> void:
+		if multiplayer.get_peers().has(peer_id):
+			light_switches.send_state_to(peer_id))
 	_sync_session.rpc_id(peer_id, night.number, night.difficulty)
 	_update_guards_required()
 
@@ -2114,7 +2144,7 @@ func _make_environment() -> Environment:
 	env.ssao_radius = 1.1
 	env.ssao_intensity = 1.8
 	env.ssao_power = 1.4
-	env.volumetric_fog_density = 0.006
+	env.volumetric_fog_density = 0.012
 	env.volumetric_fog_albedo = Color(0.7, 0.72, 0.75)
 	env.volumetric_fog_length = 40.0
 	env.volumetric_fog_ambient_inject = 0.0

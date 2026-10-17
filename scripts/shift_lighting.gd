@@ -37,6 +37,11 @@ var _night_overrides: Dictionary = {}
 var _dark := false
 
 
+## True once the night's dimming has finished (until the lights come back in the morning).
+func is_dark() -> bool:
+	return _dark
+
+
 func apply_pre_shift() -> void:
 	for property: String in PRE_SHIFT:
 		environment.set(property, PRE_SHIFT[property])

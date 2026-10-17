@@ -531,7 +531,8 @@ func _prop(prop_name: String, pos: Vector3, parts: Array, visible_at_start := tr
 
 ## Props that share another one's model ("": keep the boxes; the "wet floor sign" is really a
 ## stack of chairs).
-const PROP_MODELS := {"hall_bin": "trash_can", "wet_floor_sign": ""}
+const PROP_MODELS := {"hall_bin": "trash_can", "wet_floor_sign": "", "hall_box": "cardboard_box_01",
+		"counter_box": "cardboard_box_01", "kitchen_crate": "plastic_crate_01"}
 
 
 ## Swaps a prop's boxes for its real model, if there is one (the boxes stay as its collision).

@@ -19,6 +19,8 @@ var effects := true
 var bounce_light := true
 ## Long grass on the lawns outside (thousands of blades; off for slow computers).
 var long_grass := true
+## The camera look: a little film grain, a vignette and colour fringing at the edges.
+var film_grain := true
 var antialiasing := 1
 ## Field of view, in degrees.
 var fov := 75.0
@@ -65,6 +67,7 @@ func _enter_tree() -> void:
 		effects = config.get_value("graphics", "effects", true)
 		bounce_light = config.get_value("graphics", "bounce_light", true)
 		long_grass = config.get_value("graphics", "long_grass", true)
+		film_grain = config.get_value("graphics", "film_grain", true)
 		antialiasing = config.get_value("graphics", "antialiasing", 1)
 		fov = config.get_value("graphics", "fov", 75.0)
 		brightness = config.get_value("graphics", "brightness", 1.0)
@@ -106,6 +109,7 @@ func save_settings() -> void:
 	config.set_value("graphics", "effects", effects)
 	config.set_value("graphics", "bounce_light", bounce_light)
 	config.set_value("graphics", "long_grass", long_grass)
+	config.set_value("graphics", "film_grain", film_grain)
 	config.set_value("graphics", "antialiasing", antialiasing)
 	config.set_value("graphics", "fov", fov)
 	config.set_value("graphics", "brightness", brightness)

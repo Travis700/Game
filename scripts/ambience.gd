@@ -1,7 +1,8 @@
 class_name Ambience
 extends Node3D
-## Night-time sound for the building: a low electrical hum, and every so often a creak or a
-## distant thump somewhere nearby. Each computer plays its own (it's only atmosphere).
+## Night-time sound for the building: a low electrical hum, and every so often a creak, the
+## heating pipes knocking or a distant thump somewhere nearby. Each computer plays its own (it's
+## only atmosphere: nothing that sounds like a door, which would mean something).
 
 ## Real seconds between the odd noises.
 const NOISE_EVERY := Vector2(15.0, 40.0)
@@ -55,7 +56,15 @@ func _process(delta: float) -> void:
 	var angle := randf() * TAU
 	var spot := listener.global_position + Vector3(cos(angle), 0, sin(angle)) * randf_range(8.0, 20.0)
 	spot.y = 2.0
-	var stream: AudioStream = SoundBank.get_sound("creak", Sfx.creak()) if randf() < 0.65 else Sfx.thud(0.45, 0.35, 0.9)
+	var roll := randf()
+	var stream: AudioStream
+	if roll < 0.5:
+		stream = SoundBank.get_sound("creak", Sfx.creak())
+	elif roll < 0.8:
+		# The heating pipes, ticking and knocking as they cool.
+		stream = SoundBank.get_sound("pipe_knock", Sfx.thud(1.4, 0.05, 0.5))
+	else:
+		stream = Sfx.thud(0.45, 0.35, 0.9)
 	var player := AudioStreamPlayer3D.new()
 	player.stream = stream
 	player.volume_db = lerpf(-6.0, -1.0, tension())

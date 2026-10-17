@@ -75,6 +75,8 @@ var school_doors: SchoolDoors
 var career: Career
 var rounds: Rounds
 var power: Power
+var light_switches: LightSwitches
+var televisions: Televisions
 var conditions: Conditions
 var bonus: Bonus
 var phone: Phone
@@ -284,6 +286,8 @@ func _run_shift(delta: float) -> void:
 	shop.update(delta)
 	doors.update(delta)
 	school_doors.update(delta)
+	light_switches.update(delta)
+	televisions.update(delta)
 	finale.update(minutes)
 	if finale.active and (phone.ringing or not power.on):
 		# The last bell: the phone goes dead and the emergency lighting comes on.
@@ -309,6 +313,8 @@ func _run_shift(delta: float) -> void:
 		shop.clear_placed()
 		rounds.close()
 		power.end_night()
+		light_switches.end_night()
+		televisions.all_off()
 		phone.end_night()
 		hiding.release_all()
 		clutter.reset_all()
@@ -623,6 +629,8 @@ func fail_night() -> void:
 	totems.clear_all()
 	shop.clear_placed()
 	power.end_night()
+	light_switches.end_night()
+	televisions.all_off()
 	phone.end_night()
 	hiding.release_all()
 	clutter.reset_all()

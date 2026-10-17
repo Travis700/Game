@@ -1,8 +1,8 @@
 class_name Dread
 extends Node
 ## Makes monsters felt, on each computer: a heartbeat that quickens as something gets close,
-## a low drone while something nearby is hunting, flashlights that flicker when a monster is
-## near (everyone's, as seen on this computer), and the jumpscare when you're caught.
+## a low drone while something nearby is hunting, flashlights and ceiling lights that flicker
+## when a monster is near (as seen on this computer), and the jumpscare when you're caught.
 ##
 ## And on a player's first night, once: the first time they walk the main hallway after a few
 ## minutes, a tall figure is standing at the far end, the lights stutter, and it's gone. It
@@ -14,6 +14,8 @@ const CHASE_STATES: Array[String] = ["chase", "hunt", "detention", "reveal", "ch
 const HEARTBEAT_RANGE := 16.0
 const DRONE_RANGE := 22.0
 const FLICKER_RANGE := 9.0
+## Ceiling lights this close to a monster stutter.
+const LAMP_FLICKER_RANGE := 6.0
 
 var director: MonsterDirector
 var players: Node3D
@@ -24,6 +26,9 @@ var night: Night
 var career: Career
 var shift: Shift
 var school: SchoolBuilder
+var lighting: ShiftLighting
+## Ceiling lights stuttering near a monster right now, and their steady brightness.
+var _stuttering: Dictionary = {}
 
 var _heart: AudioStreamPlayer
 var _drone: AudioStreamPlayer
@@ -49,6 +54,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_flicker_flashlights()
+	_flicker_lamps()
 	_first_night_glimpse()
 	_read_emf(delta)
 	if local_guard == null or not is_instance_valid(local_guard) or local_guard.is_dead or director == null:
@@ -109,6 +115,36 @@ func _flicker_flashlights() -> void:
 				near = true
 				break
 		guard.flashlight.light_energy = base * (0.05 if randf() < 0.35 else randf_range(0.4, 1.0)) if near else base
+
+
+## Ceiling lights near a monster stutter too (not the ones already failing on their own). Only
+## once the night's lights have settled, so nothing else is setting their brightness.
+func _flicker_lamps() -> void:
+	var near: Dictionary = {}
+	if director != null and lighting != null and lighting.is_dark():
+		var monsters: Array[Node3D] = []
+		for node in director.get_node("Live").get_children():
+			var monster := node as Monster
+			if monster and not monster.harmless and monster.state != "hidden" and not monster.disguised():
+				monsters.append(monster)
+		if not monsters.is_empty():
+			for node in get_tree().get_nodes_in_group(ShiftLighting.SCHOOL_LIGHTS):
+				var lamp := node as Light3D
+				if lamp == null or not lamp.visible or lamp is FlickerLight:
+					continue
+				for monster in monsters:
+					if monster.global_position.distance_to(lamp.global_position) < LAMP_FLICKER_RANGE:
+						near[lamp] = true
+						break
+	for lamp: Light3D in _stuttering.keys():
+		if not near.has(lamp) or not is_instance_valid(lamp):
+			if is_instance_valid(lamp):
+				lamp.light_energy = _stuttering[lamp]
+			_stuttering.erase(lamp)
+	for lamp: Light3D in near:
+		if not _stuttering.has(lamp):
+			_stuttering[lamp] = lamp.light_energy
+		lamp.light_energy = _stuttering[lamp] * (0.04 if randf() < 0.3 else randf_range(0.6, 1.0))
 
 
 ## The local guard was caught: the camera snaps to whatever caught them, with a scream.

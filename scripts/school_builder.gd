@@ -90,8 +90,12 @@ var self_portrait_easel: Interactable
 ## The school bell's control panel in the front office. Shuts off the Bell.
 var bell_panel: Interactable
 var specimen_jar: Node3D
+## The classroom TVs on their carts: [{"at" (the cart top, under the set), "turn" (0: screen to +Z)}].
+var tv_spots: Array[Dictionary] = []
 
 var _wing_doors: Array[Node3D] = []
+## The clutter in the rooms (books, bags, mugs, cobwebs...), drawn in batches.
+var dressing: SetDressing
 
 var _mats: Dictionary = {}
 
@@ -117,6 +121,8 @@ static func is_open_at(point: Vector3, difficulty: int) -> bool:
 func _ready() -> void:
 	add_to_group(NAV_SOURCE_GROUP)
 	_make_materials()
+	dressing = SetDressing.new()
+	add_child(dressing)
 	_build_grounds()
 	_build_walls()
 	_build_lobby()
@@ -136,6 +142,8 @@ func _ready() -> void:
 	_build_floors()
 	_build_fixtures()
 	_build_wear()
+	_build_clutter()
+	dressing.commit()
 	_merge_static_meshes()
 
 
@@ -1302,6 +1310,16 @@ func _build_gym_courtside() -> void:
 	_model("prop_fire_alarm", Vector3(12.0, 1.35, 3.875), 0.2, PI)
 	_model("prop_steel_frame_shelves_01", Vector3(34.2, 0, 3.6), 1.8, PI)
 	_box(Vector3(34.2, 0.9, 3.6), Vector3(0.95, 1.8, 0.45), "dark").visible = false
+	# Towels left on the benches, the scorer's papers, a fan, and litter in front of the
+	# bleachers.
+	for chair: Vector3 in [Vector3(32.3, 0.46, -18.3), Vector3(32.3, 0.46, -16.2), Vector3(12.7, 0.46, -9.1)]:
+		dressing.put("prop_towel", chair, 0.05, dressing.rng.randf() * TAU)
+	dressing.put("prop_paper_scrap", Vector3(12.5, 0.765, -14.4), 0.012, 0.3)
+	dressing.put("prop_paper_scrap", Vector3(12.45, 0.765, -13.6), 0.012, 1.9)
+	dressing.put("prop_box_fan", Vector3(33.0, 0, -10.2), 0.55, -PI * 0.5)
+	dressing.litter(8.4, 9.6, -23.0, -3.0, 5)
+	dressing.litter(35.4, 36.6, -23.0, -3.0, 5)
+	dressing.litter(9.0, 36.0, -28.5, 2.5, 5)
 
 
 func _gym_chair(pos: Vector3, turn: float) -> void:
@@ -1407,6 +1425,166 @@ func _build_fixtures() -> void:
 	for spot: Array in [[Vector3(-4.4, 0.55, 10.215), 0.0], [Vector3(13.0, 0.55, 3.785), PI], [Vector3(-26.5, 0.55, 3.785), PI],
 			[Vector3(-41.0, 0.55, 4.215), 0.0], [Vector3(41.0, 0.55, 9.785), PI]]:
 		_model("prop_fire_extinguisher", spot[0], 0.6, spot[1])
+
+
+# --- Clutter -------------------------------------------------------------------
+
+## What people left lying about outside the classrooms (those dress themselves): computers and
+## mugs in the offices, books on the library tables, milk cartons on the lunch tables, towels in
+## the locker rooms, PA speakers along the halls, and cobwebs in the corners.
+func _build_clutter() -> void:
+	var d := dressing
+	# Front office: a computer on each desk without the laptop, the printer on the filing
+	# cabinets, the water cooler, and the usual mess.
+	for desk: Vector3 in [Vector3(-14, 0.77, 13), Vector3(-14, 0.77, 17.5)]:
+		d.put("prop_old_computer", desk + Vector3(0.25, 0, 0.12), 0.42, PI + 0.15)
+		d.desk_top(desk + Vector3(-0.35, 0, -0.1), Vector2(0.6, 0.5), PI, 0.9, true)
+	d.desk_top(Vector3(-18, 0.77, 15.0) + Vector3(0.45, 0, 0), Vector2(0.4, 0.5), PI, 0.9, true)
+	d.put("prop_printer", Vector3(-18.6, 1.3, 10.45), 0.16, 0.1)
+	d.put("prop_book_stack", Vector3(-19.8, 1.3, 10.45), 0.11, 0.4)
+	_solid_model("prop_water_cooler", Vector3(-19.55, 0, 17.6), 1.25, PI * 0.5, Vector3(0.35, 1.25, 0.35))
+	_solid_model("prop_trash_can", Vector3(-15.2, 0, 13.4), 0.6, 0.0, Vector3(0.4, 0.6, 0.4))
+	d.litter(-19.5, -10.0, 11.0, 19.5, 4)
+	d.put("prop_box_fan", Vector3(-10.0, 0, 19.6), 0.5, PI + 0.3)
+	d.corner_webs(-19.87, -6.13, 10.13, 19.87, WALL_H, 0.5)
+	# Guard room: what the last shift left on the desks.
+	for i in 4:
+		var x := 7.9 + i * 3.4
+		d.put("prop_coffee_mug", Vector3(x + 1.05 - (i % 2) * 2.0, 0.765, 18.7), 0.1, i * 1.3)
+		d.desk_top(Vector3(x, 0.765, 18.65), Vector2(1.8, 0.3), PI, 0.6)
+	d.put("prop_toolbox", Vector3(19.4, 0, 18.9), 0.22, -PI * 0.5)
+	d.put("prop_box_fan", Vector3(6.6, 0, 19.5), 0.5, PI - 0.4)
+	_solid_model("prop_water_cooler", Vector3(19.55, 0, 14.6), 1.25, -PI * 0.5, Vector3(0.35, 1.25, 0.35))
+	# The break table, where the night's paperwork and the takeaway end up.
+	_desk(Vector3(10.4, 0, 13.4), 1.5, 0.8)
+	for seat: Array in [[Vector3(10.0, 0, 12.65), 0.0], [Vector3(10.9, 0, 14.15), PI]]:
+		_school_chair(seat[0], seat[1])
+	d.put("prop_coffee_mug", Vector3(10.0, 0.765, 13.25), 0.1, 0.4)
+	d.put("prop_cardboard_box_01", Vector3(10.85, 0.765, 13.35), 0.09, 0.2)
+	d.put("prop_paper_scrap", Vector3(10.2, 0.765, 13.6), 0.012, 2.0)
+	d.put("prop_book_stack", Vector3(9.85, 0.765, 13.65), 0.11, 1.1)
+	# A counter along the back wall with the microwave and the coffee things.
+	_box(Vector3(13.9, 0.45, 10.42), Vector3(1.6, 0.9, 0.55), "wood")
+	_box(Vector3(13.9, 0.915, 10.42), Vector3(1.64, 0.03, 0.59), "metal", false)
+	_model("prop_vintage_microwave", Vector3(14.3, 0.93, 10.4), 0.3, 0.0)
+	for mug: Vector3 in [Vector3(13.45, 0.93, 10.5), Vector3(13.6, 0.93, 10.35), Vector3(13.3, 0.93, 10.3)]:
+		d.put("prop_coffee_mug", mug, 0.1, mug.z * 9.0)
+	_solid_model("prop_trash_can", Vector3(6.6, 0, 10.6), 0.6, 0.0, Vector3(0.4, 0.6, 0.4))
+	d.litter(7.0, 19.0, 11.0, 17.5, 3)
+	d.corner_webs(6.13, 19.87, 10.13, 19.87, WALL_H, 0.4)
+	# Fire evacuation plans by the doors (each with its own YOU ARE HERE).
+	for plan: Array in [["guard", Vector3(6.125, 1.6, 12.0), Vector3.RIGHT], ["lobby", Vector3(-5.875, 1.6, 17.8), Vector3.RIGHT],
+			["west", Vector3(-51.0, 1.55, 4.125), Vector3.BACK], ["east", Vector3(52.5, 1.55, 9.875), Vector3.FORWARD]]:
+		_poster("school_map_" + plan[0], plan[1], plan[2], Vector2(1.75, 1.125))
+	# Lobby: the notice board, a bin, the visitors' sign-in table.
+	_model("prop_bulletin_board", Vector3(4.4, 1.0, 10.143), 1.0)
+	_solid_model("prop_trash_can", Vector3(3.5, 0, 10.55), 0.75, 0.0, Vector3(0.5, 0.75, 0.5))
+	d.litter(2.8, 4.2, 10.4, 11.4, 2)
+	_desk(Vector3(4.65, 0, 16.9), 1.2, 0.6)
+	_model("prop_clipboard", Vector3(4.55, 0.765, 16.85), 0.042, 0.2)
+	d.put("prop_pencil_cup", Vector3(5.0, 0.765, 17.0), 0.16, 0.0)
+	_sign("VISITORS PLEASE SIGN IN", Vector3(4.65, 0.55, 17.215), Vector3.BACK, 18)
+	d.corner_webs(-5.87, 5.87, 10.13, 19.87, WALL_H, 0.5)
+	d.put("prop_pa_speaker", Vector3(0, 3.0, 10.24), 0.26, 0.0)
+	# The halls: PA speakers, the odd bag by a locker, litter, and webs at the far ends.
+	for x: float in [-30.0, -6.0, 18.0, 34.0, -48.0, -72.0, 48.0, 72.0]:
+		d.put("prop_pa_speaker", Vector3(x, 3.05, 4.24), 0.26, 0.0)
+	for at: Vector3 in [Vector3(-33.5, 0, 9.1), Vector3(26.0, 0, 4.9), Vector3(-63.0, 0, 9.1), Vector3(57.5, 0, 4.9)]:
+		d.bag(at)
+	d.litter(-39.0, 39.0, 5.2, 8.8, 14)
+	d.litter(-79.0, -41.0, 5.2, 8.8, 7)
+	d.litter(41.0, 79.0, 5.2, 8.8, 7)
+	d.corner_webs(-79.87, -40.13, 4.13, 9.87, WALL_H, 0.8)
+	d.corner_webs(40.13, 79.87, 4.13, 9.87, WALL_H, 0.8)
+	# Cafeteria: milk cartons and wrappers on the tables, more on the floor, bins at the ends.
+	for z: float in [-1.5, -8.0, -14.5, -21.0]:
+		for x: float in [-33.0, -23.5, -14.0]:
+			for i in d.rng.randi_range(1, 4):
+				var model: String = ["prop_milk_carton", "prop_milk_carton", "prop_paper_ball", "prop_paper_scrap"][d.rng.randi() % 4]
+				d.put(model, Vector3(x + d.rng.randf_range(-3.3, 3.3), 0.745, z + d.rng.randf_range(-0.22, 0.22)),
+						SetDressing.SMALL.get(model, 0.012), d.rng.randf() * TAU)
+	for bin: Vector3 in [Vector3(-38.8, 0, -16.0), Vector3(-9.2, 0, -2.0), Vector3(-9.2, 0, -27.5)]:
+		_solid_model("prop_trash_can", bin, 0.9, 0.0, Vector3(0.6, 0.9, 0.6))
+	d.litter(-39.0, -9.0, -29.0, 3.0, 16)
+	d.corner_webs(-39.87, -5.13, -29.87, 3.87, WALL_H, 0.7)
+	# Kitchen and the custodian's closet: a steel top on the island with trays and cartons left
+	# on it, crates stacked by the fridge, boxes on the shelves.
+	_box(Vector3(0, 0.915, -18.0), Vector3(3.04, 0.03, 1.24), "steel", false)
+	for tray in 5:
+		_box(Vector3(-0.9, 0.94 + tray * 0.018, -18.1), Vector3(0.32, 0.014, 0.45), "tray", false)
+	for at: Vector3 in [Vector3(-2.5, 0.9, -29.4), Vector3(-2.2, 0.9, -29.25), Vector3(1.4, 0.9, -29.35),
+			Vector3(0.4, 0.93, -18.2), Vector3(0.7, 0.93, -17.9), Vector3(0.55, 0.93, -18.25)]:
+		d.put("prop_milk_carton", at, 0.11, at.x)
+	for crate: Vector3 in [Vector3(3.9, 0, -17.6), Vector3(3.9, 0.3, -17.6), Vector3(3.95, 0, -16.9)]:
+		d.put("prop_plastic_crate_01", crate, 0.3, crate.z)
+	for shelf_y: float in [0.62, 1.22]:
+		d.put("prop_cardboard_box_01", Vector3(4.55, shelf_y, -23.6), 0.3, shelf_y)
+		d.put("prop_cardboard_box_01", Vector3(4.6, shelf_y, -23.0), 0.26, -shelf_y)
+	d.corner_webs(-4.87, 4.87, -29.87, -12.13, WALL_H, 0.7)
+	# The custodian's workbench along the east wall, with the toolbox and a lamp on it.
+	_desk(Vector3(4.35, 0, -9.3), 1.0, 2.4)
+	d.put("prop_toolbox", Vector3(4.35, 0.765, -9.9), 0.22, -PI * 0.5 + 0.2)
+	_model("prop_desk_lamp_arm_01", Vector3(4.5, 0.765, -8.6), 0.45, -PI * 0.5)
+	d.put("prop_coffee_mug", Vector3(4.2, 0.765, -8.95), 0.1, 1.0)
+	d.put("prop_paper_scrap", Vector3(4.3, 0.765, -9.3), 0.012, 0.4)
+	d.put("prop_box_fan", Vector3(4.4, 0, -6.5), 0.5, -PI * 0.5 + 0.2)
+	# Spare furniture and boxes stored at the back: stacked chairs, a ladder, cartons.
+	for i in 5:
+		_model("prop_school_chair", Vector3(-2.4, i * 0.26, -11.2), 0.82, 0.05 * (i % 2))
+	_box(Vector3(-2.4, 0.9, -11.2), Vector3(0.55, 1.8, 0.6), "dark").visible = false
+	for i in 4:
+		_model("prop_school_chair", Vector3(-1.6, i * 0.26, -11.25), 0.82, -0.04 * (i % 2))
+	_box(Vector3(-1.6, 0.75, -11.25), Vector3(0.55, 1.5, 0.6), "dark").visible = false
+	_model("prop_wooden_ladder", Vector3(0.6, 0, -11.8), 1.9, 0.0)
+	for stack: Vector3 in [Vector3(2.2, 0, -11.4), Vector3(2.75, 0, -11.45), Vector3(2.45, 0.42, -11.4), Vector3(-3.8, 0, -1.0)]:
+		_model("prop_cardboard_box_01", stack, 0.42, stack.x * 0.7)
+	_box(Vector3(2.45, 0.42, -11.42), Vector3(1.1, 0.84, 0.5), "dark").visible = false
+	# More shelving by the door, the cleaning cart, and supplies waiting to be put away.
+	_solid_model("prop_steel_frame_shelves_01", Vector3(4.55, 0, 1.6), 1.8, -PI * 0.5, Vector3(0.45, 1.8, 0.95))
+	for shelf: Vector3 in [Vector3(4.55, 0.6, 1.4), Vector3(4.6, 1.2, 1.8), Vector3(4.5, 0.0, 1.85)]:
+		d.put("prop_cardboard_box_01", shelf, 0.3, shelf.z)
+	_model("prop_multi_cleaner_5_litre", Vector3(4.55, 0.6, 1.95), 0.3, PI * 0.5)
+	_solid_model("prop_industrial_storage_cart", Vector3(0.8, 0, -6.6), 0.9, 0.3, Vector3(1.0, 0.9, 0.75))
+	for stack: Vector3 in [Vector3(-3.7, 0, -7.6), Vector3(-3.7, 0.42, -7.55), Vector3(-3.6, 0, -8.2), Vector3(-1.0, 0, -2.6)]:
+		d.put("prop_cardboard_box_01", stack, 0.42, stack.z * 1.3)
+	_box(Vector3(-3.65, 0.42, -7.9), Vector3(0.6, 0.84, 1.2), "dark").visible = false
+	d.litter(-3.5, 3.5, -10.5, 2.5, 5)
+	d.corner_webs(-4.87, 4.87, -11.87, 3.87, WALL_H, 0.9)
+	# Library: books left on the reading tables, the checkout desk's computer.
+	for table: Vector3 in [Vector3(-70, 0.765, -1.0), Vector3(-75.5, 0.765, -1.0), Vector3(-61, 0.765, -9.0)]:
+		for i in 3:
+			d.put("prop_book_stack", table + Vector3(d.rng.randf_range(-0.9, 0.9), 0, d.rng.randf_range(-0.3, 0.3)), 0.11,
+					d.rng.randf() * TAU)
+		d.put("prop_paper_scrap", table + Vector3(d.rng.randf_range(-0.8, 0.8), 0, 0), 0.012, d.rng.randf() * TAU)
+	d.put("prop_old_computer", Vector3(-63.1, 1.1, 0.55), 0.42, PI)
+	d.put("prop_pencil_cup", Vector3(-60.9, 1.1, 0.25), 0.16)
+	d.corner_webs(-79.87, -58.13, -13.87, 3.87, WALL_H, 0.9)
+	# Nurse's office.
+	_poster("eye_chart", Vector3(-68.125, 1.55, 11.3), Vector3.LEFT, Vector2(0.6, 1.0))
+	d.put("prop_tissue_box", Vector3(-70.1, 0.77, 11.85), 0.13, 0.3)
+	d.put("prop_paper_scrap", Vector3(-70.8, 0.77, 12.0), 0.012, 1.0)
+	d.put("prop_paper_towel", Vector3(-68.15, 1.25, 13.6), 0.32, -PI * 0.5)
+	_solid_model("prop_trash_can", Vector3(-68.5, 0, 14.4), 0.6, 0.0, Vector3(0.4, 0.6, 0.4))
+	d.corner_webs(-79.87, -68.13, 10.13, 19.87, WALL_H, 0.5)
+	# Science lab and art room.
+	for bench: Vector3 in [Vector3(46, 0.92, -1), Vector3(54, 0.92, -5), Vector3(54, 0.92, -9), Vector3(46, 0.92, -5)]:
+		d.desk_top(bench + Vector3(-1.0, 0, 0.2), Vector2(1.6, 0.6), 0.0, 0.8)
+	d.put("prop_paper_towel", Vector3(40.15, 1.25, 1.5), 0.32, PI * 0.5)
+	d.litter(41.0, 61.0, -13.0, 3.0, 6)
+	d.corner_webs(40.13, 61.87, -13.87, 3.87, WALL_H, 0.8)
+	d.litter(63.0, 79.0, -13.0, 3.0, 8)
+	d.corner_webs(62.13, 79.87, -13.87, 3.87, WALL_H, 0.8)
+	# Locker rooms: towels left on the benches and on the floor, paper towels by the showers.
+	for bench_x: float in [46.0, 54.0, 66.0, 74.0]:
+		if bench_x == 54.0:
+			continue
+		d.put("prop_towel", Vector3(bench_x + d.rng.randf_range(-1.5, 1.5), 0.44, 14.0), 0.06, d.rng.randf() * TAU)
+	for at: Vector3 in [Vector3(49.0, 0, 17.6), Vector3(70.5, 0, 16.9)]:
+		d.put("prop_towel", at, 0.05, at.x)
+	d.put("prop_paper_towel", Vector3(59.85, 1.25, 13.0), 0.32, -PI * 0.5)
+	d.litter(41.0, 79.0, 11.0, 18.0, 6)
+	d.corner_webs(40.13, 59.87, 10.13, 19.87, WALL_H, 0.7)
+	d.corner_webs(60.13, 79.87, 10.13, 19.87, WALL_H, 0.7)
 
 
 # --- Floors --------------------------------------------------------------------
@@ -1620,6 +1798,44 @@ func _flagpole(base: Vector3) -> void:
 
 
 # --- Furnishing ---------------------------------------------------------------
+
+## A classroom flag on a short staff, angled up and out from a wall bracket. `at` is the
+## bracket on the wall's face, `facing` the way the wall faces.
+func _wall_flag(at: Vector3, facing: Vector3) -> void:
+	if not _mats.has("flag_cloth"):
+		var cloth := StandardMaterial3D.new()
+		cloth.albedo_texture = load("res://assets/textures/school/flag.png")
+		cloth.cull_mode = BaseMaterial3D.CULL_DISABLED
+		cloth.roughness = 1.0
+		_mats["flag_cloth"] = cloth
+	# The staff leans 40 degrees out from the wall.
+	var out := facing.normalized()
+	var along := (out * cos(deg_to_rad(40.0)) + Vector3.UP * sin(deg_to_rad(40.0))).normalized()
+	var staff_mesh := CylinderMesh.new()
+	staff_mesh.top_radius = 0.008
+	staff_mesh.bottom_radius = 0.01
+	staff_mesh.height = 0.9
+	staff_mesh.radial_segments = 6
+	var staff := MeshInstance3D.new()
+	staff.mesh = staff_mesh
+	staff.material_override = _mats["wood"]
+	var side := out.cross(Vector3.UP).normalized()
+	staff.basis = Basis(side, along, side.cross(along))
+	staff.position = at + along * 0.45
+	add_child(staff)
+	# The flag hangs from the top half of the staff, drooping a little.
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.5, 0.32)
+	var flag := MeshInstance3D.new()
+	flag.mesh = quad
+	flag.material_override = _mats["flag_cloth"]
+	var droop := (along + Vector3.DOWN * 0.35).normalized()
+	var hang := side.cross(droop)
+	flag.basis = Basis(droop, hang, side)
+	flag.position = at + along * 0.3 + droop * 0.25 - hang * 0.17
+	flag.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(flag)
+
 
 ## A ready-made model that's also solid: an invisible box of `solid` size, standing on the floor
 ## under `pos`, keeps guards and monsters out of it. Null (and no box) if there's no such model.
@@ -2007,6 +2223,7 @@ func _classroom(centre: Vector3, facing: float, rows := 3, half_width := 7.0, po
 	var cart := Vector3(centre.x + side * (half_width - 0.8), 0, board_z - facing * 0.9)
 	_solid_model("prop_industrial_storage_cart", cart, 0.9, PI * 0.5, Vector3(0.72, 0.9, 1.05))
 	_model("prop_television_02", cart + Vector3(0, 0.87, 0), 0.42, PI * 0.5 * -side)
+	tv_spots.append({"at": cart + Vector3(0, 0.87, 0), "turn": PI * 0.5 * -side})
 	_solid_model("prop_shelf_01", Vector3(centre.x - side * 4.5, 0, back_wall + facing * 0.14), 2.0,
 			0.0 if facing > 0.0 else PI, Vector3(0.96, 2.0, 0.26))
 	_solid_model("prop_drawer_cabinet", Vector3(centre.x + side * (half_width - 0.75), 0, back_wall + facing * 0.4), 1.6,
@@ -2016,6 +2233,21 @@ func _classroom(centre: Vector3, facing: float, rows := 3, half_width := 7.0, po
 	# A pinned-up board on the back wall, clear of the door and the shelf.
 	_model("prop_bulletin_board", Vector3(centre.x - side * 2.2, 1.0, back_wall + facing * 0.02), 1.0,
 			0.0 if facing > 0.0 else PI)
+	# The teacher's mug and tissues, the bin by the desk (and what missed it), the flag over the
+	# board, the PA speaker, a radiator on the side wall, and dust in the corners.
+	dressing.put("prop_coffee_mug", top + Vector3(0.15, 0, -facing * 0.25), 0.1, tilt * 3.0)
+	dressing.put("prop_tissue_box", top + Vector3(-0.6, 0, -facing * 0.22), 0.13, tilt)
+	var bin := Vector3(centre.x + 4.2, 0, board_z - facing * 1.0)
+	_solid_model("prop_trash_can", bin, 0.6, 0.0, Vector3(0.4, 0.6, 0.4))
+	dressing.litter(bin.x - 0.6, bin.x + 0.6, bin.z - 0.6, bin.z + 0.6, 2)
+	_wall_flag(Vector3(centre.x - side * (half_width - 0.13), 2.35, board_z - facing * 0.6), Vector3(side, 0, 0))
+	dressing.put("prop_pa_speaker", Vector3(centre.x - 2.6, 2.9, board_wall - facing * 0.11), 0.26, PI if facing > 0.0 else 0.0)
+	_solid_model("prop_radiator", Vector3(centre.x + side * (half_width - 0.2), 0.08, centre.z - facing * 1.5), 0.62,
+			PI * 0.5 * -side, Vector3(0.25, 0.7, 1.0))
+	dressing.litter(centre.x - half_width + 0.5, centre.x + half_width - 0.5, minf(board_z, back_wall) + 0.8,
+			maxf(board_z, back_wall) - 0.8, rows * 2)
+	dressing.corner_webs(centre.x - half_width + 0.13, centre.x + half_width - 0.13, minf(board_wall, back_wall) + 0.13,
+			maxf(board_wall, back_wall) - 0.13, WALL_H)
 	# Spaced so a monster (or a guard) can get between any two desks.
 	for row in rows:
 		for col in 4:
@@ -2023,6 +2255,10 @@ func _classroom(centre: Vector3, facing: float, rows := 3, half_width := 7.0, po
 			# A desk with its chair attached, facing the board; the box keeps it solid.
 			if _model("prop_student_desk", spot - Vector3(0, 0, facing * 0.25), 0.86, 0.0 if facing > 0.0 else PI):
 				_box(spot + Vector3(0, 0.4, -facing * 0.25), Vector3(0.7, 0.8, 0.85), "desk").visible = false
+				# What the last class left behind: books and sheets on the desk, a bag beside it.
+				dressing.desk_top(spot + Vector3(0, 0.715, -facing * 0.04), Vector2(0.5, 0.3), 0.0 if facing > 0.0 else PI, 0.55)
+				if dressing.rng.randf() < 0.22:
+					dressing.bag(spot + Vector3(0.55 if dressing.rng.randf() < 0.5 else -0.55, 0, -facing * 0.3))
 				continue
 			_desk(spot, 0.7, 0.5)
 			_chair(spot - Vector3(0, 0, facing * 0.55), -1, false)
