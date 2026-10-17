@@ -202,6 +202,7 @@ func _make_materials() -> void:
 	_add_mat("locker", Color(0.2, 0.3, 0.42), 0.55)
 	_add_mat("red", Color(0.45, 0.1, 0.1))
 	_add_mat("plant", Color(0.12, 0.3, 0.14))
+	_add_mat("hedge", Color.WHITE)
 	_add_mat("costume", Color(0.45, 0.32, 0.2))
 	_add_mat("cork", Color(0.55, 0.4, 0.25))
 	_add_mat("clock_screen", Color(0.02, 0.06, 0.02), 0.3, Color(0.2, 0.9, 0.3), 1.2)
@@ -268,7 +269,7 @@ const TEXTURE_METRES := {
 	"floor": 1.22, "wall": 1.2, "ceiling": 3.85, "brick": 2.4, "concrete": 1.1, "asphalt": 3.0,
 	"grass": 2.0, "gym_floor": 1.9, "wood": 1.8, "desk": 0.6, "metal": 1.0, "locker": 1.2,
 	"cork": 1.0, "board": 2.0, "terrazzo": 0.9, "carpet": 2.0, "checker": 1.6, "quarry": 2.0,
-	"white_tile": 1.0,
+	"white_tile": 1.0, "hedge": 0.8,
 }
 
 
@@ -322,6 +323,11 @@ func _add_mat(mat_name: String, color: Color, roughness := 0.9, emission := Colo
 			mat.ao_enabled = true
 			mat.ao_texture = packed
 			mat.ao_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+		# Grass is matte: no shiny patches where the floodlights land.
+		if mat_name == "grass":
+			mat.roughness_texture = null
+			mat.roughness = 1.0
+			mat.metallic_specular = 0.1
 		# A locker texture is one locker tall, so its vents sit at the top of every door.
 		if mat_name == "locker":
 			mat.uv1_scale = Vector3(1.0 / 2.0, 1.0 / 1.9, 1.0 / 2.0)
@@ -658,8 +664,8 @@ func _build_fence() -> void:
 	for side: float in [-1.0, 1.0]:
 		_lamp_post(Vector3(side * 4.0, 0, 47.0), 1.0, 4.0)
 	# Street lights along the road. They belong to the town, so they stay on all night.
-	var street_x := -60.0
-	while street_x <= 60.0:
+	var street_x := -50.0
+	while street_x <= 50.0:
 		_lamp_post(Vector3(street_x, 0, 60.5), 2.2, 2.2)
 		street_x += 20.0
 	# Floodlights on the front of the building, aimed down at the yard...
@@ -672,8 +678,12 @@ func _build_fence() -> void:
 
 
 func _lamp_post(base: Vector3, night_energy: float, day_energy: float) -> void:
-	_box(base + Vector3(0, 2.25, 0), Vector3(0.15, 4.5, 0.15), "metal")
-	_box(base + Vector3(0, 4.5, 0), Vector3(0.5, 0.15, 0.3), "lamp_glow", false)
+	var post := _box(base + Vector3(0, 2.25, 0), Vector3(0.15, 4.5, 0.15), "metal")
+	var head := _box(base + Vector3(0, 4.5, 0), Vector3(0.5, 0.15, 0.3), "lamp_glow", false)
+	# The real street lamp, if its model is there, in place of the post (its collision stays).
+	if _model("prop_street_lamp_01", base, 4.6, PI if base.z > 50.0 else 0.0):
+		_hide_boxes(post)
+		head.visible = false
 	_light(base + Vector3(0, 4.3, 0), night_energy, 16.0, false, false, Color(1.0, 0.72, 0.42), day_energy)
 
 
@@ -1488,7 +1498,16 @@ func _build_facade() -> void:
 	for side: float in [-1.0, 1.0]:
 		_box(Vector3(side * 2.95, 1.43, 22.8), Vector3(0.26, 2.86, 0.26), "concrete")
 	_flagpole(Vector3(8.0, 0, 27.0))
+	_build_landscaping()
 	_solid_model("prop_covered_car", Vector3(-11.0, 0, 62.6), 1.35, PI * 0.5, Vector3(4.3, 1.35, 1.8))
+
+
+## Clipped hedges along the front wall, either side of the doors and the wings.
+func _build_landscaping() -> void:
+	for hedge_x: float in [-70.0, -56.0, -34.0, -24.0, -14.0, 14.0, 24.0, 34.0, 56.0, 70.0]:
+		# A clipped box hedge: the body, and a slightly narrower top so its edges look rounded.
+		_box(Vector3(hedge_x, 0.5, 21.15), Vector3(4.0, 1.0, 1.1), "hedge")
+		_box(Vector3(hedge_x, 1.05, 21.15), Vector3(3.85, 0.1, 0.95), "hedge", false)
 
 
 func _front_window(x: float, lit: bool) -> void:
