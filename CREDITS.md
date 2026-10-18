@@ -139,6 +139,16 @@ Blender and the two baked into one model). In `assets/models/`:
 | prop_piano | Brown Cherry Wood Upright Piano | Glowbox 3D | https://sketchfab.com/3d-models/brown-cherry-wood-upright-piano-ae0529d9da834820b8a9c30ec0b6228f |
 | prop_music_stand | Manhasset Music Stand | JeremyMichael | https://sketchfab.com/3d-models/manhasset-music-stand-17cff430f0354453b978bbd6d6f65e61 |
 | prop_guitar_case (the case alone) | Old Guitar Case | berryjoy | https://sketchfab.com/3d-models/old-guitar-case-3d33cf9d086f4ca1866df0b488c6532c |
+| hat_beanie | Beanie With Pom-Pom | lord cabal | https://sketchfab.com/3d-models/beanie-with-pom-pom-16569f9d12da457aa20884fb8ea97080 |
+| hat_hard_hat | Hard Hat2 | Kristiyan Marinov | https://sketchfab.com/3d-models/hard-hat2-16001d2137214a63846f6ba68c9cbe94 |
+| hat_cone | Traffic Cone | Silent | https://sketchfab.com/3d-models/traffic-cone-66a16ed89c964ce7a923216cf6400f51 |
+| hat_top_hat | Top Hat | Ariss | https://sketchfab.com/3d-models/top-hat-959430b632f642cb9b732b9cd4b63751 |
+| hat_bucket (worn upside down) | Plastic Bucket | MaX3Dd | https://sketchfab.com/3d-models/plastic-bucket-006d0f237b4141ac93960fa51d6f0634 |
+| hat_party (stood upright) | party cone | ayumi ikeda | https://sketchfab.com/3d-models/party-cone-bf59a4f1a65647319a28a0ba170db992 |
+| hat_night_owl (decimated; the strap is made in code) | Low Poly Modern Warfare's GPNVGs | haitrieu611601 | https://sketchfab.com/3d-models/low-poly-modern-warfares-gpnvgs-b1a9cf126aaa413cb7024a78bfea938c |
+| hat_deerstalker (the hat alone, tinted brown) | Deerstalker Hat | alyx | https://sketchfab.com/3d-models/deerstalker-hat-9088fdc12c7e4b3ba05613adafbea8d2 |
+| hat_fedora | Fedora Hat | alexnoiseless | https://sketchfab.com/3d-models/fedora-hat-008a0b9867c241a190eb5941f5b4dffb |
+| hat_badge_cap | Police Hat | Dreadler | https://sketchfab.com/3d-models/police-hat-c9d5ffb346d44d64b009f2d0b16e4102 |
 
 ## Long grass: made for this game
 
@@ -193,6 +203,8 @@ commercial use before release.
   `tools/MESHY.md`. The Principal's face is the notebook drawing itself, smudged.
 - The guard (`guard.glb`, its run and sit clips and `guard_uniform_*.jpg` shirt colours): made with
   Meshy from the key art.
+- Hats: the halo, the bulldog ears and the antennae (and the night-vision goggles' strap) are made in
+  code from simple shapes (`scripts/hats.gd`).
 - Props (`assets/models/prop_*.glb`, those not credited above): made with Meshy from generated
   reference images (time clock, office chair and the anomaly props).
 - Make sure the Meshy account's plan gives commercial rights before release (free-plan output is
