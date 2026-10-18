@@ -239,7 +239,8 @@ What keeps a player coming back after the first run:
 - **Desk agency.** Q flags a camera for everyone (message + marker); F (full screen) sets off a camera speaker, drawing the Lunch Lady (40 m), Librarian and Hall Monitor (25 m), once a minute per guard.
 - **Stamina.** About 6 s of running from full; winded until 30%; energy drinks suspend it.
 - **Hiding costs nerve.** −1/s while hiding; at 0 the guard panics out, screaming (heard as a shout).
-- **Clutter.** 11 throwable props; a throw lands up to 12 m away and makes a 6 s noise; ghosts can knock one every 20 s.
+- **Clutter.** 45 physics props (RigidBody3D, simulated on the host, moving ones sent about 10 times a second and settled ones not at all); guards push the light ones by walking into them, a throw tumbles and lands, a hard landing makes a noise the sound-hunters follow; ghosts can shove one every 20 s.
+- **Drawers** (`scripts/drawers.gd`): 30 drawers in the offices, classrooms and nurse's office slide open with E for everyone. The host stocks a few each night: a spare battery (that guard's flashlight 25% brighter for the night), loose change (+10), an R. Hale note, and about one night in five a scare (a rat or a doll's giggle).
 - **Learning loop.** Being caught shows that monster's rule (if it's in your guide); the guard room notice board lists tonight's notes, target, bonus and round.
 
 ## 12. Technical plan

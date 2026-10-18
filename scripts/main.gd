@@ -87,6 +87,7 @@ var _clocked_in_peers: Array[int] = []
 var _lure_ready: Dictionary = {}
 var hiding: Hiding
 var clutter: Clutter
+var drawers: Drawers
 var finale: Finale
 ## Host: when each ghost may next leave a cold spot.
 var _ghost_ping_at: Dictionary = {}
@@ -474,6 +475,12 @@ func _ready() -> void:
 	clutter.director = director
 	clutter.shift = shift
 	add_child(clutter)
+	drawers = Drawers.new()
+	drawers.name = "Drawers"
+	drawers.director = director
+	drawers.shift = shift
+	drawers.night = night
+	add_child(drawers)
 	clutter.carried_changed.connect(_refresh_inventory)
 	night.clutter = clutter
 	finale = Finale.new()
@@ -979,6 +986,7 @@ func _on_peer_connected(peer_id: int) -> void:
 	guard_room.send_state_to(peer_id)
 	anomalies.send_state_to(peer_id)
 	clutter.send_state_to(peer_id)
+	drawers.send_state_to(peer_id)
 	# Their guard spawns once their computer tells us their badge number (_register_employee).
 
 

@@ -133,8 +133,12 @@ further off) or drowsy (slower and duller). Log it correctly and you're told whi
 through walls, for 8 seconds; a mark on a monster reads MONSTER! (except the disguised ones). At a desk, Q flags
 the camera instead.
 
-**Throwing things:** eleven bits of clutter (a traffic cone, a basketball, a lunch tray, books...) lie about the
-school. E picks one up, right click (or T) throws it; it clatters where it lands and draws the sound-hunting monsters. Ghosts
+**Drawers:** filing cabinets, desks and the nurse's cabinets open with E. Each night a few hold something: a
+spare battery (a brighter flashlight for the night), loose change (points), one of R. Hale's notes, and now and
+then something that makes you jump.
+
+**Throwing things:** forty-odd bits of clutter (a traffic cone, a basketball, a lunch tray, books...) lie about the
+school, and they're real objects: walk into a cone or a ball and it goes over. E picks one up, right click (or T) throws it; it clatters where it lands and draws the sound-hunting monsters. Ghosts
 can knock clutter over (E while looking at it, every 20 seconds).
 
 **Hiding:** a dozen slatted cupboards stand around the school (and wings). Press E to climb in and E to climb
