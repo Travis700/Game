@@ -321,10 +321,12 @@ func _make_viewmodel() -> void:
 	# it isn't a black shape.
 	_viewmodel_fill = OmniLight3D.new()
 	_viewmodel_fill.light_cull_mask = SecurityCameras.HIDDEN_FROM_CAMERAS
-	_viewmodel_fill.omni_range = 0.35
-	_viewmodel_fill.light_energy = 0.5
+	_viewmodel_fill.omni_range = 0.8
+	_viewmodel_fill.omni_attenuation = 0.5
+	_viewmodel_fill.light_energy = 0.25
 	_viewmodel_fill.light_color = Color(1.0, 0.92, 0.8)
-	_viewmodel_fill.position = Vector3(0.0, 0.04, 0.03)
+	# From about where your eyes are, so the side of the hand you see is lit evenly.
+	_viewmodel_fill.position = -VIEWMODEL_AT + Vector3(0, 0.05, 0)
 	_viewmodel.add_child(_viewmodel_fill)
 	# The beam comes out of it.
 	flashlight.position = VIEWMODEL_AT + Vector3(0, 0, -0.02)
