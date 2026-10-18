@@ -47,6 +47,14 @@ func _on_used(by: Node) -> void:
 func _request_note() -> void:
 	if not multiplayer.is_server() or _keys == null:
 		return
+	# Only someone alive and at the keys (a ghost plays it through the haunting instead).
+	var game := get_tree().get_first_node_in_group("game")
+	var director := game.get("director") as MonsterDirector if game else null
+	if director:
+		var peer := multiplayer.get_remote_sender_id()
+		var guard := director.guard_by_peer(peer if peer != 0 else multiplayer.get_unique_id())
+		if guard == null or guard.is_dead or guard.global_position.distance_to(_keys.global_position) > 4.0:
+			return
 	var now := Time.get_ticks_msec() / 1000.0
 	if now - _played_at < PLAY_EVERY:
 		return
@@ -54,8 +62,6 @@ func _request_note() -> void:
 	var note := NOTES[_next % NOTES.size()]
 	_next += 1
 	_play_note.rpc(note)
-	var game := get_tree().get_first_node_in_group("game")
-	var director := game.get("director") as MonsterDirector if game else null
 	if director:
 		director.make_noise(_keys.global_position, NOISE_SECONDS, NOISE_REACH)
 

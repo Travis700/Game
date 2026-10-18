@@ -131,6 +131,8 @@ const LOUD_AT := 5.0
 const PUSHABLE_MASS := 5.0
 ## How often the host sends where moving things are (seconds).
 const SYNC_EVERY := 0.1
+## At most this many moving things in one packet (each is 32 bytes).
+const POSES_PER_PACKET := 30
 
 ## Someone picked something up or let go of it (for the HUD).
 signal carried_changed
@@ -227,7 +229,7 @@ func request_throw(from: Vector3, direction: Vector3) -> void:
 		return
 	var peer := _sender()
 	var guard := director.guard_by_peer(peer)
-	if guard == null or not carried.has(peer) or from.distance_to(guard.global_position) > 3.0:
+	if guard == null or guard.is_dead or not carried.has(peer) or from.distance_to(guard.global_position) > 3.0:
 		return
 	var index: int = carried[peer]
 	direction = direction.normalized()
@@ -450,9 +452,11 @@ func _push_by_guards(delta: float) -> void:
 	var seen := {}
 	for guard in director.living_guards():
 		var at := guard.global_position
-		var last: Vector3 = _guard_steps.get(guard, at)
-		_guard_steps[guard] = at
-		seen[guard] = true
+		# (By instance id: a guard who leaves is freed, and a freed key can't be read back.)
+		var id := guard.get_instance_id()
+		var last: Vector3 = _guard_steps.get(id, at)
+		_guard_steps[id] = at
+		seen[id] = true
 		var step := (at - last) / maxf(delta, 0.001)
 		step.y = 0.0
 		if step.length() < 0.3 or step.length() > 12.0:
@@ -483,9 +487,9 @@ func _push_by_guards(delta: float) -> void:
 			if ball:
 				body.linear_velocity.y = maxf(body.linear_velocity.y, toward * 0.25)
 			_last_velocity[i] = body.linear_velocity
-	for guard: Node in _guard_steps.keys():
-		if not seen.has(guard):
-			_guard_steps.erase(guard)
+	for id: int in _guard_steps.keys():
+		if not seen.has(id):
+			_guard_steps.erase(id)
 
 
 ## Host: where every moving thing is, to everyone. Things that have just come to rest get one
@@ -505,8 +509,12 @@ func _send_poses() -> void:
 		elif _was_moving[i] and not body.freeze:
 			_place.rpc(i, body.global_transform, frame, false)
 		_was_moving[i] = moving
-	if not indices.is_empty() and multiplayer.has_multiplayer_peer() and not multiplayer.get_peers().is_empty():
-		_poses.rpc(frame, indices, data)
+	if indices.is_empty() or not multiplayer.has_multiplayer_peer() or multiplayer.get_peers().is_empty():
+		return
+	# In packets small enough not to be split up on the way (losing a piece would lose the lot).
+	for start in range(0, indices.size(), POSES_PER_PACKET):
+		var end := mini(start + POSES_PER_PACKET, indices.size())
+		_poses.rpc(frame, indices.slice(start, end), data.slice(start * 7, end * 7))
 
 
 # --- Every computer ------------------------------------------------------------------------

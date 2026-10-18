@@ -247,6 +247,16 @@ func _request_ready(on: bool) -> void:
 	_set_ready_count.rpc(_ready_peers.size(), multiplayer.get_peers().size())
 
 
+## Host: someone left; the tally goes out again without them.
+func recount_ready() -> void:
+	if not multiplayer.is_server() or not visible:
+		return
+	for gone: int in _ready_peers.keys():
+		if gone not in multiplayer.get_peers():
+			_ready_peers.erase(gone)
+	_set_ready_count.rpc(_ready_peers.size(), multiplayer.get_peers().size())
+
+
 ## Every computer: how many of the others are ready ("2 of 3 ready").
 @rpc("authority", "call_local", "reliable")
 func _set_ready_count(count: int, of: int) -> void:

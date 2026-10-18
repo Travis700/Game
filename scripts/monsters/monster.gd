@@ -468,7 +468,7 @@ func _search(delta: float) -> void:
 	halt()
 	face(hiding.door_of(_search_spot) - global_position)
 	_search_rattled += delta
-	if _search_rattled >= SEARCH_PULL_AFTER and hiding.gives_away(_search_guard):
+	if _search_rattled >= SEARCH_PULL_AFTER and not harmless and hiding.gives_away(_search_guard):
 		hiding.pull_out(_search_guard, self)
 		_end_search(true)
 		return

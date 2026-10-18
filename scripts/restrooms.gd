@@ -168,7 +168,7 @@ func _on_stall_used(by: Node, index: int) -> void:
 func _request_flush(index: int) -> void:
 	if not multiplayer.is_server() or index < 0 or index >= _flushers.size():
 		return
-	if not _flush_ready(index):
+	if not _flush_ready(index) or not _sender_can_reach(_flushers[index].global_position):
 		return
 	_refilled_at[index] = _now() + REFILL_SECONDS
 	_flush.rpc(index, false)
@@ -179,16 +179,27 @@ func _request_flush(index: int) -> void:
 
 @rpc("any_peer", "call_remote", "reliable")
 func _request_tap(index: int) -> void:
-	if not multiplayer.is_server() or index < 0 or index >= _sinks.size():
+	if not multiplayer.is_server() or index < 0 or index >= _sinks.size() or not _sender_can_reach((_sinks[index]["body"] as Node3D).global_position):
 		return
 	_set_tap.rpc(index, not _running[index], false)
 
 
 @rpc("any_peer", "call_remote", "reliable")
 func _request_stall(index: int) -> void:
-	if not multiplayer.is_server() or index < 0 or index >= _stalls.size():
+	if not multiplayer.is_server() or index < 0 or index >= _stalls.size() or not _sender_can_reach((_stalls[index]["hinge"] as Node3D).global_position):
 		return
 	_set_stall.rpc(index, not _open[index], false)
+
+
+## Host: is whoever asked alive and standing by it? (Their own computer checks too; this is
+## so a ghost, or someone across the school, can't.)
+func _sender_can_reach(at: Vector3) -> bool:
+	var director := _director()
+	if director == null:
+		return true
+	var peer := multiplayer.get_remote_sender_id()
+	var guard := director.guard_by_peer(peer if peer != 0 else multiplayer.get_unique_id())
+	return guard != null and not guard.is_dead and guard.global_position.distance_to(at) < 4.0
 
 
 func _flush_ready(index: int) -> bool:

@@ -330,9 +330,14 @@ func _return_floor_items() -> void:
 	for drop_id: int in _floor_owners.keys():
 		var owner_peer: int = _floor_owners[drop_id]
 		if _drops.has(drop_id):
-			if owner_peer in _connected_peers():
-				give(owner_peer, _drops[drop_id]["item"])
+			var item: String = _drops[drop_id]["item"]
 			_remove_drop.rpc(drop_id)
+			if owner_peer in _connected_peers() and _bag(owner_peer).size() < BAG_SIZE:
+				give(owner_peer, item)
+			else:
+				# No room (or they've gone): it waits in the vending machine's tray instead.
+				_spawn_drop.rpc(_next_drop, item, TRAY + Vector3(0, 0, randf_range(-0.25, 0.25)))
+				_next_drop += 1
 	_floor_owners.clear()
 
 
@@ -373,6 +378,11 @@ func owned_by(peer_id: int) -> Array:
 ## Host: a guard's player left; what they held is now kept in the save (see Night).
 func forget(peer_id: int) -> void:
 	_held.erase(peer_id)
+	# What they'd put down is in the save with the rest (see held_by): off the floor it goes.
+	for drop_id: int in _floor_owners.keys():
+		if _floor_owners[drop_id] == peer_id:
+			_floor_owners.erase(drop_id)
+			_remove_drop.rpc(drop_id)
 	_owned.erase(peer_id)
 
 
@@ -381,6 +391,9 @@ func send_state_to(peer_id: int) -> void:
 	for owner_peer: int in _owned:
 		for upgrade: String in _owned[owner_peer]:
 			_set_owned.rpc_id(peer_id, owner_peer, upgrade, true)
+	# Sensors, traps and decoys already put down (before the shift, too).
+	for id: int in _placed:
+		_place.rpc_id(peer_id, id, _placed[id]["item"], _placed[id]["position"])
 	# Anything still sitting in the vending machine's tray.
 	for drop_id: int in _drops:
 		_spawn_drop.rpc_id(peer_id, drop_id, _drops[drop_id]["item"], _drops[drop_id]["at"])
@@ -505,10 +518,14 @@ func give(peer_id: int, item: String) -> void:
 		_send_holding(peer_id)
 
 
-## Host: what a guard is carrying, in hotbar order.
+## Host: what a guard is carrying, in hotbar order (for saving: with what they've put down on
+## the floor, which is theirs again in the morning).
 func held_by(peer_id: int) -> Array[String]:
 	var items: Array[String] = []
 	items.assign(_bag(peer_id))
+	for drop_id: int in _floor_owners:
+		if _floor_owners[drop_id] == peer_id and _drops.has(drop_id) and items.size() < BAG_SIZE:
+			items.append(_drops[drop_id]["item"])
 	return items
 
 
@@ -607,6 +624,10 @@ func _request_pickup(drop_id: int) -> void:
 		return
 	var peer := _sender()
 	var item: String = _drops[drop_id]["item"]
+	var guard := director.guard_by_peer(peer)
+	var node: Node3D = _drops[drop_id]["node"]
+	if guard == null or guard.is_dead or guard.global_position.distance_to(node.global_position) > 4.0:
+		return
 	# The heavy-duty flashlight goes straight into the flashlight's slot.
 	if item == "flashlight" and owns(peer, item):
 		_tell(peer, "You've already got the heavy-duty flashlight.")

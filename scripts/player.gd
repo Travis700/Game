@@ -415,6 +415,7 @@ func uniform_color() -> Color:
 func set_dead(dead: bool) -> void:
 	if dead and is_local():
 		is_crouching = false
+		_set_body_height(_stand_height)
 	is_dead = dead
 	# Ghosts make no sound.
 	_footsteps.enabled = not dead
@@ -536,16 +537,28 @@ func set_crouching(on: bool) -> void:
 	if on == is_crouching:
 		return
 	if not on and not _room_to_stand():
-		message_shown.emit("No room to stand up here.", 2.0)
+		# (Asked every frame while run is held: say it now and then, not sixty times a second.)
+		var now := Time.get_ticks_msec()
+		if now - _told_no_room > 2500:
+			_told_no_room = now
+			message_shown.emit("No room to stand up here.", 2.0)
 		return
 	is_crouching = on
+	_set_body_height(CROUCH_BODY_HEIGHT if on else _stand_height)
+
+
+var _told_no_room := -100000
+
+
+## Shrinks or grows the body's capsule (standing on the floor either way).
+func _set_body_height(height: float) -> void:
 	var collider := $CollisionShape3D as CollisionShape3D
 	# The capsule is shared by every guard in the scene file: this one gets its own to shrink.
 	if not collider.has_meta("own_shape"):
 		collider.shape = collider.shape.duplicate()
 		collider.set_meta("own_shape", true)
 	var shape := collider.shape as CapsuleShape3D
-	shape.height = CROUCH_BODY_HEIGHT if on else _stand_height
+	shape.height = height
 	collider.position.y = shape.height * 0.5
 
 
@@ -556,7 +569,7 @@ var _stand_height := 1.8
 func _room_to_stand() -> bool:
 	var query := PhysicsShapeQueryParameters3D.new()
 	var probe := CapsuleShape3D.new()
-	probe.radius = 0.3
+	probe.radius = ((get_node("CollisionShape3D") as CollisionShape3D).shape as CapsuleShape3D).radius - 0.01
 	probe.height = _stand_height - 0.1
 	query.shape = probe
 	query.transform = Transform3D(Basis(), global_position + Vector3(0, _stand_height * 0.5 + 0.05, 0))
@@ -645,11 +658,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		message_shown.emit("Not from inside a cupboard.", 2.5)
 	elif event.is_action_pressed("use_item") and not is_dead:
 		item_use_requested.emit()
-	elif event.is_action_pressed("crouch") and not is_dead and not hiding:
+	elif event.is_action_pressed("crouch") and not is_dead and not hiding and seated_desk < 0:
 		set_crouching(not is_crouching)
-	elif event.is_action_pressed("drop_item") and not is_dead and not hiding:
+	elif event.is_action_pressed("drop_item") and not is_dead and not hiding and seated_desk < 0:
 		drop_requested.emit()
-	elif event.is_action_pressed("throw") and not is_dead and not hiding:
+	elif event.is_action_pressed("throw") and not is_dead and not hiding and seated_desk < 0:
 		throw_requested.emit()
 
 

@@ -1030,8 +1030,6 @@ func _catch_up_late_joiner(peer_id: int) -> void:
 		_camera_signal.rpc_id(peer_id, camera_index, false)
 	totems.send_state_to(peer_id)
 	director.lockers.send_state_to(peer_id)
-	for id: int in shop._placed:
-		shop._place.rpc_id(peer_id, id, shop._placed[id]["item"], shop._placed[id]["position"])
 	for slot: int in cameras.portable_spots:
 		cameras.place_portable.rpc_id(peer_id, slot, cameras.portable_spots[slot][0], cameras.portable_spots[slot][1])
 	if night.phone.ringing:
@@ -1120,6 +1118,8 @@ func _register_employee(badge: int, password: String, player_name := "", rank :=
 		if guard.name.to_int() != peer_id:
 			_set_rank.rpc_id(peer_id, guard.name.to_int(), guard.rank)
 	shop.send_state_to(peer_id)
+	# The briefing's clocked-in list.
+	_set_clocked_in.rpc_id(peer_id, PackedInt32Array(_clocked_in_peers))
 	if shift.state == Shift.State.ON_SHIFT:
 		_catch_up_late_joiner(peer_id)
 	doors.send_state_to(peer_id)
@@ -1162,6 +1162,9 @@ func _on_peer_disconnected(peer_id: int) -> void:
 		finale.drop(peer_id, last_at, true)
 	if hiding.hidden.has(peer_id):
 		hiding._set_hidden.rpc(peer_id, -1)
+	if shift.state == Shift.State.PRE_SHIFT:
+		_set_clocked_in.rpc(PackedInt32Array(shift.clocked_in_peers()))
+	night.report.recount_ready()
 	_update_guards_required(guard != null and not guard.is_dead)
 
 

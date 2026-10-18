@@ -116,7 +116,8 @@ func _watcher(guard: Guard) -> Monster:
 	if director.lockdown_left > 0.0:
 		return null
 	for monster in director.active_monsters():
-		if monster.searches_cupboards and not monster.is_searching() \
+		# (Not a harmless one, or one still in disguise: they haven't shown themselves yet.)
+		if monster.searches_cupboards and not monster.is_searching() and not monster.harmless and not monster.disguised() \
 				and monster.global_position.distance_to(guard.global_position) < SEEN_CLOSE \
 				and director.can_see(monster.eye_position(), guard):
 			return monster
