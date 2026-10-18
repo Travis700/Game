@@ -79,7 +79,7 @@ func _go_about(delta: float) -> void:
 		_target = guard
 		_answer_left = ANSWER_SECONDS
 		state = "register"
-		director.tell(guard.name.to_int(), "The Substitute looks up from its register. \"Guard %d?\"\nLook at it and press {use} to answer." % guard.slot)
+		director.tell(guard.name.to_int(), "The Substitute looks up from its register. \"%s?\"\nLook at it and press {use} to answer." % guard.display_name())
 
 
 func _take_register(delta: float) -> void:
@@ -94,6 +94,7 @@ func _take_register(delta: float) -> void:
 		_chase_left = CHASE_SECONDS
 		start_chase()
 		director.tell(_target.name.to_int(), "\"Absent.\" The Substitute closes the register. \"Detention.\"")
+		_write_up(_target.display_name())
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -135,6 +136,38 @@ func _on_state_changed(new_state: String) -> void:
 		Sfx.play_at(self, Sfx.notes([330.0, 0.0, 294.0], 0.18, 0.25, "square"), 0.0, 20.0)
 	elif new_state == "detention":
 		SoundBank.play_at(self, "hand_bell", 2.0, 40.0, Sfx.notes([1200.0, 1200.0, 0.0, 1200.0, 1200.0], 0.12, 0.3, "square"))
+
+
+## Host: the name goes up behind it, in red marker, for the rest of the night (on the board
+## if it's at the front of a classroom).
+func _write_up(who: String) -> void:
+	# (It faces -Z, like everything else: behind it is +Z.)
+	var back := Vector3(global_basis.z.x, 0, global_basis.z.z).normalized()
+	var from := global_position + Vector3(0, 1.6, 0)
+	var query := PhysicsRayQueryParameters3D.create(from, from + back * 3.0, 1)
+	query.exclude = [get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return
+	_show_writing.rpc(hit["position"], hit["normal"], who)
+
+
+@rpc("authority", "call_local", "reliable")
+func _show_writing(at: Vector3, normal: Vector3, who: String) -> void:
+	var writing := Label3D.new()
+	writing.text = "DETENTION\n%s" % who.to_upper()
+	writing.font_size = 64
+	writing.pixel_size = 0.004
+	writing.modulate = Color(0.75, 0.08, 0.06)
+	writing.outline_size = 0
+	writing.shaded = true
+	writing.double_sided = false
+	writing.rotation.z = randf_range(-0.08, 0.08)
+	get_parent().add_child(writing)
+	writing.global_position = at + normal * 0.02
+	writing.look_at(writing.global_position - normal, Vector3.UP)
+	# Gone with it at the end of the night.
+	tree_exiting.connect(writing.queue_free)
 
 
 func _build_body() -> void:

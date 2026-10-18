@@ -24,6 +24,7 @@
 - Monsters search the cupboard you hid in. Hold still and keep quiet.
 - Monsters bang on shut doors in a chase; walkies crackle when one is near; everyone nearby hears a catch.
 - The chase music only plays in a real chase.
+- Give the Substitute detention and your name goes up on the wall behind it, in red, for the night.
 
 **Playing together**
 - No more names floating over heads: everyone wears an employee badge with their Steam name on
