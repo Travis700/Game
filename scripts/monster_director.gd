@@ -1046,8 +1046,9 @@ func nerve_reach(guard: Guard) -> float:
 
 ## Host: a loud noise somewhere (e.g. a camera speaker), for monsters that hunt by sound.
 ## `reach`: how far this noise carries, if further than a monster would usually hear.
-func make_noise(at: Vector3, seconds := 6.0, reach := 0.0) -> void:
-	_noises.append([at, _minutes_clock() + seconds, reach])
+## `faint`: a quiet noise (e.g. a spirit box's static), only heard by monsters this close.
+func make_noise(at: Vector3, seconds := 6.0, reach := 0.0, faint := INF) -> void:
+	_noises.append([at, _minutes_clock() + seconds, reach, faint])
 
 
 ## Host: the newest noise still going within `reach` of `from`, or Vector3.INF.
@@ -1055,7 +1056,8 @@ func noise_near(from: Vector3, reach: float) -> Vector3:
 	var now := _minutes_clock()
 	var found := Vector3.INF
 	for noise: Array in _noises:
-		if float(noise[1]) >= now and (noise[0] as Vector3).distance_to(from) < maxf(reach, float(noise[2]) if noise.size() > 2 else 0.0):
+		var carries := minf(maxf(reach, float(noise[2]) if noise.size() > 2 else 0.0), float(noise[3]) if noise.size() > 3 else INF)
+		if float(noise[1]) >= now and (noise[0] as Vector3).distance_to(from) < carries:
 			found = noise[0]
 	_noises = _noises.filter(func(noise: Array) -> bool: return float(noise[1]) >= now)
 	return found

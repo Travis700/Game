@@ -66,6 +66,10 @@ const ITEMS := {
 		"name": "Box of donuts for the district", "price": 300, "rank": 3,
 		"about": "Press {item} to send it to the district office: they forget one of the team's write-ups.",
 	},
+	"spirit_box": {
+		"name": "Spirit box", "price": 120, "rank": 2,
+		"about": "Press {item} to switch it on or off. While it's on it hisses and sweeps the stations, and anyone within about 10 metres hears caught teammates who talk near it, through the static. Monsters close by hear the hiss now and then.",
+	},
 	"air_horn": {
 		"name": "Air horn", "price": 70, "rank": 4,
 		"about": "Press {item} to blast it: every monster within 15 metres freezes for 6 seconds. Everything in the school hears it.",
@@ -78,7 +82,7 @@ const BAG_SIZE := 4
 ## How close a teammate has to be to hand them something.
 const GIVE_REACH := 2.5
 ## Items used or put down with G (the rest are fitted with E).
-const USED_WITH_G: Array[String] = ["camera_kit", "portable_camera", "radio", "motion_sensor", "glue_trap", "energy_drink", "flashlight", "air_horn", "coffee", "emf", "decoy_radio", "donuts"]
+const USED_WITH_G: Array[String] = ["camera_kit", "portable_camera", "radio", "motion_sensor", "glue_trap", "energy_drink", "flashlight", "air_horn", "coffee", "emf", "decoy_radio", "donuts", "spirit_box"]
 ## The decoy radio: seconds before it starts, and how long it plays.
 const DECOY_DELAY := 8.0
 const DECOY_SECONDS := 20.0
@@ -92,6 +96,10 @@ const TRAP_SECONDS := 20.0
 const BOOST_SECONDS := 30.0
 const HORN_RANGE := 15.0
 const HORN_SECONDS := 6.0
+## A switched-on spirit box: every so often (seconds) its hiss is loud enough for a monster this
+## close (metres) to notice.
+const SPIRIT_NOISE_EVERY := Vector2(18.0, 35.0)
+const SPIRIT_NOISE_REACH := 12.0
 ## Where purchases land: the tray at the bottom of the vending machine.
 const TRAY := Vector3(18.75, 0.15, 16.6)
 
@@ -120,6 +128,8 @@ var _floor_owners: Dictionary = {}
 ## Host: personal upgrades each guard has fitted for the run: peer -> ["flashlight", "radio"].
 var _owned: Dictionary = {}
 var _box_material: StandardMaterial3D
+## Host: peer -> seconds until their switched-on spirit box next hisses loud enough for monsters.
+var _spirit_boxes: Dictionary = {}
 
 
 func _ready() -> void:
@@ -242,6 +252,11 @@ func _request_use(index: int) -> void:
 				night.write_ups -= 1
 				night._send_quota()
 				_tell(peer, "The district office sends its thanks. One write-up quietly disappears.")
+		"spirit_box":
+			var on := not _spirit_boxes.has(peer)
+			set_spirit_box(peer, on)
+			_tell(peer, "You switch the spirit box on. It hisses, sweeping the stations. Anyone caught can talk to you through it now. Keep it quiet." if on
+					else "You switch the spirit box off. Quiet again.")
 		"air_horn":
 			if take(peer, item):
 				var frozen := 0
@@ -384,6 +399,7 @@ func forget(peer_id: int) -> void:
 			_floor_owners.erase(drop_id)
 			_remove_drop.rpc(drop_id)
 	_owned.erase(peer_id)
+	set_spirit_box(peer_id, false)
 
 
 ## Host: brings a player who just joined up to date on everyone's upgrades.
@@ -394,6 +410,9 @@ func send_state_to(peer_id: int) -> void:
 	# Sensors, traps and decoys already put down (before the shift, too).
 	for id: int in _placed:
 		_place.rpc_id(peer_id, id, _placed[id]["item"], _placed[id]["position"])
+	# Spirit boxes switched on right now.
+	for owner_peer: int in _spirit_boxes:
+		_set_spirit_box.rpc_id(peer_id, owner_peer, true)
 	# Anything still sitting in the vending machine's tray.
 	for drop_id: int in _drops:
 		_spawn_drop.rpc_id(peer_id, drop_id, _drops[drop_id]["item"], _drops[drop_id]["at"])
@@ -413,8 +432,69 @@ func _drink() -> void:
 		guard.boost_left = BOOST_SECONDS
 
 
+## Host: switches a guard's spirit box on or off, on every computer.
+func set_spirit_box(peer_id: int, on: bool) -> void:
+	if on == _spirit_boxes.has(peer_id):
+		return
+	if on:
+		_spirit_boxes[peer_id] = randf_range(SPIRIT_NOISE_EVERY.x, SPIRIT_NOISE_EVERY.y)
+	else:
+		_spirit_boxes.erase(peer_id)
+	_set_spirit_box.rpc(peer_id, on)
+
+
+## Every computer: a guard's spirit box goes on (hissing on them) or off.
+@rpc("authority", "call_local", "reliable")
+func _set_spirit_box(peer_id: int, on: bool) -> void:
+	var guard := director.guard_by_peer(peer_id)
+	if guard == null:
+		return
+	guard.spirit_box_on = on
+	var box := guard.get_node_or_null("SpiritBox")
+	if on and box == null:
+		guard.add_child(SpiritBox.new())
+	elif not on and box:
+		box.queue_free()
+
+
+## Host: a ghost left a cold spot at `at`. Any switched-on spirit box near it spits out a word:
+## "run" with a monster close to its holder, "behind" if the spot is behind them, else "here" or
+## "help".
+func spirit_word_near(at: Vector3) -> void:
+	for peer_id: int in _spirit_boxes:
+		var guard := director.guard_by_peer(peer_id)
+		if guard == null or guard.global_position.distance_to(at) > SpiritBox.RANGE:
+			continue
+		var word: String = ["here", "help"].pick_random()
+		var to := at - guard.global_position
+		if to.length() > 1.0 and (-guard.global_basis.z).dot(to.normalized()) < -0.4:
+			word = "behind"
+		for monster in director.active_monsters():
+			if monster.global_position.distance_to(guard.global_position) < 15.0:
+				word = "run"
+		_spirit_word.rpc(peer_id, word)
+
+
+## Every computer: that guard's spirit box says a word.
+@rpc("authority", "call_local", "reliable")
+func _spirit_word(peer_id: int, word: String) -> void:
+	var guard := director.guard_by_peer(peer_id)
+	var box := guard.get_node_or_null("SpiritBox") as SpiritBox if guard else null
+	if box:
+		box.say(word)
+
+
 ## Host, every frame of the night: sensors notice monsters walking by, traps catch them.
 func update(delta: float) -> void:
+	for peer_id: int in _spirit_boxes.keys():
+		var holder := director.guard_by_peer(peer_id)
+		if holder == null or holder.is_dead:
+			set_spirit_box(peer_id, false)
+			continue
+		_spirit_boxes[peer_id] = float(_spirit_boxes[peer_id]) - delta
+		if _spirit_boxes[peer_id] <= 0.0:
+			_spirit_boxes[peer_id] = randf_range(SPIRIT_NOISE_EVERY.x, SPIRIT_NOISE_EVERY.y)
+			director.make_noise(holder.global_position, 2.0, 0.0, SPIRIT_NOISE_REACH)
 	for id: int in _placed.keys():
 		var placed: Dictionary = _placed[id]
 		placed["quiet"] = maxf(placed["quiet"] - delta, 0.0)
@@ -433,6 +513,8 @@ func update(delta: float) -> void:
 
 ## Host: the night's over, so the sensors, traps and portable cameras get cleared away.
 func clear_placed() -> void:
+	for peer_id: int in _spirit_boxes.keys():
+		set_spirit_box(peer_id, false)
 	_return_floor_items()
 	for id: int in _placed.keys():
 		_remove_placed.rpc(id)
@@ -701,6 +783,9 @@ func _send_wallet(peer_id: int) -> void:
 
 
 func _send_holding(peer_id: int) -> void:
+	# A spirit box put down, handed over or spilled goes off.
+	if _spirit_boxes.has(peer_id) and not "spirit_box" in _bag(peer_id):
+		set_spirit_box(peer_id, false)
 	var items := PackedStringArray(_bag(peer_id))
 	if peer_id == multiplayer.get_unique_id():
 		_set_holding(items)

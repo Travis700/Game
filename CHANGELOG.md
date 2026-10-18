@@ -31,6 +31,11 @@
 - The guard room board is a briefing before the shift: who's clocked in, what's been seen, a plan.
 - Steam friends of the host don't need the room password.
 - Spectating no longer shows the inside of your teammate's head.
+- Being caught is more fun: as a ghost, press Tab to watch the school's cameras from anywhere
+  (A / D or the mouse wheel to flick between them).
+- New at the vending machine: the spirit box (120, rank 2). Switch it on with G and anyone near it hears
+  caught teammates who talk close by, through the static. A ghost's cold spot makes it say a word.
+  Monsters nearby hear the hiss now and then.
 
 **Settings**
 - Effects, ambience and music volumes; invert mouse look; head bob; reduce flashing and shaking.

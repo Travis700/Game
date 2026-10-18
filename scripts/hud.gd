@@ -264,7 +264,7 @@ func set_glare(amount: float, at: Vector2) -> void:
 
 
 ## The faint blue look and reminder while you're a ghost.
-const GHOST_NOTE := "You're a ghost. A teammate can try to bring you back at a revive totem.\n{use}: leave a cold spot the living can see.   {item}: watch through a teammate's eyes."
+const GHOST_NOTE := "You're a ghost. A teammate can try to bring you back at a revive totem.\n{use}: leave a cold spot the living can see.   {item}: watch through a teammate's eyes.   {clip}: watch the cameras ({left} / {right} to flick)."
 
 
 func set_ghost(on: bool) -> void:

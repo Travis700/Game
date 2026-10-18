@@ -19,6 +19,9 @@ signal item_use_requested
 signal leave_hiding_requested
 ## G as a ghost: watch through the next living teammate's eyes (or back to your own).
 signal spectate_requested
+## Tab as a ghost: open or close the school's cameras. While they're open, "prev" and "next"
+## flick between them and "close" shuts them.
+signal ghost_cameras_requested(action: String)
 ## E as a ghost: leave a cold spot where you're looking, for the living to see.
 signal ghost_ping_requested(at: Vector3, touched: Object)
 ## Right click (or T): throw what you picked up off the floor, if anything.
@@ -112,6 +115,11 @@ const HIDING_YAW_LIMIT := deg_to_rad(70)
 var has_radio := false
 ## True once this guard has clipped on an EMF reader: its lights show on their screen.
 var has_emf := false
+## True while this guard's spirit box is switched on (vending machine). Set by Shop on every
+## computer, so everyone near hears it.
+var spirit_box_on := false
+## True while this ghost is watching the school's cameras (Tab). They stand still meanwhile.
+var ghost_watching := false
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _bob_time := 0.0
@@ -635,7 +643,12 @@ func stand(at: Vector3) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if input_blocked:
 		return
-	if event.is_action_pressed("clipboard"):
+	if ghost_watching:
+		_handle_ghost_camera_input(event)
+		return
+	if event.is_action_pressed("clipboard") and is_dead:
+		ghost_cameras_requested.emit("open")
+	elif event.is_action_pressed("clipboard"):
 		clipboard_requested.emit()
 	elif event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if not look_locked:
@@ -700,6 +713,17 @@ func _look(relative: Vector2) -> void:
 		rotation.y = _hide_yaw + clampf(wrapf(rotation.y - _hide_yaw, -PI, PI), -HIDING_YAW_LIMIT, HIDING_YAW_LIMIT)
 
 
+## A ghost watching the cameras: left / right (or the mouse wheel) flick between them, and Tab
+## or Esc goes back. Nothing else works meanwhile (no cold spots from here).
+func _handle_ghost_camera_input(event: InputEvent) -> void:
+	if event.is_action_pressed("move_left") or event.is_action_pressed("slot_prev"):
+		ghost_cameras_requested.emit("prev")
+	elif event.is_action_pressed("move_right") or event.is_action_pressed("slot_next"):
+		ghost_cameras_requested.emit("next")
+	elif event.is_action_pressed("clipboard") or event.is_action_pressed("pause"):
+		ghost_cameras_requested.emit("close")
+
+
 ## Returns true if the event was a desk control.
 func _handle_desk_input(event: InputEvent) -> bool:
 	var action := ""
@@ -739,10 +763,10 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= _gravity * delta
 
 	var input := Vector2.ZERO
-	if not input_blocked and not hiding:
+	if not input_blocked and not hiding and not ghost_watching:
 		input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (transform.basis * Vector3(input.x, 0, input.y)).normalized()
-	var wants_to_run := not input_blocked and not hiding and Input.is_action_pressed("sprint") and input.y < 0.0
+	var wants_to_run := not input_blocked and not hiding and not ghost_watching and Input.is_action_pressed("sprint") and input.y < 0.0
 	# Running stands you up (if there's room).
 	if wants_to_run and is_crouching:
 		set_crouching(false)

@@ -38,6 +38,8 @@ const SOUNDS := {
 	"Clutter:landed": "Something clattering",
 	"Echo:voice": "A teammate's voice, from somewhere empty",
 	"Radio:ghost": "A voice through the static on your radio",
+	"SpiritBox:voice": "A voice through the spirit box's static",
+	"SpiritBox:word": "A word spat out of the spirit box",
 	"Noise:radio": "A radio playing, very quietly",
 	"Noise:static": "A TV hissing static",
 	"Noise:whisper": "Someone whispering",

@@ -12,7 +12,7 @@ const SHORT := {
 	"motion_sensor": "Motion\nsensor", "glue_trap": "Glue trap", "portable_camera": "Portable\ncamera",
 	"radio": "Walkie-\ntalkie", "energy_drink": "Energy\ndrink", "flashlight": "Heavy-duty\nflashlight",
 	"emf": "EMF\nreader", "coffee": "Coffee", "decoy_radio": "Decoy\nradio", "donuts": "Donuts",
-	"air_horn": "Air horn",
+	"air_horn": "Air horn", "spirit_box": "Spirit box",
 }
 
 ## The guard whose hands these are. Set by Main.
@@ -87,6 +87,11 @@ func refresh() -> void:
 			var on := guard != null and guard.flashlight.visible
 			label.text = ("Heavy-duty torch" if bright else "Flashlight") + ("\nON" if on else "\noff")
 			label.modulate = Color(1.0, 0.95, 0.75) if on else Color(1, 1, 1, 0.7)
+		elif i - 1 < _items.size() and _items[i - 1] == "spirit_box":
+			# Shows whether it's switched on (G).
+			var on := guard != null and guard.spirit_box_on
+			label.text = "Spirit box\n" + ("ON" if on else "off")
+			label.modulate = Color(0.7, 0.9, 1.0) if on else Color.WHITE
 		elif i - 1 < _items.size():
 			label.text = SHORT.get(_items[i - 1], Shop.item_name(_items[i - 1]))
 			label.modulate = Color.WHITE
@@ -112,7 +117,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		refresh()
 
 
-## The flashlight's state as last drawn ("on?bright?").
+## The flashlight's (and spirit box's) state as last drawn ("on?bright?box on?").
 var _shown := ""
 
 
@@ -121,7 +126,7 @@ func _process(_delta: float) -> void:
 	if not visible:
 		return
 	# The flashlight's slot shows whether it's on (switched with F or the left mouse button).
-	var state := "%s%s" % [guard.flashlight.visible, guard.bright_flashlight]
+	var state := "%s%s%s" % [guard.flashlight.visible, guard.bright_flashlight, guard.spirit_box_on]
 	if state != _shown:
 		_shown = state
 		refresh()

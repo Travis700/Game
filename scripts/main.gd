@@ -599,6 +599,7 @@ func _notification(what: int) -> void:
 
 ## Closes every menu, e.g. when your guard is caught or the night report comes up.
 func _close_all_ui() -> void:
+	_close_ghost_cameras()
 	clipboard.close()
 	keypad.close()
 	vending.close()
@@ -618,6 +619,9 @@ func _process(_delta: float) -> void:
 	if _spectating != null and (not is_instance_valid(_spectating) or _spectating.is_dead
 			or _local_guard == null or not _local_guard.is_dead):
 		_watch(null)
+	# The same for the cameras a ghost is watching.
+	if _ghost_camera >= 0 and (_local_guard == null or not _local_guard.is_dead or shift.state == Shift.State.REPORT):
+		_close_ghost_cameras()
 	var guards := players.get_child_count()
 	var status := "Solo" if _mode == "solo" else "%s · %d guard%s" % [_mode, guards, "" if guards == 1 else "s"]
 	# The room code is for getting in: shown before the shift, not all night (or on a stream).
@@ -1348,6 +1352,7 @@ func on_local_guard_ready(guard: Guard) -> void:
 			return
 		shop.request_drop(hud.hotbar.selected - 1, _teammate_in_front(guard)))
 	guard.spectate_requested.connect(_spectate_next)
+	guard.ghost_cameras_requested.connect(_on_ghost_cameras)
 	guard.item_use_requested.connect(func() -> void:
 		if not guard_room.try_install():
 			shop.request_use(hud.hotbar.item_slot()))
@@ -1701,6 +1706,8 @@ func _request_ghost_ping(at: Vector3) -> void:
 		return
 	_ghost_ping_at[guard.employee_number] = now + GHOST_PING_EVERY
 	_ghost_ping.rpc(at, guard.slot)
+	# A switched-on spirit box near the cold spot spits out a word.
+	shop.spirit_word_near(at)
 
 
 ## Every computer: a cold blue glow that fades, and a chill. The living see it too.
@@ -1927,6 +1934,62 @@ func _show_body_to_viewer(guard: Guard, shown: bool) -> void:
 	guard.set_body_layers(1 if shown else Guard.SELF_LAYER)
 
 
+# --- Ghosts watching the cameras ---------------------------------------------------------------
+
+## The camera this player's ghost is watching full screen (Tab), or -1. Only ever this
+## computer's business: watching changes nothing for anyone else, and it's look only (no flags,
+## no speaker noise from here).
+var _ghost_camera := -1
+## The camera a ghost last watched, to open on it again.
+var _ghost_camera_last := 0
+
+
+## A ghost pressed Tab ("open"), flicked between cameras ("prev" / "next"), or went back ("close").
+func _on_ghost_cameras(action: String) -> void:
+	if _local_guard == null or not _local_guard.is_dead:
+		return
+	match action:
+		"open":
+			if shift.state == Shift.State.REPORT:
+				return
+			var open := cameras.open_cameras()
+			if open.is_empty():
+				return
+			_ghost_camera = _ghost_camera_last if _ghost_camera_last in open else open[0]
+			_local_guard.ghost_watching = true
+			_local_guard.look_locked = true
+			_show_ghost_camera()
+			SoundBank.play_flat(self, "monitor_beep", -14.0)
+		"prev", "next":
+			if _ghost_camera < 0:
+				return
+			var open := cameras.open_cameras()
+			var at := open.find(_ghost_camera)
+			_ghost_camera = open[(maxi(at, 0) + (-1 if action == "prev" else 1) + open.size()) % open.size()]
+			_show_ghost_camera()
+		"close":
+			_close_ghost_cameras()
+
+
+func _show_ghost_camera() -> void:
+	_ghost_camera_last = _ghost_camera
+	# Only the feed being watched is drawn (every frame while it's up).
+	cameras.set_focus(SecurityCameras.key(_ghost_camera, false))
+	hud.show_feed(cameras.texture(_ghost_camera), "GHOST   ·   %s   ·   %s / %s  change camera   ·   %s  back" % [
+		cameras.title(_ghost_camera), Controls.key_name("move_left"), Controls.key_name("move_right"), Controls.key_name("clipboard")])
+
+
+func _close_ghost_cameras() -> void:
+	if _ghost_camera < 0:
+		return
+	_ghost_camera = -1
+	cameras.set_focus(-1)
+	hud.hide_feed()
+	if _local_guard and is_instance_valid(_local_guard):
+		_local_guard.ghost_watching = false
+		_local_guard.look_locked = false
+
+
 ## This lockdown's drill, shown under the objective while it lasts.
 var _drill_rule := ""
 
@@ -2080,7 +2143,7 @@ func _guard_died(peer_id: int, by: String, at: Vector3, from := Vector3.INF) -> 
 		hud.set_ghost(true)
 		var tip := FieldGuide.caught_tip(by)
 		if players.get_child_count() > 1 and not hud.solo:
-			tip += ("\n" if tip != "" else "") + "As a ghost: %s leaves a cold spot. Stand right by a teammate carrying a walkie-talkie and talk: they'll hear you through the static, a few seconds at a time." % Controls.key_name("interact")
+			tip += ("\n" if tip != "" else "") + "As a ghost: %s leaves a cold spot and %s watches the cameras. Talk near a teammate with a spirit box switched on (or right by a walkie-talkie) and they'll hear you through the static." % [Controls.key_name("interact"), Controls.key_name("clipboard")]
 		hud.show_message("You were caught by %s.%s" % [by, "\n" + tip if tip != "" else ""], 9.0 if tip != "" else 4.0)
 		SoundBank.play_flat(self, "stinger", 0.0, Sfx.notes([110.0, 104.0, 98.0, 92.0], 0.35, 0.4, "saw"))
 	else:

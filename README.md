@@ -242,6 +242,11 @@ Some items need a rank (in brackets); the machine shows which.
   but everything in the school hears it, and comes to look once the freeze wears off.
 - **Decoy radio (60, rank 2):** press G to put it down. Eight seconds later it blares music for twenty, and
   everything that hunts by sound goes to look.
+- **Spirit box (120, rank 2):** press G to switch it on or off (the hotbar slot says which). While it's on it
+  hisses quietly, sweeping the stations, and everyone within about 10 metres of it hears any caught teammate
+  who talks near it, through the static, for as long as they talk (it drops out for a moment now and then).
+  A ghost's cold spot near it makes it spit out a word: "here", "behind", "run" or "help". The catch:
+  monsters close by hear the hiss now and then.
 - **Box of donuts for the district (300, rank 3):** press G to send it: the district forgets one write-up.
   Each box the team sends in a run costs 100 more than the last.
 
@@ -255,7 +260,8 @@ ticked Hardcore, which sends a wiped team back to night 1 with nothing).
 Talk to your team in the game. Voices come from each guard and fade with distance, so if you split
 up you can't hear each other, and a wall between you muffles them. Ghosts hear the living, but only other
 ghosts hear a ghost (ghosts hear each other anywhere in the school), except that a ghost standing right by
-a teammate who carries a walkie-talkie breaks through on it, a few seconds of static-wrapped voice at a time.
+a teammate who carries a walkie-talkie breaks through on it, a few seconds of static-wrapped voice at a time,
+and a ghost near a switched-on spirit box comes through it for everyone near the box, as long as they talk.
 Anyone can mute another player from the Esc menu.
 
 - **Hold V to talk** (push to talk). In the Esc menu you can switch to **Open mic** (it sends whenever
@@ -325,7 +331,9 @@ The real **night cleaner** works every night pushing a mop cart. They're harmles
 only other ghosts can see you. Press E to leave a cold spot where you're looking: a blue glow and a
 chill the living can see, so you can still point things out to them. E on a light switch you're standing by
 flicks it (once every few seconds). Press G to watch through a living teammate's eyes
-(G again for the next, and back to yourself). Each death costs every guard 50 points. If the whole team is caught,
+(G again for the next, and back to yourself). Press Tab to watch the school's cameras from anywhere
+(A / D or the mouse wheel flick between them, Tab or Esc goes back); you can look, not flag. Talk near a
+teammate's switched-on spirit box and they hear you, and a cold spot by it makes it say a word. Each death costs every guard 50 points. If the whole team is caught,
 the run goes back to the last checkpoint (nights 1, 4 and 7) with your gear and half your points; on
 Hardcore, back to night 1 with nothing.
 
@@ -386,10 +394,10 @@ it runs; that's normal for games that aren't signed (Steam builds don't show it)
 | 1-5 / mouse wheel | Pick a hotbar slot (slot 1 is the flashlight) |
 | E | Use. Press E on the time clock in the guard room to clock in and start the night. Hold E on punch stations and the breaker. Press E on a light switch (just inside each room's door) to turn the room's lights on or off. |
 | Esc | Menu: mouse sensitivity, field of view, brightness, volume (and effects, ambience and music separately), voice chat, captions, change keys, graphics (resolution, anti-aliasing, shadows, ambient occlusion and haze, bounced light, long grass, film grain, V-sync), fullscreen, comfort (invert mouse look, head bob, reduce flashing and shaking), leave the game (pauses solo; in a group the night keeps going) |
-| Tab | Clipboard: log anything odd you spot (after clocking in); its Field guide button shows what you know about each monster |
+| Tab | Clipboard: log anything odd you spot (after clocking in); its Field guide button shows what you know about each monster. As a ghost: watch the cameras (A / D or the mouse wheel to change camera) |
 | X | Put down the thing in the picked hotbar slot, or hand it to the teammate you're looking at |
 | Right mouse button / T | Throw what you picked up off the floor |
-| G | Use or put down the thing in the picked hotbar slot (sensors, traps, energy drink, coffee, EMF reader, air horn, decoy radio, donuts). As a ghost: watch through a teammate's eyes |
+| G | Use or put down the thing in the picked hotbar slot (sensors, traps, energy drink, coffee, EMF reader, air horn, decoy radio, donuts; switches a spirit box on or off). As a ghost: watch through a teammate's eyes |
 | Q | Mark a spot for the team (at a desk: flag the camera) |
 | R | At a desk, full screen: compare the camera with tonight's photo |
 | V | Push to talk (voice chat) |
@@ -433,7 +441,7 @@ LB push to talk, RT walkie-talkie, Start menu. In menus, the D-pad moves and A s
 - `scripts/lockers.gd` — the hallway locker doors and the Locker Thing.
 - `scripts/grass.gd`, `shaders/grass.gdshader` — the long grass on the lawns outside.
 - `scripts/shop.gd`, `scripts/vending_ui.gd` — the vending machine and carrying items.
-- `scripts/totems.gd` — revive totems.
+- `scripts/totems.gd` — revive totems. `scripts/spirit_box.gd` — a switched-on spirit box's hiss and words.
 - `scripts/sfx.gd` — simple generated sounds (whistle, humming, lockers).
 - `scripts/hud.gd` — crosshair, prompts and messages.
 - `scripts/controls.gd` — key bindings.

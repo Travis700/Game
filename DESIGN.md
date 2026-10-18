@@ -87,6 +87,8 @@ Each player has their **own clipboard and their own points.**
 ## 8. Death, ghosts and revives
 
 - A guard who dies becomes a **ghost**. Ghosts can move around and watch, but can't interact with anything.
+- **Ghosts watch the cameras.** Tab opens the school's camera feeds full screen from anywhere (left / right or the mouse wheel flick between the open ones, Tab or Esc closes). Look only: no flags, no speaker noise, no cold spots while it's up. Only the watched (normal, not spectral) feed is drawn, every frame, and only on that ghost's computer. It closes if they're revived or the report comes up.
+- **Spirit box.** A living guard's switched-on spirit box (G toggles; host-tracked, synced to everyone, replayed to late joiners) hisses quietly with sweeping clicks, heard within 10 m. A ghost within 10 m of it is heard by the living within 10 m of it, through the walkie's Radio bus, for as long as they talk, cutting out 0.3 s in every 1.7 s; decided on each listener's computer. A ghost's cold spot within 10 m of it makes the box say a word to everyone near it ("run" with a monster within 15 m of the holder, "behind" if the spot is behind them, else "here" or "help"). Every 18–35 s the hiss is a faint 2 s noise only monsters within 12 m notice. It goes off when its holder is caught, puts it down or hands it over, and in the morning.
 - **Revive totems** are hidden around the map. Using one is a dice roll: **4 in 6 revives** a dead teammate, **2 in 6 summons a monster** near the totem (odds shown on the totem; tunable). Rarer totems or shop items may improve the odds.
 - **If every guard dies, the run goes back to the last checkpoint** (nights 1, 4 and 7, or 1 and 5 from Grade 3) with gear kept and points halved; on Hardcore it restarts from night 1 with nothing. A solo guard gets one second wind a night (Grade 5: none).
 
@@ -163,8 +165,9 @@ Which monsters are unlocked on which night is still to be set (section 14).
 | Box of donuts for the district | 300 (+100 for each box already sent this run) | Removes one of the team's write-ups. |
 | Pocket EMF reader | 150 | Personal, for the run: 1–4 by distance to the nearest monster, 5 for the evidence monsters. |
 | Thermos of coffee | 30 | +40 nerve. |
+| Spirit box | 120 | Switched on and off with G. Lets the living near it hear ghosts near it, and says a word at a ghost's cold spot; monsters within 12 m hear its hiss now and then. |
 
-**Rank locks:** spectral camera kit, glue trap and decoy radio need rank 2, portable camera, heavy-duty flashlight and donuts rank 3, air horn rank 4.
+**Rank locks:** spectral camera kit, glue trap, decoy radio and spirit box need rank 2, portable camera, heavy-duty flashlight and donuts rank 3, air horn rank 4.
 
 ## 11b. Ranks
 

@@ -2,7 +2,7 @@ class_name VoiceChat
 extends Node
 ## Proximity voice chat. Each player's voice comes out of their guard, fading with distance, so
 ## guards who split up can't hear each other. The dead hear the living, but only other ghosts
-## hear the dead.
+## hear the dead (bar through a walkie-talkie or a switched-on spirit box).
 ##
 ## Monsters can hear it too: the host is told how loud each guard is talking (see
 ## MonsterDirector.voice_reach), and some monsters come for the noise.
@@ -57,6 +57,13 @@ const GHOST_CLIP := 3.0
 const GHOST_CLIP_EVERY := 20.0
 ## Peer id -> when (s) that ghost's current burst began, on this computer.
 var _ghost_clip_from: Dictionary = {}
+## A switched-on spirit box (vending machine) lets a ghost within SpiritBox.RANGE of it be heard
+## by the living within that range of it too: for as long as they talk, but it cuts out for a
+## moment now and then as it sweeps (SPIRIT_DROPOUT seconds in every SPIRIT_SWEEP).
+const SPIRIT_SWEEP := 1.7
+const SPIRIT_DROPOUT := 0.3
+## Peer id -> when that ghost was last captioned as coming through a spirit box.
+var _spirit_caption_at: Dictionary = {}
 
 var _mic_player: AudioStreamPlayer
 var _capture: AudioEffectCapture
@@ -328,7 +335,13 @@ func _play(speaker: int, packet: PackedByteArray) -> void:
 		return
 	# Ghosts hear everyone; the living only hear the living (bar a ghost on their radio).
 	if guard.is_dead and not local_guard.is_dead:
-		if _ghost_breaks_through(speaker, guard):
+		var box := spirit_box_carrying(guard)
+		if box:
+			# The sweep: now and then a moment of the ghost is lost in the hiss.
+			if fmod(Time.get_ticks_msec() / 1000.0, SPIRIT_SWEEP) >= SPIRIT_DROPOUT:
+				_play_radio(speaker, packet)
+			_caption_spirit(speaker, box)
+		elif _ghost_breaks_through(speaker, guard):
 			_play_radio(speaker, packet)
 		return
 	# Untyped first: the player may have been freed along with a guard who left.
@@ -358,6 +371,29 @@ func _play(speaker: int, packet: PackedByteArray) -> void:
 			volume += MUFFLED_DB
 	player.volume_db = volume
 	_push(player, speaker, packet)
+
+
+## The guard whose switched-on spirit box carries this ghost's voice to the local guard (both
+## within SpiritBox.RANGE of it), or null.
+func spirit_box_carrying(ghost: Guard) -> Guard:
+	if director == null or local_guard == null or local_guard.is_dead:
+		return null
+	for holder in director.living_guards():
+		if holder.spirit_box_on and holder.global_position.distance_to(ghost.global_position) < SpiritBox.RANGE \
+				and holder.global_position.distance_to(local_guard.global_position) < SpiritBox.RANGE:
+			return holder
+	return null
+
+
+## A caption (once in a while) when a ghost starts coming through a spirit box.
+func _caption_spirit(speaker: int, holder: Guard) -> void:
+	var now := Time.get_ticks_msec() / 1000.0
+	if now - float(_spirit_caption_at.get(speaker, -INF)) < 8.0:
+		return
+	_spirit_caption_at[speaker] = now
+	var captions := get_tree().get_first_node_in_group("captions") as Captions
+	if captions:
+		captions.heard("SpiritBox", "voice", holder.global_position)
 
 
 ## Does this ghost's voice come through the local guard's walkie-talkie right now?
