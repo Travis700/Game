@@ -89,6 +89,13 @@ func _pick_wander_target() -> void:
 	_wander_timer = 10.0
 
 
+## After a lockdown she goes back to wandering, humming, until she hears something new.
+func _after_lockdown(before: String) -> void:
+	_silence = 0.0
+	_wander_timer = 0.0
+	super(before)
+
+
 func _on_state_changed(new_state: String) -> void:
 	if _hum == null:
 		var tune := Sfx.notes([220.0, 247.0, 262.0, 247.0, 220.0, 196.0, 220.0, 0.0, 0.0], 0.45, 0.25, "sine", true)

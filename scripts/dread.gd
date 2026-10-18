@@ -3,14 +3,19 @@ extends Node
 ## Makes monsters felt, on each computer: a heartbeat that quickens as something gets close,
 ## a low drone while something nearby is hunting, flashlights and ceiling lights that flicker
 ## when a monster is near (as seen on this computer), and the jumpscare when you're caught.
+## A walkie-talkie crackles with something close, a ghost standing by a guard makes their
+## flashlight stutter, and when a teammate is caught everyone nearby hears it.
 ##
 ## And on a player's first night, once: the first time they walk the main hallway after a few
 ## minutes, a tall figure is standing at the far end, the lights stutter, and it's gone. It
 ## can't hurt anyone; it's there so the first night has its moment.
 
-## Monster states that mean "it's coming for someone".
-const CHASE_STATES: Array[String] = ["chase", "hunt", "detention", "reveal", "charge", "moving", "follow",
-	"crawl", "step1", "step2", "step3", "step4", "rush", "charging", "hunt"]
+## Monster states that mean "it's coming for someone" (a chase, or about to be one): the drone
+## means this and nothing else. (The Understudy's "step2" counts as "step".)
+const CHASE_STATES: Array[String] = ["chase", "hunt", "detention", "reveal", "charge", "step", "rush", "charging"]
+## States where it's up and about, near you, but not coming for anyone yet (following, creeping,
+## moving while unwatched): the heartbeat picks up a little sooner, but no drone.
+const PRESENCE_STATES: Array[String] = ["moving", "follow", "crawl", "lead", "whistle", "stop", "register", "shush"]
 const HEARTBEAT_RANGE := 16.0
 const DRONE_RANGE := 22.0
 const FLICKER_RANGE := 9.0
@@ -18,6 +23,12 @@ const FLICKER_RANGE := 9.0
 const LAMP_FLICKER_RANGE := 6.0
 ## How far round the local guard the lights stutter in a lockdown.
 const LOCKDOWN_FLICKER_RANGE := 24.0
+## A monster this close makes the local guard's walkie-talkie crackle.
+const RADIO_INTERFERENCE_RANGE := 12.0
+## A ghost (a caught guard) this close to a living guard makes their flashlight stutter.
+const GHOST_FLICKER_RANGE := 5.0
+## How far a teammate's scream carries when they're caught.
+const SCREAM_REACH := 60.0
 
 var director: MonsterDirector
 var players: Node3D
@@ -44,6 +55,21 @@ var _glimpsed := false
 var emf_level := 0
 var _emf_beep := 0.0
 var _figure: Node3D
+## Real seconds to the walkie-talkie's next crackle.
+var _crackle_left := 0.0
+
+
+## True when the player has asked for less flashing (Profile.reduce_flashing): flickers stay
+## gentle, and the jumpscare doesn't shake or punch the view so hard. (Looked up by path: this
+## can compile before the autoloads exist.)
+func _gentle() -> bool:
+	var profile := get_node_or_null("/root/Profile")
+	return profile != null and profile.get("reduce_flashing") == true
+
+
+## Is this monster state a chase (see CHASE_STATES)? Also used by the doors and the lockdown.
+static func is_chasing(state: String) -> bool:
+	return state.rstrip("0123456789") in CHASE_STATES
 
 
 func _ready() -> void:
@@ -66,15 +92,18 @@ func _process(delta: float) -> void:
 		return
 	var nearest := INF
 	var hunting := INF
+	var radio_near := INF
 	for node in director.get_node("Live").get_children():
 		var monster := node as Monster
 		if monster == null or monster.harmless or monster.state == "hidden" or monster.disguised():
 			continue
 		var distance := monster.global_position.distance_to(local_guard.global_position)
-		nearest = minf(nearest, distance)
-		# The Understudy's states carry the slot of the guard it's after ("follow2", "step2").
-		if monster.state in CHASE_STATES or monster.state.trim_suffix(monster.state.right(1)) in CHASE_STATES:
+		radio_near = minf(radio_near, distance)
+		# Up and about counts as a little closer, for the heartbeat.
+		nearest = minf(nearest, distance * (0.75 if monster.state.rstrip("0123456789") in PRESENCE_STATES else 1.0))
+		if is_chasing(monster.state):
 			hunting = minf(hunting, distance)
+	_radio_interference(radio_near, delta)
 	# Heartbeat: from one a second, far off, to racing when it's on top of you.
 	if nearest < HEARTBEAT_RANGE:
 		var closeness := 1.0 - nearest / HEARTBEAT_RANGE
@@ -100,7 +129,8 @@ func _fade_out(delta: float) -> void:
 		_drone.stop()
 
 
-## Flashlights stutter when a monster is close to whoever's holding them.
+## Flashlights stutter when a monster is close to whoever's holding them, or a ghost (a caught
+## teammate) is standing right by them.
 func _flicker_flashlights() -> void:
 	if director == null or players == null:
 		return
@@ -109,8 +139,13 @@ func _flicker_flashlights() -> void:
 		var monster := node as Monster
 		if monster and not monster.harmless and monster.state != "hidden" and not monster.disguised():
 			monsters.append(monster)
+	var ghosts: Array[Guard] = []
 	for guard: Guard in players.get_children():
-		if not guard.flashlight.visible:
+		if guard.is_dead:
+			ghosts.append(guard)
+	var gentle := _gentle()
+	for guard: Guard in players.get_children():
+		if not guard.flashlight.visible or guard.is_dead:
 			continue
 		var base := guard.flashlight_energy()
 		var near := false
@@ -118,7 +153,17 @@ func _flicker_flashlights() -> void:
 			if monster.global_position.distance_to(guard.global_position) < FLICKER_RANGE:
 				near = true
 				break
-		guard.flashlight.light_energy = base * (0.05 if randf() < 0.35 else randf_range(0.4, 1.0)) if near else base
+		if not near:
+			for ghost in ghosts:
+				if ghost.global_position.distance_to(guard.global_position) < GHOST_FLICKER_RANGE:
+					near = true
+					break
+		if not near:
+			guard.flashlight.light_energy = base
+		elif gentle:
+			guard.flashlight.light_energy = base * randf_range(0.75, 1.0)
+		else:
+			guard.flashlight.light_energy = base * (0.05 if randf() < 0.35 else randf_range(0.4, 1.0))
 
 
 ## Ceiling lights near a monster stutter too, and in a lockdown the ones round you (not the ones
@@ -150,13 +195,67 @@ func _flicker_lamps() -> void:
 			if is_instance_valid(lamp):
 				lamp.light_energy = _stuttering[lamp]
 			_stuttering.erase(lamp)
+	var gentle := _gentle()
 	for lamp: Light3D in near:
 		if not _stuttering.has(lamp):
 			_stuttering[lamp] = lamp.light_energy
-		lamp.light_energy = _stuttering[lamp] * (0.04 if randf() < near[lamp] else randf_range(0.6, 1.0))
+		if gentle:
+			lamp.light_energy = _stuttering[lamp] * randf_range(0.8, 1.0)
+		else:
+			lamp.light_energy = _stuttering[lamp] * (0.04 if randf() < near[lamp] else randf_range(0.6, 1.0))
 
 
-## The local guard was caught: the camera snaps to whatever caught them, with a scream.
+## The local guard's walkie-talkie crackles while a monster is close: more often the closer it is.
+func _radio_interference(distance: float, delta: float) -> void:
+	if not local_guard.has_radio or distance >= RADIO_INTERFERENCE_RANGE:
+		_crackle_left = minf(_crackle_left, 0.4)
+		return
+	_crackle_left -= delta
+	if _crackle_left > 0.0:
+		return
+	var closeness := 1.0 - distance / RADIO_INTERFERENCE_RANGE
+	_crackle_left = lerpf(3.0, 0.5, closeness) * randf_range(0.7, 1.3)
+	if randf() < 0.5:
+		_radio_sound(SoundBank.get_sound("squelch", Sfx.notes([1.0, 1.0], 0.06, 0.25, "noise")), lerpf(-16.0, -6.0, closeness), randf_range(0.8, 1.3))
+	else:
+		# A few broken blips.
+		var blips := create_tween()
+		for i in randi_range(2, 4):
+			blips.tween_callback(func() -> void:
+				_radio_sound(SoundBank.get_sound("glitch", Sfx.notes([1.0], 0.03, 0.3, "noise")), lerpf(-14.0, -4.0, closeness), randf_range(0.7, 1.4)))
+			blips.tween_interval(randf_range(0.04, 0.12))
+
+
+## Plays a sound out of the local guard's walkie-talkie (the thin, crackly "Radio" bus).
+func _radio_sound(stream: AudioStream, volume_db: float, pitch := 1.0) -> void:
+	if stream == null:
+		return
+	var player := AudioStreamPlayer.new()
+	player.stream = stream
+	player.volume_db = volume_db
+	player.pitch_scale = pitch
+	if AudioServer.get_bus_index("Radio") >= 0:
+		player.bus = "Radio"
+	add_child(player)
+	player.play()
+	player.finished.connect(player.queue_free)
+
+
+## Every computer but the caught guard's own: a teammate was caught at `at`. Their scream comes
+## from where they fell, and a walkie-talkie bursts with static.
+func witness_catch(at: Vector3) -> void:
+	var spot := Node3D.new()
+	add_child(spot)
+	spot.global_position = at + Vector3(0, 1.5, 0)
+	SoundBank.play_at(spot, "scream", 4.0, SCREAM_REACH, _make_scream())
+	get_tree().create_timer(3.0).timeout.connect(spot.queue_free)
+	get_tree().call_group("captions", "heard", "Guard", "caught", at)
+	if local_guard != null and is_instance_valid(local_guard) and not local_guard.is_dead and local_guard.has_radio:
+		_radio_sound(SoundBank.get_sound("squelch", Sfx.notes([1.0, 1.0], 0.06, 0.25, "noise")), -2.0, 0.8)
+		_radio_sound(Sfx.notes([1.0, 1.0, 1.0, 1.0], 0.25, 0.3, "noise"), -8.0)
+		get_tree().call_group("captions", "heard", "Radio", "burst", local_guard.global_position)
+
+
 ## The local guard's EMF reader: lights climb as monsters get close. Ordinary monsters top out
 ## at 4 (harmless ones, like the night cleaner, at 3); EMF 5 is evidence of certain kinds.
 func _read_emf(delta: float) -> void:
@@ -256,7 +355,7 @@ func _show_figure(spot: Vector3, viewer: Vector3) -> void:
 			lights.append(light)
 	var sequence := create_tween()
 	sequence.tween_interval(1.6)
-	for i in 3:
+	for i in (0 if _gentle() else 3):
 		sequence.tween_callback(func() -> void:
 			for light in lights:
 				light.visible = false)
@@ -275,6 +374,7 @@ func _show_figure(spot: Vector3, viewer: Vector3) -> void:
 			light.visible = true)
 
 
+## The local guard was caught: the camera snaps to whatever caught them, with a scream.
 func jumpscare(from: Vector3) -> void:
 	if local_guard == null or _scaring:
 		return
@@ -287,15 +387,17 @@ func jumpscare(from: Vector3) -> void:
 		if camera.global_position.distance_to(look) > 0.3:
 			camera.look_at(look, Vector3.UP)
 	var start_fov := camera.fov
+	# Less flashing asked for: a small nudge rather than a shake, and a gentler zoom.
+	var strength := 0.25 if _gentle() else 1.0
 	SoundBank.play_flat(self, "scream", 2.0, _make_scream())
 	var shake := create_tween()
 	for i in 10:
-		shake.tween_property(camera, "h_offset", randf_range(-0.06, 0.06), 0.04)
-		shake.parallel().tween_property(camera, "v_offset", randf_range(-0.05, 0.05), 0.04)
+		shake.tween_property(camera, "h_offset", randf_range(-0.06, 0.06) * strength, 0.04)
+		shake.parallel().tween_property(camera, "v_offset", randf_range(-0.05, 0.05) * strength, 0.04)
 	shake.tween_property(camera, "h_offset", 0.0, 0.05)
 	shake.parallel().tween_property(camera, "v_offset", 0.0, 0.05)
 	var zoom := create_tween()
-	zoom.tween_property(camera, "fov", 38.0, 0.15)
+	zoom.tween_property(camera, "fov", lerpf(start_fov, 38.0, strength), 0.15)
 	zoom.tween_interval(0.9)
 	zoom.tween_property(camera, "fov", start_fov, 0.3)
 	zoom.tween_callback(func() -> void:

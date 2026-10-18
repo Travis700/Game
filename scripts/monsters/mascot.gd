@@ -29,11 +29,13 @@ func think(delta: float) -> void:
 		halt()
 		state = "frozen"
 		return
-	state = "moving"
 	var guard := director.nearest_living_guard(global_position)
 	if guard == null:
+		# Nobody to go after: it stands where it is (and doesn't thump about the gym).
 		halt()
+		state = "frozen"
 		return
+	state = "moving"
 	move_to(guard.global_position, SPEED)
 	catch_nearby()
 

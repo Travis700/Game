@@ -85,6 +85,16 @@ func _build_body() -> void:
 		_eyes.append(eye)
 
 
+## After a lockdown it goes back to mopping (and acting), with a rest before it reveals again.
+func _after_lockdown(before: String) -> void:
+	if before == "reveal":
+		_target = null
+		_reveal_left = 0.0
+		_chase_left = 0.0
+		_cooldown = REVEAL_COOLDOWN
+	super(before)
+
+
 func _on_state_changed(new_state: String) -> void:
 	for eye in _eyes:
 		eye.visible = new_state == "reveal"

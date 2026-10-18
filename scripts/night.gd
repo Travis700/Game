@@ -77,6 +77,7 @@ var rounds: Rounds
 var power: Power
 var light_switches: LightSwitches
 var televisions: Televisions
+var haunting: Haunting
 var conditions: Conditions
 var bonus: Bonus
 var phone: Phone
@@ -291,6 +292,7 @@ func _run_shift(delta: float) -> void:
 	school_doors.update(delta)
 	light_switches.update(delta)
 	televisions.update(delta)
+	haunting.update(delta)
 	finale.update(minutes)
 	if finale.active and (phone.ringing or not power.on):
 		# The last bell: the phone goes dead and the emergency lighting comes on.
@@ -318,6 +320,7 @@ func _run_shift(delta: float) -> void:
 		power.end_night()
 		light_switches.end_night()
 		televisions.all_off()
+		haunting.end_night()
 		phone.end_night()
 		hiding.release_all()
 		clutter.reset_all()
@@ -640,6 +643,7 @@ func fail_night() -> void:
 	power.end_night()
 	light_switches.end_night()
 	televisions.all_off()
+	haunting.end_night()
 	phone.end_night()
 	hiding.release_all()
 	clutter.reset_all()

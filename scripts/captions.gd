@@ -42,6 +42,17 @@ const SOUNDS := {
 	"Noise:static": "A TV hissing static",
 	"Noise:whisper": "Someone whispering",
 	"Noise:ball": "A ball bouncing, slowly",
+	"Guard:caught": "A scream",
+	"Radio:burst": "A burst of static on your radio",
+	"Doors:bang": "Something banging on a door",
+	"Doors:slam": "A door slamming",
+	"Haunt:locker": "A locker banging",
+	"Haunt:ball": "A ball bouncing in the gym",
+	"Haunt:phone": "A phone ringing, once",
+	"Haunt:giggle": "Giggling, far off",
+	"Haunt:steps": "Footsteps, running away",
+	"Haunt:pipes": "The pipes knocking",
+	"Haunt:lights": "A light switch clicking",
 }
 const HEARING := 30.0
 const SHOW_SECONDS := 4.0

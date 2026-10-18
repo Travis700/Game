@@ -47,6 +47,12 @@ func think(delta: float) -> void:
 		state = "chase"
 
 
+## After a lockdown it goes back to its rounds, not to the runner it was after (and no whistle).
+func _after_lockdown(before: String) -> void:
+	_target = null
+	super(before)
+
+
 func _on_state_changed(new_state: String) -> void:
 	if new_state == "chase":
 		if _whistle == null:

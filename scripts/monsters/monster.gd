@@ -51,6 +51,8 @@ var silent := false
 var hunts_in_lockdown := true
 ## What it was doing before a lockdown, to go back to afterwards. Host only.
 var _pre_lockdown_state := ""
+## The state it starts the night in, to calm back down to after a lockdown. Host only.
+var _calm_state := ""
 ## Pushes an EMF reader to its top level (EMF 5) up close. Evidence for the field guide.
 var emf5 := false
 ## Host: staring into a camera (see stare_at), and whether it already has tonight.
@@ -99,6 +101,7 @@ func _ready() -> void:
 		add_child(steps)
 	_add_sync()
 	set_physics_process(multiplayer.is_server())
+	_calm_state = state
 	_on_state_changed(state)
 
 
@@ -123,8 +126,10 @@ func _physics_process(delta: float) -> void:
 		_lockdown_hunt()
 		return
 	if _pre_lockdown_state != "":
-		state = _pre_lockdown_state
+		var before := _pre_lockdown_state
 		_pre_lockdown_state = ""
+		_stuck_for = 0.0
+		_after_lockdown(before)
 	think(delta)
 
 
@@ -149,6 +154,14 @@ func _lockdown_hunt() -> void:
 	state = "hunt"
 	move_to(guard.global_position, director.hunt_speed)
 	catch_nearby()
+
+
+## Host: the lockdown alarm has stopped. It goes back to what it was doing before, unless it
+## was coming for someone (or about to): then it calms down and starts its night over, so a
+## charging flash doesn't go off the moment the alarm ends. Override to forget targets and
+## timers too (call super).
+func _after_lockdown(before: String) -> void:
+	state = _calm_state if Dread.is_chasing(before) else before
 
 
 ## The monster's behaviour, run on the host every physics frame. Override this.

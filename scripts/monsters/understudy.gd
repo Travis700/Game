@@ -118,6 +118,14 @@ func _pick_target() -> Guard:
 	return best
 
 
+## After a lockdown it falls back in behind its guard, with the count for standing still reset.
+func _after_lockdown(before: String) -> void:
+	_still_for = 0.0
+	_warned = false
+	_step_left = 0.0
+	super(before)
+
+
 ## Wears the uniform of whichever guard it's copying.
 func _on_state_changed(new_state: String) -> void:
 	var slot := new_state.right(1).to_int()

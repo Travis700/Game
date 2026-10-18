@@ -95,6 +95,20 @@ func _arrive() -> void:
 		state = "reveal"
 
 
+## Once it has turned round it can't pass for a kid again: a lockdown doesn't change that.
+func _after_lockdown(before: String) -> void:
+	if before == "reveal":
+		state = before
+	else:
+		super(before)
+
+
+## The fake turns round with a scream, heard on every computer.
+func _on_state_changed(new_state: String) -> void:
+	if new_state == "reveal" and is_inside_tree():
+		SoundBank.play_at(self, "scream", 2.0, 40.0, Sfx.notes([1400.0, 1100.0, 800.0, 500.0], 0.12, 0.4, "saw"))
+
+
 func _build_body() -> void:
 	if use_model("student", 1.35):
 		return

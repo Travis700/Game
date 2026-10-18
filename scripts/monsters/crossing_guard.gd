@@ -79,6 +79,13 @@ func _charge(delta: float) -> void:
 		state = "walk"
 
 
+## After a lockdown it walks to its next crossing rather than finishing a charge.
+func _after_lockdown(before: String) -> void:
+	_target = null
+	_charge_left = 0.0
+	super(before)
+
+
 func _on_state_changed(new_state: String) -> void:
 	_raised = new_state == "stop" or new_state == "charge"
 	if _sign and _hand == null:

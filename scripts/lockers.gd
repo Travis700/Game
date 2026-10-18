@@ -35,6 +35,8 @@ var _glows: Dictionary = {}
 var _handles: Array[Interactable] = []
 var _open: Array[bool] = []
 var _next_open_at := 0.0
+## Door index -> the tween swinging it right now, so a quick shut can stop a slow opening.
+var _swings: Dictionary = {}
 var _creak: AudioStream
 var _slam: AudioStream
 
@@ -184,7 +186,13 @@ func send_state_to(peer_id: int) -> void:
 func _set_open(index: int, open: bool) -> void:
 	_open[index] = open
 	# Both rows swing out into the hallway with the same turn, because their hinges sit on opposite sides.
+	# Whatever it was doing (opening slowly), it stops: otherwise a door shut halfway through
+	# swinging open would carry on opening while counted as shut.
+	var swinging: Tween = _swings.get(index)
+	if swinging and swinging.is_valid():
+		swinging.kill()
 	var tween := create_tween()
+	_swings[index] = tween
 	tween.tween_property(_hinges[index], "rotation_degrees:y", -100.0 if open else 0.0, 0.6 if open else 0.12)
 	if _wholes.has(index):
 		if open:

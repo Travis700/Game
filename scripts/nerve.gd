@@ -190,7 +190,7 @@ func _footsteps_behind() -> void:
 	spot.position = Vector3(randf_range(-1.5, 1.5), 0.1, 3.5)
 	var steps := create_tween()
 	for i in 4:
-		steps.tween_callback(func() -> void: Sfx.play_at(spot, Sfx.thud(0.8, 0.07, 0.5), -6.0, 12.0))
+		steps.tween_callback(func() -> void: SoundBank.play_at(spot, "step_concrete", -8.0, 12.0, Sfx.thud(0.8, 0.07, 0.5)))
 		steps.tween_interval(0.45)
 	steps.tween_interval(1.0)
 	steps.tween_callback(spot.queue_free)
@@ -200,10 +200,11 @@ func _whisper() -> void:
 	var spot := Node3D.new()
 	local_guard.add_child(spot)
 	spot.position = Vector3(randf_range(-2.0, 2.0), 1.6, randf_range(-2.0, 2.0))
-	var player := Sfx.play_at(spot, Sfx.notes([1.0, 1.0, 1.0], 0.35, 0.08, "noise"), -10.0, 8.0)
-	if player:
+	var recorded := SoundBank.get_sound("whispers")
+	var player := Sfx.play_at(spot, recorded if recorded else Sfx.notes([1.0, 1.0, 1.0], 0.35, 0.08, "noise"), -12.0, 8.0)
+	if player and recorded == null:
 		player.pitch_scale = 0.5
-	get_tree().create_timer(2.0).timeout.connect(spot.queue_free)
+	get_tree().create_timer(5.5 if recorded else 2.0).timeout.connect(spot.queue_free)
 	if randf() < 0.5:
 		# A whisper, as a sound caption (not the message line: it mustn't push real news away).
 		get_tree().call_group("captions", "_add", "[A whisper: \"%s\"]" % ["...behind you...", "...it's here...", "...don't turn around...", "...Guard..."].pick_random())
@@ -213,7 +214,20 @@ func _figure_at_the_edge() -> void:
 	# Just off to one side, a little way off: there when you glance, gone when you look.
 	var camera := local_guard.camera
 	var side := camera.global_basis.x * (1.0 if randf() < 0.5 else -1.0)
-	var spot := camera.global_position - camera.global_basis.z * 7.0 + side * 4.5
+	var wanted := camera.global_position - camera.global_basis.z * 7.0 + side * 4.5
+	wanted.y = camera.global_position.y
+	# Not inside a wall: if something's in the way, it stands just this side of it (and if
+	# that's right on top of you, there's no figure this time).
+	var ray := PhysicsRayQueryParameters3D.create(camera.global_position, wanted, 1)
+	ray.exclude = [local_guard.get_rid()]
+	var hit := local_guard.get_world_3d().direct_space_state.intersect_ray(ray)
+	if not hit.is_empty():
+		var hit_at: Vector3 = hit["position"]
+		var back := (hit_at - camera.global_position)
+		if back.length() < 3.0:
+			return
+		wanted = hit_at - back.normalized() * 0.6
+	var spot := wanted
 	spot.y = local_guard.global_position.y
 	var figure := Node3D.new()
 	add_child(figure)
@@ -247,8 +261,14 @@ func _knock() -> void:
 	local_guard.add_child(spot)
 	spot.position = Vector3(randf_range(-4.0, 4.0), 1.2, randf_range(-4.0, 4.0))
 	var knocks := create_tween()
-	for i in 3:
-		knocks.tween_callback(func() -> void: Sfx.play_at(spot, Sfx.thud(1.4, 0.05, 0.7), -2.0, 15.0))
-		knocks.tween_interval(0.22)
+	var bang := SoundBank.get_sound("door_bang")
+	if bang:
+		# A bang on a door nearby that isn't there.
+		knocks.tween_callback(func() -> void: Sfx.play_at(spot, bang, -8.0, 15.0))
+		knocks.tween_interval(1.4)
+	else:
+		for i in 3:
+			knocks.tween_callback(func() -> void: Sfx.play_at(spot, Sfx.thud(1.4, 0.05, 0.7), -2.0, 15.0))
+			knocks.tween_interval(0.22)
 	knocks.tween_interval(1.0)
 	knocks.tween_callback(spot.queue_free)

@@ -86,6 +86,11 @@ func _smear_face() -> void:
 	head.add_child(patch)
 
 
+## Out of the office it only ever hunts its guard, lockdown or not (no second entrance).
+func _after_lockdown(_before: String) -> void:
+	state = "hunt"
+
+
 ## Heavy, purposeful steps on every computer while it's out hunting.
 func _on_state_changed(new_state: String) -> void:
 	if new_state == "hunt" and _steps == null:

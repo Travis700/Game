@@ -24,7 +24,11 @@ var _target: Guard
 var _watching: Guard
 var _grace := 0.0
 var _slacking := 0.0
-## The guards it's already blown the whistle at, so it doesn't keep doing it.
+## How long (real seconds) a guard who hustled well is left alone before it'll whistle again.
+const WELL_DONE_SECONDS := 30.0
+
+## The guards it's already blown the whistle at (by name), and when (real seconds) it may
+## whistle at them again: INF while it's still watching them run.
 var _whistled: Dictionary = {}
 var _hustled := 0.0
 
@@ -58,6 +62,8 @@ func think(delta: float) -> void:
 		_hustled = _hustled + delta if director.guard_speed(_watching) >= HUSTLE_SPEED else _hustled
 		if _hustled >= HUSTLE_SECONDS:
 			director.tell(_watching.name.to_int(), "\"GOOD HUSTLE, Guard %d!\" The whistle stops." % _watching.slot)
+			# Left alone for a while, then fair game again.
+			_whistled[_watching.name] = _now() + WELL_DONE_SECONDS
 			_watching = null
 			state = "pace"
 			return
@@ -71,15 +77,30 @@ func think(delta: float) -> void:
 			start_chase()
 			state = "chase"
 		return
-	var guard := find_guard(SIGHT_RANGE, true, func(someone: Guard) -> bool: return not _whistled.has(someone.name))
+	var now := _now()
+	var guard := find_guard(SIGHT_RANGE, true, func(someone: Guard) -> bool: return now >= float(_whistled.get(someone.name, 0.0)))
 	if guard:
 		_watching = guard
-		_whistled[guard.name] = true
+		_whistled[guard.name] = INF
 		_grace = GRACE_SECONDS
 		_slacking = 0.0
 		state = "whistle"
 		_hustled = 0.0
 		director.tell(guard.name.to_int(), "A whistle. \"HUSTLE, Guard %d! Laps! Until I can't see you!\"" % guard.slot)
+
+
+func _now() -> float:
+	return Time.get_ticks_msec() / 1000.0
+
+
+## After a lockdown it starts pacing again, with nobody on laps and nobody in trouble.
+func _after_lockdown(before: String) -> void:
+	_target = null
+	_watching = null
+	_whistled.clear()
+	super(before)
+	if state == "whistle":
+		state = "pace"
 
 
 func _on_state_changed(new_state: String) -> void:

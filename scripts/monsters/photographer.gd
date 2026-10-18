@@ -73,6 +73,13 @@ func think(delta: float) -> void:
 				director.tell(guard.name.to_int(), "A high whine, like an old camera flash charging.")
 
 
+## After a lockdown: no flash left charging, no rush picked up where it left off.
+func _after_lockdown(before: String) -> void:
+	_target = null
+	_left = 0.0
+	super(before)
+
+
 func _take_picture() -> void:
 	var eye := _target.camera.global_position
 	var to_me := eye_position() - eye

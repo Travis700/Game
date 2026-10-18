@@ -4,7 +4,9 @@ extends Node3D
 ## glass window you can see through, a steel lever and a kick plate. Wide doorways get a pair.
 ## Guards open and shut them with E (they swing away from whoever's using them); monsters
 ## shove them open as they come through, so a door swinging open on its own means something's
-## coming. The host keeps every door's state and tells everyone.
+## coming. A monster chasing someone bangs into a shut door first, and is held there a moment
+## before it bursts through: a breather for whoever's running. The host keeps every door's
+## state and tells everyone.
 ##
 ## Not here: the guard room's two doorways (GuardRoomDoors: a door kit from the vending machine)
 ## and the lobby's wide opening onto the main hall. The doors at the two wing entrances only
@@ -19,6 +21,8 @@ const OPEN_DEGREES := 95.0
 const SWING_SECONDS := 0.55
 ## A monster this close to a shut door pushes it open.
 const MONSTER_REACH := 1.4
+## Real seconds a chasing monster is held at a shut door, banging on it, before it opens.
+const CHASE_HOLD_SECONDS := 0.7
 const THICKNESS := 0.05
 ## The window: narrow and tall, towards the handle, its top this far below the top of the door.
 const WINDOW_SIZE := Vector2(0.2, 0.78)
@@ -36,6 +40,8 @@ var _swing: PackedInt32Array = []
 var _wing_difficulty := 1
 ## Set while the doors are first hung, so they don't all bang at once.
 var _quiet := false
+## Host: door index -> [the monster banging on it, real time it bursts open].
+var _held: Dictionary = {}
 
 
 ## Hangs the doors in the school's doorways (every computer, as the school is built).
@@ -128,14 +134,30 @@ func update(_delta: float) -> void:
 		for i in _doors.size():
 			if _swing[i] == 0 and (_doors[i]["centre"] as Vector3).z > 19.0:
 				_set_swing.rpc(i, 1)
+	var now := Time.get_ticks_msec() / 1000.0
+	# Doors a chasing monster has been banging on give way.
+	for i: int in _held.keys():
+		var held: Array = _held[i]
+		var monster := held[0] as Monster
+		if _swing[i] != 0:
+			_held.erase(i)
+		elif not is_instance_valid(monster) or now >= float(held[1]):
+			_held.erase(i)
+			_set_swing.rpc(i, _away_from(i, monster.global_position) if is_instance_valid(monster) else 1)
 	for monster in _monsters():
 		var at := monster.global_position
 		for i in _doors.size():
-			if _swing[i] != 0 or not _usable(i):
+			if _swing[i] != 0 or not _usable(i) or _held.has(i):
 				continue
 			var centre: Vector3 = _doors[i]["centre"]
 			if Vector2(at.x - centre.x, at.z - centre.z).length() < MONSTER_REACH:
-				_set_swing.rpc(i, _away_from(i, at))
+				if Dread.is_chasing(monster.state) and not monster.harmless:
+					# Mid-chase it slams into the door: a bang, a moment, then it's through.
+					_held[i] = [monster, now + CHASE_HOLD_SECONDS]
+					monster.stuck_in_trap = maxf(monster.stuck_in_trap, CHASE_HOLD_SECONDS)
+					_bang.rpc(i, true)
+				else:
+					_set_swing.rpc(i, _away_from(i, at))
 
 
 func _monsters() -> Array[Monster]:
@@ -152,8 +174,49 @@ func _usable(door: int) -> bool:
 	return _doors[door]["wing"] == 0 or _wing_difficulty >= int(_doors[door]["wing"])
 
 
+## Host: the usable doors' centres (index matches haunt_door), for picking one near a spot.
+func door_spots() -> Array[Vector3]:
+	var spots: Array[Vector3] = []
+	for i in _doors.size():
+		spots.append(_doors[i]["centre"] if _usable(i) else Vector3.INF)
+	return spots
+
+
+## Host: nothing's there, but a door slams. An open one swings shut with a bang; a shut one
+## shakes in its frame. (Never opens one: a door opening by itself means a monster.)
+func haunt_door(door: int) -> void:
+	if door < 0 or door >= _doors.size() or not _usable(door) or _held.has(door):
+		return
+	if _swing[door] != 0:
+		_set_swing.rpc(door, 0)
+		_bang.rpc(door, false, "slam")
+	else:
+		_bang.rpc(door, true, "slam")
+
+
+## Every computer: a loud bang on a door, and (`shake`) the door jolting in its frame.
+## `caption` is the sound caption's "Doors:..." entry (see Captions).
+@rpc("authority", "call_local", "reliable")
+func _bang(door: int, shake: bool, caption := "bang") -> void:
+	if door < 0 or door >= _doors.size():
+		return
+	var first: Node3D = (_doors[door]["leaves"] as Array)[0][0]
+	SoundBank.play_at(first, "door_bang", 2.0, 35.0, Sfx.notes([80.0, 60.0], 0.1, 0.6, "noise"))
+	get_tree().call_group("captions", "heard", "Doors", caption, _doors[door]["centre"])
+	if not shake or _swing[door] != 0:
+		return
+	for leaf: Array in _doors[door]["leaves"]:
+		var hinge: Node3D = leaf[0]
+		var rest := float(leaf[1])
+		var jolt := hinge.create_tween()
+		jolt.tween_property(hinge, "rotation:y", rest + deg_to_rad(randf_range(2.0, 4.0)), 0.05)
+		jolt.tween_property(hinge, "rotation:y", rest - deg_to_rad(1.5), 0.07)
+		jolt.tween_property(hinge, "rotation:y", rest, 0.1)
+
+
 ## Host, as a shift starts: classroom doors shut, the wide double doors propped open.
 func reset_for_night() -> void:
+	_held.clear()
 	for i in _doors.size():
 		_set_swing.rpc(i, _default_swing(i))
 

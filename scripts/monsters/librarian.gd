@@ -113,6 +113,15 @@ func _hunt(delta: float) -> void:
 		state = "shelve"
 
 
+## After a lockdown it goes back to its shelves; whoever it was after has to annoy it afresh.
+func _after_lockdown(before: String) -> void:
+	_target = null
+	_calm_for = 0.0
+	super(before)
+	if state == "shush":
+		state = "shelve"
+
+
 func _on_state_changed(new_state: String) -> void:
 	if new_state == "shush":
 		SoundBank.play_at(self, "shush", 4.0, 25.0, Sfx.notes([1.0, 1.0, 1.0], 0.35, 0.18, "noise"))

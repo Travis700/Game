@@ -124,6 +124,12 @@ func _chase(delta: float) -> void:
 		state = "walk"
 
 
+## After a lockdown: back to teaching, and a register in progress starts its count again.
+func _after_lockdown(before: String) -> void:
+	_answer_left = ANSWER_SECONDS
+	super(before)
+
+
 func _on_state_changed(new_state: String) -> void:
 	if new_state == "register":
 		Sfx.play_at(self, Sfx.notes([330.0, 0.0, 294.0], 0.18, 0.25, "square"), 0.0, 20.0)

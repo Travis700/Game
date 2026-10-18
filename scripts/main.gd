@@ -103,6 +103,7 @@ var _left_alive: Dictionary = {}
 var power: Power
 var light_switches: LightSwitches
 var televisions: Televisions
+var haunting: Haunting
 var glare: Glare
 var pause_menu: CanvasLayer
 var spawner: MultiplayerSpawner
@@ -419,6 +420,15 @@ func _ready() -> void:
 	add_child(televisions)
 	televisions.build(school.tv_spots)
 	night.televisions = televisions
+	haunting = Haunting.new()
+	haunting.name = "Haunting"
+	haunting.director = director
+	haunting.night = night
+	haunting.power = power
+	haunting.school_doors = school_doors
+	haunting.light_switches = light_switches
+	add_child(haunting)
+	night.haunting = haunting
 	var conditions := Conditions.new()
 	conditions.name = "Conditions"
 	conditions.lighting = lighting
@@ -1951,6 +1961,7 @@ func _guard_died(peer_id: int, by: String, at: Vector3, from := Vector3.INF) -> 
 		SoundBank.play_flat(self, "stinger", 0.0, Sfx.notes([110.0, 104.0, 98.0, 92.0], 0.35, 0.4, "saw"))
 	else:
 		hud.show_message("Guard %d was caught by %s." % [guard.slot, by])
+		dread.witness_catch(at)
 	_refresh_guard_visibility()
 
 

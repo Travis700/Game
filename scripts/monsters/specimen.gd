@@ -137,8 +137,10 @@ func _open_places() -> Array[Vector3]:
 	return spots
 
 
-## Hidden in the ceiling, it can't be seen.
+## Hidden in the ceiling, it can't be seen: neither the model nor the block body.
 func _on_state_changed(new_state: String) -> void:
+	if _model != null:
+		_model.visible = new_state != "hidden"
 	for child in get_children():
 		if child is MeshInstance3D:
 			(child as MeshInstance3D).visible = new_state != "hidden"
