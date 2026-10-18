@@ -7,6 +7,7 @@ const BINDINGS := {
 	"move_left": [KEY_A, KEY_LEFT],
 	"move_right": [KEY_D, KEY_RIGHT],
 	"sprint": [KEY_SHIFT],
+	"crouch": [KEY_C],
 	"interact": [KEY_E],
 	"flashlight": [KEY_F],
 	"pause": [KEY_ESCAPE],
@@ -40,6 +41,8 @@ const JOY_BUTTONS := {
 	"zoom": [JOY_BUTTON_X],
 	"compare": [JOY_BUTTON_RIGHT_STICK],
 	"sprint": [JOY_BUTTON_LEFT_STICK],
+	# Away from a desk (where it compares with the photo).
+	"crouch": [JOY_BUTTON_RIGHT_STICK],
 	"clipboard": [JOY_BUTTON_BACK],
 	"use_item": [JOY_BUTTON_RIGHT_SHOULDER],
 	"ping": [JOY_BUTTON_B],
@@ -72,7 +75,7 @@ const MOUSE_BINDINGS := {
 ## Keys the player can change in the Esc menu, with the names shown there.
 const REBINDABLE := [
 	["move_forward", "Walk forward"], ["move_back", "Walk back / stand up"], ["move_left", "Walk left"],
-	["move_right", "Walk right"], ["sprint", "Run"], ["interact", "Use"], ["flashlight", "Flashlight"],
+	["move_right", "Walk right"], ["sprint", "Run"], ["crouch", "Crouch"], ["interact", "Use"], ["flashlight", "Flashlight"],
 	["clipboard", "Clipboard"], ["use_item", "Use item"], ["drop_item", "Put down / hand over item"], ["throw", "Throw"], ["zoom", "Full-screen camera"], ["compare", "Compare camera with photo"], ["ping", "Mark a spot (or flag a camera) for the team"], ["push_to_talk", "Push to talk"], ["radio_talk", "Talk on the walkie-talkie"],
 ]
 const SAVE_PATH := "user://controls.cfg"
@@ -102,7 +105,7 @@ const PAD_NAMES := {
 ## Placeholders that text can use for the player's own keys, e.g. "Press {use} to answer".
 const TOKENS := {
 	"use": "interact", "item": "use_item", "clip": "clipboard", "ping": "ping", "radio": "radio_talk", "drop": "drop_item", "throw": "throw",
-	"talk": "push_to_talk", "zoom": "zoom", "compare": "compare", "light": "flashlight", "run": "sprint",
+	"talk": "push_to_talk", "zoom": "zoom", "compare": "compare", "light": "flashlight", "run": "sprint", "crouch": "crouch",
 	"menu": "pause", "left": "move_left", "right": "move_right",
 }
 
@@ -131,7 +134,10 @@ func key_name(action: String) -> String:
 	if action == "throw" and not _primary.has(action):
 		return "Right click"
 	# The key's name on this keyboard's layout (on AZERTY, Z rather than W).
-	return OS.get_keycode_string(DisplayServer.keyboard_get_keycode_from_physical(primary_key(action)))
+	var key := primary_key(action)
+	if DisplayServer.get_name() != "headless":
+		key = DisplayServer.keyboard_get_keycode_from_physical(key)
+	return OS.get_keycode_string(key)
 
 
 ## Swaps "{use}", "{item}"... in `text` for the player's own keys.

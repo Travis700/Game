@@ -318,6 +318,7 @@ func _ready() -> void:
 	var theme := SoundBank.get_sound("menu_theme", null, true)
 	if theme:
 		var music := AudioStreamPlayer.new()
+		music.bus = &"Music"
 		music.stream = theme
 		music.volume_db = -12.0
 		add_child(music)

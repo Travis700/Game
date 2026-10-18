@@ -49,6 +49,7 @@ func _add(sound: String, at: Vector3, light: Light3D) -> void:
 	if stream == null or not SOUNDS.has(sound):
 		return
 	var player := AudioStreamPlayer3D.new()
+	player.bus = &"Ambience"
 	player.stream = stream
 	player.volume_db = SOUNDS[sound][0]
 	player.max_distance = SOUNDS[sound][1]

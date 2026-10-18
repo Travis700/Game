@@ -42,7 +42,12 @@ func _process(delta: float) -> void:
 	if _walked >= stride * (1.35 if running else 1.0):
 		_walked = 0.0
 		var loudness := volume_db + (5.0 if running else 0.0)
-		var player := Sfx.play_at(body, SoundBank.get_sound(_surface(now), Sfx.thud(pitch)), loudness, reach * (1.5 if running else 1.0))
+		var heard := reach * (1.5 if running else 1.0)
+		# Crouched, you creep: softer steps, heard only close by.
+		if body.get("is_crouching"):
+			loudness -= 10.0
+			heard *= 0.35
+		var player := Sfx.play_at(body, SoundBank.get_sound(_surface(now), Sfx.thud(pitch)), loudness, heard)
 		player.pitch_scale = pitch * randf_range(0.92, 1.08)
 
 

@@ -94,6 +94,21 @@ func _ready() -> void:
 		Profile.volume = value
 		Profile.apply_volume())
 	column.add_child(_volume)
+	# Each kind of sound on its own.
+	var mix := GridContainer.new()
+	mix.columns = 2
+	mix.add_theme_constant_override("h_separation", 12)
+	mix.add_theme_constant_override("v_separation", 6)
+	column.add_child(mix)
+	for kind: Array in [["Effects", "sfx_volume"], ["Ambience", "ambience_volume"], ["Music", "music_volume"]]:
+		mix.add_child(_small(kind[0]))
+		var setting: String = kind[1]
+		var slider := _slider(0.0, 1.0, float(Profile.get(setting)))
+		slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		slider.value_changed.connect(func(value: float) -> void:
+			Profile.set(setting, value)
+			Profile.apply_volume())
+		mix.add_child(slider)
 	column.add_child(_label("Voice chat"))
 	var voice_grid := GridContainer.new()
 	voice_grid.columns = 2

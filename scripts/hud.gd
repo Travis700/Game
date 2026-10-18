@@ -376,7 +376,8 @@ func refresh_key_hint() -> void:
 			Controls.key_name("move_back"), Controls.key_name("move_right")]
 	var lines: Array[String] = [
 		"%s  move" % ("Left stick" if Controls.using_pad else move if move.length() == 4 else "Move keys"),
-		"%s  run" % Controls.key_name("sprint"), "%s  flashlight" % Controls.key_name("flashlight"),
+		"%s  run" % Controls.key_name("sprint"), "%s  crouch" % Controls.key_name("crouch"),
+		"%s  flashlight" % Controls.key_name("flashlight"),
 		"%s  use" % Controls.key_name("interact"), "%s  clipboard" % Controls.key_name("clipboard"),
 		"%s  use item" % Controls.key_name("use_item"), "%s  put down / hand over" % Controls.key_name("drop_item"),
 		"%s  mark a spot" % Controls.key_name("ping"),

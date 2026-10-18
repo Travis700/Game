@@ -30,6 +30,8 @@ var _calm_for := 0.0
 
 func _init() -> void:
 	display_name = "the Librarian"
+	# It hunts what it hears: hide close by and it listens at the doors (so stay quiet).
+	searches_cupboards = true
 	state = "shelve"
 
 

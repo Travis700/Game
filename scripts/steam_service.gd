@@ -269,6 +269,22 @@ func _join_problem(response: int) -> String:
 	return "Couldn't join the lobby (Steam response %d)." % response
 
 
+## The Steam account behind a player in a Steam lobby game (0 if it isn't one, or can't be told).
+func steam_id_of_peer(peer: MultiplayerPeer, peer_id: int) -> int:
+	if peer == null or not available:
+		return 0
+	for method: String in ["get_steam64_from_peer_id", "get_steam_id_for_peer_id"]:
+		if peer.has_method(method):
+			return _int(peer.call(method, peer_id))
+	return 0
+
+
+## Is this Steam account one of the player's Steam friends?
+func is_friend(id: int) -> bool:
+	# 3 is "friend" in Steam's EFriendRelationship.
+	return available and id != 0 and _int(_call("getFriendRelationship", [id])) == 3
+
+
 func _make_peer() -> MultiplayerPeer:
 	if test_peer_factory.is_valid():
 		return OfflineMultiplayerPeer.new()

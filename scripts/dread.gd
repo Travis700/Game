@@ -15,7 +15,8 @@ extends Node
 const CHASE_STATES: Array[String] = ["chase", "hunt", "detention", "reveal", "charge", "step", "rush", "charging"]
 ## States where it's up and about, near you, but not coming for anyone yet (following, creeping,
 ## moving while unwatched): the heartbeat picks up a little sooner, but no drone.
-const PRESENCE_STATES: Array[String] = ["moving", "follow", "crawl", "lead", "whistle", "stop", "register", "shush"]
+## (And "seek"/"search": walking up to a cupboard someone's hiding in, and rattling its doors.)
+const PRESENCE_STATES: Array[String] = ["moving", "follow", "crawl", "lead", "whistle", "stop", "register", "shush", "seek", "search"]
 const HEARTBEAT_RANGE := 16.0
 const DRONE_RANGE := 22.0
 const FLICKER_RANGE := 9.0
@@ -74,9 +75,11 @@ static func is_chasing(state: String) -> bool:
 
 func _ready() -> void:
 	_heart = AudioStreamPlayer.new()
+	_heart.bus = &"SFX"
 	_heart.stream = Sfx.thud(0.55, 0.16, 0.9)
 	add_child(_heart)
 	_drone = AudioStreamPlayer.new()
+	_drone.bus = &"Music"
 	_drone.stream = SoundBank.get_sound("chase", _make_drone(), true)
 	_drone.volume_db = -80.0
 	add_child(_drone)

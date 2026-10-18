@@ -24,6 +24,8 @@ var _eyes: Array[MeshInstance3D] = []
 func _init() -> void:
 	emf5 = true
 	display_name = "the other cleaner"
+	# Once it has shown itself it chases by sight, and checks a cupboard it saw you dive into.
+	searches_cupboards = true
 	harmless = false
 	leaves_when_logged = true
 	state = "walk"

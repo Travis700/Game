@@ -35,7 +35,8 @@ The host clicks **Host a game**. Their **room code** (like `DALS-AJW`) shows in 
 Everyone else types that code (or the host's address) next to **Join**. If the host typed a room
 password before hosting, joiners type the same password. Room codes work on the same network, or over
 the internet if the host forwards port 7777 on their router. On Steam, friends can join through the
-invite or the Steam overlay instead, with no ports to forward.
+invite or the Steam overlay instead, with no ports to forward (the host's Steam friends don't need the room
+password).
 
 ### The menu
 
@@ -60,7 +61,8 @@ invite or the Steam overlay instead, with no ports to forward.
 
 ## How a night works
 
-1. Walk from the gate to the guard room and clock in at the time clock: press E, type your badge number
+1. Walk from the gate to the guard room. Before the shift its notice board is the briefing: who's on the team
+   and clocked in, which monsters have been reported in the wings open tonight, and a plan. Clock in at the time clock: press E, type your badge number
    and press Enter (everyone in the session has to).
 2. The lights go down and the clock starts at 12:00 AM. A night lasts 12 minutes.
 3. Things change around the school: objects move, go missing or appear, and from night 2, figures.
@@ -368,11 +370,12 @@ it runs; that's normal for games that aren't signed (Steam builds don't show it)
 |---|---|
 | W A S D / arrow keys | Walk |
 | Shift | Run |
+| C | Crouch (toggle): slower and much quieter, and low enough to duck under a desk |
 | Mouse | Look |
 | F / left mouse button | Flashlight on or off |
 | 1-5 / mouse wheel | Pick a hotbar slot (slot 1 is the flashlight) |
 | E | Use. Press E on the time clock in the guard room to clock in and start the night. Hold E on punch stations and the breaker. Press E on a light switch (just inside each room's door) to turn the room's lights on or off. |
-| Esc | Menu: mouse sensitivity, field of view, brightness, volume, voice chat, captions, change keys, graphics (resolution, anti-aliasing, shadows, ambient occlusion and haze, bounced light, long grass, film grain, V-sync), fullscreen, comfort (invert mouse look, head bob, reduce flashing and shaking), leave the game (pauses solo; in a group the night keeps going) |
+| Esc | Menu: mouse sensitivity, field of view, brightness, volume (and effects, ambience and music separately), voice chat, captions, change keys, graphics (resolution, anti-aliasing, shadows, ambient occlusion and haze, bounced light, long grass, film grain, V-sync), fullscreen, comfort (invert mouse look, head bob, reduce flashing and shaking), leave the game (pauses solo; in a group the night keeps going) |
 | Tab | Clipboard: log anything odd you spot (after clocking in); its Field guide button shows what you know about each monster |
 | X | Put down the thing in the picked hotbar slot, or hand it to the teammate you're looking at |
 | Right mouse button / T | Throw what you picked up off the floor |
@@ -384,7 +387,7 @@ it runs; that's normal for games that aren't signed (Steam builds don't show it)
 | F11 | Switch between fullscreen and a window |
 
 **With a controller** (Xbox names; PlayStation and Switch pads work the same way): left stick move,
-right stick look, L3 run, A use, Y flashlight, X full-screen camera, R3 compare with the photo, B mark,
+right stick look, L3 run, R3 crouch, A use, Y flashlight, X full-screen camera, R3 compare with the photo, B mark,
 Back clipboard, RB use item, D-pad left/right hotbar slot, D-pad down put down / hand over, D-pad up throw,
 LB push to talk, RT walkie-talkie, Start menu. In menus, the D-pad moves and A selects; B goes back.
 

@@ -29,6 +29,9 @@ properties/3/replication_mode = 2
 properties/4/path = NodePath(".:is_running")
 properties/4/spawn = false
 properties/4/replication_mode = 2
+properties/5/path = NodePath(".:is_crouching")
+properties/5/spawn = false
+properties/5/replication_mode = 2
 
 [node name="Player" type="CharacterBody3D"]
 script = ExtResource("1_player")

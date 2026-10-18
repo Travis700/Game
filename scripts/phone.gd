@@ -55,6 +55,7 @@ func _ready() -> void:
 			else:
 				_request_answer.rpc_id(1))
 	_ring_player = AudioStreamPlayer3D.new()
+	_ring_player.bus = &"SFX"
 	_ring_player.stream = SoundBank.get_sound("phone_ring",
 			Sfx.notes([880.0, 740.0, 880.0, 740.0, 880.0, 740.0, 0.0, 0.0, 0.0, 0.0], 0.09, 0.35, "square", true), true)
 	_ring_player.max_distance = 70.0

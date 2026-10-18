@@ -33,6 +33,8 @@ var _flash_light: OmniLight3D
 
 func _init() -> void:
 	display_name = "the Photographer"
+	# Its rush is a chase like any other: a blinded guard who stumbles into a cupboard gets searched.
+	searches_cupboards = true
 	state = "wander"
 
 

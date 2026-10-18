@@ -20,6 +20,7 @@ var _playing := false
 
 func _ready() -> void:
 	_hum = AudioStreamPlayer.new()
+	_hum.bus = &"Ambience"
 	_hum.stream = SoundBank.get_sound("ambience", Sfx.hum(), true)
 	_hum.volume_db = -18.0
 	add_child(_hum)
@@ -66,6 +67,7 @@ func _process(delta: float) -> void:
 	else:
 		stream = Sfx.thud(0.45, 0.35, 0.9)
 	var player := AudioStreamPlayer3D.new()
+	player.bus = &"Ambience"
 	player.stream = stream
 	player.volume_db = lerpf(-6.0, -1.0, tension())
 	player.max_distance = 40.0

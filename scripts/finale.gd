@@ -317,7 +317,7 @@ func _process(delta: float) -> void:
 			var side := -1.0 if i == 0 else 1.0
 			_swing.tween_property(_leaves[i], "rotation:y", -side * OPEN_ANGLE if should_open else 0.0, 1.5 if should_open else 0.6)
 		get_node("Chain").visible = not should_open
-	if _key.visible:
+	if _key and _key.visible:
 		_key.rotation.y += delta * 1.5
 	# The gate's shut: anyone who somehow ended up off the grounds is back in the yard.
 	_told_locked -= delta

@@ -35,6 +35,8 @@ var _hustled := 0.0
 
 func _init() -> void:
 	display_name = "the Coach"
+	# It chases guards who won't run: duck into a cupboard under its nose and it looks.
+	searches_cupboards = true
 	state = "pace"
 
 

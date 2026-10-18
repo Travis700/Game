@@ -24,6 +24,8 @@ var _waiting_for := 0.0
 
 func _init() -> void:
 	display_name = "the student"
+	# Turned round, it chases its follower: a cupboard they hide in gets searched (a real kid never chases).
+	searches_cupboards = true
 	footstep_pitch = 1.4
 	footstep_stride = 0.55
 	state = "wait"

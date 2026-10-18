@@ -74,6 +74,7 @@ static func chirp(from_hz: float, to_hz: float, seconds := 0.12, repeats := 2, v
 ## Plays a sound from a point in the world. One-off sounds clean themselves up.
 static func play_at(parent: Node3D, stream: AudioStream, volume_db := 0.0, max_distance := 30.0) -> AudioStreamPlayer3D:
 	var player := AudioStreamPlayer3D.new()
+	player.bus = &"SFX"
 	player.stream = stream
 	player.volume_db = volume_db
 	player.max_distance = max_distance
@@ -87,6 +88,7 @@ static func play_at(parent: Node3D, stream: AudioStream, volume_db := 0.0, max_d
 ## Plays a sound that isn't anywhere in particular, e.g. your own death sting.
 static func play_flat(parent: Node, stream: AudioStream, volume_db := 0.0) -> void:
 	var player := AudioStreamPlayer.new()
+	player.bus = &"SFX"
 	player.stream = stream
 	player.volume_db = volume_db
 	parent.add_child(player)

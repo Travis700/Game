@@ -44,6 +44,12 @@ const ACCELERATION := 10.0
 const LOOK_LIMIT := deg_to_rad(85)
 const BOB_AMOUNT := 0.04
 const STANDING_EYE_HEIGHT := 1.6
+## Crouched (C): eyes this high, this fast, and a body this tall (low enough to duck under a desk).
+const CROUCH_EYE_HEIGHT := 0.95
+const CROUCH_SPEED := 1.6
+const CROUCH_BODY_HEIGHT := 1.1
+## Crouched: quieter footsteps. Synced, so everyone sees (and hears) it.
+var is_crouching := false
 const SEATED_EYE_HEIGHT := 1.22
 const SEATED_YAW_LIMIT := deg_to_rad(60)
 const SEATED_PITCH_UP := deg_to_rad(30)
@@ -216,6 +222,7 @@ var _beam_basis := Basis.IDENTITY
 
 
 func _process(delta: float) -> void:
+	_show_crouch(delta)
 	var aim := camera.global_basis.orthonormalized()
 	_beam_basis = _beam_basis.slerp(aim, minf(1.0, BEAM_FOLLOW * delta)).orthonormalized()
 	flashlight.global_basis = _beam_basis
@@ -406,6 +413,8 @@ func uniform_color() -> Color:
 
 ## Called on every computer when this guard is caught or revived.
 func set_dead(dead: bool) -> void:
+	if dead and is_local():
+		is_crouching = false
 	is_dead = dead
 	# Ghosts make no sound.
 	_footsteps.enabled = not dead
@@ -437,6 +446,7 @@ func _dress() -> void:
 	if _model == null:
 		return
 	_model.position.y -= body_mesh.position.y
+	_model_floor = _model.position.y
 	body_mesh.mesh = null
 	visor.mesh = null
 	_model_materials = ModelKit.own_materials(_model)
@@ -521,8 +531,63 @@ func update_visibility(viewer_is_dead: bool) -> void:
 	name_tag.visible = shown
 
 
+## Crouches or stands up (this guard's own computer). Stands only if there's headroom.
+func set_crouching(on: bool) -> void:
+	if on == is_crouching:
+		return
+	if not on and not _room_to_stand():
+		message_shown.emit("No room to stand up here.", 2.0)
+		return
+	is_crouching = on
+	var collider := $CollisionShape3D as CollisionShape3D
+	# The capsule is shared by every guard in the scene file: this one gets its own to shrink.
+	if not collider.has_meta("own_shape"):
+		collider.shape = collider.shape.duplicate()
+		collider.set_meta("own_shape", true)
+	var shape := collider.shape as CapsuleShape3D
+	shape.height = CROUCH_BODY_HEIGHT if on else _stand_height
+	collider.position.y = shape.height * 0.5
+
+
+var _stand_height := 1.8
+
+
+## Is there nothing over a crouched guard's head, up to standing height?
+func _room_to_stand() -> bool:
+	var query := PhysicsShapeQueryParameters3D.new()
+	var probe := CapsuleShape3D.new()
+	probe.radius = 0.3
+	probe.height = _stand_height - 0.1
+	query.shape = probe
+	query.transform = Transform3D(Basis(), global_position + Vector3(0, _stand_height * 0.5 + 0.05, 0))
+	query.exclude = [get_rid()]
+	query.collision_mask = 1
+	return get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty()
+
+
+## Every computer: a crouched guard's eyes drop (theirs) and their body ducks (everyone else's).
+func _show_crouch(delta: float) -> void:
+	var low := is_crouching and seated_desk < 0 and not is_dead and not hiding
+	# The head (and the torch in it) goes down on every computer, so the beam comes from low too.
+	if seated_desk < 0 and not hiding and not _shown_seated:
+		head.position.y = lerpf(head.position.y, CROUCH_EYE_HEIGHT if low else STANDING_EYE_HEIGHT, 1.0 - exp(-12.0 * delta))
+	if _model:
+		# Knees bent (the sitting pose) and lowered, so it reads as a crouch from across a room.
+		_model.position.y = lerpf(_model.position.y, _model_floor - (0.42 if low else 0.0), 1.0 - exp(-12.0 * delta))
+		if _strider and not _shown_seated:
+			_strider.hold = "sit" if low else ""
+	name_tag.position.y = lerpf(name_tag.position.y, 1.5 if low else 2.05, 1.0 - exp(-8.0 * delta))
+
+
+## Where the model stands when upright (its offset under the body mesh).
+var _model_floor := 0.0
+## Shown sitting at a desk (on every computer; seated_desk is only known to the sitter's).
+var _shown_seated := false
+
+
 ## Shows the guard sitting at a desk (everyone's computer), or back on their feet.
 func show_seated(on: bool) -> void:
+	_shown_seated = on
 	if _strider:
 		_strider.hold = "sit" if on else ""
 
@@ -534,6 +599,7 @@ func is_local() -> bool:
 
 ## Sits down at a guard room desk, facing its monitors (+Z).
 func sit(desk: int, chair_position: Vector3) -> void:
+	set_crouching(false)
 	seated_desk = desk
 	velocity = Vector3.ZERO
 	is_running = false
@@ -579,6 +645,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		message_shown.emit("Not from inside a cupboard.", 2.5)
 	elif event.is_action_pressed("use_item") and not is_dead:
 		item_use_requested.emit()
+	elif event.is_action_pressed("crouch") and not is_dead and not hiding:
+		set_crouching(not is_crouching)
 	elif event.is_action_pressed("drop_item") and not is_dead and not hiding:
 		drop_requested.emit()
 	elif event.is_action_pressed("throw") and not is_dead and not hiding:
@@ -662,9 +730,12 @@ func _physics_process(delta: float) -> void:
 		input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (transform.basis * Vector3(input.x, 0, input.y)).normalized()
 	var wants_to_run := not input_blocked and not hiding and Input.is_action_pressed("sprint") and input.y < 0.0
-	is_running = wants_to_run and not winded
+	# Running stands you up (if there's room).
+	if wants_to_run and is_crouching:
+		set_crouching(false)
+	is_running = wants_to_run and not winded and not is_crouching
 	boost_left = maxf(boost_left - delta, 0.0)
-	var speed := WALK_SPEED
+	var speed := CROUCH_SPEED if is_crouching else WALK_SPEED
 	if is_running:
 		speed = BOOSTED_SPRINT_SPEED if boost_left > 0.0 else SPRINT_SPEED
 
@@ -707,6 +778,7 @@ func _update_panting(delta: float) -> void:
 		if not gasping:
 			return
 		_panting = AudioStreamPlayer.new()
+		_panting.bus = &"SFX"
 		_panting.stream = SoundBank.get_sound("panting", null, true)
 		_panting.volume_db = -60.0
 		add_child(_panting)

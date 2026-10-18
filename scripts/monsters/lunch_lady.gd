@@ -8,6 +8,8 @@ const WANDER_SPEED := 1.2
 const HUNT_SPEED := 4.6
 const HEAR_RUNNING := 16.0
 const HEAR_WALKING := 5.0
+## Creeping crouched: she only hears it right beside her.
+const HEAR_CREEPING := 2.0
 ## Voices: a whisper carries this far to her, a shout this far.
 const HEAR_WHISPER := 5.0
 const HEAR_SHOUT := 22.0
@@ -70,7 +72,8 @@ func _catch_audible() -> void:
 func _listen() -> bool:
 	for guard in director.targetable_guards():
 		var speed := director.guard_speed(guard)
-		var reach := HEAR_RUNNING if guard.is_running else (HEAR_WALKING if speed > 0.8 else 0.0)
+		var walking := HEAR_CREEPING if guard.is_crouching else HEAR_WALKING
+		var reach := HEAR_RUNNING if guard.is_running else (walking if speed > 0.8 else 0.0)
 		reach = maxf(reach, director.voice_reach(guard, HEAR_WHISPER, HEAR_SHOUT))
 		if reach > 0.0 and distance_to_guard(guard) < reach:
 			_heard_at = guard.global_position

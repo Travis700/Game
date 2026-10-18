@@ -9,6 +9,13 @@ var employee_number := 0
 var mouse_sensitivity := 1.0
 ## Master volume, 0 to 1.
 var volume := 0.8
+## Each kind of sound, 0 to 1: effects (monsters, doors, footsteps...), the building's ambience
+## (hum, rain, room tones) and music (the menu, the chase).
+var sfx_volume := 1.0
+var ambience_volume := 1.0
+var music_volume := 1.0
+## The audio buses those go through, each feeding Master.
+const BUSES := ["SFX", "Ambience", "Music"]
 ## Graphics: V-sync, 3D resolution (1.0 = full), shadows, and anti-aliasing (0 off, 1 = 2x, 2 = 4x).
 var vsync := true
 var render_scale := 1.0
@@ -67,6 +74,9 @@ func _enter_tree() -> void:
 		employee_number = config.get_value("employee", "number", 0)
 		mouse_sensitivity = config.get_value("settings", "mouse_sensitivity", 1.0)
 		volume = config.get_value("settings", "volume", 0.8)
+		sfx_volume = config.get_value("settings", "sfx_volume", 1.0)
+		ambience_volume = config.get_value("settings", "ambience_volume", 1.0)
+		music_volume = config.get_value("settings", "music_volume", 1.0)
 		vsync = config.get_value("graphics", "vsync", true)
 		render_scale = config.get_value("graphics", "render_scale", 1.0)
 		shadows = config.get_value("graphics", "shadows", true)
@@ -113,6 +123,9 @@ func save_settings() -> void:
 	config.set_value("employee", "number", employee_number)
 	config.set_value("settings", "mouse_sensitivity", mouse_sensitivity)
 	config.set_value("settings", "volume", volume)
+	config.set_value("settings", "sfx_volume", sfx_volume)
+	config.set_value("settings", "ambience_volume", ambience_volume)
+	config.set_value("settings", "music_volume", music_volume)
 	config.set_value("graphics", "vsync", vsync)
 	config.set_value("graphics", "render_scale", render_scale)
 	config.set_value("graphics", "shadows", shadows)
@@ -152,6 +165,15 @@ func apply_brightness() -> void:
 
 func apply_volume() -> void:
 	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(volume, 0.0001)))
+	for bus_name: String in BUSES:
+		if AudioServer.get_bus_index(bus_name) < 0:
+			AudioServer.add_bus()
+			var added := AudioServer.bus_count - 1
+			AudioServer.set_bus_name(added, bus_name)
+			AudioServer.set_bus_send(added, &"Master")
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("SFX"), linear_to_db(maxf(sfx_volume, 0.0001)))
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Ambience"), linear_to_db(maxf(ambience_volume, 0.0001)))
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), linear_to_db(maxf(music_volume, 0.0001)))
 
 
 func _ready() -> void:

@@ -53,6 +53,7 @@ const SOUNDS := {
 	"Haunt:steps": "Footsteps, running away",
 	"Haunt:pipes": "The pipes knocking",
 	"Haunt:lights": "A light switch clicking",
+	"Hiding:search": "Cupboard doors rattling",
 }
 const HEARING := 30.0
 const SHOW_SECONDS := 4.0

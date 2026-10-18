@@ -81,6 +81,8 @@ var _spectating: Guard
 ## The notice board in the guard room: tonight's shift notes, bonus objective and round.
 var _tonight_board: Label3D
 var _board_timer := 0.0
+## Who's clocked in so far tonight (every computer; sent by the host), for the briefing.
+var _clocked_in_peers: Array[int] = []
 ## Host: when each guard can next use a camera speaker.
 var _lure_ready: Dictionary = {}
 var hiding: Hiding
@@ -1082,7 +1084,8 @@ func _register_employee(badge: int, password: String, player_name := "", rank :=
 	var peer_id := multiplayer.get_remote_sender_id()
 	if not multiplayer.is_server() or players.has_node(str(peer_id)):
 		return
-	if password != _password:
+	# A Steam friend of the host (in through an invite, say) doesn't need the password.
+	if password != _password and not SteamService.is_friend(SteamService.steam_id_of_peer(multiplayer.multiplayer_peer, peer_id)):
 		_reject(peer_id, "Wrong room password." if password != "" else "That room needs a password.")
 		return
 	if shift.state != Shift.State.PRE_SHIFT and shift.state != Shift.State.ON_SHIFT:
@@ -1468,6 +1471,8 @@ func _handle_clock_in(peer_id: int) -> void:
 		_show_local_message(message)
 	else:
 		_receive_message.rpc_id(peer_id, message)
+	if shift.state == Shift.State.PRE_SHIFT:
+		_set_clocked_in.rpc(PackedInt32Array(shift.clocked_in_peers()))
 	if shift.state == Shift.State.PRE_SHIFT and shift.everyone_clocked_in():
 		_start_night.rpc(night.number, night.pick_difficulty(), false, night.grade)
 
@@ -1475,6 +1480,7 @@ func _handle_clock_in(peer_id: int) -> void:
 @rpc("authority", "call_local", "reliable")
 func _start_night(number: int, difficulty: int, late := false, grade := 0) -> void:
 	print("[net] Night %d started at difficulty %d" % [number, difficulty])
+	_clocked_in_peers.clear()
 	night.number = number
 	night.grade = grade
 	night.difficulty = difficulty
@@ -1685,7 +1691,9 @@ func _update_tonight_board() -> void:
 		_tonight_board.double_sided = false
 		add_child(_tonight_board)
 	var lines: Array[String] = ["TONIGHT  ·  NIGHT %d" % night.number]
-	if night.conditions.active.is_empty():
+	if shift.state == Shift.State.PRE_SHIFT:
+		pass
+	elif night.conditions.active.is_empty():
 		lines.append("Shift notes: none")
 	else:
 		lines.append("Shift notes: " + ", ".join(night.conditions.names()))
@@ -1697,8 +1705,51 @@ func _update_tonight_board() -> void:
 	if round_text != "":
 		lines.append(round_text)
 	if shift.state == Shift.State.PRE_SHIFT:
-		lines.append("(Written up when everyone clocks in.)")
+		lines.append_array(_briefing_lines())
 	_tonight_board.text = "\n".join(lines)
+
+
+## Every computer: who's clocked in so far (the host sends it with each clock-in).
+@rpc("authority", "call_local", "reliable")
+func _set_clocked_in(peers: PackedInt32Array) -> void:
+	_clocked_in_peers.assign(Array(peers))
+
+
+## Roster kinds whose field guide entry goes by another name.
+const BRIEFING_GUIDE_KEYS := {"locker_thing": "Lockers", "ghost": "SchoolGhost", "twins": "Twin"}
+
+
+## Before the shift, the board is a briefing: the team, what's been seen in the wings open
+## tonight, and a plan.
+func _briefing_lines() -> Array[String]:
+	var lines: Array[String] = []
+	var team: Array[String] = []
+	for guard: Guard in players.get_children():
+		var ready := guard.name.to_int() in _clocked_in_peers
+		team.append("%s (%s) %s" % [guard.display_name(), Career.rank_title(guard.rank), "✓" if ready else "· not in yet"])
+	lines.append("TEAM: " + ",  ".join(team))
+	# The monsters that could be about tonight: named if you've met them.
+	var known := FieldGuide.discovered()
+	var met: Array[String] = []
+	var strangers := 0
+	for kind: String in MonsterDirector.ROSTER:
+		var entry: Dictionary = MonsterDirector.ROSTER[kind]
+		if entry["night"] > night.number:
+			continue
+		if night.difficulty > 0 and SchoolBuilder.area_difficulty(entry["home"]) > night.difficulty:
+			continue
+		if BRIEFING_GUIDE_KEYS.get(kind, kind.to_pascal_case()) in known:
+			met.append(entry["name"])
+		else:
+			strangers += 1
+	var seen_text := ", ".join(met) if not met.is_empty() else "nothing you've met"
+	lines.append("Reported in the open wings: %s%s." % [seen_text,
+			" and %d you haven't" % strangers if strangers > 0 else ""])
+	var guards := players.get_child_count()
+	lines.append("Plan: %s Shift notes go up when everyone clocks in." % (
+			"one of you at the desk on the cameras, the rest out on the round." if guards > 1
+			else "the round first, then the cameras; come back if it goes quiet."))
+	return lines
 
 
 ## The local guard flagged a camera: everyone gets told, and a marker shows the spot.
@@ -1827,6 +1878,7 @@ func _set_lockdown(on: bool, rule := "") -> void:
 	if on:
 		if _siren == null:
 			_siren = AudioStreamPlayer.new()
+			_siren.bus = &"SFX"
 			var freqs: Array = []
 			for i in 16:
 				freqs.append(520.0 + 380.0 * sin(i / 16.0 * PI))

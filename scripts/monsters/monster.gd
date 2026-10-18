@@ -49,6 +49,11 @@ var footstep_volume := -2.0
 var silent := false
 ## Joins in when the lockdown alarm goes (the Ghost and the Shade have their own ways).
 var hunts_in_lockdown := true
+## Searches a cupboard when the guard it's chasing hides in it while it still had them in view
+## (or only just lost them). Off by default: the ones that chase turn it on. Rules-based ones
+## (the Crossing Guard, the Substitute, the Nurse, the Mascot, the Twin), the blind Lunch Lady
+## and the ones that never chase leave it off.
+var searches_cupboards := false
 ## What it was doing before a lockdown, to go back to afterwards. Host only.
 var _pre_lockdown_state := ""
 ## The state it starts the night in, to calm back down to after a lockdown. Host only.
@@ -121,6 +126,9 @@ func _physics_process(delta: float) -> void:
 		face(_stare_at - global_position)
 		return
 	if director.lockdown_left > 0.0 and hunts_in_lockdown and not harmless:
+		# Hiding is the lockdown's way out: nobody's cupboard gets searched while the alarm goes.
+		if _search_spot >= 0:
+			_end_search(false)
 		if _pre_lockdown_state == "":
 			_pre_lockdown_state = state
 		_lockdown_hunt()
@@ -130,6 +138,9 @@ func _physics_process(delta: float) -> void:
 		_pre_lockdown_state = ""
 		_stuck_for = 0.0
 		_after_lockdown(before)
+	if _search_spot >= 0:
+		_search(delta)
+		return
 	think(delta)
 
 
@@ -313,7 +324,9 @@ func patrol_step(points: Array[Vector3], delta: float, speed: float, pause: Vect
 func find_guard(reach: float, need_sight := true, test := Callable()) -> Guard:
 	for guard in director.targetable_guards():
 		# A guard whose nerve is going is noticed from further off.
-		if distance_to_guard(guard) > reach * senses * director.nerve_reach(guard):
+		# Crouched low, a guard is spotted from less far (and not over desks: see can_see).
+		var low := 0.7 if need_sight and guard.is_crouching else 1.0
+		if distance_to_guard(guard) > reach * senses * director.nerve_reach(guard) * low:
 			continue
 		if test.is_valid() and not test.call(guard):
 			continue
@@ -326,6 +339,7 @@ func find_guard(reach: float, need_sight := true, test := Callable()) -> Guard:
 ## Call when a chase begins, so `chase` starts with a fresh "lost sight" timer.
 func start_chase() -> void:
 	_unseen_for = 0.0
+	_saw_target_at = _now()
 
 
 ## One frame of going after `target`, catching anyone in reach. Returns false when the chase
@@ -334,20 +348,146 @@ func start_chase() -> void:
 func chase(target: Guard, speed: float, delta: float, give_up_after := INF) -> bool:
 	if not is_instance_valid(target) or target.is_dead:
 		return false
-	# Hidden in a cupboard: it's lost them (if it saw them go in, Hiding deals with that).
+	# Hidden in a cupboard: it's lost them, unless it saw them go in (or only just lost sight
+	# of them, close by). Then it goes and searches that cupboard.
 	if target.hiding:
+		_think_about_searching(target)
 		return false
-	if give_up_after < INF:
-		if director.can_see(eye_position(), target):
-			_unseen_for = 0.0
-		else:
-			_unseen_for += delta
-		if _unseen_for > give_up_after:
-			return false
+	if director.can_see(eye_position(), target):
+		_unseen_for = 0.0
+		_saw_target_at = _now()
+	else:
+		_unseen_for += delta
+	if _unseen_for > give_up_after:
+		return false
 	if not move_to(target.global_position, speed):
 		return false
 	catch_nearby()
 	return true
+
+
+# --- Searching a cupboard (host) ---------------------------------------------------------
+
+## How recently it must have seen its target, or how close it must be, to know which cupboard.
+const SEARCH_MEMORY := 3.0
+const SEARCH_NEAR := 6.0
+const SEARCH_WALK_SPEED := 3.0
+## Real seconds it gives up trying to reach the cupboard after.
+const SEARCH_WALK_TIMEOUT := 12.0
+## Real seconds it stands rattling the doors.
+const SEARCH_SECONDS := Vector2(3.0, 5.0)
+## It rattles at least this long before pulling out a guard who gave themselves away.
+const SEARCH_PULL_AFTER := 1.0
+## Real seconds before it'll search for the same guard again (so it doesn't stand there all night).
+const SEARCH_COOLDOWN := 20.0
+
+## The cupboard it's searching (-1 when it isn't), and who's inside.
+var _search_spot := -1
+var _search_guard: Guard
+var _search_walk_left := 0.0
+## Rattling: real seconds it'll keep at it, and how long it has so far (-1 while still walking).
+var _search_for := 0.0
+var _search_rattled := -1.0
+## Peer -> when it may next search for them.
+var _search_again_at: Dictionary = {}
+var _saw_target_at := -INF
+## What it was doing (as its own behaviour left it), to go back to after the search.
+var _search_was := ""
+
+
+func _now() -> float:
+	return Time.get_ticks_msec() / 1000.0
+
+
+## Host: its target just vanished into a cupboard. Did it see where they went?
+func _think_about_searching(target: Guard) -> void:
+	if not searches_cupboards or _search_spot >= 0:
+		return
+	if _now() - _saw_target_at > SEARCH_MEMORY and distance_to_guard(target) > SEARCH_NEAR:
+		return
+	begin_search(target)
+
+
+## Host: goes to the cupboard this guard is hiding in and searches it. Does nothing if it
+## doesn't search, there's a lockdown on, or it searched for them a moment ago.
+func begin_search(target: Guard) -> void:
+	var hiding := director.hiding
+	if not searches_cupboards or hiding == null or _search_spot >= 0 or director.lockdown_left > 0.0:
+		return
+	var peer := target.name.to_int()
+	var spot: int = hiding.hidden.get(peer, -1)
+	if spot < 0 or _now() < float(_search_again_at.get(peer, -INF)):
+		return
+	for other in director.active_monsters():
+		if other != self and other._search_spot == spot:
+			return
+	_search_spot = spot
+	_search_guard = target
+	_search_walk_left = SEARCH_WALK_TIMEOUT
+	_search_rattled = -1.0
+	_search_again_at[peer] = _now() + SEARCH_COOLDOWN
+	_search_was = ""
+	_stuck_for = 0.0
+	# A fresh path to the doors, even if it last stood at this very cupboard.
+	_agent.target_position = global_position
+
+
+## True while it's searching a cupboard (walking up to it, or at the doors).
+func is_searching() -> bool:
+	return _search_spot >= 0
+
+
+## Host, every frame of a search: walk up, rattle the doors, then pull them out or give up.
+func _search(delta: float) -> void:
+	var hiding := director.hiding
+	if hiding == null or not is_instance_valid(_search_guard) or _search_guard.is_dead \
+			or int(hiding.hidden.get(_search_guard.name.to_int(), -1)) != _search_spot:
+		# They climbed out (or were let out): back to whatever it does, which may well be them.
+		_end_search(false)
+		return
+	# (Its own behaviour has just had its say about losing them: remember that, to go back to.)
+	if _search_was == "":
+		_search_was = state if state != "" else _calm_state
+		state = "seek"
+	if _search_rattled < 0.0:
+		var front := hiding.front_of(_search_spot)
+		var flat := Vector2(global_position.x - front.x, global_position.z - front.z).length()
+		_search_walk_left -= delta
+		if flat > 0.6 and _search_walk_left > 0.0 and not is_stuck():
+			if not move_to(front, SEARCH_WALK_SPEED):
+				_end_search(false)
+			return
+		if flat > 2.5:
+			# It couldn't get there: it gives up without a fuss.
+			_end_search(false)
+			return
+		_search_rattled = 0.0
+		_search_for = randf_range(SEARCH_SECONDS.x, SEARCH_SECONDS.y)
+		state = "search"
+		hiding.start_search(_search_spot, self)
+	halt()
+	face(hiding.door_of(_search_spot) - global_position)
+	_search_rattled += delta
+	if _search_rattled >= SEARCH_PULL_AFTER and hiding.gives_away(_search_guard):
+		hiding.pull_out(_search_guard, self)
+		_end_search(true)
+		return
+	if _search_rattled >= _search_for:
+		_end_search(false)
+
+
+## Host: the search is over. `caught` true: it found them.
+func _end_search(caught: bool) -> void:
+	var hiding := director.hiding
+	if hiding and _search_rattled >= 0.0:
+		hiding.stop_search(_search_spot, caught)
+	_search_spot = -1
+	_search_guard = null
+	_search_rattled = -1.0
+	_stuck_for = 0.0
+	if (state == "seek" or state == "search") and _search_was != "":
+		state = _search_was
+	_search_was = ""
 
 
 ## True when it has been pushing against something for over a second (e.g. cutting a corner

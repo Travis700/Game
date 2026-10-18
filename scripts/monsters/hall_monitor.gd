@@ -21,6 +21,8 @@ var _whistle: AudioStream
 
 func _init() -> void:
 	display_name = "the Hall Monitor"
+	# It chases runners by sight: hide while it can still see you and it checks the cupboard.
+	searches_cupboards = true
 	state = "patrol"
 
 

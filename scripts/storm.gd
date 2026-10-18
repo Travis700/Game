@@ -22,6 +22,7 @@ var _on := false
 
 func _ready() -> void:
 	_rain = AudioStreamPlayer.new()
+	_rain.bus = &"Ambience"
 	_rain.stream = SoundBank.get_sound("rain", Sfx.notes([1.0], 2.0, 0.05, "noise", true), true)
 	_rain.volume_db = -15.0
 	add_child(_rain)

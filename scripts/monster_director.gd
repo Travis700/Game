@@ -153,6 +153,8 @@ var _starting_mood := ""
 var _lockdown_times: Array[float] = []
 ## Everyone's nerve. Host only.
 var nerve: Nerve
+## The cupboards (it sets this itself), for monsters that search them.
+var hiding: Hiding
 ## Host: whether the last correct Monster log was the first guard to log that monster.
 var last_log_was_first := true
 ## Host: recent loud noises: [position, until (real seconds)].
@@ -710,9 +712,10 @@ func may_enter(point: Vector3) -> bool:
 	return night_number >= GUARD_ROOM_OPENS_ON_NIGHT or not GUARD_ROOM.has_point(point)
 
 
-## Can someone at `from` see this guard, with nothing solid in between?
+## Can someone at `from` see this guard, with nothing solid in between? A crouching guard's
+## head is lower, so a desk or a counter can hide them.
 func can_see(from: Vector3, guard: Guard) -> bool:
-	return _clear_line(from, guard.global_position + Vector3(0, 1.4, 0), guard)
+	return _clear_line(from, guard.global_position + Vector3(0, 0.85 if guard.is_crouching else 1.4, 0), guard)
 
 
 ## Is a living guard shining their flashlight at this point? Only checks `only` if given.
@@ -906,7 +909,8 @@ func _watch_drill(delta: float) -> void:
 			var near := INF
 			for monster in active_monsters():
 				near = minf(near, monster.global_position.distance_to(position))
-			broke = (near < 12.0 and speed > 0.8) \
+			# Creeping along crouched, footsteps only carry half as far.
+			broke = (near < (6.0 if guard.is_crouching else 12.0) and speed > 0.8) \
 					or (near < 30.0 and (guard.is_running or voice_level(guard) > 0.3))
 		if broke:
 			_broke_drill_at[peer] = now
