@@ -11,7 +11,9 @@ effects (see [CREDITS.md](CREDITS.md)); the furniture is real models from Poly H
 dressed with the clutter of a school day (books, bags, mugs, computers, cobwebs). Everything is in:
 nine nights with a last-bell finale, then Overtime; three difficulties (main building, classroom
 wing, science wing); 18 monsters with moods, a field guide and R. Hale's notebook; the guard room
-and its 16 cameras; light switches in every room and TVs that monsters switch on; watchman rounds,
+and its 19 cameras; light switches in every room and TVs that monsters switch on; restrooms (taps, flushing
+toilets, stall doors) and a band room with a piano, all of which the school sets off by itself; drawers to search;
+clutter you can knock over; watchman rounds,
 power cuts, shift notes (a thunderstorm among them) and nightly bonuses; a training shift,
 close calls and incident photos; ranks with hats and perks; the vending machine; saving and
 checkpoints; a daily shift (solo or as a team); achievements and records; proximity voice chat,

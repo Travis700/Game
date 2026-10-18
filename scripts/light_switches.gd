@@ -25,6 +25,9 @@ const ROOMS := {
 	"Science Lab": AABB(Vector3(40, -1, -14), Vector3(22, 6, 18)),
 	"Art Room": AABB(Vector3(62, -1, -14), Vector3(18, 6, 18)),
 	"Locker Rooms": AABB(Vector3(40, -1, 10), Vector3(40, 6, 10)),
+	"Boys' Restroom": AABB(Vector3(-40, -1, 10), Vector3(10, 6, 10)),
+	"Girls' Restroom": AABB(Vector3(-30, -1, 10), Vector3(10, 6, 10)),
+	"Music Room": AABB(Vector3(20, -1, 10), Vector3(20, 6, 10)),
 }
 ## How bright a room's lights are when someone switches them on at night (their own night
 ## brightness, if they have one: some rooms are left on).

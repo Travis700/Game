@@ -12,11 +12,11 @@ extends Node3D
 ##           |                 |CUSTODN |                  |
 ##   z =   4 +-----------------+--------+------------------+
 ##           |                  MAIN HALLWAY               |
-##   z =  10 +----------+---------+-------+---------+------+
-##           | (closed) |  FRONT  | LOBBY | GUARD   |(clsd)|
-##           |          |  OFFICE |       | ROOM    |      |
-##   z =  20 +----------+---------+--[ ]--+---------+------+
-##          x=-40      -20       -6   0   6        20     40
+##   z =  10 +----+-----+---------+-------+---------+------+
+##           |BOYS|GIRLS|  FRONT  | LOBBY | GUARD   | BAND |
+##           | WC | WC  |  OFFICE |       | ROOM    | ROOM |
+##   z =  20 +----+-----+---------+--[ ]--+---------+------+
+##          x=-40 -30  -20       -6   0   6        20     40
 ##                         front yard, path, gate at z = 45
 ##
 ## The wings (z = -14 to 20) continue the main hallway west (x = -80 to -40) and east (40 to 80):
@@ -56,6 +56,9 @@ const AREAS := {
 	"Locker Rooms": AABB(Vector3(40, -1, 10), Vector3(40, 6, 10)),
 	# No camera covers it, but from night 7 things get in, and guards need to log them.
 	"Guard Room": AABB(Vector3(6, -1, 10), Vector3(14, 6, 10)),
+	"Boys' Restroom": AABB(Vector3(-40, -1, 10), Vector3(10, 6, 10)),
+	"Girls' Restroom": AABB(Vector3(-30, -1, 10), Vector3(10, 6, 10)),
+	"Music Room": AABB(Vector3(20, -1, 10), Vector3(20, 6, 10)),
 }
 ## The lowest difficulty each wing's areas are open at. Areas not listed are always open.
 const AREA_DIFFICULTY := {
@@ -150,8 +153,12 @@ func _ready() -> void:
 	_build_wear()
 	_build_clutter()
 	_build_landmarks()
+	# After the wings, so their cameras keep their places on the monitors.
+	_build_restrooms()
+	_build_music_room()
 	dressing.commit()
 	_merge_static_meshes()
+	_add_fixtures()
 
 
 ## Thousands of boxes would each be a draw call. Once everything is built, the boxes that never
@@ -764,9 +771,12 @@ func _build_walls() -> void:
 	_wall_z(-40, -30, 20, [[7.0, 2.6]], "brick")
 	_wall_z(40, -30, 20, [[7.0, 2.6]], "brick")
 
-	# North side of the main hallway: lobby arch and the guard room's back door.
-	_wall_x(10, -40, 40, [[0.0, 6.0, 3.0], [16.0, 1.6]])
+	# North side of the main hallway: the restrooms' doors, the lobby arch, the guard room's back
+	# door and the band room's double doors.
+	_wall_x(10, -40, 40, [[BOYS_DOOR_X, RESTROOM_DOOR_WIDTH], [GIRLS_DOOR_X, RESTROOM_DOOR_WIDTH], [0.0, 6.0, 3.0],
+			[16.0, 1.6], [MUSIC_DOOR_X, MUSIC_DOOR_WIDTH]])
 	# Rooms along the front of the building.
+	_wall_z(-30, 10, 20)
 	_wall_z(-20, 10, 20)
 	_wall_z(-6, 10, 20, [[15.0, 1.6]])
 	_wall_z(6, 10, 20, [[15.0, 1.6]])
@@ -870,7 +880,8 @@ func _build_guard_room() -> void:
 func _build_hallway() -> void:
 	# Lockers line both sides, leaving gaps for the doorways.
 	# (Stopping short of the ends, where the hiding cupboards stand.)
-	for span: Vector2 in [Vector2(-38.25, -3.2), Vector2(3.2, 14.9), Vector2(17.1, 38.25)]:
+	for span: Vector2 in [Vector2(-38.25, -36.0), Vector2(-34.0, -26.0), Vector2(-24.0, -3.2), Vector2(3.2, 14.9),
+			Vector2(17.1, 25.6), Vector2(28.4, 38.25)]:
 		_locker_row(span.x, span.y, 9.62)
 	for span: Vector2 in [Vector2(-39.6, -16.7), Vector2(-13.3, -1.0), Vector2(1.0, 13.3), Vector2(16.7, 39.6)]:
 		_locker_row(span.x, span.y, 4.38)
@@ -1359,6 +1370,7 @@ const VENTS: Array[Vector2] = [
 	Vector2(-13, 15), Vector2(13, 17.8), Vector2(0, 13), Vector2(-47, 12.5), Vector2(-61, 12.5),
 	Vector2(-49, -6), Vector2(-69, 0), Vector2(-74, 12), Vector2(-22, -12), Vector2(-32, -25),
 	Vector2(0, -16), Vector2(51, -1), Vector2(51, -11), Vector2(71, 0), Vector2(45, 12), Vector2(65, 12),
+	Vector2(-35, 16.5), Vector2(-25, 16.5), Vector2(30, 13), Vector2(37, 17),
 ]
 ## [where, which way it faces]
 const EXIT_SIGNS := [
@@ -1757,6 +1769,7 @@ const FLOORS := [
 	["checker", -40.0, -5.0, -30.0, 4.0], ["quarry", -5.0, 5.0, -30.0, -12.0],
 	["carpet", -80.0, -58.0, -14.0, 4.0],
 	["white_tile", 40.0, 80.0, 10.0, 20.0], ["white_tile", -80.0, -68.0, 10.0, 20.0],
+	["white_tile", -40.0, -20.0, 10.0, 20.0],
 ]
 
 
@@ -1899,7 +1912,7 @@ func _build_facade() -> void:
 
 
 ## Where inside walls meet the front wall (x), so no window lands on one.
-const FRONT_WALL_JOINS: Array[float] = [-68.0, -54.0, -40.0, -20.0, -6.0, 6.0, 20.0, 40.0, 60.0]
+const FRONT_WALL_JOINS: Array[float] = [-68.0, -54.0, -40.0, -30.0, -20.0, -6.0, 6.0, 20.0, 40.0, 60.0]
 
 
 ## Where the clipped hedges along the front wall are centred (x; each is 4 m long).
@@ -2571,3 +2584,290 @@ func _build_science_wing() -> void:
 	_camera("Science Lab", Vector3(40.4, 3.2, 3.6), Vector3(56, 0, -9), 3)
 	_camera("Art Room", Vector3(79.6, 3.2, 3.6), Vector3(70, 0.5, -10), 3)
 	_camera("Locker Rooms", Vector3(40.4, 3.2, 19.6), Vector3(60, 0, 12), 3)
+
+
+# --- The restrooms and the band room -------------------------------------------------------
+
+## The two spaces either side of the front office and guard room, off the main hall: the boys'
+## restroom (x -40 to -30) and the girls' (-30 to -20) to the west, the band room (20 to 40) to
+## the east. Restrooms and Piano make their fixtures work.
+const BOYS_DOOR_X := -35.0
+const GIRLS_DOOR_X := -25.0
+const RESTROOM_DOOR_WIDTH := 1.2
+const MUSIC_DOOR_X := 27.0
+const MUSIC_DOOR_WIDTH := 2.0
+## Toilet stalls along a restroom's back wall: each one's width and depth, its door's width,
+## and how far off the floor the partitions start and how high they reach.
+const STALL_WIDTH := 1.3
+const STALL_DEPTH := 1.6
+const STALL_DOOR := 0.8
+const PARTITION_BOTTOM := 0.3
+const PARTITION_TOP := 2.05
+## The band room's risers: where each step starts (x) and how high it is. They run to RISER_END.
+const RISER_STEPS: Array[Vector2] = [Vector2(25.0, 0.15), Vector2(28.0, 0.3), Vector2(31.0, 0.45)]
+const RISER_END := 34.0
+const RISER_Z := Vector2(11.6, 19.875)
+
+## For Restrooms: every toilet and urinal, and every sink ({"body", "spout", "basin"}: where the
+## tap's water comes out and lands) and stall door ({"hinge" (on the floor, the door reaching +X
+## from it), "width"}).
+var flushers: Array[Interactable] = []
+var sinks: Array[Dictionary] = []
+var stalls: Array[Dictionary] = []
+## For Piano: the band room's piano.
+var piano_body: Interactable
+## The nodes that make them work (they live beside the school: see _add_fixtures).
+var restrooms: Restrooms
+var piano: Piano
+
+
+func _build_restrooms() -> void:
+	_add_mat("stall", Color(0.33, 0.42, 0.45), 0.4)
+	_add_mat("counter", Color(0.5, 0.48, 0.45), 0.3)
+	var mirror := StandardMaterial3D.new()
+	mirror.albedo_color = Color(0.6, 0.62, 0.64)
+	mirror.metallic = 1.0
+	mirror.roughness = 0.05
+	_mats["mirror"] = mirror
+	# Boys' (west): sinks on the west wall, three stalls along the back, urinals on the east wall.
+	_restroom(-40.0, -30.0, BOYS_DOOR_X, 1.0, 3)
+	for i in 3:
+		_urinal(Vector3(-30.125, 0, 12.6 + i * 1.1))
+		if i > 0:
+			_box(Vector3(-30.4, 1.0, 12.05 + i * 1.1), Vector3(0.5, 1.2, 0.03), "stall")
+	_solid_model("prop_wet_floor_sign", Vector3(-37.6, 0, 16.4), 0.62, 0.7, Vector3(0.3, 0.62, 0.3))
+	# Girls' (east): sinks on the east wall, four stalls along the back.
+	_restroom(-30.0, -20.0, GIRLS_DOOR_X, -1.0, 4)
+	_solid_model("prop_trash_can", Vector3(-23.6, 0, 19.4), 0.6, 0.0, Vector3(0.4, 0.6, 0.4))
+	_sign("BOYS", Vector3(BOYS_DOOR_X, 2.7, 9.85), Vector3.FORWARD, 44, Color(0.55, 0.75, 1.0))
+	_sign("GIRLS", Vector3(GIRLS_DOOR_X, 2.7, 9.85), Vector3.FORWARD, 44, Color(1.0, 0.65, 0.8))
+	_light(Vector3(-35.0, WALL_H - 0.3, 15.0), 0.25, 8.0, true, true, Color(0.9, 1.0, 0.95))
+	_light(Vector3(-25.0, WALL_H - 0.3, 15.0), 0.0, 8.0, false, true, Color(0.9, 1.0, 0.95))
+	_camera("Boys' Restroom", Vector3(-30.4, 3.2, 10.4), Vector3(-37.5, 0.3, 17.0))
+	_camera("Girls' Restroom", Vector3(-29.6, 3.2, 10.4), Vector3(-23.0, 0.3, 17.5))
+
+
+## One restroom between x1 and x2 (z 10 to 20), its door in the hall wall at `door_x`: tiled
+## walls, a counter of sinks under a long mirror on one side wall (`sink_side` 1: the west wall,
+## -1: the east), paper towels and a bin, and `stall_count` stalls along the back from the west.
+func _restroom(x1: float, x2: float, door_x: float, sink_side: float, stall_count: int) -> void:
+	var west := x1 + WALL_T * 0.5
+	var east := x2 - WALL_T * 0.5
+	var front := 10.0 + WALL_T * 0.5
+	var back := 20.0 - WALL_T * 0.5
+	_tile_walls(west, east, front, back, door_x, RESTROOM_DOOR_WIDTH)
+	# The counter, the mirror over it (in a steel frame) and three sinks.
+	var wall := west if sink_side > 0.0 else east
+	var counter_x := wall + sink_side * 0.3
+	var counter := Vector2(11.2, 14.8)
+	var middle := (counter.x + counter.y) * 0.5
+	_box(Vector3(counter_x, 0.42, middle), Vector3(0.6, 0.84, counter.y - counter.x), "counter")
+	_box(Vector3(counter_x + sink_side * 0.27, 0.78, middle), Vector3(0.06, 0.12, counter.y - counter.x), "steel", false)
+	_box(Vector3(wall + sink_side * 0.008, 1.6, middle), Vector3(0.01, 0.9, 3.4), "mirror", false)
+	for edge: float in [-1.0, 1.0]:
+		_box(Vector3(wall + sink_side * 0.012, 1.6 + edge * 0.465, middle), Vector3(0.02, 0.03, 3.46), "steel", false)
+		_box(Vector3(wall + sink_side * 0.012, 1.6, middle + edge * 1.715), Vector3(0.02, 0.96, 0.03), "steel", false)
+	for i in 3:
+		var at := Vector3(counter_x, 0.84, counter.x + 0.7 + i * 1.1)
+		var body := _interactable(at + Vector3(0, 0.16, 0), Vector3(0.55, 0.32, 0.6), "paint_white", "Turn the tap on", "")
+		if _model("prop_sink", at, 0.3, PI * 0.5 * sink_side):
+			_hide_boxes(body)
+		sinks.append({"body": body, "spout": at + Vector3(-sink_side * 0.17, 0.2, 0.0), "basin": at + Vector3(0, 0.06, 0)})
+	dressing.put("prop_paper_towel", Vector3(wall + sink_side * 0.025, 1.25, counter.y + 0.6), 0.32, PI * 0.5 * sink_side)
+	_solid_model("prop_trash_can", Vector3(wall + sink_side * 0.3, 0, counter.y + 0.6), 0.6, 0.0, Vector3(0.4, 0.6, 0.4))
+	for i in 3:
+		dressing.put("prop_paper_ball", Vector3(wall + sink_side * dressing.rng.randf_range(0.6, 1.2), 0,
+				counter.y + dressing.rng.randf_range(0.2, 1.2)), 0.05, dressing.rng.randf() * TAU)
+	# The stalls: painted steel partitions standing off the floor, a toilet in each, a rail across
+	# the tops, and a door (Restrooms hangs them).
+	var stall_front := back - STALL_DEPTH
+	var height := PARTITION_TOP - PARTITION_BOTTOM
+	var side := (STALL_WIDTH - STALL_DOOR) * 0.5
+	for i in stall_count:
+		var a := west + i * STALL_WIDTH
+		var b := a + STALL_WIDTH
+		_box(Vector3(b, PARTITION_BOTTOM + height * 0.5, stall_front + STALL_DEPTH * 0.5), Vector3(0.03, height, STALL_DEPTH), "stall")
+		_box(Vector3(b, PARTITION_BOTTOM * 0.5, stall_front + 0.03), Vector3(0.05, PARTITION_BOTTOM, 0.05), "steel", false)
+		for panel_x: float in [a + side * 0.5, b - side * 0.5]:
+			_box(Vector3(panel_x, PARTITION_BOTTOM + height * 0.5, stall_front), Vector3(side, height, 0.03), "stall")
+		var seat := Vector3((a + b) * 0.5, 0, back - 0.4)
+		var toilet := _interactable(seat + Vector3(0, 0.4, 0), Vector3(0.5, 0.8, 0.78), "paint_white", "Flush the toilet", "")
+		if _model("prop_toilet", seat, 0.8, PI):
+			_hide_boxes(toilet)
+		flushers.append(toilet)
+		# The paper, on the partition beside the seat.
+		_box(Vector3(b - 0.06, 0.72, back - 0.95), Vector3(0.08, 0.14, 0.16), "steel", false)
+		stalls.append({"hinge": Vector3(a + side, 0, stall_front), "width": STALL_DOOR})
+	var row_end := west + stall_count * STALL_WIDTH
+	_box(Vector3((west + row_end) * 0.5, PARTITION_TOP + 0.03, stall_front), Vector3(row_end - west, 0.04, 0.05), "steel", false)
+	dressing.litter(west + 0.5, east - 0.5, front + 0.8, stall_front - 0.4, 3)
+	dressing.corner_webs(west, east, front, back, WALL_H, 0.7)
+
+
+## Glazed tile up the walls of a restroom (inside faces west-east, front-back) to 1.5 m, with a
+## dark edge along the top, round the door in the front wall.
+func _tile_walls(west: float, east: float, front: float, back: float, door_x: float, door_width: float) -> void:
+	const HIGH := 1.5
+	const T := 0.008
+	var gap := Vector2(door_x - door_width * 0.5 - 0.08, door_x + door_width * 0.5 + 0.08)
+	var faces: Array[Array] = [
+		[Vector3((west + gap.x) * 0.5, 0, front + T * 0.5), Vector3(gap.x - west, 0, T)],
+		[Vector3((gap.y + east) * 0.5, 0, front + T * 0.5), Vector3(east - gap.y, 0, T)],
+		[Vector3((west + east) * 0.5, 0, back - T * 0.5), Vector3(east - west, 0, T)],
+		[Vector3(west + T * 0.5, 0, (front + back) * 0.5), Vector3(T, 0, back - front)],
+		[Vector3(east - T * 0.5, 0, (front + back) * 0.5), Vector3(T, 0, back - front)],
+	]
+	for face: Array in faces:
+		var at: Vector3 = face[0]
+		var size: Vector3 = face[1]
+		_box(at + Vector3(0, HIGH * 0.5, 0), size + Vector3(0, HIGH, 0), "white_tile", false)
+		var edge := size + Vector3(0, 0.04, 0) + (Vector3(0, 0, 0.012) if size.z < 0.05 else Vector3(0.012, 0, 0))
+		_box(at + Vector3(0, HIGH + 0.02, 0), edge, "baseboard", false)
+
+
+## A urinal on the wall whose face is at `wall` (x), facing west, that flushes.
+func _urinal(wall: Vector3) -> void:
+	var at := wall + Vector3(-0.22, 0, 0)
+	var body := _interactable(at + Vector3(0, 0.55, 0), Vector3(0.42, 1.1, 0.42), "paint_white", "Flush the urinal", "")
+	if _model("prop_urinal", at, 1.45, -PI * 0.5):
+		_hide_boxes(body)
+	flushers.append(body)
+
+
+func _build_music_room() -> void:
+	const WEST := 20.0 + WALL_T * 0.5
+	const EAST := 40.0 - WALL_T * 0.5
+	const FRONT := 10.0 + WALL_T * 0.5
+	const BACK := 20.0 - WALL_T * 0.5
+	# The risers: three carpeted steps up towards the back, each with an easy slope onto it (so
+	# nobody has to climb), and chairs with music stands in rows on them, facing the conductor.
+	for i in RISER_STEPS.size():
+		var step := RISER_STEPS[i]
+		var to := RISER_STEPS[i + 1].x if i + 1 < RISER_STEPS.size() else RISER_END
+		var low := RISER_STEPS[i - 1].y if i > 0 else 0.0
+		_box(Vector3((step.x + to) * 0.5, step.y * 0.5, (RISER_Z.x + RISER_Z.y) * 0.5),
+				Vector3(to - step.x, step.y, RISER_Z.y - RISER_Z.x), "carpet")
+		_box(Vector3(step.x + 0.01, step.y - 0.015, (RISER_Z.x + RISER_Z.y) * 0.5), Vector3(0.04, 0.03, RISER_Z.y - RISER_Z.x),
+				"safety_yellow", false)
+		_ramp(step.x - 0.5, step.x, low, step.y)
+		for seat in 5:
+			var z := 12.6 + seat * 1.45
+			_school_chair(Vector3(step.x + 1.9, step.y, z), -PI * 0.5)
+			dressing.put("prop_music_stand", Vector3(step.x + 0.9, step.y, z + dressing.rng.randf_range(-0.1, 0.1)), 1.15,
+					PI * 0.5 + dressing.rng.randf_range(-0.25, 0.25))
+			if dressing.rng.randf() < 0.3:
+				dressing.put("prop_paper_scrap", Vector3(step.x + dressing.rng.randf_range(0.3, 2.6), step.y,
+						z + dressing.rng.randf_range(-0.5, 0.5)), 0.012, dressing.rng.randf() * TAU)
+	_ramp(RISER_END + 1.2, RISER_END, 0.0, RISER_STEPS[-1].y)
+	# The conductor's podium and stand, facing the rows.
+	_box(Vector3(23.0, 0.1, 15.0), Vector3(1.0, 0.2, 1.0), "wood")
+	dressing.put("prop_music_stand", Vector3(23.35, 0.2, 15.0), 1.2, -PI * 0.5)
+	# The whiteboard behind the conductor, with two staves ruled on it and the concert date.
+	if _model("prop_whiteboard", Vector3(WEST + 0.09, 0.85, 15.0), 1.45, PI * 0.5):
+		_staves(WEST + 0.103, 15.0)
+		_sign("SPRING CONCERT\nMAY 14 - 7 PM", Vector3(WEST + 0.105, 1.18, 15.0), Vector3.RIGHT, 22, Color(0.15, 0.25, 0.65))
+	# The piano against the front wall, with its bench.
+	var piano_at := Vector3(22.3, 0, FRONT + 0.31)
+	piano_body = _interactable(piano_at + Vector3(0, 0.65, 0), Vector3(1.75, 1.3, 0.6), "wood", "Play the piano", "")
+	if _model("prop_piano", piano_at, 1.3, 0.0):
+		_hide_boxes(piano_body)
+	_box(Vector3(22.3, 0.24, FRONT + 1.05), Vector3(0.9, 0.48, 0.36), "wood")
+	dressing.put("prop_book_stack", Vector3(21.7, 1.3, FRONT + 0.3), 0.11, 0.3)
+	# The teacher's desk in the corner.
+	_steel_desk(Vector3(22.8, 0, 18.4), 0.0)
+	_school_chair(Vector3(22.8, 0, 19.25), PI)
+	dressing.desk_top(Vector3(22.8, 0.77, 18.4), Vector2(1.2, 0.5), 0.0, 0.9, true)
+	# Behind the risers: shelves of cases and boxes, guitar cases, spare chairs and a bass drum.
+	for shelf_z: float in [12.4, 14.6]:
+		_solid_model("prop_steel_frame_shelves_01", Vector3(EAST - 0.32, 0, shelf_z), 1.8, -PI * 0.5, Vector3(0.45, 1.8, 0.95))
+	for spot: Array in [[Vector3(39.5, 0.6, 12.3), 0.3], [Vector3(39.55, 1.2, 14.7), 0.26], [Vector3(39.5, 0.0, 14.4), 0.3]]:
+		dressing.put("prop_cardboard_box_01", spot[0], spot[1], spot[0].z)
+	for spot: Array in [[Vector3(39.45, 1.2, 12.4), 0.05], [Vector3(39.45, 0.6, 14.6), -0.04]]:
+		_model("prop_guitar_case", spot[0], 0.12, spot[1])
+	for spot: Array in [[Vector3(37.0, 0, 13.6), 0.35], [Vector3(36.6, 0, 15.2), -0.2]]:
+		_solid_model("prop_guitar_case", spot[0], 0.12, spot[1], Vector3(0.45, 0.12, 1.0))
+	for i in 4:
+		_model("prop_school_chair", Vector3(36.4, i * 0.26, 11.0), 0.82, PI + 0.05 * (i % 2))
+	_box(Vector3(36.4, 0.75, 11.0), Vector3(0.55, 1.5, 0.6), "dark").visible = false
+	_bass_drum(Vector3(36.6, 0, 19.2))
+	# The front wall: a notice board, the clock, the PA speaker.
+	_model("prop_bulletin_board", Vector3(31.5, 1.0, FRONT + 0.018), 1.0)
+	_wall_clock(Vector3(34.5, 2.4, FRONT), 0.34)
+	dressing.put("prop_pa_speaker", Vector3(30.0, 3.0, FRONT + 0.115), 0.26, 0.0)
+	_solid_model("prop_trash_can", Vector3(24.2, 0, FRONT + 0.4), 0.6, 0.0, Vector3(0.4, 0.6, 0.4))
+	dressing.litter(WEST + 0.6, 24.3, FRONT + 1.5, BACK - 0.6, 3)
+	dressing.litter(35.4, EAST - 0.6, 15.6, 18.0, 2)
+	dressing.corner_webs(WEST, EAST, FRONT, BACK, WALL_H, 0.8)
+	_sign("BAND ROOM", Vector3(MUSIC_DOOR_X, 2.75, 9.85), Vector3.FORWARD, 40, Color(1.0, 0.85, 0.5))
+	_light(Vector3(25.0, WALL_H - 0.3, 15.0), 0.0, 10.0)
+	_light(Vector3(35.0, WALL_H - 0.3, 15.0), 0.2, 10.0, true)
+	_camera("Music Room", Vector3(39.6, 3.2, 10.4), Vector3(24.0, 0.3, 16.5))
+
+
+## An invisible slope across the risers' width, from (x_low, y_low) up to the edge of a step at
+## (x_high, y_high), so guards (who can't climb a step) and monsters walk up onto it.
+func _ramp(x_low: float, x_high: float, y_low: float, y_high: float) -> void:
+	var shape := ConvexPolygonShape3D.new()
+	var points := PackedVector3Array()
+	for z: float in [RISER_Z.x, RISER_Z.y]:
+		points.append_array([Vector3(x_low, y_low, z), Vector3(x_high, y_low, z), Vector3(x_high, y_high, z)])
+	shape.points = points
+	var collider := CollisionShape3D.new()
+	collider.shape = shape
+	var body := StaticBody3D.new()
+	body.add_child(collider)
+	add_child(body)
+
+
+## Two five-line staves ruled across the band room whiteboard (its face at `face_x`), with a
+## scatter of notes on them.
+func _staves(face_x: float, middle_z: float) -> void:
+	if not _mats.has("marker"):
+		_add_mat("marker", Color(0.05, 0.06, 0.12), 0.5)
+	const LENGTH := 2.3
+	const GAP := 0.05
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 14
+	for top: float in [2.0, 1.6]:
+		for line in 5:
+			_box(Vector3(face_x, top - line * GAP, middle_z), Vector3(0.002, 0.006, LENGTH), "marker", false)
+		for bar in 3:
+			_box(Vector3(face_x, top - GAP * 2.0, middle_z - LENGTH * 0.5 + 0.05 + bar * LENGTH * 0.48),
+					Vector3(0.002, GAP * 4.0, 0.006), "marker", false)
+		for i in 9:
+			var head := Vector3(face_x + 0.001, top - rng.randi_range(0, 8) * GAP * 0.5, middle_z - 0.95 + i * 0.22)
+			_box(head, Vector3(0.002, 0.034, 0.045), "marker", false)
+			_box(head + Vector3(0, 0.07, 0.02), Vector3(0.002, 0.14, 0.006), "marker", false)
+
+
+## A bass drum on its side on the floor at `at`, its heads facing east and west.
+func _bass_drum(at: Vector3) -> void:
+	_add_mat("drum_shell", Color(0.42, 0.06, 0.08), 0.3)
+	const RADIUS := 0.28
+	var turn := Basis(Vector3.BACK, PI * 0.5)
+	for part: Array in [[0.36, RADIUS, "drum_shell"], [0.38, RADIUS * 0.92, "paint_white"]]:
+		var cylinder := CylinderMesh.new()
+		cylinder.height = part[0]
+		cylinder.top_radius = part[1]
+		cylinder.bottom_radius = part[1]
+		cylinder.radial_segments = 20
+		var mesh := MeshInstance3D.new()
+		mesh.mesh = cylinder
+		mesh.material_override = _mats[part[2]]
+		mesh.transform = Transform3D(turn, at + Vector3(0, RADIUS + 0.04, 0))
+		mesh.visibility_range_end = PROP_DRAW_DISTANCE * 1.2
+		add_child(mesh)
+	_box(at + Vector3(0, 0.3, 0), Vector3(0.42, 0.6, 0.6), "dark").visible = false
+
+
+## The nodes that make the restrooms and the piano work. They go beside the school (once the
+## school's parent has finished setting up), so the stall doors aren't baked into the navigation
+## mesh as walls.
+func _add_fixtures() -> void:
+	restrooms = Restrooms.new()
+	restrooms.build(self)
+	piano = Piano.new()
+	piano.build(self)
+	var holder := get_parent() if get_parent() != null else self
+	holder.add_child.call_deferred(restrooms)
+	holder.add_child.call_deferred(piano)

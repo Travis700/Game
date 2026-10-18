@@ -1,9 +1,10 @@
 """Tidies a downloaded model with Blender's Python module (pip install bpy) before slim_glb.py:
 
-    prep_glb.py in.glb out.glb [--keep a,b] [--drop a,b] [--turn deg] [--tris n]
+    prep_glb.py in.glb out.glb [--keep a,b] [--drop a,b] [--turn deg] [--tip deg] [--tris n]
 
 --keep / --drop pick mesh objects by name (any of the comma-separated pieces), --turn spins the model
-about the vertical axis (models should face +Z), --tris decimates to about that many triangles
+about the vertical axis (models should face +Z), --tip tips it forward about the left-right axis
+(e.g. 90 to lay something lying on its back upright, or stand a drum on its end), --tris decimates to about that many triangles
 (UVs kept). Everything left is joined into one mesh with its transforms applied.
 """
 import argparse, math
@@ -15,6 +16,7 @@ parser.add_argument('dst')
 parser.add_argument('--keep', default='')
 parser.add_argument('--drop', default='')
 parser.add_argument('--turn', type=float, default=0.0)
+parser.add_argument('--tip', type=float, default=0.0)
 parser.add_argument('--tris', type=int, default=0)
 args = parser.parse_args()
 
@@ -48,6 +50,8 @@ model = bpy.context.view_layer.objects.active
 bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 # Blender's up is Z, so turning about it turns the model about glTF's up (Y).
 model.data.transform(mathutils.Matrix.Rotation(math.radians(args.turn), 4, 'Z'))
+# And about Blender's X, which is glTF's X too (left to right).
+model.data.transform(mathutils.Matrix.Rotation(math.radians(args.tip), 4, 'X'))
 
 model.data.calc_loop_triangles()
 tris = len(model.data.loop_triangles)

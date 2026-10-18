@@ -53,6 +53,14 @@ const SOUNDS := {
 	"Haunt:steps": "Footsteps, running away",
 	"Haunt:pipes": "The pipes knocking",
 	"Haunt:lights": "A light switch clicking",
+	"Haunt:flush": "A toilet flushing, nobody there",
+	"Haunt:tap": "A tap turning on by itself",
+	"Haunt:stall": "A stall door slamming",
+	"Haunt:piano": "A few notes on the piano, nobody playing",
+	"Fixture:flush": "A toilet flushing",
+	"Fixture:tap": "Water running",
+	"Fixture:piano": "A piano note",
+	"Noise:piano": "A piano key, pressed over and over",
 	"Hiding:search": "Cupboard doors rattling",
 }
 const HEARING := 30.0

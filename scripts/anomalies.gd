@@ -92,6 +92,14 @@ const DEFINITIONS: Array[Dictionary] = [
 	{"area": "Main Hall West", "type": "Figure", "night": 6, "kind": "walker", "prop": "walker_west", "alts": [Vector3(-14.0, 0, 6.5), Vector3(-33.0, 0, 7.5)]},
 	{"area": "Lobby", "type": "Figure", "night": 6, "kind": "walker", "prop": "walker_lobby", "alts": [Vector3(-3.0, 0, 13.0), Vector3(3.5, 0, 16.0)]},
 	{"area": "West Hall", "type": "Figure", "night": 6, "kind": "walker", "prop": "walker_west_hall", "alts": [Vector3(-48.0, 0, 6.5), Vector3(-68.0, 0, 7.5)]},
+	# The restrooms and the band room.
+	{"area": "Music Room", "type": "Moved object", "night": 1, "kind": "move", "prop": "guitar_case", "alts": [Vector3(23.8, 0, 17.0), Vector3(36.0, 0, 17.4)],
+		"to": Vector3(24.0, 0, 12.6), "turn": 80.0},
+	{"area": "Music Room", "type": "Figure", "night": 2, "kind": "figure", "prop": "figure_band_room", "alts": [Vector3(32.9, 0.45, 15.8)]},
+	{"area": "Girls' Restroom", "type": "Extra object", "night": 1, "kind": "show", "prop": "restroom_bucket", "alts": [Vector3(-27.6, 0, 16.6)]},
+	{"area": "Boys' Restroom", "type": "Figure", "night": 3, "kind": "figure", "prop": "figure_restroom", "alts": [Vector3(-37.3, 0, 17.6)]},
+	{"area": "Girls' Restroom", "type": "Noise", "night": 5, "kind": "noise", "prop": "noise_restroom", "sound": "whisper"},
+	{"area": "Music Room", "type": "Noise", "night": 5, "kind": "noise", "prop": "noise_band_room", "sound": "piano"},
 ]
 ## How each noise sounds, and its caption.
 const NOISES := {
@@ -99,6 +107,7 @@ const NOISES := {
 	"static": "A TV hissing static",
 	"whisper": "Someone whispering",
 	"ball": "A ball bouncing, slowly",
+	"piano": "A piano key, pressed over and over",
 }
 
 var school: SchoolBuilder
@@ -207,6 +216,16 @@ func _build_wing_props() -> void:
 	_figure("walker_west", Vector3(-24.0, 0, 5.5), 0.0)
 	_figure("walker_lobby", Vector3(0.0, 0, 17.0), 180.0)
 	_figure("walker_west_hall", Vector3(-58.0, 0, 8.0), -90.0)
+	# The restrooms and the band room: a guitar case that wanders, a bucket nobody left, someone
+	# at the piano, someone at the mirror, whispering in the stalls, one key played again and again.
+	_prop("guitar_case", Vector3(37.4, 0, 16.6), [[Vector3(0, 0.06, 0), Vector3(0.42, 0.12, 1.0), "wood"]])
+	_prop("restroom_bucket", Vector3(-22.6, 0, 16.4), [
+		[Vector3(0, 0.25, 0), Vector3(0.5, 0.5, 0.5), "red"],
+		[Vector3(0, 0.9, 0), Vector3(0.05, 1.3, 0.05), "wood"]], false)
+	_figure("figure_band_room", Vector3(22.3, 0, 11.8), 180.0)
+	_figure("figure_restroom", Vector3(-38.9, 0, 13.6), -90.0)
+	_noise("noise_restroom", Vector3(-27.2, 1.0, 19.0), "whisper")
+	_noise("noise_band_room", Vector3(22.3, 1.0, 10.8), "piano")
 	_noise("noise_kitchen", Vector3(-2.0, 1.0, -20.0), "radio")
 	_noise("noise_office", Vector3(-12.0, 1.0, 14.0), "static")
 	_noise("noise_cafeteria", Vector3(-24.0, 1.0, -14.0), "whisper")
@@ -532,7 +551,7 @@ func _prop(prop_name: String, pos: Vector3, parts: Array, visible_at_start := tr
 ## Props that share another one's model ("": keep the boxes; the "wet floor sign" is really a
 ## stack of chairs).
 const PROP_MODELS := {"hall_bin": "trash_can", "wet_floor_sign": "", "hall_box": "cardboard_box_01",
-		"counter_box": "cardboard_box_01", "kitchen_crate": "plastic_crate_01"}
+		"counter_box": "cardboard_box_01", "kitchen_crate": "plastic_crate_01", "restroom_bucket": "mop_bucket"}
 
 
 ## Swaps a prop's boxes for its real model, if there is one (the boxes stay as its collision).
@@ -564,7 +583,7 @@ func _noise(prop_name: String, pos: Vector3, sound: String) -> void:
 
 static func _noise_stream(sound: String) -> AudioStream:
 	var recorded: AudioStream = SoundBank.get_sound({"radio": "radio", "static": "tv_static", "whisper": "whispers",
-			"ball": "ball_bounce"}.get(sound, ""), null, true)
+			"ball": "ball_bounce", "piano": "piano_e4"}.get(sound, ""), null, true)
 	if recorded:
 		return recorded
 	match sound:

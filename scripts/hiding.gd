@@ -28,6 +28,7 @@ const SPOTS := [
 	{"at": Vector3(79.2, 0, 15.0), "facing": Vector3(-1, 0, 0), "area": "Locker Rooms"},
 	{"at": Vector3(79.2, 0, -10.0), "facing": Vector3(-1, 0, 0), "area": "Art Room"},
 	{"at": Vector3(19.2, 0, 11.0), "facing": Vector3(-1, 0, 0), "area": "Guard Room"},
+	{"at": Vector3(39.2, 0, 18.6), "facing": Vector3(-1, 0, 0), "area": "Music Room"},
 ]
 ## A monster this close that sees you climb in saw exactly where you went: it searches, and it
 ## pulls you out.

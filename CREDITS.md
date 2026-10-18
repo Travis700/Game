@@ -133,6 +133,12 @@ Blender and the two baked into one model). In `assets/models/`:
 | prop_towel | Folded Towel | Nicothin | https://sketchfab.com/3d-models/folded-towel-c5f9e72edf7d4b5eaa2ec9b95c3b099d |
 | viewmodel_flashlight (the arm) | First Person hands rigged | David Fischer | https://sketchfab.com/3d-models/first-person-hands-rigged-547a45535f0c4fe787948f7a7a6a88db |
 | viewmodel_flashlight (the torch) | Flashlight Swiss Arms | TheSolomon | https://sketchfab.com/3d-models/flashlight-swiss-arms-d996eb16f53f47df9b13ddbf8fd279bb |
+| prop_toilet | Toilet | SushiKev3d | https://sketchfab.com/3d-models/toilet-868beb5a0e6840d7a1d647a42a5e5a8c |
+| prop_sink | Bathroom Sink 01 | OliverMatheGames | https://sketchfab.com/3d-models/bathroom-sink-01-2568c7d17d894bc7974b62cf93da0b48 |
+| prop_urinal | Urinal | ASA21 | https://sketchfab.com/3d-models/urinal-6bc39524d14f4dbfbe475d40ee7d9469 |
+| prop_piano | Brown Cherry Wood Upright Piano | Glowbox 3D | https://sketchfab.com/3d-models/brown-cherry-wood-upright-piano-ae0529d9da834820b8a9c30ec0b6228f |
+| prop_music_stand | Manhasset Music Stand | JeremyMichael | https://sketchfab.com/3d-models/manhasset-music-stand-17cff430f0354453b978bbd6d6f65e61 |
+| prop_guitar_case (the case alone) | Old Guitar Case | berryjoy | https://sketchfab.com/3d-models/old-guitar-case-3d33cf9d086f4ca1866df0b488c6532c |
 
 ## Long grass: made for this game
 
@@ -211,4 +217,5 @@ version of a SpriteCook image (`keyart_raw.png`, superseded). Capsule titles are
 `floor`, `ceiling`, `metal`, `locker`, `cork`, `board` textures: `tools/gen_textures.py`. The flashlight's
 beam pattern (`assets/textures/flashlight_cookie.png`): `tools/gen_flashlight.py`. Fallback sounds (used where
 there's no recording): `scripts/sfx.gd`, synthesised at runtime. The room tones (`room_fridge`, `room_vending`,
-`room_fluorescent`, `clock_tick` in `assets/sounds/`) are synthesised by `tools/gen_room_tones.py`.
+`room_fluorescent`, `clock_tick` in `assets/sounds/`) are synthesised by `tools/gen_room_tones.py`. The restroom and band
+room sounds (`tap_water`, `toilet_flush`, `piano_*`) are synthesised by `tools/gen_fixture_sounds.py`.

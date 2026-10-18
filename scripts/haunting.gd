@@ -3,8 +3,9 @@ extends Node3D
 ## "Did you hear that?": the building itself acting up, for everyone at once. Every so often,
 ## somewhere a little way off from one of the guards (and out of their sight if it can be), a
 ## door slams, a locker bangs, a ball bounces in the empty gym, a phone rings once, someone
-## giggles far off, footsteps run away down an empty hall, the pipes knock, or a room's lights
-## click on by themselves. Nothing is there. It can't hurt anyone; it's there so a quiet hallway
+## giggles far off, footsteps run away down an empty hall, the pipes knock, a room's lights
+## click on by themselves, a toilet flushes or a tap comes on in an empty restroom, a stall door
+## slams, or the band room piano plays a few notes. Nothing is there. It can't hurt anyone; it's there so a quiet hallway
 ## never feels quite safe, and so the crew has something to argue about over the radio.
 ##
 ## The host picks when and where; every computer plays it at the same spot, with a caption.
@@ -19,7 +20,10 @@ const FAR := 25.0
 ## Nothing before this many in-game minutes past midnight.
 const QUIET_START_MINUTES := 15.0
 ## The events, by name. Each has its own sound and caption (Captions: "Haunt:<name>").
-const KINDS: Array[String] = ["door", "locker", "ball", "phone", "giggle", "steps", "pipes", "lights"]
+const KINDS: Array[String] = ["door", "locker", "ball", "phone", "giggle", "steps", "pipes", "lights", "flush", "tap",
+	"stall", "piano"]
+## The kinds the restrooms' fixtures and the piano play themselves (see Restrooms and Piano).
+const FIXTURE_KINDS: Array[String] = ["flush", "tap", "stall", "piano"]
 ## Somewhere in the empty gym for the ball.
 const GYM_SPOTS: Array[Vector3] = [
 	Vector3(12, 0.2, -24), Vector3(22, 0.2, -24), Vector3(32, 0.2, -24), Vector3(12, 0.2, -14),
@@ -70,6 +74,9 @@ func update(delta: float) -> void:
 func end_night() -> void:
 	_next_in = -1.0
 	_last_minutes = INF
+	# Taps turned off and the stall doors put back for tomorrow.
+	if _restrooms():
+		_restrooms().settle()
 
 
 ## Real seconds to wait for the next event: fewer on night 1, more as the run goes on, and the
@@ -172,7 +179,23 @@ func _spots_for(kind: String) -> Array[Vector3]:
 					var box: AABB = LightSwitches.ROOMS[room["name"]]
 					var dark: bool = room["name"] != "Guard Room" and not light_switches.lit_at(box.get_center())
 					spots.append(switch.global_position if dark and is_instance_valid(switch) else Vector3.INF)
+		"flush", "tap", "stall":
+			var restrooms := _restrooms()
+			if restrooms:
+				spots.append_array(restrooms.haunt_spots(kind))
+		"piano":
+			var piano := _piano()
+			if piano:
+				spots.append(piano.haunt_spot())
 	return spots
+
+
+func _restrooms() -> Restrooms:
+	return director.school.restrooms if director and director.school and is_instance_valid(director.school.restrooms) else null
+
+
+func _piano() -> Piano:
+	return director.school.piano if director and director.school and is_instance_valid(director.school.piano) else null
 
 
 ## Is this spot right for an event meant for `guard`: in range, in an open part of the school,
@@ -208,6 +231,10 @@ func _set_off(kind: String, index: int, at: Vector3, guard: Guard) -> void:
 		"lights":
 			light_switches.flip(index, true)
 			_play.rpc(kind, at, at)
+		"flush", "tap", "stall":
+			_restrooms().haunt(kind, index)
+		"piano":
+			_piano().haunt()
 		"steps":
 			# They run off away from the guard, down the hall.
 			var away := signf(at.x - guard.global_position.x)
@@ -221,7 +248,7 @@ func _set_off(kind: String, index: int, at: Vector3, guard: Guard) -> void:
 ## Every computer: plays an event at `at` (and, for running footsteps, on to `to`).
 @rpc("authority", "call_local", "reliable")
 func _play(kind: String, at: Vector3, to: Vector3) -> void:
-	if not kind in KINDS:
+	if not kind in KINDS or kind in FIXTURE_KINDS:
 		return
 	var spot := Node3D.new()
 	add_child(spot)
