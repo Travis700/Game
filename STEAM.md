@@ -12,7 +12,7 @@ you can do (they need your Steamworks account).
   code; friends type the code or accept an invite (Esc menu → *Invite Steam friends*, or
   Steam's own *Join game*). Networking uses Steam's relay, so nobody forwards ports.
 - **Steam names** over each guard, **rich presence** ("Night 4 of 9") in the friends list.
-- **36 achievements** and **6 stats**, mirrored to Steam (list below).
+- **39 achievements** and **6 stats**, mirrored to Steam (list below).
 - **Falls back** to direct connections and room codes when Steam isn't running, so the
   game also works outside Steam (handy for testing).
 - Settings (keys, mouse, FOV, volume, voice chat, graphics), a pause menu, How to play,
@@ -158,21 +158,26 @@ root-overrides/paths for the save folder:
 > because every monster in Westfield High has one. The Hall Monitor hates running. The Mascot
 > only moves when nobody's watching. The Lunch Lady is blind, but she can hear you breathe.
 >
+> And when you hide, hold your breath: some of them check the cupboards.
+>
 > Survive nine nights, then get out through the front gate before the last bell.
 
 **Features:**
 
 - 1–4 player online co-op (Steam invites or room codes), or solo.
-- Proximity voice chat and walkie-talkies, and a monster that mimics your teammates' voices.
+- Proximity voice chat (muffled through walls) and walkie-talkies, and a monster that mimics your
+  teammates' voices. Hand each other gear, shoot hoops in the gym before the shift, and hear it
+  when a friend gets caught.
 - 18 monsters across three wings, each with its own rule, a field guide to fill in, and moods
   that change how hard they bite.
 - A school that looks lived in, in the dark: books and bags left on the desks, lessons still on
   the whiteboards, cobwebs in the corners. A light switch in every room, and old TVs that
-  something keeps switching on.
+  something keeps switching on. Doors slam, toilets flush and the band room piano plays by itself.
+  Search the drawers, knock things over, hide in the cupboards.
 - A different night every time: random anomalies and places, shift notes (fog, a thunderstorm,
   a full moon, camera faults...), nightly bonus objectives and a work target from the district.
 - A nine-night run with checkpoints and a finale, then endless Overtime. Hardcore if you dare.
 - A daily shift that's the same for everyone, with friends' scores.
-- Ranks, perks and hats to unlock, 36 achievements and career records.
+- Ranks, perks and hats to unlock, 39 achievements and career records.
 - A guided training shift, close calls that teach you a monster's rule the first time, sound
   captions, controller support and rebindable keys.
