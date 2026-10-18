@@ -1,0 +1,45 @@
+# Changelog
+
+## 1.2.0
+
+**In your hands**
+- You can see your own arm holding the flashlight, in a uniform sleeve.
+- A hotbar along the bottom: the flashlight in slot 1, then up to four things from the vending machine.
+  1-5 or the mouse wheel picks one; G uses it; X puts it down or hands it to the teammate you're looking at.
+  The heavy-duty flashlight replaces yours in slot 1.
+- Left click switches the flashlight on and off. A teammate's beam in your eyes dazzles you.
+- Crouch (C): slower, much quieter, and low enough to duck under a desk.
+- Throwing is its own button (right click / T).
+
+**The school**
+- Restrooms (taps, flushing toilets, stall doors) and a band room with a piano.
+- Drawers and filing cabinets to search: a spare battery, loose change, R. Hale's notes, and the odd scare.
+- Clutter is real physics, and there's four times as much of it.
+- Wall clocks tell the time; fridges, vending machines and lights hum; each wing has its own colour and signs.
+- Shoot hoops in the gym before the shift.
+
+**Scares**
+- The building acts up on its own: doors slam, phones ring once, the piano plays, a toilet flushes,
+  and everyone hears it in the same place.
+- Monsters search the cupboard you hid in. Hold still and keep quiet.
+- Monsters bang on shut doors in a chase; walkies crackle when one is near; everyone nearby hears a catch.
+- The chase music only plays in a real chase.
+
+**Playing together**
+- Hand items to teammates; a caught guard's pockets spill for the others.
+- Talk on the night report; the report says how each guard was caught; a Ready button for the host.
+- The guard room board is a briefing before the shift: who's clocked in, what's been seen, a plan.
+- Steam friends of the host don't need the room password.
+- Spectating no longer shows the inside of your teammate's head.
+
+**Settings**
+- Effects, ambience and music volumes; invert mouse look; head bob; reduce flashing and shaking.
+- Fullscreen is remembered; key prompts follow your keyboard layout.
+
+**Fixes**
+- The Specimen really vanishes into the ceiling (no false reports for logging it).
+- One good hustle no longer makes you immune to the Coach all night.
+- Monsters calm down properly after a lockdown.
+- Hiding cupboards no longer sit inside the kitchen counter or the hall lockers.
+- Controllers can pick every hotbar slot (D-pad).
+- No using items from inside a cupboard; running into a wall doesn't count as running.

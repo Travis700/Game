@@ -5,7 +5,7 @@ The full plan is in [DESIGN.md](DESIGN.md).
 
 ## Status
 
-Version 1.1.0. Every monster and the guards are 3D models made from the notebook drawings and the
+Version 1.2.0. Every monster and the guards are 3D models made from the notebook drawings and the
 key art (Meshy), the school has photo textures, and the sounds are a mix of recordings and generated
 effects (see [CREDITS.md](CREDITS.md)); the furniture is real models from Poly Haven (CC0) and Sketchfab (CC BY), and every room is
 dressed with the clutter of a school day (books, bags, mugs, computers, cobwebs). Everything is in:

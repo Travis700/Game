@@ -49,6 +49,8 @@ var captions := true
 var training_done := false
 ## How many times this player has had the night-1 tips (they stop after a couple of runs).
 var tips_shown := 0
+## The later tips (crouching, drawers...) this player has had, each once.
+var tips_seen: Array = []
 ## The hat your guard wears (see Hats).
 var hat := "cap"
 ## The perk your guard brings to work (see Perks).
@@ -97,6 +99,7 @@ func _enter_tree() -> void:
 		custom_notes = config.get_value("settings", "custom_notes", [])
 		training_done = config.get_value("career", "training_done", false)
 		tips_shown = config.get_value("career", "tips_shown", 0)
+		tips_seen = config.get_value("career", "tips_seen", [])
 		captions = config.get_value("settings", "captions", true)
 		night_length = config.get_value("settings", "night_length", 1)
 		fullscreen = config.get_value("graphics", "fullscreen", false)
@@ -146,6 +149,7 @@ func save_settings() -> void:
 	config.set_value("settings", "custom_notes", custom_notes)
 	config.set_value("career", "training_done", training_done)
 	config.set_value("career", "tips_shown", tips_shown)
+	config.set_value("career", "tips_seen", tips_seen)
 	config.set_value("settings", "captions", captions)
 	config.set_value("settings", "night_length", night_length)
 	config.set_value("graphics", "fullscreen", fullscreen)

@@ -1524,6 +1524,8 @@ func _start_night(number: int, difficulty: int, late := false, grade := 0) -> vo
 				cameras.capture_references(night.time_text()))
 	SteamService.set_presence("Overtime: night %d" % number if number > Night.LAST_NIGHT
 			else "Night %d of %d" % [number, Night.LAST_NIGHT])
+	if not late and night.training == null:
+		_show_feature_tips()
 	if late:
 		pass
 	elif number == 1 and night.training == null:
@@ -1556,6 +1558,34 @@ func _start_night(number: int, difficulty: int, late := false, grade := 0) -> vo
 
 
 ## A few pointers on the first night, a few seconds apart.
+## Things worth knowing that the training doesn't cover, one or two a night until each has
+## been seen once (Profile remembers which).
+const FEATURE_TIPS := {
+	"crouch": "Tip: {crouch} crouches. You're slow, but your footsteps barely carry, and a desk will hide you.",
+	"search": "Tip: hide in a cupboard and a monster that saw you may come and rattle the doors. Hold still and keep quiet (no talking!) and it gives up.",
+	"drawers": "Tip: drawers and filing cabinets open ({use}). A few hold something each night: a spare battery, loose change, a note.",
+	"share": "Tip: {drop} puts down the item you've picked on the hotbar, or hands it to a teammate you're looking at.",
+	"hoops": "Tip: before the shift, the gym's basketballs are fair game. Shoot some hoops while everyone turns up.",
+}
+
+
+func _show_feature_tips() -> void:
+	var shown := 0
+	for key: String in FEATURE_TIPS:
+		if key in Profile.tips_seen or shown >= 2:
+			continue
+		if key == "share" and hud.solo:
+			continue
+		var tip := Controls.fill(FEATURE_TIPS[key])
+		Profile.tips_seen.append(key)
+		get_tree().create_timer(100.0 + shown * 140.0, false).timeout.connect(func() -> void:
+			if shift.state == Shift.State.ON_SHIFT and _local_guard and not _local_guard.is_dead:
+				hud.show_message(tip, 8.0))
+		shown += 1
+	if shown > 0:
+		Profile.save_settings()
+
+
 func _show_first_night_tips() -> void:
 	var use := Controls.key_name("interact")
 	var tips: Array[String] = [

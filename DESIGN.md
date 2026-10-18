@@ -1,6 +1,6 @@
 # Night Shift — Design Document
 
-*Status: version 1.1.0, feature complete, with 3D models for every monster and the guards, photo textures and recorded sounds. School furniture: Poly Haven and Sketchfab models. Left: the Steamworks steps in STEAM.md and the store page. Numbers marked (tunable) are starting points to adjust during playtesting.*
+*Status: version 1.2.0, feature complete, with 3D models for every monster and the guards, photo textures and recorded sounds. School furniture: Poly Haven and Sketchfab models. Left: the Steamworks steps in STEAM.md and the store page. Numbers marked (tunable) are starting points to adjust during playtesting.*
 
 ## 1. Overview
 
