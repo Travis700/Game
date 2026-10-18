@@ -2463,6 +2463,9 @@ func _request_look(hat: String, perk: String) -> void:
 	var guard := players.get_node_or_null(str(peer)) as Guard
 	if guard == null or not Hats.HATS.has(hat):
 		return
+	# (A hat that needs a rank they haven't got stays off; achievement hats are taken on trust.)
+	if guard.rank < int(Hats.HATS[hat].get("rank", 1)):
+		hat = guard.hat
 	# Perks only change before the shift (they're part of the night's plan).
 	if shift.state != Shift.State.PRE_SHIFT:
 		perk = guard.perk
