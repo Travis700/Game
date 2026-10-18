@@ -191,7 +191,7 @@ sink 5 baskets, find 6 things in drawers, stay hidden through two cupboard searc
 once. They're on the guard room board before the shift and at the bottom of every night report.
 
 **Ranks:** every night earns XP (even one where you're caught), kept across runs. There are eight ranks,
-from Trainee to Legend of Westfield. Your rank is on your name tag and the menu, and some vending
+from Trainee to Legend of Westfield. Your rank is on the menu and the night report, and some vending
 machine items need a rank. Ranks and some achievements unlock hats (15 of them), picked on the menu
 (or mid-session at the staff locker in the guard room) and worn for everyone, and the cameras, to see.
 Perks can be changed on the guard room's duty roster before a shift.
@@ -274,8 +274,9 @@ Anyone can mute another player from the Esc menu.
 - **Hold V to talk** (push to talk). In the Esc menu you can switch to **Open mic** (it sends whenever
   you're loud enough; set how loud with the slider and watch the level meter), pick your microphone,
   or turn voice chat off.
-- While you're being heard, **TALKING** shows in the bottom left with how loud you are. Teammates who
-  are talking get a marker over their name.
+- While you're being heard, **TALKING** shows in the bottom left with how loud you are. There are no
+  names over heads: everyone wears an employee badge with their name on their shirt, readable up close,
+  so in the dark you'll have to ask who's who.
 - **Monsters can hear you.** The louder you talk, the further it carries:
   - the **Lunch Lady** hears even a whisper close by, and a normal voice from across the cafeteria;
   - the **Librarian** treats talking near the stacks like noise: she shushes, then hunts;

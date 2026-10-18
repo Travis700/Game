@@ -26,6 +26,8 @@
 - The chase music only plays in a real chase.
 
 **Playing together**
+- No more names floating over heads: everyone wears an employee badge with their Steam name on
+  their shirt. In the dark, ask who's who.
 - Hand items to teammates; a caught guard's pockets spill for the others.
 - Talk on the night report; the report says how each guard was caught; a Ready button for the host.
 - The guard room board is a briefing before the shift: who's clocked in, what's been seen, a plan.

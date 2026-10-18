@@ -173,7 +173,9 @@ func _ready() -> void:
 		camera.cull_mask &= ~SELF_LAYER
 		# The living can't see the Ghost with their own eyes.
 		camera.cull_mask &= ~SecurityCameras.SPECTRAL_LAYER
-	name_tag.visible = not local
+	# No floating names: who's who is on the badge on their shirt (up close), or you ask.
+	name_tag.visible = false
+	_pin_badge()
 	# Your own hat is hidden from your eyes like your body, but the others and the cameras see it.
 	_wear_hat(Hats.build(hat, SELF_LAYER if local else 1))
 	name_tag.position.y += Hats.height(hat)
@@ -396,6 +398,55 @@ func _flare_material() -> StandardMaterial3D:
 ## Redraws the name tag (e.g. after a promotion).
 func refresh_tag() -> void:
 	name_tag.text = _tag_text()
+	if _badge_text:
+		_badge_text.text = _badge_label()
+
+
+## The employee badge pinned on the shirt: their Steam name (or "Guard 2"), readable from a
+## couple of metres. There are no floating names over heads; ask who's who.
+var _badge_text: Label3D
+## Where it's pinned, in the model's own units (centimetres, facing out of the chest).
+const BADGE_AT := Vector3(-9.0, 138.0, 12.5)
+
+
+func _badge_label() -> String:
+	return "%s\n#%04d" % [display_name().to_upper(), employee_number]
+
+
+func _pin_badge() -> void:
+	var holder := ModelKit.bone_anchor(_model, self, "Spine02", BADGE_AT) if _model else null
+	if holder == null:
+		holder = Node3D.new()
+		body_mesh.add_child(holder)
+		holder.position = Vector3(-0.09, 0.45, -0.3)
+		holder.rotation.y = PI
+	var card := MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.085, 0.035)
+	card.mesh = quad
+	var white := StandardMaterial3D.new()
+	white.albedo_color = Color(0.92, 0.9, 0.84)
+	white.roughness = 0.6
+	card.material_override = white
+	card.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	holder.add_child(card)
+	_badge_text = Label3D.new()
+	_badge_text.text = _badge_label()
+	_badge_text.font_size = 28
+	_badge_text.pixel_size = 0.00055
+	_badge_text.modulate = Color(0.08, 0.1, 0.18)
+	_badge_text.outline_size = 0
+	_badge_text.shaded = true
+	_badge_text.double_sided = false
+	_badge_text.position = Vector3(0, 0, 0.002)
+	holder.add_child(_badge_text)
+	# (The anchor faces into the chest: turn the badge round to face out.)
+	card.rotation.y = PI
+	_badge_text.rotation.y = PI
+	_badge_text.position = Vector3(0, 0, -0.002)
+	if is_local():
+		card.layers = SELF_LAYER
+		_badge_text.layers = SELF_LAYER
 
 
 ## Shows a "talking" marker on the name tag while this guard's voice is coming through.
@@ -559,7 +610,7 @@ func update_visibility(viewer_is_dead: bool) -> void:
 	var shown := (not is_dead or viewer_is_dead) and not hiding
 	body_mesh.visible = shown
 	visor.visible = shown
-	name_tag.visible = shown
+	name_tag.visible = false
 
 
 ## Crouches or stands up (this guard's own computer). Stands only if there's headroom.
