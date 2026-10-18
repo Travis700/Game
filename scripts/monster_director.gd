@@ -1254,8 +1254,30 @@ func ghost_passing(at: Vector3, distance: float) -> void:
 # --- Bodies (every computer) -------------------------------------------------------------
 
 ## Leaves a guard's body where they fell.
-func place_corpse(peer_id: int, at: Vector3, color: Color) -> void:
+func place_corpse(peer_id: int, at: Vector3, color: Color, slot := 0) -> void:
 	remove_corpse(peer_id)
+	# The guard, curled on their side where they fell, in their own shirt. (Turned the same way
+	# on every computer.)
+	var holder := Node3D.new()
+	holder.position = at
+	holder.basis = Basis(Vector3.UP, float(peer_id % 360) * 0.0174533) * Basis(Vector3.FORWARD, PI * 0.5)
+	holder.position.y = at.y + 0.22
+	add_child(holder)
+	var model := ModelKit.add(holder, "guard", Guard.MODEL_HEIGHT, PI)
+	if model:
+		var shirt := load("res://assets/models/guard_uniform_%d.jpg" % (maxi(slot - 1, 0) % Guard.UNIFORM_COLORS.size() + 1)) as Texture2D
+		if shirt and slot > 0:
+			for material in ModelKit.own_materials(model):
+				if material.albedo_texture != null:
+					material.albedo_texture = shirt
+		var moves := ModelKit.moves(model)
+		if moves and moves.has_animation("sit"):
+			moves.play("sit")
+			moves.seek(moves.current_animation_length, true)
+			moves.pause()
+		_corpses[peer_id] = holder
+		return
+	holder.queue_free()
 	var body := MeshInstance3D.new()
 	body.mesh = Monster.capsule(0.33, 1.75)
 	var material := StandardMaterial3D.new()

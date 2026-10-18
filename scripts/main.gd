@@ -1064,7 +1064,7 @@ func _catch_up_late_joiner(peer_id: int) -> void:
 			_show_ghost.rpc_id(peer_id, guard.name.to_int(), false)
 			var body: Node3D = director._corpses.get(guard.name.to_int())
 			if is_instance_valid(body):
-				_show_corpse.rpc_id(peer_id, guard.name.to_int(), body.global_position - Vector3(0, 0.3, 0))
+				_show_corpse.rpc_id(peer_id, guard.name.to_int(), body.global_position - Vector3(0, 0.22, 0))
 	if not back_alive:
 		_show_ghost.rpc(peer_id, true)
 
@@ -1098,7 +1098,7 @@ func _incident(camera_index: int, caption: String) -> void:
 func _show_corpse(peer_id: int, at: Vector3) -> void:
 	var guard := players.get_node_or_null(str(peer_id)) as Guard
 	if guard:
-		director.place_corpse(peer_id, at, guard.uniform_color())
+		director.place_corpse(peer_id, at, guard.uniform_color(), guard.slot)
 
 
 ## Every computer: a guard is a ghost (a late joiner, or someone who was already caught when
@@ -2188,7 +2188,7 @@ func _guard_died(peer_id: int, by: String, at: Vector3, from := Vector3.INF) -> 
 	if guard == null:
 		return
 	guard.set_dead(true)
-	director.place_corpse(peer_id, at, guard.uniform_color())
+	director.place_corpse(peer_id, at, guard.uniform_color(), guard.slot)
 	if guard == _local_guard:
 		guard_room.leave_desk()
 		_close_all_ui()
