@@ -417,6 +417,7 @@ func _tidy_balls_for_shift() -> void:
 	_shift_state = shift.state
 	if not starting:
 		return
+	_baskets.clear()
 	for i in ITEMS.size():
 		if ITEMS[i]["name"] == "basketball" and not i in carried.values():
 			_place.rpc(i, _home(i), Engine.get_physics_frames(), true)

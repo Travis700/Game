@@ -263,7 +263,7 @@ func _hears_on_radio(speaker: int) -> bool:
 
 
 func _play_radio(speaker: int, packet: PackedByteArray) -> void:
-	if _muted.has(speaker):
+	if is_muted(speaker):
 		return
 	var existing: Variant = _radio_voices.get(speaker)
 	var player: AudioStreamPlayer = existing if is_instance_valid(existing) else null
@@ -304,15 +304,21 @@ const MUFFLED_CUTOFF := 900.0
 const MUFFLED_DB := -7.0
 
 
+## (Kept by badge, so a mute survives someone dropping out and rejoining.)
 func is_muted(peer_id: int) -> bool:
-	return _muted.has(peer_id)
+	return _muted.has(_badge_of(peer_id))
 
 
 func set_muted(peer_id: int, on: bool) -> void:
 	if on:
-		_muted[peer_id] = true
+		_muted[_badge_of(peer_id)] = true
 	else:
-		_muted.erase(peer_id)
+		_muted.erase(_badge_of(peer_id))
+
+
+func _badge_of(peer_id: int) -> int:
+	var guard := players_guard(peer_id)
+	return guard.employee_number if guard else -peer_id
 
 
 ## Is there a wall between this player and that guard? (Remembered for a quarter second.)
@@ -331,7 +337,7 @@ func _walled_off(speaker: int, guard: Guard) -> bool:
 
 func _play(speaker: int, packet: PackedByteArray) -> void:
 	var guard := players_guard(speaker)
-	if guard == null or local_guard == null or _muted.has(speaker):
+	if guard == null or local_guard == null or is_muted(speaker):
 		return
 	# Ghosts hear everyone; the living only hear the living (bar a ghost on their radio).
 	if guard.is_dead and not local_guard.is_dead:

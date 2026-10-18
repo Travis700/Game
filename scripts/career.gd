@@ -357,8 +357,9 @@ static func bounties() -> Array[String]:
 
 
 ## How far along this player is with a bounty this week.
-static func bounty_progress(stat: String) -> int:
-	var config := _load()
+static func bounty_progress(stat: String, config: ConfigFile = null) -> int:
+	if config == null:
+		config = _load()
 	if int(config.get_value("bounties", "week", -1)) != week():
 		return 0
 	return int((config.get_value("bounties", "progress", {}) as Dictionary).get(stat, 0))
@@ -367,9 +368,10 @@ static func bounty_progress(stat: String) -> int:
 ## "District bounties this week: Sharp eyes 4/15 · ..." for the report and the guard room.
 static func bounty_text() -> String:
 	var parts: Array[String] = []
+	var config := _load()
 	for stat in bounties():
 		var info: Array = BOUNTIES[stat]
-		var done := mini(bounty_progress(stat), info[2])
+		var done := mini(bounty_progress(stat, config), info[2])
 		parts.append("%s (%s): %d/%d%s" % [info[0], info[1] % info[2], done, info[2], " ✓" if done >= info[2] else ""])
 	return "District bounties this week (+%d XP each):\n" % BOUNTY_XP + "\n".join(parts)
 

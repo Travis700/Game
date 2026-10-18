@@ -1002,7 +1002,8 @@ func _catch_up_late_joiner(peer_id: int) -> void:
 	var joiner := players.get_node_or_null(str(peer_id)) as Guard
 	var badge := joiner.employee_number if joiner else 0
 	var back_alive := false
-	if _left_alive.has(badge) and Time.get_ticks_msec() / 1000.0 - float(_left_alive[badge]["left"]) <= RECONNECT_GRACE:
+	if _left_alive.has(badge) and not _left_alive[badge]["cornered"] \
+			and Time.get_ticks_msec() / 1000.0 - float(_left_alive[badge]["left"]) <= RECONNECT_GRACE:
 		# A dropped connection, back within the grace: as they were, where they were.
 		var left: Dictionary = _left_alive[badge]
 		_left_alive.erase(badge)
@@ -1070,6 +1071,8 @@ func _catch_up_late_joiner(peer_id: int) -> void:
 
 ## How long a guard who dropped out mid-shift has to come back as they were (seconds).
 const RECONNECT_GRACE := 90.0
+## A monster this close when they dropped: it counts as a catch whenever they come back.
+const CORNERED_RANGE := 12.0
 ## A rejoining guard's spot, if it arrives before their guard does.
 var _put_back_at := Vector3.INF
 
@@ -1182,9 +1185,17 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	var last_at := guard.global_position if guard else Vector3.ZERO
 	if guard:
 		if shift.state == Shift.State.ON_SHIFT and not guard.is_dead:
-			# Kept for a quick reconnect: where they were and what they'd done tonight.
-			_left_alive[guard.employee_number] = {"at": last_at, "left": Time.get_ticks_msec() / 1000.0,
+			# Kept for a quick reconnect: where they were and what they'd done tonight (taken off
+			# their old peer id, so nothing counts twice). Not if something was on them as they went:
+			# pulling the plug isn't a way out of a catch.
+			var cornered := director.active_monsters().any(func(monster: Monster) -> bool:
+				return not monster.harmless and monster.global_position.distance_to(last_at) < CORNERED_RANGE)
+			var spot: int = hiding.hidden.get(peer_id, -1)
+			_left_alive[guard.employee_number] = {"at": hiding.front_of(spot) if spot >= 0 else last_at,
+					"left": Time.get_ticks_msec() / 1000.0, "cornered": cornered,
 					"stats": night._stats.get(peer_id), "punches": rounds.punches.get(peer_id, 0)}
+			night._stats.erase(peer_id)
+			rounds.punches.erase(peer_id)
 		# Keep what they had, by badge, so they get exactly that back if they rejoin.
 		night.remember_guard(guard)
 		# Out of the team straight away, so nothing below (a night starting or ending, a save)
@@ -1228,7 +1239,8 @@ func _create_guard(data: Dictionary) -> Node:
 	guard.known_monsters.assign(data.get("known", []))
 	guard.bright_flashlight = "flashlight" in data.get("personal", [])
 	guard.has_radio = "radio" in data.get("personal", [])
-	guard.has_emf = "emf" in data.get("personal", []) or guard.perk == "lookout"
+	guard.emf_fitted = "emf" in data.get("personal", [])
+	guard.has_emf = guard.emf_fitted or guard.perk == "lookout"
 	guard.position = SPAWN_POINT + Vector3((guard.slot - 2.5) * 1.4, 0, 0)
 	return guard
 
@@ -1613,7 +1625,6 @@ const FEATURE_TIPS := {
 	"search": "Tip: hide in a cupboard and a monster that saw you may come and rattle the doors. Hold still and keep quiet (no talking!) and it gives up.",
 	"drawers": "Tip: drawers and filing cabinets open ({use}). A few hold something each night: a spare battery, loose change, a note.",
 	"share": "Tip: {drop} puts down the item you've picked on the hotbar, or hands it to a teammate you're looking at.",
-	"hoops": "Tip: before the shift, the gym's basketballs are fair game. Shoot some hoops while everyone turns up.",
 }
 
 
@@ -1625,13 +1636,14 @@ func _show_feature_tips() -> void:
 		if key == "share" and hud.solo:
 			continue
 		var tip := Controls.fill(FEATURE_TIPS[key])
-		Profile.tips_seen.append(key)
+		# Only counted as seen once it's actually been on screen.
 		get_tree().create_timer(100.0 + shown * 140.0, false).timeout.connect(func() -> void:
 			if shift.state == Shift.State.ON_SHIFT and _local_guard and not _local_guard.is_dead:
-				hud.show_message(tip, 8.0))
+				hud.show_message(tip, 8.0)
+				if key not in Profile.tips_seen:
+					Profile.tips_seen.append(key)
+					Profile.save_settings())
 		shown += 1
-	if shown > 0:
-		Profile.save_settings()
 
 
 func _show_first_night_tips() -> void:
@@ -2013,6 +2025,8 @@ func _on_ghost_cameras(action: String) -> void:
 
 
 func _show_ghost_camera() -> void:
+	# The world behind the full-screen feed needn't be drawn as well.
+	get_viewport().disable_3d = true
 	_ghost_camera_last = _ghost_camera
 	# Only the feed being watched is drawn (every frame while it's up).
 	cameras.set_focus(SecurityCameras.key(_ghost_camera, false))
@@ -2021,6 +2035,7 @@ func _show_ghost_camera() -> void:
 
 
 func _close_ghost_cameras() -> void:
+	get_viewport().disable_3d = false
 	if _ghost_camera < 0:
 		return
 	_ghost_camera = -1
@@ -2464,7 +2479,7 @@ func _set_look(peer_id: int, hat: String, perk: String) -> void:
 		guard.change_hat(hat)
 	if guard.perk != perk:
 		guard.perk = perk
-		guard.has_emf = guard.has_emf or perk == "lookout"
+		guard.has_emf = guard.emf_fitted or perk == "lookout"
 		guard.apply_flashlight()
 
 

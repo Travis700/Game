@@ -44,7 +44,7 @@ func _process(delta: float) -> void:
 		var blip := Sfx.play_at(self, Sfx.chirp(randf_range(500.0, 1400.0), randf_range(300.0, 1800.0), 0.05, 1, 0.08), -16.0, RANGE)
 		blip.unit_size = 2.0
 	elif randf() < 0.4:
-		var crackle := SoundBank.play_at(self, "squelch", -22.0, RANGE, Sfx.notes([1.0], 0.08, 0.15, "noise"))
+		var crackle := SoundBank.play_at(self, "squelch", -22.0, RANGE, _crackle())
 		if crackle:
 			crackle.unit_size = 2.0
 
@@ -53,7 +53,7 @@ func _process(delta: float) -> void:
 ## read it on screen.
 func say(word: String) -> void:
 	last_word = word
-	var burst := SoundBank.play_at(self, "glitch", -4.0, RANGE * 1.5, Sfx.notes([1.0, 1.0, 1.0], 0.12, 0.3, "noise"))
+	var burst := SoundBank.play_at(self, "glitch", -4.0, RANGE * 1.5, _burst())
 	if burst:
 		burst.unit_size = 3.0
 	var listener := _local_guard()
@@ -77,5 +77,25 @@ func _local_guard() -> Guard:
 
 
 ## Two seconds of soft, looping radio hiss.
+## Built once and shared (making the noise takes a moment).
+static var _loop_cache: AudioStreamWAV
+static var _crackle_cache: AudioStreamWAV
+static var _burst_cache: AudioStreamWAV
+
+
 static func _static_loop() -> AudioStreamWAV:
-	return Sfx.notes([1.0], 2.0, 0.25, "noise", true)
+	if _loop_cache == null:
+		_loop_cache = Sfx.notes([1.0], 2.0, 0.25, "noise", true)
+	return _loop_cache
+
+
+static func _crackle() -> AudioStreamWAV:
+	if _crackle_cache == null:
+		_crackle_cache = Sfx.notes([1.0], 0.08, 0.15, "noise")
+	return _crackle_cache
+
+
+static func _burst() -> AudioStreamWAV:
+	if _burst_cache == null:
+		_burst_cache = Sfx.notes([1.0, 1.0, 1.0], 0.12, 0.3, "noise")
+	return _burst_cache

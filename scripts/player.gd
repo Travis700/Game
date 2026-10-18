@@ -201,6 +201,7 @@ func apply_personal(upgrade: String, on: bool) -> void:
 		"radio":
 			has_radio = on
 		"emf":
+			emf_fitted = on
 			has_emf = on or perk == "lookout"
 
 
@@ -478,6 +479,7 @@ const MODEL_HAT_SCALE := 0.6
 ## On the model's head (so it moves with it), or on the plain head without a model.
 func _wear_hat(worn: Node3D) -> void:
 	_hat = worn
+	_hat_height = Hats.height(hat)
 	_fade_with_body(worn)
 	var on_head := ModelKit.bone_anchor(_model, self, "Head", Vector3(0, MODEL_HEIGHT * 100.0 * MODEL_EYES, 1.0)) if _model else null
 	if on_head == null:
@@ -488,6 +490,10 @@ func _wear_hat(worn: Node3D) -> void:
 
 
 var _hat: Node3D
+## How tall the hat is (for the name tag), worked out when it's put on.
+var _hat_height := 0.0
+## An EMF reader bought and clipped on (the Lookout perk brings one too).
+var emf_fitted := false
 
 
 ## Swaps the hat being worn (on every computer).
@@ -501,6 +507,9 @@ func change_hat(new_hat: String) -> void:
 		_hat.queue_free()
 		_hat = null
 	_wear_hat(Hats.build(hat, SELF_LAYER if is_local() else 1))
+	# Someone watching through these eyes mustn't see the new hat from inside.
+	if body_mesh.layers == SELF_LAYER:
+		set_body_layers(SELF_LAYER)
 
 
 ## Which camera layers the body, the model and the hat are drawn on: SELF_LAYER to keep them out
@@ -611,7 +620,7 @@ func _show_crouch(delta: float) -> void:
 		if _strider and not _shown_seated:
 			_strider.hold = "sit" if low else ""
 	# Over the hat, whatever's being worn (it can change at the staff locker).
-	var tag_at := (1.5 if low else 2.05) + Hats.height(hat) + 0.05
+	var tag_at := (1.5 if low else 2.05) + _hat_height + 0.05
 	name_tag.position.y = lerpf(name_tag.position.y, tag_at, 1.0 - exp(-8.0 * delta))
 
 
