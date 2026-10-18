@@ -490,6 +490,19 @@ func _wear_hat(worn: Node3D) -> void:
 var _hat: Node3D
 
 
+## Swaps the hat being worn (on every computer).
+func change_hat(new_hat: String) -> void:
+	hat = new_hat
+	if _hat and is_instance_valid(_hat):
+		for part in _hat.find_children("*", "MeshInstance3D", true, false):
+			var mesh := part as MeshInstance3D
+			if mesh.material_override in _model_materials:
+				_model_materials.erase(mesh.material_override)
+		_hat.queue_free()
+		_hat = null
+	_wear_hat(Hats.build(hat, SELF_LAYER if is_local() else 1))
+
+
 ## Which camera layers the body, the model and the hat are drawn on: SELF_LAYER to keep them out
 ## of a camera looking out through these eyes (yours, or a ghost's spectating), 1 otherwise.
 func set_body_layers(layers: int) -> void:

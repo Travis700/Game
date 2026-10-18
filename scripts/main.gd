@@ -411,6 +411,7 @@ func _ready() -> void:
 	add_child(light_switches)
 	light_switches.build(school)
 	night.light_switches = light_switches
+	_build_staff_locker()
 	glare = Glare.new()
 	glare.name = "Glare"
 	glare.players = players
@@ -1121,6 +1122,7 @@ func _register_employee(badge: int, password: String, player_name := "", rank :=
 	for guard: Guard in players.get_children():
 		if guard.name.to_int() != peer_id:
 			_set_rank.rpc_id(peer_id, guard.name.to_int(), guard.rank)
+			_set_look.rpc_id(peer_id, guard.name.to_int(), guard.hat, guard.perk)
 	shop.send_state_to(peer_id)
 	# The briefing's clocked-in list.
 	_set_clocked_in.rpc_id(peer_id, PackedInt32Array(_clocked_in_peers))
@@ -2290,10 +2292,10 @@ func on_rank_up(rank: int, title: String) -> void:
 		night.report.promotion += " New at the vending machine: " + ", ".join(unlocked) + "."
 	for hat: String in Hats.HATS:
 		if int(Hats.HATS[hat].get("rank", 0)) == rank:
-			night.report.promotion += " New hat: %s (pick it on the menu)." % Hats.HATS[hat]["name"]
+			night.report.promotion += " New hat: %s (put it on at the staff locker in the guard room)." % Hats.HATS[hat]["name"]
 	for perk: String in Perks.PERKS:
 		if int(Perks.PERKS[perk]["rank"]) == rank:
-			night.report.promotion += " New perk: %s (pick it on the menu)." % Perks.describe(perk)
+			night.report.promotion += " New perk: %s (pick it on the guard room duty roster)." % Perks.describe(perk)
 	Sfx.play_flat(self, Sfx.notes([523.0, 659.0, 784.0, 1047.0], 0.14, 0.3, "triangle"))
 	if _local_guard:
 		_local_guard.rank = rank
@@ -2320,6 +2322,111 @@ func _set_rank(peer_id: int, rank: int) -> void:
 	if guard:
 		guard.rank = rank
 		guard.refresh_tag()
+
+
+# --- The staff locker: change your hat (any time) and perk (before the shift) mid-session ---
+
+const LOCKER_AT := Vector3(18.6, 0.0, 10.3)
+
+
+func _build_staff_locker() -> void:
+	var metal := StandardMaterial3D.new()
+	metal.albedo_color = Color(0.32, 0.36, 0.4)
+	metal.metallic = 0.5
+	metal.roughness = 0.5
+	var locker := _staff_fitting(LOCKER_AT + Vector3(0, 0.95, 0), Vector3(0.6, 1.9, 0.45), metal, "Staff locker: change your hat")
+	locker.used.connect(func(by: Node) -> void:
+		if by == _local_guard:
+			_next_look(true))
+	var cork := StandardMaterial3D.new()
+	cork.albedo_color = Color(0.55, 0.42, 0.28)
+	var roster := _staff_fitting(LOCKER_AT + Vector3(-0.85, 1.45, -0.18), Vector3(0.6, 0.45, 0.04), cork, "Duty roster: change your perk")
+	roster.used.connect(func(by: Node) -> void:
+		if by == _local_guard:
+			_next_look(false))
+	var label := Label3D.new()
+	label.text = "DUTY ROSTER"
+	label.font_size = 28
+	label.pixel_size = 0.003
+	label.modulate = Color(0.1, 0.08, 0.06)
+	label.outline_size = 0
+	label.position = Vector3(0, 0.15, 0.025)
+	roster.add_child(label)
+
+
+func _staff_fitting(at: Vector3, size: Vector3, look: StandardMaterial3D, prompt: String) -> Interactable:
+	var body := Interactable.new()
+	body.prompt = prompt
+	body.position = at
+	var shape := BoxShape3D.new()
+	shape.size = size
+	var collider := CollisionShape3D.new()
+	collider.shape = shape
+	body.add_child(collider)
+	var box := BoxMesh.new()
+	box.size = size
+	var mesh := MeshInstance3D.new()
+	mesh.mesh = box
+	mesh.material_override = look
+	body.add_child(mesh)
+	add_child(body)
+	return body
+
+
+## The next unlocked hat (or perk), worn at once and remembered for next time.
+func _next_look(hat: bool) -> void:
+	if _local_guard == null:
+		return
+	var hat_id := _local_guard.hat
+	var perk_id := _local_guard.perk
+	if hat:
+		var hats: Array = Hats.HATS.keys().filter(func(each: String) -> bool: return Hats.is_unlocked(each))
+		hat_id = hats[(hats.find(hat_id) + 1) % hats.size()]
+		Profile.hat = hat_id
+		hud.show_message("Hat: %s" % Hats.HATS[hat_id]["name"], 2.5)
+	else:
+		if shift.state != Shift.State.PRE_SHIFT:
+			hud.show_message("The roster's set for tonight. Change your perk before the next shift.")
+			return
+		var perks: Array = Perks.PERKS.keys().filter(func(each: String) -> bool: return Perks.is_unlocked(each))
+		perk_id = perks[(perks.find(perk_id) + 1) % perks.size()]
+		Profile.perk = perk_id
+		hud.show_message(Perks.describe(perk_id), 4.0)
+	Profile.save_settings()
+	if multiplayer.is_server():
+		_request_look(hat_id, perk_id)
+	else:
+		_request_look.rpc_id(1, hat_id, perk_id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_look(hat: String, perk: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer := multiplayer.get_remote_sender_id()
+	if peer == 0:
+		peer = multiplayer.get_unique_id()
+	var guard := players.get_node_or_null(str(peer)) as Guard
+	if guard == null or not Hats.HATS.has(hat):
+		return
+	# Perks only change before the shift (they're part of the night's plan).
+	if shift.state != Shift.State.PRE_SHIFT:
+		perk = guard.perk
+	_set_look.rpc(peer, hat, Perks.valid(perk, guard.rank))
+
+
+## Every computer: a guard's hat and perk.
+@rpc("authority", "call_local", "reliable")
+func _set_look(peer_id: int, hat: String, perk: String) -> void:
+	var guard := players.get_node_or_null(str(peer_id)) as Guard
+	if guard == null:
+		return
+	if guard.hat != hat:
+		guard.change_hat(hat)
+	if guard.perk != perk:
+		guard.perk = perk
+		guard.has_emf = guard.has_emf or perk == "lookout"
+		guard.apply_flashlight()
 
 
 func on_achievement(title: String) -> void:

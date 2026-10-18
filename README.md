@@ -187,7 +187,8 @@ with `--conditions=fog,batteries`.
 **Ranks:** every night earns XP (even one where you're caught), kept across runs. There are eight ranks,
 from Trainee to Legend of Westfield. Your rank is on your name tag and the menu, and some vending
 machine items need a rank. Ranks and some achievements unlock hats (15 of them), picked on the menu
-and worn for everyone, and the cameras, to see.
+(or mid-session at the staff locker in the guard room) and worn for everyone, and the cameras, to see.
+Perks can be changed on the guard room's duty roster before a shift.
 
 **Being scared:** when a monster is close, you hear your heartbeat speed up; a low drone comes in when
 something is chasing nearby, and flashlights flicker near monsters. Getting caught turns you to face
