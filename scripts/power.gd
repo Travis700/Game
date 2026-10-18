@@ -13,6 +13,12 @@ var cut_by_phone := false
 ## Host, set by Main: takes points off a guard's pay tonight (Night.dock).
 var night_dock := Callable()
 
+## Power finds itself by this group (e.g. RoomTones, WallClocks).
+const GROUP := "power"
+## Other things on the mains that a cut switches off: lights (hidden), and models whose glowing
+## materials (their "mains_materials" meta) stop glowing. See SchoolBuilder._on_mains.
+const MAINS_GROUP := "mains_powered"
+
 const BREAKER_AT := Vector3(4.8, 1.5, -4.0)
 const BREAKER_HOLD := 3.0
 ## Earliest and latest a cut can happen, and the least time between two (in-game minutes).
@@ -46,6 +52,7 @@ var _panel_glow := 1.0
 
 
 func _ready() -> void:
+	add_to_group(GROUP)
 	_breaker = Interactable.new()
 	_breaker.name = "Breaker"
 	_breaker.hold_seconds = BREAKER_HOLD
@@ -192,6 +199,11 @@ func _set_power(power_on: bool, loud: bool) -> void:
 			SoundBank.play_flat(self, "power_up", 0.0, Sfx.thud(0.6, 0.15, 0.6))
 	for light in _emergency:
 		light.visible = not on
+	for node in get_tree().get_nodes_in_group(MAINS_GROUP):
+		if node is Light3D:
+			(node as Light3D).visible = on
+		for material: BaseMaterial3D in node.get_meta("mains_materials", []):
+			material.emission_enabled = on
 	cameras.set_power(on)
 	_show_breaker()
 

@@ -500,6 +500,17 @@ func _ready() -> void:
 	dread.night = night
 	dread.career = career
 	add_child(night)
+	var wall_clocks := WallClocks.new()
+	wall_clocks.name = "WallClocks"
+	wall_clocks.school = school
+	wall_clocks.night = night
+	wall_clocks.power = power
+	add_child(wall_clocks)
+	var room_tones := RoomTones.new()
+	room_tones.name = "RoomTones"
+	room_tones.school = school
+	room_tones.power = power
+	add_child(room_tones)
 	shop.night = night
 	director.student_helped.connect(func(peer_id: int) -> void:
 		night.add_bonus(peer_id)

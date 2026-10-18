@@ -12,7 +12,7 @@ const SPOTS := [
 	{"at": Vector3(-38.9, 0, 9.2), "facing": Vector3(1, 0, 0), "area": "Main Hall West"},
 	{"at": Vector3(38.9, 0, 9.2), "facing": Vector3(-1, 0, 0), "area": "Main Hall East"},
 	{"at": Vector3(-39.2, 0, -20.0), "facing": Vector3(1, 0, 0), "area": "Cafeteria"},
-	{"at": Vector3(-3.2, 0, -29.2), "facing": Vector3(0, 0, 1), "area": "Kitchen"},
+	{"at": Vector3(-4.37, 0, -14.0), "facing": Vector3(1, 0, 0), "area": "Kitchen"},
 	{"at": Vector3(6.0, 0, -29.2), "facing": Vector3(0, 0, 1), "area": "Gym"},
 	{"at": Vector3(-6.7, 0, 19.2), "facing": Vector3(0, 0, -1), "area": "Front Office"},
 	{"at": Vector3(-79.2, 0, 1.0), "facing": Vector3(1, 0, 0), "area": "Library"},

@@ -11,7 +11,7 @@ const ITEMS := [
 	{"name": "traffic cone", "at": Vector3(-3.0, 0, 7.0), "size": Vector3(0.3, 0.45, 0.3), "color": Color(1.0, 0.4, 0.05)},
 	{"name": "cardboard box", "at": Vector3(-24.0, 0, 8.6), "size": Vector3(0.45, 0.35, 0.4), "color": Color(0.6, 0.45, 0.28)},
 	{"name": "basketball", "at": Vector3(18.0, 0, -6.0), "size": Vector3(0.25, 0.25, 0.25), "color": Color(0.85, 0.42, 0.1)},
-	{"name": "lunch tray", "at": Vector3(-28.0, 0.78, -8.0), "size": Vector3(0.45, 0.04, 0.32), "color": Color(0.55, 0.6, 0.62)},
+	{"name": "lunch tray", "at": Vector3(-25.2, 0.75, -8.0), "size": Vector3(0.45, 0.04, 0.32), "color": Color(0.55, 0.6, 0.62)},
 	{"name": "stack of books", "at": Vector3(-14.5, 0.79, 17.5), "size": Vector3(0.3, 0.2, 0.22), "color": Color(0.5, 0.15, 0.12)},
 	{"name": "mop bucket lid", "at": Vector3(2.5, 0, -8.0), "size": Vector3(0.35, 0.06, 0.35), "color": Color(0.8, 0.7, 0.1)},
 	{"name": "trophy", "at": Vector3(-4.6, 0, 13.6), "size": Vector3(0.15, 0.35, 0.15), "color": Color(0.85, 0.7, 0.2)},
@@ -69,7 +69,7 @@ func request_pick_up(index: int) -> void:
 		director.tell(peer, "Leave it. The school's tidy until the shift starts.")
 		return
 	if carried.has(peer):
-		director.tell(peer, "Your hands are full. {use} to throw the %s first." % carried_name(peer))
+		director.tell(peer, "Your hands are full. {throw} to throw the %s first." % carried_name(peer))
 		return
 	if guard.global_position.distance_to(_props[index].global_position) > 3.5:
 		return

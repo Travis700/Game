@@ -93,6 +93,12 @@ var specimen_jar: Node3D
 ## The classroom TVs on their carts: [{"at" (the cart top, under the set), "turn" (0: screen to +Z)}].
 var tv_spots: Array[Dictionary] = []
 
+## The wall clocks, for WallClocks to turn their hands: [{"at" (the middle of the face), "hour",
+## "minute" (each hand's pivot: turning it round its z axis turns the hand)}].
+var wall_clocks: Array[Dictionary] = []
+## The machines that hum, for RoomTones: [{"at", "sound" (in assets/sounds)}].
+var hum_spots: Array[Dictionary] = []
+
 var _wing_doors: Array[Node3D] = []
 ## The clutter in the rooms (books, bags, mugs, cobwebs...), drawn in batches.
 var dressing: SetDressing
@@ -143,6 +149,7 @@ func _ready() -> void:
 	_build_fixtures()
 	_build_wear()
 	_build_clutter()
+	_build_landmarks()
 	dressing.commit()
 	_merge_static_meshes()
 
@@ -785,7 +792,7 @@ func _build_lobby() -> void:
 		_box(Vector3(-5.55, shelf_y, 12.5), Vector3(0.5, 0.015, 2.3), "glass", false)
 	for i in 6:
 		_trophy(Vector3(-5.55, 1.0 if i < 3 else 1.5, 11.75 + (i % 3) * 0.75), 1.6 if i % 3 == 1 else 1.1)
-	_model("prop_wall_clock", Vector3(0, 2.85, 19.875), 0.38, PI)
+	_wall_clock(Vector3(0, 2.85, 19.875), 0.38, PI)
 	_model("prop_fire_alarm", Vector3(-3.6, 1.3, 10.125), 0.2)
 	_poster("poster_basketball", Vector3(5.875, 1.6, 18.0), Vector3.LEFT)
 
@@ -809,7 +816,7 @@ func _build_front_office() -> void:
 			_box(Vector3(cabinet_x, drawer_y + 0.15, 10.752), Vector3(0.5, 0.012, 0.006), "dark", false)
 			_box(Vector3(cabinet_x, drawer_y + 0.06, 10.765), Vector3(0.14, 0.025, 0.02), "steel", false)
 	_solid_model("prop_shelf_01", Vector3(-11.5, 0, 19.72), 2.0, PI, Vector3(0.96, 2.0, 0.26))
-	_model("prop_wall_clock", Vector3(-14.0, 2.4, 19.875), 0.36, PI)
+	_wall_clock(Vector3(-14.0, 2.4, 19.875), 0.36, PI)
 	_model("prop_hanging_picture_frame_01", Vector3(-19.875, 1.35, 16.2), 0.7, PI * 0.5)
 	_poster("poster_lost_found", Vector3(-6.125, 1.55, 17.3), Vector3.LEFT)
 	# The bell's control panel, by the filing cabinets.
@@ -847,9 +854,12 @@ func _build_guard_room() -> void:
 	# Vending machine on the east wall.
 	vending_machine = _interactable(Vector3(19.4, 1.0, 16.6), Vector3(0.9, 2.0, 1.1), "red", "Use the vending machine", "")
 	var vending_glow := _box(Vector3(18.94, 1.2, 16.45), Vector3(0.02, 1.3, 0.7), "vending_glow", false)
-	if _model("prop_vending_machine", Vector3(19.45, 0, 16.6), 2.0, -PI / 2.0):
+	var vending_model := _model("prop_vending_machine", Vector3(19.45, 0, 16.6), 2.0, -PI / 2.0)
+	if vending_model:
 		_hide_boxes(vending_machine)
 		vending_glow.visible = false
+		_on_mains(vending_model)
+	hum_spots.append({"at": Vector3(19.2, 1.0, 16.6), "sound": "room_vending"})
 
 	# Notice board on the back wall.
 	_box(Vector3(9.5, 1.6, 10.16), Vector3(2.4, 1.2, 0.05), "cork", false)
@@ -859,17 +869,18 @@ func _build_guard_room() -> void:
 
 func _build_hallway() -> void:
 	# Lockers line both sides, leaving gaps for the doorways.
-	for span: Vector2 in [Vector2(-39.6, -3.2), Vector2(3.2, 14.9), Vector2(17.1, 39.6)]:
+	# (Stopping short of the ends, where the hiding cupboards stand.)
+	for span: Vector2 in [Vector2(-38.25, -3.2), Vector2(3.2, 14.9), Vector2(17.1, 38.25)]:
 		_locker_row(span.x, span.y, 9.62)
 	for span: Vector2 in [Vector2(-39.6, -16.7), Vector2(-13.3, -1.0), Vector2(1.0, 13.3), Vector2(16.7, 39.6)]:
 		_locker_row(span.x, span.y, 4.38)
 	# Posters above the lockers, and clocks.
 	for item: Array in [["poster_no_running", -30.0, 9.875], ["poster_dance", -9.0, 9.875], ["poster_president", 32.0, 9.875],
-			["poster_science_fair", -21.0, 4.125], ["poster_basketball", 11.5, 4.125], ["poster_no_running", 25.0, 4.125]]:
+			["poster_science_fair", -21.0, 4.125], ["poster_basketball", 11.5, 4.125]]:
 		var on_north: bool = item[2] > 7.0
 		_poster(item[0], Vector3(item[1], 2.5, item[2]), Vector3.FORWARD if on_north else Vector3.BACK)
-	_model("prop_wall_clock", Vector3(-14.0, 2.35, 9.875), 0.36, PI)
-	_model("prop_wall_clock", Vector3(21.0, 2.35, 4.125), 0.36)
+	_wall_clock(Vector3(-14.0, 2.35, 9.875), 0.36, PI)
+	_wall_clock(Vector3(21.0, 2.35, 4.125), 0.36)
 
 
 ## A row of lockers from x1 to x2 against a wall at depth z. They face into the hallway (the
@@ -987,9 +998,8 @@ func _build_cafeteria() -> void:
 	# The other trash can (by the hallway) belongs to Anomalies.
 	if _solid_model("prop_trash_can", Vector3(-38.8, 0, -27.5), 0.9, 0.0, Vector3(0.6, 0.9, 0.6)) == null:
 		_box(Vector3(-38.8, 0.45, -27.5), Vector3(0.6, 0.9, 0.6), "dark")
-	_model("prop_wall_clock", Vector3(-22.5, 2.5, 3.875), 0.4, PI)
+	_wall_clock(Vector3(-22.5, 2.5, 3.875), 0.4, PI)
 	_poster("poster_dance", Vector3(-30.0, 1.7, 3.875), Vector3.FORWARD)
-	_poster("poster_president", Vector3(-34.0, 1.7, 3.875), Vector3.FORWARD)
 
 
 func _build_kitchen_and_closet() -> void:
@@ -1001,6 +1011,7 @@ func _build_kitchen_and_closet() -> void:
 	for handle_z: float in [-20.12, -19.88]:
 		_box(Vector3(3.67, 1.15, handle_z), Vector3(0.03, 0.5, 0.025), "steel", false)
 	_box(Vector3(0, 0.45, -18.0), Vector3(3.0, 0.9, 1.2), "dark")
+	hum_spots.append({"at": Vector3(4.0, 1.6, -20.0), "sound": "room_fridge"})
 	_solid_model("prop_electric_stove", Vector3(-4.55, 0, -24.9), 0.9, PI * 0.5, Vector3(0.68, 0.9, 0.52))
 	_solid_model("prop_electric_stove", Vector3(-4.55, 0, -25.45), 0.9, PI * 0.5, Vector3(0.68, 0.9, 0.52))
 	_model("prop_vintage_microwave", Vector3(3.6, 0.9, -29.45), 0.32)
@@ -1306,7 +1317,7 @@ func _build_gym_courtside() -> void:
 			Vector3(26.0, 0.12, -24.9), Vector3(18.4, 0.12, -6.2)]:
 		_ball(spot)
 	_box(Vector3(33.4, 0.13, -20.4), Vector3(0.3, 0.26, 0.41), "dark").visible = false
-	_model("prop_wall_clock", Vector3(5.125, 3.6, -21.5), 0.42, PI * 0.5)
+	_wall_clock(Vector3(5.125, 3.6, -21.5), 0.42, PI * 0.5)
 	_model("prop_fire_alarm", Vector3(12.0, 1.35, 3.875), 0.2, PI)
 	_model("prop_steel_frame_shelves_01", Vector3(34.2, 0, 3.6), 1.8, PI)
 	_box(Vector3(34.2, 0.9, 3.6), Vector3(0.95, 1.8, 0.45), "dark").visible = false
@@ -1354,6 +1365,8 @@ const EXIT_SIGNS := [
 	[Vector3(1.6, 2.95, 19.86), Vector3.FORWARD],
 	[Vector3(-39.86, 2.68, 7.0), Vector3.RIGHT], [Vector3(39.86, 2.68, 7.0), Vector3.LEFT],
 	[Vector3(15.0, 2.68, 3.86), Vector3.FORWARD], [Vector3(-15.0, 2.68, 3.86), Vector3.FORWARD],
+	# Over the cafeteria's fire door (see _build_landmarks).
+	[Vector3(-22.0, 2.5, -29.86), Vector3.BACK],
 ]
 
 
@@ -1592,6 +1605,149 @@ func _build_clutter() -> void:
 	d.corner_webs(60.13, 79.87, 10.13, 19.87, WALL_H, 0.7)
 
 
+# --- Landmarks -------------------------------------------------------------------
+
+## Each hall's colour, so guards can say "meet me in the green hall": a painted stripe along its
+## walls, and its signs at the junctions. [x1, x2] of each hall too.
+const HALLS := {
+	"main": {"from": -40.0, "to": 40.0, "stripe": Color(0.13, 0.3, 0.68)},
+	"classroom": {"from": -80.0, "to": -40.0, "stripe": Color(0.86, 0.6, 0.1)},
+	"science": {"from": 40.0, "to": 80.0, "stripe": Color(0.16, 0.56, 0.32)},
+}
+const WING_SIGN_COLOURS := {
+	"main": Color(0.55, 0.75, 1.0), "classroom": Color(1.0, 0.85, 0.4), "science": Color(0.55, 1.0, 0.7),
+}
+## The stripe runs just above the lockers, below the posters.
+const STRIPE_Y := 2.0
+const STRIPE_HEIGHT := 0.16
+
+
+## Things to meet at: each hall's stripe and signs, the cafeteria's lit vending machine and fire
+## door, the science lab's skeleton, the library's book cart and the nurse's wheelchair.
+func _build_landmarks() -> void:
+	for hall: String in HALLS:
+		var info: Dictionary = HALLS[hall]
+		_add_mat("stripe_" + hall, info["stripe"], 0.55)
+		for wall_z: float in [4.0, 10.0]:
+			var into_hall := 1.0 if wall_z < 7.0 else -1.0
+			_hall_stripe(wall_z + into_hall * (WALL_T * 0.5 + 0.005), wall_z, info["from"], info["to"], "stripe_" + hall)
+	# Where the halls meet: which wing is through each door, and the way back.
+	_sign("CLASSROOM WING", Vector3(-39.86, 3.15, 7.0), Vector3.RIGHT, 40, WING_SIGN_COLOURS["classroom"])
+	_sign("SCIENCE WING", Vector3(39.86, 3.15, 7.0), Vector3.LEFT, 40, WING_SIGN_COLOURS["science"])
+	_sign("MAIN HALL", Vector3(-40.14, 3.22, 7.0), Vector3.LEFT, 36, WING_SIGN_COLOURS["main"])
+	_sign("MAIN HALL", Vector3(40.14, 3.22, 7.0), Vector3.RIGHT, 36, WING_SIGN_COLOURS["main"])
+	# Over the lobby arch, on the hall side: which way each wing is.
+	_sign("<  CLASSROOM WING", Vector3(-1.75, 3.25, 9.86), Vector3.FORWARD, 30, WING_SIGN_COLOURS["classroom"])
+	_sign("SCIENCE WING  >", Vector3(1.75, 3.25, 9.86), Vector3.FORWARD, 30, WING_SIGN_COLOURS["science"])
+
+	# The cafeteria: a snack machine glowing by the west wall, and the fire door in the back wall
+	# under its EXIT sign (see EXIT_SIGNS).
+	var snacks := _solid_model("prop_vending_machine", Vector3(-39.35, 0, -6.0), 2.0, PI * 0.5, Vector3(1.0, 2.0, 1.0))
+	if snacks:
+		var glow := OmniLight3D.new()
+		glow.position = Vector3(-38.4, 1.3, -6.0)
+		glow.light_color = Color(0.75, 0.88, 1.0)
+		glow.light_energy = 0.6
+		glow.omni_range = 4.0
+		glow.omni_attenuation = 1.3
+		glow.light_specular = 0.3
+		glow.distance_fade_enabled = true
+		glow.distance_fade_begin = 30.0
+		glow.distance_fade_length = 6.0
+		add_child(glow)
+		_on_mains(snacks, glow)
+		hum_spots.append({"at": Vector3(-39.0, 1.0, -6.0), "sound": "room_vending"})
+	_fire_door(-22.0)
+
+	# Things you can't miss: the skeleton in the science lab's back corner, the library's book cart
+	# at the end of the stacks, and a wheelchair in the nurse's office.
+	_solid_model("prop_skeleton", Vector3(60.9, 0, -12.9), 1.75, -PI * 0.25, Vector3(0.5, 1.75, 0.5))
+	_solid_model("prop_book_cart", Vector3(-62.6, 0, -3.4), 0.95, PI * 0.5, Vector3(0.45, 0.95, 0.9))
+	_solid_model("prop_wheelchair", Vector3(-71.4, 0, 17.7), 0.95, PI * 0.75, Vector3(0.8, 0.95, 0.8))
+
+
+## A painted stripe on the hall side of the wall at `wall_z` (its face at `face_z`), from x1 to
+## x2, broken at the doorways.
+func _hall_stripe(face_z: float, wall_z: float, x1: float, x2: float, mat: String) -> void:
+	var cuts: Array[Vector2] = []
+	for doorway in doorways:
+		var centre: Vector3 = doorway["centre"]
+		if doorway["along_x"] and absf(centre.z - wall_z) < 0.05 and centre.x > x1 and centre.x < x2:
+			var half: float = doorway["width"] * 0.5 + 0.1
+			cuts.append(Vector2(centre.x - half, centre.x + half))
+	cuts.sort_custom(func(a: Vector2, b: Vector2) -> bool: return a.x < b.x)
+	var cursor := x1 + 0.13
+	cuts.append(Vector2(x2 - 0.13, x2))
+	for cut in cuts:
+		if cut.x - cursor > 0.1:
+			_box(Vector3((cursor + cut.x) * 0.5, STRIPE_Y, face_z), Vector3(cut.x - cursor, STRIPE_HEIGHT, 0.01), mat, false)
+		cursor = maxf(cursor, cut.y)
+
+
+## The cafeteria's fire door, in the back wall at `x`: a steel pair with push bars. Painted on
+## (the wall stays solid): it's chained shut from outside.
+func _fire_door(x: float) -> void:
+	const FACE := -30.0 + WALL_T * 0.5
+	_door_frame(true, -30.0, x - 0.95, x + 0.95, 2.2)
+	for side: float in [-1.0, 1.0]:
+		_box(Vector3(x + side * 0.475, 1.1, FACE + 0.02), Vector3(0.93, 2.2, 0.04), "metal", false)
+		_box(Vector3(x + side * 0.45, 1.0, FACE + 0.08), Vector3(0.75, 0.06, 0.05), "steel", false)
+	_box(Vector3(x, 1.1, FACE + 0.045), Vector3(0.03, 2.2, 0.01), "dark", false)
+	_sign("EMERGENCY EXIT\nALARM WILL SOUND", Vector3(x + 0.475, 1.55, FACE + 0.045), Vector3.BACK, 18,
+			Color(0.95, 0.3, 0.25))
+
+
+## Things that go dark in a power cut (Power switches them): a light, and any glowing parts of
+## a model (their glow is switched off, not the model).
+func _on_mains(model: Node3D, light: Light3D = null) -> void:
+	var glowing: Array[BaseMaterial3D] = []
+	for node in model.find_children("*", "MeshInstance3D", true, false):
+		var mesh := node as MeshInstance3D
+		for surface in mesh.mesh.get_surface_count():
+			var material := mesh.get_active_material(surface) as BaseMaterial3D
+			if material and material.emission_enabled:
+				var own := material.duplicate() as BaseMaterial3D
+				mesh.set_surface_override_material(surface, own)
+				glowing.append(own)
+	model.set_meta("mains_materials", glowing)
+	model.add_to_group(Power.MAINS_GROUP)
+	if light:
+		light.add_to_group(Power.MAINS_GROUP)
+
+
+## A wall clock, `height` across, standing on `pos` on the wall's face, turned by `turn` (0: its
+## face looks +Z). The model's own hands are hidden: WallClocks turns two of ours to the time.
+func _wall_clock(pos: Vector3, height: float, turn := 0.0) -> void:
+	var model := _model("prop_wall_clock", pos, height, turn)
+	if model == null:
+		return
+	for mesh in model.find_children("*hand*", "MeshInstance3D", true, false):
+		(mesh as MeshInstance3D).visible = false
+	if not _mats.has("clock_hand"):
+		_add_mat("clock_hand", Color(0.04, 0.04, 0.05), 0.5)
+	var face := Node3D.new()
+	face.position = pos + Vector3(0, height * 0.5, 0)
+	face.rotation.y = turn
+	add_child(face)
+	var clock := {"at": face.position}
+	# [name, length, width, how far out from the dial] (as fractions of the clock's size).
+	for hand: Array in [["hour", 0.22, 0.034, 0.012], ["minute", 0.34, 0.022, 0.018]]:
+		var pivot := Node3D.new()
+		pivot.position = Vector3(0, 0, height * float(hand[3]))
+		face.add_child(pivot)
+		var length := height * float(hand[1])
+		var tail := height * 0.05
+		var mesh := _box_mesh(Vector3(height * float(hand[2]), length + tail, height * 0.004), "clock_hand")
+		mesh.position = Vector3(0, (length - tail) * 0.5, 0)
+		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mesh.visibility_range_end = PROP_DRAW_DISTANCE
+		pivot.add_child(mesh)
+		clock[hand[0]] = pivot
+	WallClocks.show_time(clock, WallClocks.EVENING_START)
+	wall_clocks.append(clock)
+	hum_spots.append({"at": face.position, "sound": "clock_tick"})
+
+
 # --- Floors --------------------------------------------------------------------
 
 ## Floors that aren't the plain classroom tile: [material, x1, x2, z1, z2].
@@ -1717,8 +1873,11 @@ func _fade_decal(decal: Decal) -> void:
 ## glass outside, moonlight inside; the guard room's are lit), a parapet along the roof, a canopy
 ## over the doors with the school's name, a flagpole, and a covered car out on the street.
 func _build_facade() -> void:
-	# Where windows can't go: the doors, the classroom boards (and their clocks) on the front wall.
+	# Where windows can't go: the doors, the classroom boards (and their clocks) on the front wall,
+	# and wherever an inside wall meets it (the window would show on both sides of it).
 	var skip: Array[Vector2] = [Vector2(-3.4, 3.4), Vector2(-49.8, -44.2), Vector2(-63.8, -58.2)]
+	for wall_x: float in FRONT_WALL_JOINS:
+		skip.append(Vector2(wall_x - 0.1, wall_x + 0.1))
 	var x := -78.4
 	while x < 79.0:
 		var clear := true
@@ -1737,6 +1896,10 @@ func _build_facade() -> void:
 	_flagpole(Vector3(8.0, 0, 27.0))
 	_build_landscaping()
 	_solid_model("prop_covered_car", Vector3(-11.0, 0, 62.6), 1.35, PI * 0.5, Vector3(4.3, 1.35, 1.8))
+
+
+## Where inside walls meet the front wall (x), so no window lands on one.
+const FRONT_WALL_JOINS: Array[float] = [-68.0, -54.0, -40.0, -20.0, -6.0, 6.0, 20.0, 40.0, 60.0]
 
 
 ## Where the clipped hedges along the front wall are centred (x; each is 4 m long).
@@ -2147,7 +2310,7 @@ func _build_classroom_wing() -> void:
 		_box(Vector3(-79.6, 1.6, -3.0), Vector3(0.1, 1.6, 4.0), "cork", false)
 	_poster("poster_read", Vector3(-79.875, 1.6, -8.0), Vector3.RIGHT)
 	_poster("poster_quiet", Vector3(-70.0, 1.6, -13.875), Vector3.BACK)
-	_model("prop_wall_clock", Vector3(-66.0, 2.3, 3.875), 0.36, PI)
+	_wall_clock(Vector3(-66.0, 2.3, 3.875), 0.36, PI)
 
 	# Nurse's office: two cots behind a curtain, and a medicine cabinet.
 	for cot_z: float in [13.0, 17.5]:
@@ -2194,7 +2357,7 @@ func _build_classroom_wing() -> void:
 	_sign("NURSE", Vector3(-74.0, 2.7, 9.85), Vector3.FORWARD, 40, Color(1.0, 0.6, 0.6))
 	_sign("ROOM 103", Vector3(-47.0, 2.7, 4.15), Vector3.BACK, 40)
 	_sign("LIBRARY", Vector3(-66.0, 2.9, 4.15), Vector3.BACK, 44)
-	_sign("CLASSROOM WING", Vector3(-40.2, 2.95, 7.0), Vector3.LEFT, 40, Color(1, 0.85, 0.4))
+	_sign("CLASSROOM WING", Vector3(-40.2, 2.95, 7.0), Vector3.LEFT, 40, WING_SIGN_COLOURS["classroom"])
 
 	_camera("West Hall", Vector3(-79.5, 3.2, 9.6), Vector3(-40, 0.3, 6.5), 2)
 	_camera("Room 101", Vector3(-40.4, 3.2, 19.6), Vector3(-50, 0, 13), 2)
@@ -2240,7 +2403,7 @@ func _classroom(centre: Vector3, facing: float, rows := 3, half_width := 7.0, po
 	_model("prop_clipboard", top + Vector3(-0.1, 0, -facing * 0.15), 0.042, PI * 0.5 + tilt * 0.6)
 	_model("prop_vintage_stapler", top + Vector3(0.45, 0, facing * 0.2), 0.095, tilt * 2.0)
 	_model("prop_food_apple_01", top + Vector3(0.62, 0, -facing * 0.2), 0.085, tilt * 5.0)
-	_model("prop_wall_clock", Vector3(centre.x, 2.38, board_wall), 0.34, PI if facing > 0.0 else 0.0)
+	_wall_clock(Vector3(centre.x, 2.38, board_wall), 0.34, PI if facing > 0.0 else 0.0)
 	# The TV cart in the corner by the board, on the side away from the teacher's desk.
 	var side := -1.0 if facing > 0.0 else 1.0
 	var cart := Vector3(centre.x + side * (half_width - 0.8), 0, board_z - facing * 0.9)
@@ -2263,7 +2426,8 @@ func _classroom(centre: Vector3, facing: float, rows := 3, half_width := 7.0, po
 	var bin := Vector3(centre.x + 4.2, 0, board_z - facing * 1.0)
 	_solid_model("prop_trash_can", bin, 0.6, 0.0, Vector3(0.4, 0.6, 0.4))
 	dressing.litter(bin.x - 0.6, bin.x + 0.6, bin.z - 0.6, bin.z + 0.6, 2)
-	_wall_flag(Vector3(centre.x - side * (half_width - 0.13), 2.35, board_z - facing * 0.6), Vector3(side, 0, 0))
+	# High enough to clear the hiding cupboards that stand in some of these corners (Room 101, 103).
+	_wall_flag(Vector3(centre.x - side * (half_width - 0.13), 2.6, board_z - facing * 0.6), Vector3(side, 0, 0))
 	dressing.put("prop_pa_speaker", Vector3(centre.x - 2.6, 2.9, board_wall - facing * 0.11), 0.26, PI if facing > 0.0 else 0.0)
 	_solid_model("prop_radiator", Vector3(centre.x + side * (half_width - 0.2), 0.08, centre.z - facing * 1.5), 0.62,
 			PI * 0.5 * -side, Vector3(0.25, 0.7, 1.0))
@@ -2386,7 +2550,6 @@ func _build_science_wing() -> void:
 	_model("prop_trash_can", Vector3(58.8, 0, 11.3), 0.9)
 	_poster("poster_science_fair", Vector3(56.0, 2.5, 4.125), Vector3.BACK)
 	_poster("poster_no_running", Vector3(76.0, 2.5, 4.125), Vector3.BACK)
-	_poster("poster_basketball", Vector3(60.0, 2.5, 9.875), Vector3.FORWARD)
 
 	var x := 44.0
 	while x <= 76.0:
@@ -2402,7 +2565,7 @@ func _build_science_wing() -> void:
 	_sign("ART", Vector3(71.0, 2.7, 4.15), Vector3.BACK, 44, Color(0.9, 0.7, 1.0))
 	_sign("LOCKER ROOMS", Vector3(50.0, 2.7, 9.85), Vector3.FORWARD, 40)
 	_sign("LOCKER ROOMS", Vector3(70.0, 2.7, 9.85), Vector3.FORWARD, 40)
-	_sign("SCIENCE WING", Vector3(40.2, 2.95, 7.0), Vector3.RIGHT, 40, Color(1, 0.85, 0.4))
+	_sign("SCIENCE WING", Vector3(40.2, 2.95, 7.0), Vector3.RIGHT, 40, WING_SIGN_COLOURS["science"])
 
 	_camera("East Hall", Vector3(79.5, 3.2, 4.4), Vector3(40, 0.3, 7.5), 3)
 	_camera("Science Lab", Vector3(40.4, 3.2, 3.6), Vector3(56, 0, -9), 3)

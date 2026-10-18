@@ -210,4 +210,5 @@ version of a SpriteCook image (`keyart_raw.png`, superseded). Capsule titles are
 
 `floor`, `ceiling`, `metal`, `locker`, `cork`, `board` textures: `tools/gen_textures.py`. The flashlight's
 beam pattern (`assets/textures/flashlight_cookie.png`): `tools/gen_flashlight.py`. Fallback sounds (used where
-there's no recording): `scripts/sfx.gd`, synthesised at runtime.
+there's no recording): `scripts/sfx.gd`, synthesised at runtime. The room tones (`room_fridge`, `room_vending`,
+`room_fluorescent`, `clock_tick` in `assets/sounds/`) are synthesised by `tools/gen_room_tones.py`.
