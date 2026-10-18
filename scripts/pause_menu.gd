@@ -283,14 +283,26 @@ var _team: VBoxContainer
 
 
 ## The host's team list: `others` is [peer id, name] for everyone but the host.
-func set_team(others: Array) -> void:
+## The other players: a mute switch for each (anyone), and a remove button (the host).
+func set_team(others: Array, hosting := false) -> void:
 	for child in _team.get_children():
 		child.queue_free()
 	for other: Array in others:
 		var peer: int = other[0]
-		_team.add_child(_button("Remove %s from the session" % other[1], func() -> void:
-			kick_requested.emit(peer)
-			close()))
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		var mute := CheckBox.new()
+		mute.text = "Mute %s" % other[1]
+		mute.button_pressed = voice != null and voice.is_muted(peer)
+		mute.toggled.connect(func(on: bool) -> void:
+			if voice:
+				voice.set_muted(peer, on))
+		row.add_child(mute)
+		if hosting:
+			row.add_child(_button("Remove from the session", func() -> void:
+				kick_requested.emit(peer)
+				close()))
+		_team.add_child(row)
 
 
 ## `solo` pauses the game; `hosting` means leaving ends the session for everyone.

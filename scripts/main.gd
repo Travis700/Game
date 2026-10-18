@@ -1354,11 +1354,11 @@ func on_local_guard_ready(guard: Guard) -> void:
 	guard.pause_requested.connect(func() -> void:
 		guard.input_blocked = true
 		var others: Array = []
-		if _mode == "Hosting":
+		if _mode != "solo":
 			for other: Guard in players.get_children():
 				if other.name.to_int() != multiplayer.get_unique_id():
-					others.append([other.name.to_int(), other.player_name if other.player_name != "" else "Guard %d" % other.slot])
-		pause_menu.set_team(others)
+					others.append([other.name.to_int(), other.display_name()])
+		pause_menu.set_team(others, _mode == "Hosting")
 		pause_menu.open(_mode == "solo", _mode == "Hosting", (_mode == "solo" or _mode == "Hosting")
 				and shift.state == Shift.State.ON_SHIFT and night.daily == "" and night.training == null))
 	doors.local_guard = guard

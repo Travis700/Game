@@ -256,6 +256,8 @@ func _hears_on_radio(speaker: int) -> bool:
 
 
 func _play_radio(speaker: int, packet: PackedByteArray) -> void:
+	if _muted.has(speaker):
+		return
 	var existing: Variant = _radio_voices.get(speaker)
 	var player: AudioStreamPlayer = existing if is_instance_valid(existing) else null
 	if player == null:
@@ -285,9 +287,44 @@ func _squelch(_from: Node) -> void:
 	click.finished.connect(click.queue_free)
 
 
+## Players this player has muted (just on this computer).
+var _muted: Dictionary = {}
+## Speaker -> whether a wall's between us (checked a few times a second), and when last checked.
+var _behind_wall: Dictionary = {}
+var _wall_checked: Dictionary = {}
+## Voices through a wall: duller (frequencies above this cut) and quieter.
+const MUFFLED_CUTOFF := 900.0
+const MUFFLED_DB := -7.0
+
+
+func is_muted(peer_id: int) -> bool:
+	return _muted.has(peer_id)
+
+
+func set_muted(peer_id: int, on: bool) -> void:
+	if on:
+		_muted[peer_id] = true
+	else:
+		_muted.erase(peer_id)
+
+
+## Is there a wall between this player and that guard? (Remembered for a quarter second.)
+func _walled_off(speaker: int, guard: Guard) -> bool:
+	var now := Time.get_ticks_msec()
+	if now - int(_wall_checked.get(speaker, -1000)) < 250:
+		return bool(_behind_wall.get(speaker, false))
+	_wall_checked[speaker] = now
+	var eye := local_guard.camera.global_position
+	var query := PhysicsRayQueryParameters3D.create(eye, guard.global_position + Vector3(0, 1.6, 0), 1)
+	query.exclude = [local_guard.get_rid(), guard.get_rid()]
+	var blocked := not local_guard.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+	_behind_wall[speaker] = blocked
+	return blocked
+
+
 func _play(speaker: int, packet: PackedByteArray) -> void:
 	var guard := players_guard(speaker)
-	if guard == null or local_guard == null:
+	if guard == null or local_guard == null or _muted.has(speaker):
 		return
 	# Ghosts hear everyone; the living only hear the living (bar a ghost on their radio).
 	if guard.is_dead and not local_guard.is_dead:
@@ -306,7 +343,20 @@ func _play(speaker: int, packet: PackedByteArray) -> void:
 		guard.add_child(player)
 		player.play()
 		_voices[speaker] = player
-	player.volume_db = linear_to_db(maxf(float(_profile_value("voice_volume", 1.0)), 0.0001))
+	var volume := linear_to_db(maxf(float(_profile_value("voice_volume", 1.0)), 0.0001))
+	if guard.is_dead and local_guard.is_dead:
+		# Two ghosts: heard anywhere, as if right beside you.
+		player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_DISABLED
+		player.attenuation_filter_cutoff_hz = 20500.0
+		player.max_distance = 0.0
+	else:
+		player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+		player.max_distance = HEARING_RANGE
+		var walled := _walled_off(speaker, guard)
+		player.attenuation_filter_cutoff_hz = MUFFLED_CUTOFF if walled else 5000.0
+		if walled:
+			volume += MUFFLED_DB
+	player.volume_db = volume
 	_push(player, speaker, packet)
 
 
