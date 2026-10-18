@@ -1208,7 +1208,8 @@ func _hoop(end: float) -> void:
 	var face := baseline + inward * 1.22
 	var board_z := face - inward * 0.015
 	var x := COURT_CENTRE.x
-	_box(Vector3(x, 3.435, board_z), Vector3(1.83, 1.07, 0.03), "glass", false)
+	# Solid, so a shot can go in off the glass.
+	_box(Vector3(x, 3.435, board_z), Vector3(1.83, 1.07, 0.03), "glass", true)
 	# White edging round the board, and the target square over the rim.
 	for y: float in [3.435 - 0.51, 3.435 + 0.51]:
 		_box(Vector3(x, y, board_z), Vector3(1.83, 0.05, 0.036), "paint_white", false)

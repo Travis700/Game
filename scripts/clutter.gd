@@ -167,6 +167,15 @@ var _heard: Array[int] = []
 var _gliding: Dictionary = {}
 ## Whether this computer was simulating last frame (it changes when we join someone).
 var _simulating := true
+## Host: who last threw each item (for a basket), each ball's height last step, and baskets
+## sunk this session.
+var _thrown_by: Dictionary = {}
+var _ball_y: Dictionary = {}
+var _baskets: Dictionary = {}
+## The gym's two rims (the centre of each ring), and how near the middle a ball has to drop.
+const RIM_HEIGHT := 3.05
+const RIM_CATCH := 0.2
+var _shift_state := -1
 
 
 func _ready() -> void:
@@ -199,7 +208,8 @@ func request_pick_up(index: int) -> void:
 	var guard := director.guard_by_peer(peer)
 	if guard == null or guard.is_dead or index < 0 or index >= _props.size() or index in carried.values():
 		return
-	if shift and shift.state != Shift.State.ON_SHIFT:
+	# (Basketballs are fair game before the shift: shoot some hoops while the team turns up.)
+	if shift and shift.state != Shift.State.ON_SHIFT and ITEMS[index]["name"] != "basketball":
 		director.tell(peer, "Leave it. The school's tidy until the shift starts.")
 		return
 	if carried.has(peer):
@@ -221,6 +231,7 @@ func request_throw(from: Vector3, direction: Vector3) -> void:
 		return
 	var index: int = carried[peer]
 	direction = direction.normalized()
+	_thrown_by[index] = peer
 	_set_carried.rpc(peer, -1)
 	var start := _clear_spot(from, direction, 0.45)
 	var spin := Vector3(randf_range(-6, 6), randf_range(-3, 3), randf_range(-6, 6))
@@ -344,11 +355,74 @@ func _physics_process(delta: float) -> void:
 				body.sleeping = true
 		else:
 			_still_for[i] = 0.0
+	_watch_hoops()
+	_tidy_balls_for_shift()
 	_push_by_guards(delta)
 	_sync_left -= delta
 	if _sync_left <= 0.0:
 		_sync_left = SYNC_EVERY
 		_send_poses()
+
+
+## Host: a thrown basketball dropping down through either rim is a basket.
+func _watch_hoops() -> void:
+	for i: int in _thrown_by.keys():
+		var body := _bodies[i]
+		var y := body.global_position.y
+		var before: float = _ball_y.get(i, y)
+		_ball_y[i] = y
+		if body.sleeping:
+			_thrown_by.erase(i)
+			_ball_y.erase(i)
+			continue
+		if ITEMS[i]["name"] != "basketball" or not (before > RIM_HEIGHT and y <= RIM_HEIGHT) or body.linear_velocity.y > 0.0:
+			continue
+		for rim in rims():
+			if Vector2(body.global_position.x - rim.x, body.global_position.z - rim.z).length() < RIM_CATCH:
+				var peer: int = _thrown_by[i]
+				_baskets[peer] = int(_baskets.get(peer, 0)) + 1
+				_thrown_by.erase(i)
+				get_tree().call_group("game", "on_basket", peer, int(_baskets[peer]), rim)
+				_basket.rpc(rim)
+				break
+
+
+## Every computer: swish.
+@rpc("authority", "call_local", "reliable")
+func _basket(at: Vector3) -> void:
+	var player := SoundBank.play_at(self, "swish", 0.0, 40.0, Sfx.thud(1.6, 0.08, 0.5))
+	if player:
+		player.global_position = at
+
+
+## Where the gym's two rims are (see SchoolBuilder._hoop).
+static func rims() -> Array[Vector3]:
+	var found: Array[Vector3] = []
+	for end: float in [-1.0, 1.0]:
+		var baseline := SchoolBuilder.COURT_CENTRE.z + end * SchoolBuilder.COURT_HALF.y
+		var inward := -end
+		var face := baseline + inward * 1.22
+		found.append(Vector3(SchoolBuilder.COURT_CENTRE.x, RIM_HEIGHT, face + inward * (0.15 + 0.2305)))
+	return found
+
+
+## Host: the shift's starting, so the basketballs go back where they were (they were for
+## messing about with before it).
+func _tidy_balls_for_shift() -> void:
+	if shift == null or shift.state == _shift_state:
+		return
+	var starting := shift.state == Shift.State.ON_SHIFT and _shift_state == Shift.State.PRE_SHIFT
+	_shift_state = shift.state
+	if not starting:
+		return
+	for i in ITEMS.size():
+		if ITEMS[i]["name"] == "basketball" and not i in carried.values():
+			_place.rpc(i, _home(i), Engine.get_physics_frames(), true)
+	for peer: int in carried.keys():
+		if ITEMS[carried[peer]]["name"] == "basketball":
+			var index: int = carried[peer]
+			_set_carried.rpc(peer, -1)
+			_place.rpc(index, _home(index), Engine.get_physics_frames(), true)
 
 
 func _make_noise(at: Vector3) -> void:

@@ -160,6 +160,7 @@ func stop_search(spot: int, caught: bool) -> void:
 	for peer: int in hidden:
 		if hidden[peer] == spot:
 			director.tell(peer, "The rattling stops. Footsteps, going away.")
+			get_tree().call_group("game", "on_award", peer, "STILL_AS_STONE")
 
 
 ## Host: it found them. Out they come.

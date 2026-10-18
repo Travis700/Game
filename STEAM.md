@@ -84,6 +84,9 @@ Create these with exactly these API names. Mark them as set by the client.
 | `CASE_WORK` | Detective work | Collect 36 case file stamps. |
 | `CASE_CLOSED` | Case closed | Collect every case file stamp (54). |
 | `LIGHTS_ON` | Who turned out the lights? | Reset the breaker after a power cut. |
+| `NOTHING_BUT_NET` | Nothing but net | Sink a basketball through a hoop in the gym. |
+| `STILL_AS_STONE` | Still as stone | Stay hidden while a monster searches your cupboard. |
+| `FINDERS_KEEPERS` | Finders keepers | Find something in a drawer. |
 
 Stats (type INT, set by client): `nights_survived`, `runs_won`, `correct_logs`, `times_caught`,
 `monsters_logged`, `stations_punched`.

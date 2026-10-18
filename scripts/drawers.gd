@@ -172,6 +172,8 @@ func _request_toggle(index: int) -> void:
 
 ## Host: what the opener found.
 func _give(peer: int, index: int, kind: String) -> void:
+	if kind != "scare":
+		get_tree().call_group("game", "on_award", peer, "FINDERS_KEEPERS")
 	match kind:
 		"battery":
 			_brighten.rpc(peer)

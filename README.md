@@ -135,6 +135,9 @@ further off) or drowsy (slower and duller). Log it correctly and you're told whi
 through walls, for 8 seconds; a mark on a monster reads MONSTER! (except the disguised ones). At a desk, Q flags
 the camera instead.
 
+**Shooting hoops:** before the shift, while the team turns up, the gym's basketballs are fair game: sink one through
+either hoop and everyone in the gym hears about it (the balls go back on the rack when the shift starts).
+
 **Drawers:** filing cabinets, desks and the nurse's cabinets open with E. Each night a few hold something: a
 spare battery (a brighter flashlight for the night), loose change (points), one of R. Hale's notes, and now and
 then something that makes you jump.

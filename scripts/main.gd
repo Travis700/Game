@@ -1272,6 +1272,26 @@ func _teammate_in_front(guard: Guard) -> int:
 	return best
 
 
+## Host: something elsewhere earned a guard an achievement (Hiding, Drawers...).
+func on_award(peer_id: int, achievement: String) -> void:
+	if career:
+		career.award(peer_id, achievement)
+
+
+## Host: a basket in the gym (from Clutter).
+func on_basket(peer_id: int, count: int, at: Vector3) -> void:
+	on_award(peer_id, "NOTHING_BUT_NET")
+	var guard := director.guard_by_peer(peer_id)
+	_show_basket.rpc(guard.display_name() if guard else "Someone", count, at)
+
+
+## Every computer: whoever's in the gym hears about it.
+@rpc("authority", "call_local", "reliable")
+func _show_basket(who: String, count: int, at: Vector3) -> void:
+	if _local_guard and is_instance_valid(_local_guard) and _local_guard.global_position.distance_to(at) < 35.0:
+		hud.show_message("%s scores!%s" % [who, "  (%d so far)" % count if count > 1 else ""], 3.0)
+
+
 ## Called by each guard's own computer when it spawns, to hook up that player's HUD.
 func on_local_guard_ready(guard: Guard) -> void:
 	_local_guard = guard

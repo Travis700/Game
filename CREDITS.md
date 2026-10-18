@@ -175,7 +175,7 @@ terms for commercial use before release. In `assets/sounds/`: whistles (`whistle
 `power_up`, `scream`, `stinger`, `ambience`, `heartbeat`, `door_bang`, `gate`, `air_horn`,
 `hand_bell`, `radio`, `whispers`, `ball_bounce`, `principal_steps`, `rush_steps`, `squelch`, `vend`,
 `menu_theme` (title music), `chase` (chase music), and the storm and the building at night: `rain`,
-`thunder_*`, `pipe_knock_*`, `panting`, `tv_hum` (the hum made seamless and every one levelled to
+`thunder_*`, `pipe_knock_*`, `panting`, `tv_hum`, `swish` (a ball through the gym's net) (the hum made seamless and every one levelled to
 -18 LUFS).
 
 ## Field guide illustrations: generated for this game

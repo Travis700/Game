@@ -47,6 +47,9 @@ const ACHIEVEMENTS := {
 	"CASE_FILES": ["Case files", "Collect 18 case file stamps."],
 	"CASE_WORK": ["Detective work", "Collect 36 case file stamps."],
 	"CASE_CLOSED": ["Case closed", "Collect every case file stamp (54)."],
+	"NOTHING_BUT_NET": ["Nothing but net", "Sink a basketball through a hoop in the gym."],
+	"STILL_AS_STONE": ["Still as stone", "Stay hidden while a monster searches your cupboard."],
+	"FINDERS_KEEPERS": ["Finders keepers", "Find something in a drawer."],
 }
 ## Every kind of monster, for the Field guide achievement.
 const MONSTER_KINDS: Array[String] = [
