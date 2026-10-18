@@ -85,16 +85,16 @@ static func requirement(hat: String) -> String:
 ## old block head and are shrunk to fit the real one (see Guard.MODEL_HAT_SCALE).
 const MODELS := {
 	"cap": [0.1, 0.2, 0.0],
-	"beanie": [0.03, 0.3, 0.036],
-	"hard_hat": [0.07, 0.24, 0.018],
-	"cone": [0.1, 0.36, 0.05],
-	"top_hat": [0.11, 0.23, 0.05],
-	"bucket": [0.03, 0.31, 0.05],
-	"party": [0.16, 0.35, 0.05],
+	"beanie": [0.0, 0.34, 0.004],
+	"hard_hat": [0.06, 0.26, -0.015],
+	"cone": [0.05, 0.48, 0.02],
+	"top_hat": [0.1, 0.26, 0.02],
+	"bucket": [0.0, 0.35, 0.02],
+	"party": [0.16, 0.35, 0.03],
 	"night_owl": [0.12, 0.12, -0.17],
-	"deerstalker": [0.06, 0.2, 0.05],
-	"fedora": [0.09, 0.21, 0.02],
-	"badge_cap": [0.1, 0.15, 0.056],
+	"deerstalker": [0.05, 0.22, 0.02],
+	"fedora": [0.08, 0.23, -0.015],
+	"badge_cap": [0.09, 0.165, 0.027],
 }
 
 ## Hats (or bits of hats) made from simple shapes, on the model or instead of one:
@@ -104,20 +104,20 @@ const SHAPES := {
 	"halo": [
 		["ring", Vector3(0.34, 0.035, 0.34), Vector3(0, 0.36, 0.05), Color(1.0, 0.85, 0.3), 3.0, Vector3(-8, 0, 0)]],
 	"mascot": [
-		["band", Vector3(0.29, 0.22, 0.05), Vector3(0, 0.0, 0.07), Color(0.2, 0.15, 0.12), 0.0, Vector3.ZERO],
-		["sphere", Vector3(0.14, 0.1, 0.045), Vector3(-0.13, 0.2, 0.07), Color(0.55, 0.38, 0.22), 0.0, Vector3(0, 0, 40)],
-		["sphere", Vector3(0.14, 0.1, 0.045), Vector3(0.13, 0.2, 0.07), Color(0.55, 0.38, 0.22), 0.0, Vector3(0, 0, -40)],
-		["sphere", Vector3(0.07, 0.05, 0.05), Vector3(-0.16, 0.21, 0.065), Color(0.85, 0.6, 0.55), 0.0, Vector3(0, 0, 40)],
-		["sphere", Vector3(0.07, 0.05, 0.05), Vector3(0.16, 0.21, 0.065), Color(0.85, 0.6, 0.55), 0.0, Vector3(0, 0, -40)]],
+		["band", Vector3(0.29, 0.22, 0.05), Vector3(0, 0.0, 0.04), Color(0.2, 0.15, 0.12), 0.0, Vector3.ZERO],
+		["sphere", Vector3(0.14, 0.1, 0.045), Vector3(-0.13, 0.2, 0.04), Color(0.55, 0.38, 0.22), 0.0, Vector3(0, 0, 40)],
+		["sphere", Vector3(0.14, 0.1, 0.045), Vector3(0.13, 0.2, 0.04), Color(0.55, 0.38, 0.22), 0.0, Vector3(0, 0, -40)],
+		["sphere", Vector3(0.07, 0.05, 0.05), Vector3(-0.16, 0.21, 0.04), Color(0.85, 0.6, 0.55), 0.0, Vector3(0, 0, 40)],
+		["sphere", Vector3(0.07, 0.05, 0.05), Vector3(0.16, 0.21, 0.04), Color(0.85, 0.6, 0.55), 0.0, Vector3(0, 0, -40)]],
 	"antlers": [
-		["band", Vector3(0.28, 0.21, 0.035), Vector3(0, 0.0, 0.06), Color(0.1, 0.11, 0.1), 0.0, Vector3.ZERO],
-		["cylinder", Vector3(0.016, 0.22, 0.016), Vector3(-0.05, 0.3, 0.06), Color(0.75, 0.8, 0.7), 0.0, Vector3(0, 0, 15)],
-		["cylinder", Vector3(0.016, 0.22, 0.016), Vector3(0.05, 0.3, 0.06), Color(0.75, 0.8, 0.7), 0.0, Vector3(0, 0, -15)],
-		["sphere", Vector3(0.065, 0.065, 0.065), Vector3(-0.079, 0.41, 0.06), Color(0.6, 1.0, 0.6), 2.0, Vector3.ZERO],
-		["sphere", Vector3(0.065, 0.065, 0.065), Vector3(0.079, 0.41, 0.06), Color(0.6, 1.0, 0.6), 2.0, Vector3.ZERO]],
+		["band", Vector3(0.28, 0.21, 0.035), Vector3(0, 0.0, 0.04), Color(0.1, 0.11, 0.1), 0.0, Vector3.ZERO],
+		["cylinder", Vector3(0.016, 0.22, 0.016), Vector3(-0.05, 0.3, 0.04), Color(0.75, 0.8, 0.7), 0.0, Vector3(0, 0, 15)],
+		["cylinder", Vector3(0.016, 0.22, 0.016), Vector3(0.05, 0.3, 0.04), Color(0.75, 0.8, 0.7), 0.0, Vector3(0, 0, -15)],
+		["sphere", Vector3(0.065, 0.065, 0.065), Vector3(-0.079, 0.41, 0.04), Color(0.6, 1.0, 0.6), 2.0, Vector3.ZERO],
+		["sphere", Vector3(0.065, 0.065, 0.065), Vector3(0.079, 0.41, 0.04), Color(0.6, 1.0, 0.6), 2.0, Vector3.ZERO]],
 	# The goggles' strap, round the head.
 	"night_owl": [
-		["ring", Vector3(0.29, 0.03, 0.31), Vector3(0, 0.15, 0.05), Color(0.1, 0.11, 0.09), 0.0, Vector3(-6, 0, 0)]],
+		["ring", Vector3(0.29, 0.03, 0.31), Vector3(0, 0.15, 0.03), Color(0.1, 0.11, 0.09), 0.0, Vector3(-6, 0, 0)]],
 }
 
 

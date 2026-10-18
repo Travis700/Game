@@ -610,7 +610,9 @@ func _show_crouch(delta: float) -> void:
 		_model.position.y = lerpf(_model.position.y, _model_floor - (0.42 if low else 0.0), 1.0 - exp(-12.0 * delta))
 		if _strider and not _shown_seated:
 			_strider.hold = "sit" if low else ""
-	name_tag.position.y = lerpf(name_tag.position.y, 1.5 if low else 2.05, 1.0 - exp(-8.0 * delta))
+	# Over the hat, whatever's being worn (it can change at the staff locker).
+	var tag_at := (1.5 if low else 2.05) + Hats.height(hat) + 0.05
+	name_tag.position.y = lerpf(name_tag.position.y, tag_at, 1.0 - exp(-8.0 * delta))
 
 
 ## Where the model stands when upright (its offset under the body mesh).
