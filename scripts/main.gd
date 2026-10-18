@@ -1116,7 +1116,7 @@ func _show_ghost(peer_id: int, joined: bool) -> void:
 		hud.set_ghost(true)
 		hud.show_message("The shift had already started, so you've come in as a ghost: watch, leave cold spots ({use}), knock things over, and help where you can. You'll clock in properly from the next night.", 12.0)
 	elif joined:
-		hud.show_message("Guard %d joined mid-shift. They're a ghost until the next night." % guard.slot)
+		hud.show_message("%s joined mid-shift. They're a ghost until the next night." % guard.display_name())
 	_refresh_guard_visibility()
 
 
@@ -1323,6 +1323,14 @@ func _teammate_in_front(guard: Guard) -> int:
 	return best
 
 
+## What to call the guard in this slot (their Steam name, or "Guard 2").
+func _name_of_slot(slot: int) -> String:
+	for guard: Guard in players.get_children():
+		if guard.slot == slot:
+			return guard.display_name()
+	return "Guard %d" % slot
+
+
 ## Host: something elsewhere earned a guard an achievement (Hiding, Drawers...).
 func on_award(peer_id: int, achievement: String) -> void:
 	if career:
@@ -1487,7 +1495,7 @@ func _summons_text() -> String:
 	if _summons_peer == multiplayer.get_unique_id():
 		return "THE PRINCIPAL WANTS YOU: get to the front office (%d s%s)." % [left, ", on hold" if _summons_held else ""]
 	var called := director.guard_by_peer(_summons_peer)
-	return "The Principal has called Guard %d to the front office." % called.slot if called else ""
+	return "The Principal has called %s to the front office." % called.display_name() if called else ""
 
 
 func _objective() -> String:
@@ -1726,7 +1734,7 @@ func _request_mark(at: Vector3) -> void:
 func _mark(at: Vector3, slot: int, monster: bool) -> void:
 	var color: Color = Guard.UNIFORM_COLORS[(slot - 1) % Guard.UNIFORM_COLORS.size()]
 	var label := Label3D.new()
-	label.text = "▼\nGuard %d: %s" % [slot, "MONSTER!" if monster else "here"]
+	label.text = "▼\n%s: %s" % [_name_of_slot(slot), "MONSTER!" if monster else "here"]
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.no_depth_test = true
 	label.fixed_size = true
@@ -1792,7 +1800,7 @@ func _ghost_ping(at: Vector3, slot: int) -> void:
 	fade.parallel().tween_property(orb, "scale", Vector3.ONE * 0.2, GHOST_PING_SECONDS)
 	fade.tween_callback(spot.queue_free)
 	if _local_guard and not _local_guard.is_dead and _local_guard.global_position.distance_to(at) < 25.0:
-		hud.show_message("A cold spot. Guard %d is trying to tell you something." % slot)
+		hud.show_message("A cold spot. %s is trying to tell you something." % _name_of_slot(slot))
 
 
 ## The guard room's notice board, written up for tonight.
@@ -2111,7 +2119,7 @@ func _on_guard_caught(peer_id: int, by: String, from := Vector3.INF) -> void:
 	night.record_death(peer_id, "caught by %s%s at %s" % [by, " in the %s" % where if where != "" else "", night.time_text()])
 	var camera_index := cameras.best_view_of(guard.global_position)
 	if camera_index >= 0:
-		_incident.rpc(camera_index, "%s · %s cam · Guard %d, caught by %s" % [night.time_text(), cameras.area_of(camera_index), guard.slot, by])
+		_incident.rpc(camera_index, "%s · %s cam · %s, caught by %s" % [night.time_text(), cameras.area_of(camera_index), guard.display_name(), by])
 	clutter.drop(peer_id, guard.global_position)
 	finale.drop(peer_id, guard.global_position)
 	# What they carried spills on the floor, for the others to pick up (theirs again in the morning).
@@ -2203,7 +2211,7 @@ func _guard_died(peer_id: int, by: String, at: Vector3, from := Vector3.INF) -> 
 		hud.show_message("You were caught by %s.%s" % [by, "\n" + tip if tip != "" else ""], 9.0 if tip != "" else 4.0)
 		SoundBank.play_flat(self, "stinger", 0.0, Sfx.notes([110.0, 104.0, 98.0, 92.0], 0.35, 0.4, "saw"))
 	else:
-		hud.show_message("Guard %d was caught by %s." % [guard.slot, by])
+		hud.show_message("%s was caught by %s." % [guard.display_name(), by])
 		dread.witness_catch(at)
 	_refresh_guard_visibility()
 
@@ -2214,7 +2222,7 @@ func _on_revive_rolled(user_peer: int, roll: int, revived_peer: int, at: Vector3
 	var revived := director.guard_by_peer(revived_peer)
 	if user == null or revived == null:
 		return
-	_announce.rpc("Guard %d rolled a %d at a totem. Guard %d is back!" % [user.slot, roll, revived.slot])
+	_announce.rpc("%s rolled a %d at a totem. %s is back!" % [user.display_name(), roll, revived.display_name()])
 	night.record_revive(revived_peer)
 	career.award(user_peer, "LIFESAVER")
 	career.award(revived_peer, "BACK_FROM_DEAD")
@@ -2224,7 +2232,7 @@ func _on_revive_rolled(user_peer: int, roll: int, revived_peer: int, at: Vector3
 ## Host: a bad roll lets something out of the totem.
 func _on_bad_roll(user_peer: int, roll: int, at: Vector3) -> void:
 	var user := director.guard_by_peer(user_peer)
-	_announce.rpc("Guard %d rolled a %d at a totem. Something climbs out..." % [user.slot if user else 0, roll])
+	_announce.rpc("%s rolled a %d at a totem. Something climbs out..." % [user.display_name() if user else "Someone", roll])
 	director.summon_shade(at + Vector3(0, 0.1, 1.0), user_peer)
 
 

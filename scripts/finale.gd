@@ -160,7 +160,7 @@ func objective_for(guard: Guard) -> String:
 		return "You have the gate key. Get it to the front gate before 6 AM. Everything is hunting you."
 	if key_holder != 0:
 		var holder := players.get_node_or_null(str(key_holder)) as Guard
-		return "Guard %d has the gate key. Get to the front gate before 6 AM." % (holder.slot if holder else 0)
+		return "%s has the gate key. Get to the front gate before 6 AM." % (holder.display_name() if holder else "Someone")
 	return "The gate's padlock key is in %s. Fetch it and unlock the front gate before 6 AM." % the(key_area)
 
 
@@ -224,7 +224,7 @@ func request_take() -> void:
 	if guard == null or guard.is_dead or guard.global_position.distance_to(_key.global_position) > 3.5:
 		return
 	_set_key.rpc(key_area, peer, _key.global_position, false)
-	director.announcement.emit("Guard %d has the gate key." % guard.slot, "")
+	director.announcement.emit("%s has the gate key." % guard.display_name(), "")
 
 
 ## Host: whoever had the key was caught (or left). It lies where they were: in front of their

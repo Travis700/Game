@@ -157,7 +157,7 @@ func _request_reset() -> void:
 	if career:
 		career.award(peer, "LIGHTS_ON")
 	for living in director.living_guards():
-		var who := "You" if living == guard else "Guard %d" % guard.slot
+		var who := "You" if living == guard else guard.display_name()
 		director.tell(living.name.to_int(), "%s reset the breaker. The power's back." % who)
 
 

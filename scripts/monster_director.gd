@@ -1197,7 +1197,7 @@ func _update_principal(minutes: float, delta: float) -> void:
 		_summoned = guard.name.to_int()
 		_summon_left = SUMMON_SECONDS
 		summons_changed.emit(_summoned, SUMMON_SECONDS, false)
-		announcement.emit("The intercom crackles: \"Guard %d. My office. Now.\"" % guard.slot, "intercom")
+		announcement.emit("The intercom crackles: \"%s. My office. Now.\"" % guard.display_name(), "intercom")
 		return
 	var summoned := guard_by_peer(_summoned)
 	if summoned == null or summoned.is_dead:
@@ -1218,7 +1218,7 @@ func _update_principal(minutes: float, delta: float) -> void:
 	var before := _summon_left
 	_summon_left -= delta
 	if before > 15.0 and _summon_left <= 15.0:
-		announcement.emit("The intercom crackles: \"Guard %d. I'm waiting.\"" % summoned.slot, "intercom")
+		announcement.emit("The intercom crackles: \"%s. I'm waiting.\"" % summoned.display_name(), "intercom")
 	if _summon_left <= 0.0:
 		announcement.emit("The intercom crackles: \"Then I'll come to you, Guard %d.\"" % summoned.slot, "intercom")
 		_principal_out = true
