@@ -115,7 +115,9 @@ run, for your own challenge runs. Notes you pick yourself earn no XP bonus.
 session (they can't rejoin it), for someone who's gone idle or won't clock in.
 
 **Joining late:** you can join a team mid-shift. You come in as a ghost (watch, leave cold spots, knock things
-over; a revive totem can't bring back someone who never clocked in) and clock in properly from the next night.
+over; a revive totem can't bring back someone who never clocked in) and clock in properly from the next night. If your
+connection drops mid-shift, rejoin within 90 seconds and you're back where you were, alive, with your night's
+work intact; stay away longer and it counts as being caught.
 
 **Base station:** sitting at a guard room desk, hold the walkie-talkie key (B) to call the whole team over the
 radio, no walkie needed. Field guards need a walkie-talkie to call back. Careful: the call comes out loud wherever

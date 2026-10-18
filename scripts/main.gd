@@ -1001,8 +1001,20 @@ func _on_peer_connected(peer_id: int) -> void:
 func _catch_up_late_joiner(peer_id: int) -> void:
 	var joiner := players.get_node_or_null(str(peer_id)) as Guard
 	var badge := joiner.employee_number if joiner else 0
-	if _left_alive.has(badge):
-		# They left the shift alive and came back: that counts as being caught.
+	var back_alive := false
+	if _left_alive.has(badge) and Time.get_ticks_msec() / 1000.0 - float(_left_alive[badge]["left"]) <= RECONNECT_GRACE:
+		# A dropped connection, back within the grace: as they were, where they were.
+		var left: Dictionary = _left_alive[badge]
+		_left_alive.erase(badge)
+		back_alive = true
+		if left["stats"] != null:
+			night._stats[peer_id] = left["stats"]
+		if int(left["punches"]) > 0:
+			rounds.punches[peer_id] = left["punches"]
+		_put_back.rpc_id(peer_id, left["at"])
+		_announce.rpc("%s reconnected." % (joiner.display_name() if joiner else "A guard"))
+	elif _left_alive.has(badge):
+		# They left the shift alive and stayed away: that counts as being caught.
 		_left_alive.erase(badge)
 		night.record_death()
 		career.add_stat(peer_id, "times_caught")
@@ -1052,7 +1064,23 @@ func _catch_up_late_joiner(peer_id: int) -> void:
 			var body: Node3D = director._corpses.get(guard.name.to_int())
 			if is_instance_valid(body):
 				_show_corpse.rpc_id(peer_id, guard.name.to_int(), body.global_position - Vector3(0, 0.3, 0))
-	_show_ghost.rpc(peer_id, true)
+	if not back_alive:
+		_show_ghost.rpc(peer_id, true)
+
+
+## How long a guard who dropped out mid-shift has to come back as they were (seconds).
+const RECONNECT_GRACE := 90.0
+## A rejoining guard's spot, if it arrives before their guard does.
+var _put_back_at := Vector3.INF
+
+
+## The rejoining player's computer: back where they were when they dropped.
+@rpc("authority", "call_remote", "reliable")
+func _put_back(at: Vector3) -> void:
+	if _local_guard and is_instance_valid(_local_guard):
+		_local_guard.global_position = at + Vector3(0, 0.1, 0)
+	else:
+		_put_back_at = at
 
 
 ## Every computer: the nearest camera caught it. Its picture goes on tonight's report.
@@ -1154,7 +1182,9 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	var last_at := guard.global_position if guard else Vector3.ZERO
 	if guard:
 		if shift.state == Shift.State.ON_SHIFT and not guard.is_dead:
-			_left_alive[guard.employee_number] = true
+			# Kept for a quick reconnect: where they were and what they'd done tonight.
+			_left_alive[guard.employee_number] = {"at": last_at, "left": Time.get_ticks_msec() / 1000.0,
+					"stats": night._stats.get(peer_id), "punches": rounds.punches.get(peer_id, 0)}
 		# Keep what they had, by badge, so they get exactly that back if they rejoin.
 		night.remember_guard(guard)
 		# Out of the team straight away, so nothing below (a night starting or ending, a save)
@@ -1304,6 +1334,9 @@ func _show_basket(who: String, count: int, at: Vector3) -> void:
 ## Called by each guard's own computer when it spawns, to hook up that player's HUD.
 func on_local_guard_ready(guard: Guard) -> void:
 	_local_guard = guard
+	if _put_back_at != Vector3.INF:
+		guard.global_position = _put_back_at + Vector3(0, 0.1, 0)
+		_put_back_at = Vector3.INF
 	hud.hotbar.guard = guard
 	glare.local_guard = guard
 	guard.prompt_changed.connect(hud.set_prompt)

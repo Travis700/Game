@@ -30,6 +30,8 @@
 - Talk on the night report; the report says how each guard was caught; a Ready button for the host.
 - The guard room board is a briefing before the shift: who's clocked in, what's been seen, a plan.
 - Steam friends of the host don't need the room password.
+- Dropped out mid-shift? Rejoin within 90 seconds and you're back where you were, alive, with your
+  night's logs and punches (no longer counted as being caught).
 - Change your hat at the guard room's staff locker, and your perk on the duty roster, without leaving.
 - Spectating no longer shows the inside of your teammate's head.
 - Being caught is more fun: as a ghost, press Tab to watch the school's cameras from anywhere
