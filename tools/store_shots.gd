@@ -12,7 +12,7 @@ var SCENES := [
 	["mascot", Vector3(22, 0.1, -8), 0.0, -0.02, [["mascot", Vector3(22, 0, -11.2), PI]]],
 	["librarian", Vector3(-69, 0.1, -1.5), 0.1, -0.04, [["librarian", Vector3(-69.3, 0, -5.0), PI]]],
 	["team", Vector3(9, 0.1, 7), -PI / 2, -0.02, [["photographer", Vector3(18.5, 0, 7.0), PI / 2]]],
-	["band_room", Vector3(30, 0.1, 17), 0.877, -0.06, [["student", Vector3(24.0, 0, 12.2), 0.877 + PI]]],
+	["band_room", Vector3(27.5, 0.1, 15.5), 0.812, -0.02, [["student", Vector3(24.2, 0, 12.4), 0.812 + PI]]],
 	["restroom", Vector3(-21.6, 0.1, 11.6), 2.356, -0.06, [["other_cleaner", Vector3(-25.6, 0, 15.6), 2.356 + PI]]],
 ]
 ## Frames each shot is given to settle (monsters in place, shadows and bounced light).
