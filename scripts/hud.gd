@@ -178,7 +178,7 @@ func _ready() -> void:
 	add_child(_ghost_tint)
 	_ghost_note = _make_label(20, HORIZONTAL_ALIGNMENT_CENTER, VERTICAL_ALIGNMENT_TOP)
 	_ghost_note.offset_top = 76
-	_ghost_note.text = "You're a ghost. A teammate can try to bring you back at a revive totem.\nE: leave a cold spot the living can see.   G: watch through a teammate's eyes."
+	_ghost_note.text = Controls.fill(GHOST_NOTE)
 	_ghost_note.add_theme_color_override("font_color", Color(0.75, 0.85, 1.0))
 	_ghost_note.visible = false
 
@@ -255,6 +255,7 @@ func set_glare(amount: float, at: Vector2) -> void:
 	_glare_bloom.visible = amount > 0.01
 	if amount <= 0.01:
 		return
+	amount *= Profile.flash_strength()
 	_glare_wash.color.a = amount * 0.6
 	var size := Vector2.ONE * lerpf(250.0, 1400.0, amount)
 	_glare_bloom.size = size
@@ -263,8 +264,12 @@ func set_glare(amount: float, at: Vector2) -> void:
 
 
 ## The faint blue look and reminder while you're a ghost.
+const GHOST_NOTE := "You're a ghost. A teammate can try to bring you back at a revive totem.\n{use}: leave a cold spot the living can see.   {item}: watch through a teammate's eyes."
+
+
 func set_ghost(on: bool) -> void:
 	_is_ghost = on
+	_ghost_note.text = Controls.fill(GHOST_NOTE)
 	if on:
 		_fear_target = 0.0
 	_ghost_tint.visible = on
@@ -295,7 +300,7 @@ func show_sketch(texture: Texture2D, seconds := 10.0) -> void:
 
 
 func flash(color: Color, seconds := 1.2) -> void:
-	_flash.color = color
+	_flash.color = Color(color, color.a * Profile.flash_strength())
 	create_tween().tween_property(_flash, "color:a", 0.0, seconds)
 
 
@@ -373,7 +378,8 @@ func refresh_key_hint() -> void:
 		"%s  move" % ("Left stick" if Controls.using_pad else move if move.length() == 4 else "Move keys"),
 		"%s  run" % Controls.key_name("sprint"), "%s  flashlight" % Controls.key_name("flashlight"),
 		"%s  use" % Controls.key_name("interact"), "%s  clipboard" % Controls.key_name("clipboard"),
-		"%s  use item" % Controls.key_name("use_item"), "%s  mark a spot" % Controls.key_name("ping"),
+		"%s  use item" % Controls.key_name("use_item"), "%s  put down / hand over" % Controls.key_name("drop_item"),
+		"%s  mark a spot" % Controls.key_name("ping"),
 	]
 	# Talking is for teams.
 	if not solo:

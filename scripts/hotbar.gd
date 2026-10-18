@@ -28,10 +28,6 @@ var _picked: StyleBoxFlat
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	grow_horizontal = Control.GROW_DIRECTION_BOTH
-	grow_vertical = Control.GROW_DIRECTION_BEGIN
-	offset_bottom = -18
 	alignment = BoxContainer.ALIGNMENT_CENTER
 	add_theme_constant_override("separation", 6)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -64,6 +60,10 @@ func _ready() -> void:
 		add_child(panel)
 		_panels.append(panel)
 		_labels.append(label)
+	# Sized to the slots, bottom centre, a little up from the edge.
+	set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 18)
+	grow_horizontal = Control.GROW_DIRECTION_BOTH
+	grow_vertical = Control.GROW_DIRECTION_BEGIN
 	refresh()
 
 

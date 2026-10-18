@@ -14,6 +14,10 @@ const BINDINGS := {
 	"zoom": [KEY_SPACE],
 	"clipboard": [KEY_TAB],
 	"use_item": [KEY_G],
+	# Puts down what's picked on the hotbar, or hands it to the teammate you're facing.
+	"drop_item": [KEY_X],
+	# Throws what you picked up off the floor (the right mouse button too).
+	"throw": [KEY_T],
 	"push_to_talk": [KEY_V],
 	"radio_talk": [KEY_B],
 	"compare": [KEY_R],
@@ -41,10 +45,11 @@ const JOY_BUTTONS := {
 	"ping": [JOY_BUTTON_B],
 	"push_to_talk": [JOY_BUTTON_LEFT_SHOULDER],
 	"pause": [JOY_BUTTON_START],
-	"move_left": [JOY_BUTTON_DPAD_LEFT],
-	"move_right": [JOY_BUTTON_DPAD_RIGHT],
-	"move_forward": [JOY_BUTTON_DPAD_UP],
-	"move_back": [JOY_BUTTON_DPAD_DOWN],
+	# The D-pad works the hotbar (at a desk, left and right still flick between cameras).
+	"slot_prev": [JOY_BUTTON_DPAD_LEFT],
+	"slot_next": [JOY_BUTTON_DPAD_RIGHT],
+	"throw": [JOY_BUTTON_DPAD_UP],
+	"drop_item": [JOY_BUTTON_DPAD_DOWN],
 }
 ## Controller sticks and triggers: action -> [axis, direction].
 const JOY_AXES := {
@@ -58,6 +63,7 @@ const MOUSE_BINDINGS := {
 	"zoom": [MOUSE_BUTTON_LEFT],
 	# Left click switches the flashlight (at a desk it's the full-screen camera, checked first).
 	"flashlight": [MOUSE_BUTTON_LEFT],
+	"throw": [MOUSE_BUTTON_RIGHT],
 	"slot_next": [MOUSE_BUTTON_WHEEL_DOWN],
 	"slot_prev": [MOUSE_BUTTON_WHEEL_UP],
 }
@@ -67,7 +73,7 @@ const MOUSE_BINDINGS := {
 const REBINDABLE := [
 	["move_forward", "Walk forward"], ["move_back", "Walk back / stand up"], ["move_left", "Walk left"],
 	["move_right", "Walk right"], ["sprint", "Run"], ["interact", "Use"], ["flashlight", "Flashlight"],
-	["clipboard", "Clipboard"], ["use_item", "Use item"], ["zoom", "Full-screen camera"], ["compare", "Compare camera with photo"], ["ping", "Mark a spot (or flag a camera) for the team"], ["push_to_talk", "Push to talk"], ["radio_talk", "Talk on the walkie-talkie"],
+	["clipboard", "Clipboard"], ["use_item", "Use item"], ["drop_item", "Put down / hand over item"], ["throw", "Throw"], ["zoom", "Full-screen camera"], ["compare", "Compare camera with photo"], ["ping", "Mark a spot (or flag a camera) for the team"], ["push_to_talk", "Push to talk"], ["radio_talk", "Talk on the walkie-talkie"],
 ]
 const SAVE_PATH := "user://controls.cfg"
 
@@ -95,7 +101,7 @@ const PAD_NAMES := {
 }
 ## Placeholders that text can use for the player's own keys, e.g. "Press {use} to answer".
 const TOKENS := {
-	"use": "interact", "item": "use_item", "clip": "clipboard", "ping": "ping", "radio": "radio_talk",
+	"use": "interact", "item": "use_item", "clip": "clipboard", "ping": "ping", "radio": "radio_talk", "drop": "drop_item", "throw": "throw",
 	"talk": "push_to_talk", "zoom": "zoom", "compare": "compare", "light": "flashlight", "run": "sprint",
 	"menu": "pause", "left": "move_left", "right": "move_right",
 }
@@ -122,7 +128,10 @@ func key_name(action: String) -> String:
 			return "RT"
 	if action == "pause":
 		return "Esc"
-	return OS.get_keycode_string(primary_key(action))
+	if action == "throw" and not _primary.has(action):
+		return "Right click"
+	# The key's name on this keyboard's layout (on AZERTY, Z rather than W).
+	return OS.get_keycode_string(DisplayServer.keyboard_get_keycode_from_physical(primary_key(action)))
 
 
 ## Swaps "{use}", "{item}"... in `text` for the player's own keys.
@@ -138,8 +147,8 @@ func primary_key(action: String) -> int:
 	return _primary.get(action, BINDINGS[action][0])
 
 
-## Keys that can't be taken: Esc (menu), F11 (fullscreen) and 1-4 (monitors).
-const RESERVED: Array[int] = [KEY_ESCAPE, KEY_F11, KEY_1, KEY_2, KEY_3, KEY_4]
+## Keys that can't be taken: Esc (menu), F11 (fullscreen) and 1-5 (monitors and the hotbar).
+const RESERVED: Array[int] = [KEY_ESCAPE, KEY_F11, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5]
 
 
 ## Changes an action's main key and saves it. If another action already uses that key, the

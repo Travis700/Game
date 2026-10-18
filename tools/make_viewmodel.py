@@ -5,7 +5,7 @@
 arms.glb is "First Person hands rigged" by David Fischer and torch.glb "Flashlight Swiss Arms" by
 TheSolomon (both Sketchfab, CC BY; fetch with tools/sketchfab.py). The right hand's fingers are curled
 round (curl_deg, default 75; the thumb, thumb_deg, default 0, lies along the torch), the pose is baked
-and everything but the right forearm and hand dropped. The torch goes across the palm, along the
+and everything but the right forearm and hand dropped; a dark uniform sleeve goes over the forearm. The torch goes across the palm, along the
 knuckles, its head out past the thumb, sized to the hand. Then the lot is turned so the beam points
 straight ahead (glTF -Z) with the forearm off down and to the right, the lens at the origin, in metres.
 Then: slim_glb.py out.glb assets/models/viewmodel_flashlight.glb 1024
@@ -14,6 +14,8 @@ import sys, math, bpy, mathutils
 src, torch_src, out = sys.argv[1:4]
 # The torch's length and radius, and how far it sits out past the thumb, in hand widths.
 TORCH_L, TORCH_R, TORCH_SHIFT = 2.1, 0.17, 0.25
+# Where the sleeve starts, as a share of the way from the wrist to the elbow.
+SLEEVE_FROM = 0.0
 curl = math.radians(float(sys.argv[4]) if len(sys.argv) > 4 else 75)
 thumb = math.radians(float(sys.argv[5]) if len(sys.argv) > 5 else 0)
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -70,10 +72,31 @@ for o in list(bpy.data.objects):
     if o.type != 'MESH' or not o.data.polygons or o.name.startswith('Icosphere'):
         bpy.data.objects.remove(o)
 arm_meshes = [o for o in bpy.data.objects]
+# The uniform's sleeve: a dark cuff over the forearm from just behind the wrist, as wide as the arm.
+fore_dir = (elbow - wrist).normalized()
+fore_len = (elbow - wrist).length
+cuff_from = wrist + fore_dir * fore_len * SLEEVE_FROM
+reach = 0.0
 for o in arm_meshes:
-    ws = [o.matrix_world @ v.co for v in o.data.vertices]
-for o in arm_meshes:
-    o.matrix_world = o.matrix_world.copy()
+    for v in o.data.vertices:
+        p = o.matrix_world @ v.co
+        along = (p - wrist).dot(fore_dir)
+        if fore_len * SLEEVE_FROM < along < fore_len:
+            reach = max(reach, ((p - wrist) - fore_dir * along).length)
+bpy.ops.mesh.primitive_cylinder_add(vertices=20, radius=reach * 1.08, depth=fore_len * (1.0 - SLEEVE_FROM) * 1.3)
+sleeve = bpy.context.view_layer.objects.active
+sleeve.name = 'sleeve'
+sleeve.rotation_mode = 'QUATERNION'
+sleeve.rotation_quaternion = mathutils.Vector((0, 0, 1)).rotation_difference(fore_dir)
+sleeve.location = cuff_from + fore_dir * fore_len * (1.0 - SLEEVE_FROM) * 0.65
+bpy.ops.object.shade_smooth()
+cloth = bpy.data.materials.new('sleeve')
+cloth.use_nodes = True
+bsdf = cloth.node_tree.nodes['Principled BSDF']
+bsdf.inputs['Base Color'].default_value = (0.035, 0.045, 0.075, 1)
+bsdf.inputs['Roughness'].default_value = 0.9
+sleeve.data.materials.append(cloth)
+arm_meshes.append(sleeve)
 # The torch: across the palm, along the knuckle line, its head out past the thumb side.
 bpy.ops.import_scene.gltf(filepath=torch_src)
 torch = [o for o in bpy.data.objects if o not in arm_meshes and o.type == 'MESH']

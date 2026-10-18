@@ -577,8 +577,7 @@ func _close_all_ui() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_fullscreen"):
-		var fullscreen := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fullscreen else DisplayServer.WINDOW_MODE_FULLSCREEN)
+		Profile.set_fullscreen(DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_FULLSCREEN)
 
 
 func _process(_delta: float) -> void:
@@ -591,7 +590,8 @@ func _process(_delta: float) -> void:
 		_watch(null)
 	var guards := players.get_child_count()
 	var status := "Solo" if _mode == "solo" else "%s · %d guard%s" % [_mode, guards, "" if guards == 1 else "s"]
-	if _room_code != "":
+	# The room code is for getting in: shown before the shift, not all night (or on a stream).
+	if _room_code != "" and shift.state != Shift.State.ON_SHIFT:
 		status = "Room %s%s · %s" % [_room_code, " (password)" if _password != "" else "", status]
 	if _local_guard:
 		status += " · Badge #%04d" % _local_guard.employee_number
@@ -1223,6 +1223,23 @@ func _turn_away(reason: String) -> void:
 	_back_to_menu(reason)
 
 
+## The peer of the living teammate right in front of `guard` and within reach (0 for nobody).
+func _teammate_in_front(guard: Guard) -> int:
+	var best := 0
+	var best_angle := deg_to_rad(25)
+	for other: Guard in players.get_children():
+		if other == guard or other.is_dead:
+			continue
+		var to := other.global_position + Vector3(0, 1.2, 0) - guard.camera.global_position
+		if to.length() > Shop.GIVE_REACH:
+			continue
+		var angle := (-guard.camera.global_basis.z).angle_to(to)
+		if angle < best_angle:
+			best_angle = angle
+			best = other.name.to_int()
+	return best
+
+
 ## Called by each guard's own computer when it spawns, to hook up that player's HUD.
 func on_local_guard_ready(guard: Guard) -> void:
 	_local_guard = guard
@@ -1270,6 +1287,11 @@ func on_local_guard_ready(guard: Guard) -> void:
 			clutter.request_throw(eye, forward)
 		else:
 			clutter.request_throw.rpc_id(1, eye, forward))
+	guard.drop_requested.connect(func() -> void:
+		if hud.hotbar.selected == 0:
+			hud.show_message("Pick something on the hotbar first (1-5 or the mouse wheel). The flashlight stays with you.")
+			return
+		shop.request_drop(hud.hotbar.selected - 1, _teammate_in_front(guard)))
 	guard.spectate_requested.connect(_spectate_next)
 	guard.item_use_requested.connect(func() -> void:
 		if not guard_room.try_install():
@@ -1769,13 +1791,7 @@ func _watch(target: Guard) -> void:
 
 
 func _show_body_to_viewer(guard: Guard, shown: bool) -> void:
-	var layers := 1 if shown else Guard.SELF_LAYER
-	guard.body_mesh.layers = layers
-	guard.visor.layers = layers
-	var hat := guard.head.get_node_or_null("Hat")
-	if hat:
-		for part in hat.get_children():
-			(part as MeshInstance3D).layers = layers
+	guard.set_body_layers(1 if shown else Guard.SELF_LAYER)
 
 
 ## This lockdown's drill, shown under the objective while it lasts.
@@ -1838,12 +1854,15 @@ func _on_guard_caught(peer_id: int, by: String, from := Vector3.INF) -> void:
 		return
 	if _close_call(guard, by):
 		return
-	night.record_death()
+	var where := SchoolBuilder.area_at(guard.global_position)
+	night.record_death(peer_id, "caught by %s%s at %s" % [by, " in the %s" % where if where != "" else "", night.time_text()])
 	var camera_index := cameras.best_view_of(guard.global_position)
 	if camera_index >= 0:
 		_incident.rpc(camera_index, "%s · %s cam · Guard %d, caught by %s" % [night.time_text(), cameras.area_of(camera_index), guard.slot, by])
 	clutter.drop(peer_id, guard.global_position)
 	finale.drop(peer_id, guard.global_position)
+	# What they carried spills on the floor, for the others to pick up (theirs again in the morning).
+	shop.spill(peer_id, guard.global_position)
 	# Caught in a cupboard (e.g. by the Self-Portrait): the ghost climbs out.
 	if hiding.hidden.has(peer_id):
 		hiding._set_hidden.rpc(peer_id, -1)
@@ -1942,7 +1961,7 @@ func _on_revive_rolled(user_peer: int, roll: int, revived_peer: int, at: Vector3
 	if user == null or revived == null:
 		return
 	_announce.rpc("Guard %d rolled a %d at a totem. Guard %d is back!" % [user.slot, roll, revived.slot])
-	night.record_revive()
+	night.record_revive(revived_peer)
 	career.award(user_peer, "LIFESAVER")
 	career.award(revived_peer, "BACK_FROM_DEAD")
 	_guard_revived.rpc(revived_peer, at + Vector3(0.8, 0.1, 0))
@@ -2039,7 +2058,7 @@ func _refresh_inventory() -> void:
 	var carrying := ""
 	var in_hand := clutter.carried_name(multiplayer.get_unique_id()) if clutter and multiplayer.multiplayer_peer else ""
 	if in_hand != "":
-		carrying = "Carrying a %s (%s to throw)" % [in_hand, Controls.key_name("interact")]
+		carrying = "Carrying a %s (%s to throw)" % [in_hand, Controls.key_name("throw")]
 	hud.set_inventory(shop.local_points, carrying)
 	if vending.is_open:
 		vending.refresh(shop.local_points, shop.local_bag)

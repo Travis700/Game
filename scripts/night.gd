@@ -133,6 +133,8 @@ var _schedule: Array[float] = []
 var _stats: Dictionary = {}
 var _totals: Dictionary = {}
 var _deaths := 0
+## Host: peer -> how they were caught tonight ("caught by the Coach in the Gym at 3:12 AM").
+var _fates: Dictionary = {}
 var _restart_run := false
 var _won := false
 ## Host: the most guards on any night of this run (so "solo" means solo all the way). Saved.
@@ -215,6 +217,7 @@ func _on_shift_started() -> void:
 	_on_screen.clear()
 	_callouts.clear()
 	_deaths = 0
+	_fates.clear()
 	save_run(number, true)
 	school_doors.reset_for_night()
 	if training:
@@ -612,12 +615,15 @@ func add_bonus(peer_id: int) -> void:
 
 
 ## Host: a guard was caught tonight.
-func record_death() -> void:
+func record_death(peer_id := 0, fate := "") -> void:
 	_deaths += 1
+	if peer_id != 0:
+		_fates[peer_id] = fate
 
 
 ## Host: a guard was revived at a totem, so their death doesn't cost anyone.
-func record_revive() -> void:
+func record_revive(peer_id := 0) -> void:
+	_fates.erase(peer_id)
 	_deaths = maxi(_deaths - 1, 0)
 
 
@@ -1121,7 +1127,9 @@ func _build_rows(keep_pay: bool) -> Array:
 		run["earned"] = int(run.get("earned", 0)) + maxi(pay, 0)
 		rows.append({
 			"xp": xp, "late": late,
-			"name": "Guard %d  #%04d" % [guard.slot, guard.employee_number], "clocked_out": clocked_out, "died": guard.is_dead and not late,
+			"name": guard.player_name if guard.player_name != "" else "Guard %d  #%04d" % [guard.slot, guard.employee_number],
+			"clocked_out": clocked_out, "died": guard.is_dead and not late,
+			"fate": _fates.get(peer, "") if guard.is_dead else "",
 			"correct": stats["correct"] + int(stats.get("confirmed", 0)), "correct_points": correct_points,
 			"false": stats["false"], "false_points": false_points,
 			"punched": rounds.punches.get(peer, 0), "round_points": round_points,

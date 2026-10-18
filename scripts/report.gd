@@ -13,6 +13,12 @@ var _summary: Label
 var _next_button: Button
 var _overtime_button: Button
 var _waiting: Label
+var _ready_button: Button
+## The next-night button's text, before the ready count goes on the end.
+var _next_text := ""
+## Host: the other players who've said they're ready.
+var _ready_peers: Dictionary = {}
+const WAITING := "Waiting for the host to start the next night..."
 ## A promotion earned with this night's XP, shown at the bottom of the next report.
 var promotion := ""
 ## Tonight's incident photos so far: [texture, caption]. Shown (the last four) on the report.
@@ -91,8 +97,20 @@ func _ready() -> void:
 	leave.pressed.connect(func() -> void: leave_requested.emit())
 	outer.add_child(leave)
 
+	# Everyone but the host: say you're done reading, so the host knows when to go on.
+	_ready_button = Button.new()
+	_ready_button.toggle_mode = true
+	_ready_button.text = "I'm ready"
+	_ready_button.custom_minimum_size = Vector2(0, 44)
+	_ready_button.add_theme_font_size_override("font_size", 20)
+	_ready_button.toggled.connect(func(on: bool) -> void:
+		_ready_button.text = "Ready ✓" if on else "I'm ready"
+		if multiplayer.multiplayer_peer and not multiplayer.is_server():
+			_request_ready.rpc_id(1, on))
+	outer.add_child(_ready_button)
+
 	_waiting = Label.new()
-	_waiting.text = "Waiting for the host to start the next night..."
+	_waiting.text = WAITING
 	_waiting.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_waiting.modulate.a = 0.7
 	outer.add_child(_waiting)
@@ -146,6 +164,10 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, outcom
 		_table.add_child(_cell("+%d" % row.get("xp", 0), 22))
 	_show_incidents()
 	_summary.text = summary
+	# How each guard who didn't make it went.
+	for row: Dictionary in rows:
+		if str(row.get("fate", "")) != "":
+			_summary.text += "\n%s: %s." % [str(row["name"]).get_slice("  #", 0), row["fate"]]
 	if outcome != "training":
 		_summary.text += "\nYour field guide: %d of %d monsters   ·   case file stamps: %d of %d" % [FieldGuide.discovered().size(),
 				FieldGuide.ENTRIES.size(), Career.stamp_count(), Career.MONSTER_KINDS.size() * Career.STAMPS.size()]
@@ -153,6 +175,12 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, outcom
 		_summary.text += "\n\n★ " + promotion + " ★"
 		promotion = ""
 	_next_button.text = "Back to night %d" % outcome.get_slice(":", 1).to_int() if ":" in outcome else {"caught": "Start over from night 1", "won": "Start a new run", "daily": "Back to the menu", "training": "Start night 1"}.get(outcome, "Start night %d" % (night + 1))
+	_next_text = _next_button.text
+	_ready_peers.clear()
+	_ready_button.set_pressed_no_signal(false)
+	_ready_button.text = "I'm ready"
+	_ready_button.visible = not is_host
+	_show_ready(0, multiplayer.get_peers().size() if multiplayer.multiplayer_peer else 0)
 	_next_button.visible = is_host
 	_overtime_button.visible = is_host and outcome == "won"
 	_overtime_button.text = "Keep going: Overtime (night %d)" % (night + 1)
@@ -201,3 +229,31 @@ func _cell(text: String, size: int, alpha := 1.0) -> Label:
 	label.add_theme_font_size_override("font_size", size)
 	label.modulate.a = alpha
 	return label
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_ready(on: bool) -> void:
+	if not multiplayer.is_server() or not visible:
+		return
+	var peer := multiplayer.get_remote_sender_id()
+	if on:
+		_ready_peers[peer] = true
+	else:
+		_ready_peers.erase(peer)
+	# Only players still here count.
+	for gone: int in _ready_peers.keys():
+		if gone not in multiplayer.get_peers():
+			_ready_peers.erase(gone)
+	_set_ready_count.rpc(_ready_peers.size(), multiplayer.get_peers().size())
+
+
+## Every computer: how many of the others are ready ("2 of 3 ready").
+@rpc("authority", "call_local", "reliable")
+func _set_ready_count(count: int, of: int) -> void:
+	_show_ready(count, of)
+
+
+func _show_ready(count: int, of: int) -> void:
+	var tally := "   (%d of %d ready)" % [count, of] if of > 0 else ""
+	_next_button.text = _next_text + tally
+	_waiting.text = WAITING + tally

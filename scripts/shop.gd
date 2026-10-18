@@ -75,6 +75,8 @@ const ITEMS := {
 const DEFAULT_RANK := 1
 ## How many things a guard can carry besides their flashlight.
 const BAG_SIZE := 4
+## How close a teammate has to be to hand them something.
+const GIVE_REACH := 2.5
 ## Items used or put down with G (the rest are fitted with E).
 const USED_WITH_G: Array[String] = ["camera_kit", "portable_camera", "radio", "motion_sensor", "glue_trap", "energy_drink", "flashlight", "air_horn", "coffee", "emf", "decoy_radio", "donuts"]
 ## The decoy radio: seconds before it starts, and how long it plays.
@@ -113,6 +115,8 @@ var _next_drop := 1
 var _placed: Dictionary = {}
 ## Host: drop id -> [buyer peer, when bought].
 var _drop_buyers: Dictionary = {}
+# Host only: drop id -> the peer whose pockets it goes back to, for things put down on the floor.
+var _floor_owners: Dictionary = {}
 ## Host: personal upgrades each guard has fitted for the run: peer -> ["flashlight", "radio"].
 var _owned: Dictionary = {}
 var _box_material: StandardMaterial3D
@@ -269,6 +273,69 @@ func _request_use(index: int) -> void:
 				_fit(peer, item)
 
 
+## Puts down the `index`th thing carried at your feet, or hands it to `to_peer` (0: nobody).
+func request_drop(index: int, to_peer := 0) -> void:
+	if multiplayer.is_server():
+		_request_drop(index, to_peer)
+	else:
+		_request_drop.rpc_id(1, index, to_peer)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_drop(index: int, to_peer: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var peer := _sender()
+	var guard := director.guard_by_peer(peer)
+	var bag := _bag(peer)
+	if guard == null or guard.is_dead or guard.hiding or index < 0 or index >= bag.size():
+		return
+	var item: String = bag[index]
+	var other := director.guard_by_peer(to_peer) if to_peer != 0 else null
+	if other and not other.is_dead and other.global_position.distance_to(guard.global_position) < GIVE_REACH:
+		if _bag(to_peer).size() >= BAG_SIZE:
+			_tell(peer, "Their pockets are full.")
+			return
+		bag.remove_at(index)
+		_send_holding(peer)
+		give(to_peer, item)
+		_tell(peer, "You hand over the %s." % item_name(item).to_lower())
+		_tell(to_peer, "%s hands you the %s." % [guard.display_name(), item_name(item).to_lower()])
+		return
+	bag.remove_at(index)
+	_send_holding(peer)
+	drop_at(item, guard.global_position - guard.global_basis.z * 0.5, peer)
+
+
+## Host: leaves an item on the floor at `at` for anyone to pick up. Whatever's still lying
+## about in the morning goes back into `owner_peer`'s pockets.
+func drop_at(item: String, at: Vector3, owner_peer: int) -> void:
+	var floor_at := Vector3(at.x, 0.12, at.z)
+	_floor_owners[_next_drop] = owner_peer
+	_spawn_drop.rpc(_next_drop, item, floor_at)
+	_next_drop += 1
+
+
+## Host: a caught guard's pockets spill on the floor beside them, for the others to pick up.
+func spill(peer_id: int, at: Vector3) -> void:
+	var bag := _bag(peer_id)
+	for i in bag.size():
+		drop_at(bag[i], at + Vector3(cos(i * 1.7), 0, sin(i * 1.7)) * 0.6, peer_id)
+	bag.clear()
+	_send_holding(peer_id)
+
+
+## Host: the night's over; things left on the floor go back to whoever dropped them.
+func _return_floor_items() -> void:
+	for drop_id: int in _floor_owners.keys():
+		var owner_peer: int = _floor_owners[drop_id]
+		if _drops.has(drop_id):
+			if owner_peer in _connected_peers():
+				give(owner_peer, _drops[drop_id]["item"])
+			_remove_drop.rpc(drop_id)
+	_floor_owners.clear()
+
+
 ## Host: a personal upgrade goes on for the run.
 func _fit(peer: int, item: String) -> void:
 	set_owned(peer, item, true)
@@ -316,7 +383,7 @@ func send_state_to(peer_id: int) -> void:
 			_set_owned.rpc_id(peer_id, owner_peer, upgrade, true)
 	# Anything still sitting in the vending machine's tray.
 	for drop_id: int in _drops:
-		_spawn_drop.rpc_id(peer_id, drop_id, _drops[drop_id]["item"])
+		_spawn_drop.rpc_id(peer_id, drop_id, _drops[drop_id]["item"], _drops[drop_id]["at"])
 
 
 @rpc("authority", "call_local", "reliable")
@@ -353,6 +420,7 @@ func update(delta: float) -> void:
 
 ## Host: the night's over, so the sensors, traps and portable cameras get cleared away.
 func clear_placed() -> void:
+	_return_floor_items()
 	for id: int in _placed.keys():
 		_remove_placed.rpc(id)
 	cameras.clear_portables.rpc()
@@ -457,6 +525,7 @@ func reset_all() -> void:
 		_send_holding(peer_id)
 	for drop_id: int in _drops.keys():
 		_remove_drop.rpc(drop_id)
+	_floor_owners.clear()
 	for peer_id: int in _owned.keys():
 		for upgrade: String in (_owned[peer_id] as Array).duplicate():
 			set_owned(peer_id, upgrade, false)
@@ -490,7 +559,7 @@ func _request_buy(item: String) -> void:
 		career.award(peer, "BIG_SPENDER")
 	_send_wallet(peer)
 	_drop_buyers[_next_drop] = [peer, Time.get_ticks_msec() / 1000.0]
-	_spawn_drop.rpc(_next_drop, item)
+	_spawn_drop.rpc(_next_drop, item, TRAY + Vector3(0, 0, randf_range(-0.25, 0.25)))
 	_next_drop += 1
 	_tell(peer, "Clunk. %s drops into the tray." % item_name(item))
 	if item == "donuts":
@@ -552,6 +621,7 @@ func _request_pickup(drop_id: int) -> void:
 		_tell(peer, "That's someone else's. Give them a moment to pick it up.")
 		return
 	_drop_buyers.erase(drop_id)
+	_floor_owners.erase(drop_id)
 	_remove_drop.rpc(drop_id)
 	if item == "flashlight":
 		_fit(peer, item)
@@ -561,10 +631,10 @@ func _request_pickup(drop_id: int) -> void:
 
 
 @rpc("authority", "call_local", "reliable")
-func _spawn_drop(drop_id: int, item: String) -> void:
+func _spawn_drop(drop_id: int, item: String, at: Vector3) -> void:
 	var pickup := Interactable.new()
 	pickup.prompt = "Pick up: %s" % item_name(item)
-	pickup.position = TRAY + Vector3(0, 0, randf_range(-0.25, 0.25))
+	pickup.position = at
 	var shape := BoxShape3D.new()
 	shape.size = Vector3(0.35, 0.25, 0.3)
 	var collider := CollisionShape3D.new()
@@ -580,8 +650,12 @@ func _spawn_drop(drop_id: int, item: String) -> void:
 		else:
 			_request_pickup.rpc_id(1, drop_id))
 	add_child(pickup)
-	_drops[drop_id] = {"item": item, "node": pickup}
-	SoundBank.play_at(pickup, "vend", 0.0, 20.0)
+	_drops[drop_id] = {"item": item, "node": pickup, "at": at}
+	# Out of the machine it clunks; on the floor it just lands.
+	if at.distance_to(TRAY) < 1.0:
+		SoundBank.play_at(pickup, "vend", 0.0, 20.0)
+	else:
+		Sfx.play_at(pickup, Sfx.thud(0.5), -14.0)
 
 
 @rpc("authority", "call_local", "reliable")

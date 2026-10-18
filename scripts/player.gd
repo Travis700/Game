@@ -21,8 +21,10 @@ signal leave_hiding_requested
 signal spectate_requested
 ## E as a ghost: leave a cold spot where you're looking, for the living to see.
 signal ghost_ping_requested(at: Vector3, touched: Object)
-## E with nothing in front of you: throw what you're carrying, if anything.
+## Right click (or T): throw what you picked up off the floor, if anything.
 signal throw_requested
+## X: put down the thing picked on the hotbar, or hand it to the teammate in front of you.
+signal drop_requested
 ## Q away from the desks: mark the spot you're looking at for the team.
 signal mark_requested(at: Vector3)
 
@@ -91,8 +93,15 @@ var stamina := 1.0
 ## Out of breath: can't run until stamina is back up to WINDED_UNTIL.
 var winded := false
 var _rest_for := 0.0
-## True while hiding in a cupboard: can look around, can't move, and monsters can't find you.
-var hiding := false
+## True while hiding in a cupboard: can look around (not right round), can't move, and monsters
+## can't find you.
+var hiding := false:
+	set(value):
+		hiding = value
+		_hide_yaw = NAN
+## Which way you faced as you got into the cupboard (taken on the first look round).
+var _hide_yaw := NAN
+const HIDING_YAW_LIMIT := deg_to_rad(70)
 ## True once this guard has clipped on a walkie-talkie: they can talk on it (B) and hear it.
 var has_radio := false
 ## True once this guard has clipped on an EMF reader: its lights show on their screen.
@@ -214,6 +223,7 @@ func _process(delta: float) -> void:
 		_viewmodel.visible = not is_dead and not hiding and seated_desk < 0
 		_viewmodel.global_basis = _beam_basis
 		_viewmodel_lens.material_override = _lens_on if flashlight.visible else _lens_off
+		_viewmodel_fill.visible = flashlight.visible
 	elif not is_local():
 		_update_flare()
 	# The field of view from the Esc menu (Profile looked up by path, see _look).
@@ -264,12 +274,14 @@ func _make_dust() -> void:
 
 
 ## Your own arm, bottom right, holding the flashlight: its lens is where the beam comes from.
-## Drawn at half size and half the distance, so it doesn't poke into walls you stand against,
+## Drawn at VIEWMODEL_SIZE and as much closer, so it doesn't poke into walls you stand against,
 ## and kept off the security cameras.
 const VIEWMODEL := preload("res://assets/models/viewmodel_flashlight.glb")
-const VIEWMODEL_AT := Vector3(0.12, -0.125, -0.27)
+const VIEWMODEL_AT := Vector3(0.11, -0.095, -0.28)
+const VIEWMODEL_SIZE := 0.75
 var _viewmodel: Node3D
 var _viewmodel_lens: MeshInstance3D
+var _viewmodel_fill: OmniLight3D
 var _lens_on: StandardMaterial3D
 var _lens_off: StandardMaterial3D
 
@@ -280,7 +292,7 @@ func _make_viewmodel() -> void:
 	_viewmodel.position = VIEWMODEL_AT
 	camera.add_child(_viewmodel)
 	var model := VIEWMODEL.instantiate() as Node3D
-	model.scale = Vector3.ONE * 0.5
+	model.scale = Vector3.ONE * VIEWMODEL_SIZE
 	_viewmodel.add_child(model)
 	# The lens: a disc over the torch's glass, lit while the flashlight is on.
 	_lens_on = StandardMaterial3D.new()
@@ -293,8 +305,8 @@ func _make_viewmodel() -> void:
 	_lens_off.metallic = 0.4
 	_lens_off.roughness = 0.2
 	var disc := CylinderMesh.new()
-	disc.top_radius = 0.0068
-	disc.bottom_radius = 0.0068
+	disc.top_radius = 0.0136 * VIEWMODEL_SIZE
+	disc.bottom_radius = 0.0136 * VIEWMODEL_SIZE
 	disc.height = 0.001
 	disc.radial_segments = 16
 	_viewmodel_lens = MeshInstance3D.new()
@@ -305,6 +317,15 @@ func _make_viewmodel() -> void:
 	for mesh: MeshInstance3D in _viewmodel.find_children("*", "MeshInstance3D", true, false):
 		mesh.layers = SecurityCameras.HIDDEN_FROM_CAMERAS
 		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# A little spill from the torch on your own hand (lighting nothing else), so in a dark room
+	# it isn't a black shape.
+	_viewmodel_fill = OmniLight3D.new()
+	_viewmodel_fill.light_cull_mask = SecurityCameras.HIDDEN_FROM_CAMERAS
+	_viewmodel_fill.omni_range = 0.35
+	_viewmodel_fill.light_energy = 0.5
+	_viewmodel_fill.light_color = Color(1.0, 0.92, 0.8)
+	_viewmodel_fill.position = Vector3(0.0, 0.04, 0.03)
+	_viewmodel.add_child(_viewmodel_fill)
 	# The beam comes out of it.
 	flashlight.position = VIEWMODEL_AT + Vector3(0, 0, -0.02)
 
@@ -362,6 +383,11 @@ func refresh_tag() -> void:
 ## Shows a "talking" marker on the name tag while this guard's voice is coming through.
 func show_talking(talking: bool) -> void:
 	name_tag.text = _tag_text() + ("\n((( talking )))" if talking else "")
+
+
+## What to call this guard in messages: their Steam name, or "Guard 2".
+func display_name() -> String:
+	return player_name if player_name != "" else "Guard %d" % slot
 
 
 ## "Guard 2  #1637", or "Sam (Guard 2)" with a Steam name, and their rank under it.
@@ -430,6 +456,7 @@ const MODEL_HAT_SCALE := 0.6
 
 ## On the model's head (so it moves with it), or on the plain head without a model.
 func _wear_hat(worn: Node3D) -> void:
+	_hat = worn
 	_fade_with_body(worn)
 	var on_head := ModelKit.bone_anchor(_model, self, "Head", Vector3(0, MODEL_HEIGHT * 100.0 * MODEL_EYES, 1.0)) if _model else null
 	if on_head == null:
@@ -437,6 +464,21 @@ func _wear_hat(worn: Node3D) -> void:
 		return
 	on_head.add_child(worn)
 	worn.scale = Vector3.ONE * MODEL_HAT_SCALE
+
+
+var _hat: Node3D
+
+
+## Which camera layers the body, the model and the hat are drawn on: SELF_LAYER to keep them out
+## of a camera looking out through these eyes (yours, or a ghost's spectating), 1 otherwise.
+func set_body_layers(layers: int) -> void:
+	for root: Node in [body_mesh, visor, _hat, _flare]:
+		if root == null or not is_instance_valid(root):
+			continue
+		if root is VisualInstance3D:
+			(root as VisualInstance3D).layers = layers
+		for part: Node in root.find_children("*", "VisualInstance3D", true, false):
+			(part as VisualInstance3D).layers = layers
 
 
 ## The hat's materials join the body's, so a ghost's hat is as faint as the rest of them.
@@ -531,8 +573,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		_mark()
 	elif event.is_action_pressed("use_item") and is_dead:
 		spectate_requested.emit()
+	elif event.is_action_pressed("use_item") and not is_dead and hiding:
+		message_shown.emit("Not from inside a cupboard.", 2.5)
 	elif event.is_action_pressed("use_item") and not is_dead:
 		item_use_requested.emit()
+	elif event.is_action_pressed("drop_item") and not is_dead and not hiding:
+		drop_requested.emit()
+	elif event.is_action_pressed("throw") and not is_dead and not hiding:
+		throw_requested.emit()
 
 
 ## Looking around with a controller's right stick.
@@ -553,7 +601,8 @@ func _look(relative: Vector2) -> void:
 	var profile := get_node_or_null("/root/Profile")
 	var sensitivity := mouse_sensitivity * (float(profile.get("mouse_sensitivity")) if profile else 1.0)
 	rotate_y(-relative.x * sensitivity)
-	var pitch := head.rotation.x - relative.y * sensitivity
+	var invert := -1.0 if profile and profile.get("invert_y") else 1.0
+	var pitch := head.rotation.x - relative.y * sensitivity * invert
 	if seated_desk >= 0:
 		# Seated, you can look around your desk but not turn your back on it.
 		var yaw := clampf(wrapf(rotation.y - PI, -PI, PI), -SEATED_YAW_LIMIT, SEATED_YAW_LIMIT)
@@ -561,14 +610,19 @@ func _look(relative: Vector2) -> void:
 		head.rotation.x = clampf(pitch, -SEATED_PITCH_DOWN, SEATED_PITCH_UP)
 	else:
 		head.rotation.x = clampf(pitch, -LOOK_LIMIT, LOOK_LIMIT)
+	if hiding:
+		# In a cupboard you can peer out through the slats, not turn round inside it.
+		if is_nan(_hide_yaw):
+			_hide_yaw = rotation.y + relative.x * sensitivity
+		rotation.y = _hide_yaw + clampf(wrapf(rotation.y - _hide_yaw, -PI, PI), -HIDING_YAW_LIMIT, HIDING_YAW_LIMIT)
 
 
 ## Returns true if the event was a desk control.
 func _handle_desk_input(event: InputEvent) -> bool:
 	var action := ""
-	if event.is_action_pressed("move_left"):
+	if event.is_action_pressed("move_left") or event.is_action_pressed("slot_prev"):
 		action = "prev"
-	elif event.is_action_pressed("move_right"):
+	elif event.is_action_pressed("move_right") or event.is_action_pressed("slot_next"):
 		action = "next"
 	elif event.is_action_pressed("zoom"):
 		action = "zoom"
@@ -607,7 +661,6 @@ func _physics_process(delta: float) -> void:
 	var direction := (transform.basis * Vector3(input.x, 0, input.y)).normalized()
 	var wants_to_run := not input_blocked and not hiding and Input.is_action_pressed("sprint") and input.y < 0.0
 	is_running = wants_to_run and not winded
-	_update_stamina(delta)
 	boost_left = maxf(boost_left - delta, 0.0)
 	var speed := WALK_SPEED
 	if is_running:
@@ -617,6 +670,10 @@ func _physics_process(delta: float) -> void:
 	velocity.x = lerpf(velocity.x, direction.x * speed, blend)
 	velocity.z = lerpf(velocity.z, direction.z * speed, blend)
 	move_and_slide()
+	# Pushing into a wall isn't running: no stamina spent, and no noise for monsters to hear.
+	if is_running and Vector2(get_real_velocity().x, get_real_velocity().z).length() < WALK_SPEED * 0.8:
+		is_running = false
+	_update_stamina(delta)
 
 	_update_head_bob(delta, input.length() > 0.1)
 	_update_prompt()
@@ -667,8 +724,11 @@ func _update_head_bob(delta: float, moving: bool) -> void:
 	if moving and is_on_floor():
 		var speed := Vector2(velocity.x, velocity.z).length()
 		_bob_time += delta * speed * 2.2
-		camera.position.y = sin(_bob_time) * BOB_AMOUNT
-		camera.position.x = cos(_bob_time * 0.5) * BOB_AMOUNT * 0.6
+		# Off in the comfort settings (Profile is an autoload, looked up by path).
+		var profile := get_node_or_null("/root/Profile")
+		var amount := BOB_AMOUNT if profile == null or profile.get("head_bob") else 0.0
+		camera.position.y = sin(_bob_time) * amount
+		camera.position.x = cos(_bob_time * 0.5) * amount * 0.6
 	else:
 		camera.position = camera.position.lerp(Vector3.ZERO, 1.0 - exp(-8.0 * delta))
 
@@ -704,8 +764,6 @@ func _interact() -> void:
 		_hold_time = 0.0
 	elif target:
 		target.interact(self)
-	else:
-		throw_requested.emit()
 
 
 ## Marks whatever is in front of you, up to 40 metres away.

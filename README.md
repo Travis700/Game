@@ -132,7 +132,7 @@ through walls, for 8 seconds; a mark on a monster reads MONSTER! (except the dis
 the camera instead.
 
 **Throwing things:** eleven bits of clutter (a traffic cone, a basketball, a lunch tray, books...) lie about the
-school. E picks one up, E again throws it; it clatters where it lands and draws the sound-hunting monsters. Ghosts
+school. E picks one up, right click (or T) throws it; it clatters where it lands and draws the sound-hunting monsters. Ghosts
 can knock clutter over (E while looking at it, every 20 seconds).
 
 **Hiding:** a dozen slatted cupboards stand around the school (and wings). Press E to climb in and E to climb
@@ -200,8 +200,10 @@ empty until you fit a door kit from the vending machine.
 Press E on the vending machine in the guard room to spend points. Purchases drop into the tray; press E
 to pick them up. What you carry shows on the hotbar along the bottom of the screen: your flashlight in
 slot 1, then up to four things you've bought. Pick a slot with 1-5 or the mouse wheel, and G uses what's
-in it (with the flashlight's slot picked, G uses the first thing you carry). Some items need a rank (in
-brackets); the machine shows which.
+in it (with the flashlight's slot picked, G uses the first thing you carry). X puts the picked thing down
+at your feet, or, looking at a teammate right in front of you, hands it to them. If you're caught, what you
+carry spills on the floor for the others; anything still lying about in the morning comes back to you.
+Some items need a rank (in brackets); the machine shows which.
 
 - **Spectral camera kit (220, rank 2):** stand by a desk's chair with it and press G, then stay there for 10
   seconds. That desk's monitors switch to spectral feeds, which show the Ghost.
@@ -370,8 +372,10 @@ it runs; that's normal for games that aren't signed (Steam builds don't show it)
 | F / left mouse button | Flashlight on or off |
 | 1-5 / mouse wheel | Pick a hotbar slot (slot 1 is the flashlight) |
 | E | Use. Press E on the time clock in the guard room to clock in and start the night. Hold E on punch stations and the breaker. Press E on a light switch (just inside each room's door) to turn the room's lights on or off. |
-| Esc | Menu: mouse sensitivity, field of view, brightness, volume, voice chat, captions, change keys, graphics (resolution, anti-aliasing, shadows, ambient occlusion and haze, bounced light, long grass, film grain, V-sync), fullscreen, leave the game (pauses solo; in a group the night keeps going) |
+| Esc | Menu: mouse sensitivity, field of view, brightness, volume, voice chat, captions, change keys, graphics (resolution, anti-aliasing, shadows, ambient occlusion and haze, bounced light, long grass, film grain, V-sync), fullscreen, comfort (invert mouse look, head bob, reduce flashing and shaking), leave the game (pauses solo; in a group the night keeps going) |
 | Tab | Clipboard: log anything odd you spot (after clocking in); its Field guide button shows what you know about each monster |
+| X | Put down the thing in the picked hotbar slot, or hand it to the teammate you're looking at |
+| Right mouse button / T | Throw what you picked up off the floor |
 | G | Use or put down the thing in the picked hotbar slot (sensors, traps, energy drink, coffee, EMF reader, air horn, decoy radio, donuts). As a ghost: watch through a teammate's eyes |
 | Q | Mark a spot for the team (at a desk: flag the camera) |
 | R | At a desk, full screen: compare the camera with tonight's photo |
@@ -381,7 +385,8 @@ it runs; that's normal for games that aren't signed (Steam builds don't show it)
 
 **With a controller** (Xbox names; PlayStation and Switch pads work the same way): left stick move,
 right stick look, L3 run, A use, Y flashlight, X full-screen camera, R3 compare with the photo, B mark,
-Back clipboard, RB use item, LB push to talk, RT walkie-talkie, Start menu. In menus, the D-pad moves and A selects; B goes back.
+Back clipboard, RB use item, D-pad left/right hotbar slot, D-pad down put down / hand over, D-pad up throw,
+LB push to talk, RT walkie-talkie, Start menu. In menus, the D-pad moves and A selects; B goes back.
 
 **At a guard room desk** (press E on a chair to sit):
 

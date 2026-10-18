@@ -144,9 +144,12 @@ func _process(delta: float) -> void:
 	level = clampf((rms - 0.005) / 0.12, 0.0, 1.0)
 
 	var wants := false
+	# Talking works with menus open (the night report especially), just not while typing.
+	var focus := local_guard.get_viewport().gui_get_focus_owner()
+	var typing := focus is LineEdit or focus is TextEdit
 	match _profile_value("voice_mode", "push"):
 		"push":
-			wants = Input.is_action_pressed("push_to_talk") and not local_guard.input_blocked
+			wants = Input.is_action_pressed("push_to_talk") and not typing
 		"open":
 			var threshold: float = _profile_value("mic_threshold", 0.12)
 			if level > threshold:
@@ -156,7 +159,7 @@ func _process(delta: float) -> void:
 			wants = _hangover_left > 0.0
 	# The walkie-talkie: hold its key (only while alive, with one clipped on, or at a guard room
 	# desk, where the base station is).
-	var radio := (local_guard.has_radio or at_desk(local_guard)) and not local_guard.is_dead and not local_guard.input_blocked \
+	var radio := (local_guard.has_radio or at_desk(local_guard)) and not local_guard.is_dead and not typing \
 			and Input.is_action_pressed("radio_talk")
 	if radio and not on_radio:
 		_squelch(null)
@@ -246,7 +249,8 @@ func _hears_on_radio(speaker: int) -> bool:
 	var talker := players_guard(speaker)
 	if talker == null or local_guard == null or local_guard.is_dead or talker.is_dead:
 		return false
-	if not local_guard.has_radio and not at_desk(talker):
+	# A walkie-talkie or the desk's base station picks up calls; so does anyone, from the base station.
+	if not local_guard.has_radio and not at_desk(local_guard) and not at_desk(talker):
 		return false
 	return talker.global_position.distance_to(local_guard.global_position) > RADIO_OVER
 

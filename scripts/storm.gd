@@ -61,17 +61,22 @@ func _flash(near: bool) -> void:
 	if moon == null:
 		return
 	var base := moon.light_energy
-	var peak := FLASH_NEAR if near else FLASH_FAR
+	# Toned down (one soft flash) with "Reduce flashing" on. (Profile is an autoload, looked up
+	# by path so this compiles before autoloads are in.)
+	var profile := get_node_or_null("/root/Profile")
+	var calm: bool = profile != null and profile.get("reduce_flashing")
+	var strength := 0.35 if calm else 1.0
+	var peak := (FLASH_NEAR if near else FLASH_FAR) * strength
 	var ambient := environment.ambient_light_energy if environment else 0.0
 	var glow := window_glass.emission_energy_multiplier if window_glass else 0.0
 	var glow_colour := window_glass.emission if window_glass else Color.BLACK
 	var flicker := create_tween()
-	for i in (3 if near else 1):
+	for i in (3 if near and not calm else 1):
 		flicker.tween_callback(func() -> void:
 			moon.light_energy = peak * randf_range(0.6, 1.0)
 			if window_glass:
 				window_glass.emission = Color(0.8, 0.85, 1.0)
-				window_glass.emission_energy_multiplier = 5.0 if near else 1.8
+				window_glass.emission_energy_multiplier = (5.0 if near else 1.8) * strength
 			if environment:
 				environment.ambient_light_energy = ambient + (0.25 if near else 0.08))
 		flicker.tween_interval(randf_range(0.04, 0.09))

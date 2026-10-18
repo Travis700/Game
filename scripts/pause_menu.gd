@@ -222,9 +222,30 @@ func _ready() -> void:
 
 	_fullscreen = CheckBox.new()
 	_fullscreen.text = "Fullscreen (F11)"
-	_fullscreen.toggled.connect(func(on: bool) -> void:
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED))
+	_fullscreen.toggled.connect(func(on: bool) -> void: Profile.set_fullscreen(on))
 	column.add_child(_fullscreen)
+
+	column.add_child(_label("Comfort"))
+	var comfort := GridContainer.new()
+	comfort.columns = 2
+	comfort.add_theme_constant_override("h_separation", 12)
+	comfort.add_theme_constant_override("v_separation", 6)
+	column.add_child(comfort)
+	var invert := CheckBox.new()
+	invert.text = "Invert mouse look (up/down)"
+	invert.button_pressed = Profile.invert_y
+	invert.toggled.connect(func(on: bool) -> void: Profile.invert_y = on)
+	comfort.add_child(invert)
+	var bob := CheckBox.new()
+	bob.text = "Head bob when walking"
+	bob.button_pressed = Profile.head_bob
+	bob.toggled.connect(func(on: bool) -> void: Profile.head_bob = on)
+	comfort.add_child(bob)
+	var calm := CheckBox.new()
+	calm.text = "Reduce flashing and shaking"
+	calm.button_pressed = Profile.reduce_flashing
+	calm.toggled.connect(func(on: bool) -> void: Profile.reduce_flashing = on)
+	comfort.add_child(calm)
 
 	_invite = _button("Invite Steam friends", func() -> void: SteamService.invite_friends())
 	column.add_child(_invite)
@@ -238,7 +259,9 @@ func _ready() -> void:
 	column.add_child(_resume)
 	_leave = _button("Leave to the main menu", func() -> void: leave_requested.emit())
 	column.add_child(_leave)
-	column.add_child(_button("Quit the game", func() -> void: get_tree().quit()))
+	column.add_child(_button("Quit the game", func() -> void:
+		Profile.save_settings()
+		get_tree().quit()))
 
 
 var _team: VBoxContainer

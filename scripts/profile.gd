@@ -50,6 +50,12 @@ var perk := "thermos"
 var custom_notes: Array = []
 ## Whether the Understudy may say back things you said (kept only in the host's memory).
 var voice_mimic := true
+## Comfort: the window filling the screen, looking up when you move the mouse down, the camera
+## bobbing as you walk, and toned-down flashes, flicker and shaking.
+var fullscreen := false
+var invert_y := false
+var head_bob := true
+var reduce_flashing := false
 
 ## Lights that cast shadows (the moon, flashlights), switched by the Shadows setting.
 const SHADOW_LIGHTS := "shadow_lights"
@@ -83,6 +89,10 @@ func _enter_tree() -> void:
 		tips_shown = config.get_value("career", "tips_shown", 0)
 		captions = config.get_value("settings", "captions", true)
 		night_length = config.get_value("settings", "night_length", 1)
+		fullscreen = config.get_value("graphics", "fullscreen", false)
+		invert_y = config.get_value("comfort", "invert_y", false)
+		head_bob = config.get_value("comfort", "head_bob", true)
+		reduce_flashing = config.get_value("comfort", "reduce_flashing", false)
 	apply_volume()
 	if employee_number < 1000:
 		employee_number = randi_range(1000, 9999)
@@ -125,6 +135,10 @@ func save_settings() -> void:
 	config.set_value("career", "tips_shown", tips_shown)
 	config.set_value("settings", "captions", captions)
 	config.set_value("settings", "night_length", night_length)
+	config.set_value("graphics", "fullscreen", fullscreen)
+	config.set_value("comfort", "invert_y", invert_y)
+	config.set_value("comfort", "head_bob", head_bob)
+	config.set_value("comfort", "reduce_flashing", reduce_flashing)
 	_save(config)
 
 
@@ -142,6 +156,20 @@ func apply_volume() -> void:
 
 func _ready() -> void:
 	apply_graphics()
+	if fullscreen and DisplayServer.get_name() != "headless":
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+
+
+## Fills the screen (or doesn't), and remembers it for next time.
+func set_fullscreen(on: bool) -> void:
+	fullscreen = on
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED)
+	save_settings()
+
+
+## How strong flashes, flicker and shaking should be (toned down by the comfort setting).
+func flash_strength() -> float:
+	return 0.35 if reduce_flashing else 1.0
 
 
 ## Applies the graphics settings to the game window and every shadow-casting light.
