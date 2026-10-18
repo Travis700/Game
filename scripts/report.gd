@@ -171,6 +171,8 @@ func show_report(night: int, rows: Array, summary: String, is_host: bool, outcom
 	if outcome != "training":
 		_summary.text += "\nYour field guide: %d of %d monsters   ·   case file stamps: %d of %d" % [FieldGuide.discovered().size(),
 				FieldGuide.ENTRIES.size(), Career.stamp_count(), Career.MONSTER_KINDS.size() * Career.STAMPS.size()]
+	if outcome != "training":
+		_summary.text += "\n" + Career.bounty_text().replace(":\n", ": ").replace("\n", "   ·   ")
 	if promotion != "":
 		_summary.text += "\n\n★ " + promotion + " ★"
 		promotion = ""

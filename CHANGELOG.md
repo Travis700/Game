@@ -40,6 +40,10 @@
   caught teammates who talk close by, through the static. A ghost's cold spot makes it say a word.
   Monsters nearby hear the hiss now and then.
 
+**Goals**
+- District bounties: three goals a week for extra XP, shown in the guard room and on the report.
+- Three new achievements: Nothing but net, Still as stone, Finders keepers.
+
 **Settings**
 - Effects, ambience and music volumes; invert mouse look; head bob; reduce flashing and shaking.
 - Fullscreen is remembered; key prompts follow your keyboard layout.

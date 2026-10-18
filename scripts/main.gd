@@ -1315,6 +1315,11 @@ func _teammate_in_front(guard: Guard) -> int:
 func on_award(peer_id: int, achievement: String) -> void:
 	if career:
 		career.award(peer_id, achievement)
+		# (Counted too, for the district bounties.)
+		var stat: String = {"STILL_AS_STONE": "searches_survived", "FINDERS_KEEPERS": "drawer_finds",
+				"NOTHING_BUT_NET": "baskets"}.get(achievement, "")
+		if stat != "":
+			career.add_stat(peer_id, stat)
 
 
 ## Host: a basket in the gym (from Clutter).
@@ -1809,6 +1814,7 @@ func _update_tonight_board() -> void:
 		lines.append(round_text)
 	if shift.state == Shift.State.PRE_SHIFT:
 		lines.append_array(_briefing_lines())
+		lines.append(Career.bounty_text())
 	_tonight_board.text = "\n".join(lines)
 
 
@@ -2460,6 +2466,10 @@ func _set_look(peer_id: int, hat: String, perk: String) -> void:
 		guard.perk = perk
 		guard.has_emf = guard.has_emf or perk == "lookout"
 		guard.apply_flashlight()
+
+
+func on_bounty(title: String, xp: int) -> void:
+	hud.show_message("District bounty complete: %s  (+%d XP)" % [title, xp])
 
 
 func on_achievement(title: String) -> void:

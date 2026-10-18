@@ -262,8 +262,10 @@ func _add_stat(stat: String, amount: int) -> void:
 	var value: int = config.get_value("stats", stat, 0) + amount
 	config.set_value("stats", stat, value)
 	_save(config)
+	_bounty_progress(stat, amount)
+	# (Only the stats set up in Steamworks go to Steam; the bounty counters stay here.)
 	var steam := get_node_or_null("/root/SteamService")
-	if steam:
+	if steam and STATS.has(stat):
 		steam.add_stat(stat, amount)
 
 
@@ -319,6 +321,75 @@ func _record_score(points: int, difficulty: int, guards: int) -> void:
 	scores.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["points"] > b["points"])
 	config.set_value("career", "scores", scores.slice(0, MAX_SCORES))
 	_save(config)
+
+
+# --- District bounties: three goals a week, the same for everyone, for extra XP ------------
+
+## stat -> [title, what to do (with %d for the count), how many].
+const BOUNTIES := {
+	"correct_logs": ["Sharp eyes", "Make %d correct logs", 15],
+	"stations_punched": ["On your rounds", "Punch %d stations", 25],
+	"nights_survived": ["Steady hand", "Clock out of %d nights", 5],
+	"monsters_logged": ["Name names", "Log %d monsters", 6],
+	"baskets": ["Shooting guard", "Sink %d baskets in the gym", 5],
+	"drawer_finds": ["Rummager", "Find %d things in drawers", 6],
+	"searches_survived": ["Hold your breath", "Stay hidden through %d cupboard searches", 2],
+}
+const BOUNTY_XP := 250
+const BOUNTIES_A_WEEK := 3
+
+
+## This week's number (weeks since 1970, starting on Mondays).
+static func week() -> int:
+	# 1 January 1970 was a Thursday: shift by three days so weeks run Monday to Sunday.
+	return int((Time.get_unix_time_from_system() / 86400.0 + 3.0) / 7.0)
+
+
+## This week's bounties (stat names), picked from the week number so everyone has the same.
+static func bounties() -> Array[String]:
+	var pool: Array = BOUNTIES.keys()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = week() * 7919
+	var picked: Array[String] = []
+	while picked.size() < BOUNTIES_A_WEEK and not pool.is_empty():
+		picked.append(pool.pop_at(rng.randi() % pool.size()))
+	return picked
+
+
+## How far along this player is with a bounty this week.
+static func bounty_progress(stat: String) -> int:
+	var config := _load()
+	if int(config.get_value("bounties", "week", -1)) != week():
+		return 0
+	return int((config.get_value("bounties", "progress", {}) as Dictionary).get(stat, 0))
+
+
+## "District bounties this week: Sharp eyes 4/15 · ..." for the report and the guard room.
+static func bounty_text() -> String:
+	var parts: Array[String] = []
+	for stat in bounties():
+		var info: Array = BOUNTIES[stat]
+		var done := mini(bounty_progress(stat), info[2])
+		parts.append("%s (%s): %d/%d%s" % [info[0], info[1] % info[2], done, info[2], " ✓" if done >= info[2] else ""])
+	return "District bounties this week (+%d XP each):\n" % BOUNTY_XP + "\n".join(parts)
+
+
+func _bounty_progress(stat: String, amount: int) -> void:
+	if stat not in bounties():
+		return
+	var config := _load()
+	if int(config.get_value("bounties", "week", -1)) != week():
+		config.set_value("bounties", "week", week())
+		config.set_value("bounties", "progress", {})
+	var progress: Dictionary = config.get_value("bounties", "progress", {})
+	var target: int = BOUNTIES[stat][2]
+	var before := int(progress.get(stat, 0))
+	progress[stat] = before + amount
+	config.set_value("bounties", "progress", progress)
+	_save(config)
+	if before < target and before + amount >= target:
+		_add_xp(BOUNTY_XP)
+		get_tree().call_group("game", "on_bounty", BOUNTIES[stat][0], BOUNTY_XP)
 
 
 # --- Reading the records (for the menu) ---------------------------------------------------

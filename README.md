@@ -186,6 +186,10 @@ each worth +15% XP. Every night also has a team bonus objective (nobody runs, no
 things, name a monster, finish the round by 3 AM, nobody caught) worth +60 and +50 XP. Test conditions
 with `--conditions=fog,batteries`.
 
+**District bounties:** three goals a week (the same for everyone, picked from the week): punch 25 stations,
+sink 5 baskets, find 6 things in drawers, stay hidden through two cupboard searches... Each is worth 250 XP
+once. They're on the guard room board before the shift and at the bottom of every night report.
+
 **Ranks:** every night earns XP (even one where you're caught), kept across runs. There are eight ranks,
 from Trainee to Legend of Westfield. Your rank is on your name tag and the menu, and some vending
 machine items need a rank. Ranks and some achievements unlock hats (15 of them), picked on the menu
