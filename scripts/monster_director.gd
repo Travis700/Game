@@ -417,7 +417,7 @@ func _echo() -> void:
 		return
 	var speaker: Guard = speakers.pick_random()
 	if voice.echo_at(spots.pick_random(), speaker.name.to_int()):
-		_echo_note = "Somebody heard Guard %d's voice tonight, from a hallway with nobody in it. Guard %d says they never said that." % [speaker.slot, speaker.slot]
+		_echo_note = "Somebody heard %s's voice tonight, from a hallway with nobody in it. %s says they never said that." % [speaker.display_name(), speaker.display_name()]
 
 
 ## Host, night 1: the first monster just came in. The camera that sees it best blacks out for a
@@ -1220,7 +1220,7 @@ func _update_principal(minutes: float, delta: float) -> void:
 	if before > 15.0 and _summon_left <= 15.0:
 		announcement.emit("The intercom crackles: \"%s. I'm waiting.\"" % summoned.display_name(), "intercom")
 	if _summon_left <= 0.0:
-		announcement.emit("The intercom crackles: \"Then I'll come to you, Guard %d.\"" % summoned.slot, "intercom")
+		announcement.emit("The intercom crackles: \"Then I'll come to you, %s.\"" % summoned.display_name(), "intercom")
 		_principal_out = true
 		spawn("principal", FRONT_OFFICE, {"target": _summoned})
 		_summoned = 0

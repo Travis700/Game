@@ -435,7 +435,8 @@ func _pin_badge() -> void:
 	_badge_text = Label3D.new()
 	_badge_text.text = _badge_label()
 	_badge_text.font_size = 28
-	_badge_text.pixel_size = 0.00055
+	# Long names are written smaller to fit the card.
+	_badge_text.pixel_size = 0.00055 * minf(1.0, 11.0 / maxf(display_name().length(), 1.0))
 	_badge_text.modulate = Color(0.08, 0.1, 0.18)
 	_badge_text.outline_size = 0
 	_badge_text.shaded = true

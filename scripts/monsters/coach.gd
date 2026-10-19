@@ -63,7 +63,7 @@ func think(delta: float) -> void:
 		_grace -= delta
 		_hustled = _hustled + delta if director.guard_speed(_watching) >= HUSTLE_SPEED else _hustled
 		if _hustled >= HUSTLE_SECONDS:
-			director.tell(_watching.name.to_int(), "\"GOOD HUSTLE, Guard %d!\" The whistle stops." % _watching.slot)
+			director.tell(_watching.name.to_int(), "\"GOOD HUSTLE, %s!\" The whistle stops." % _watching.display_name())
 			# Left alone for a while, then fair game again.
 			_whistled[_watching.name] = _now() + WELL_DONE_SECONDS
 			_watching = null
@@ -88,7 +88,7 @@ func think(delta: float) -> void:
 		_slacking = 0.0
 		state = "whistle"
 		_hustled = 0.0
-		director.tell(guard.name.to_int(), "A whistle. \"HUSTLE, Guard %d! Laps! Until I can't see you!\"" % guard.slot)
+		director.tell(guard.name.to_int(), "A whistle. \"HUSTLE, %s! Laps! Until I can't see you!\"" % guard.display_name())
 
 
 func _now() -> float:

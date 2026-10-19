@@ -147,9 +147,21 @@ func _write_up(who: String) -> void:
 	var query := PhysicsRayQueryParameters3D.create(from, from + back * 3.0, 1)
 	query.exclude = [get_rid()]
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
-	if hit.is_empty():
+	# Only on a wall or a board (not a guard, a door, or the floor).
+	if hit.is_empty() or not hit["collider"] is StaticBody3D or absf((hit["normal"] as Vector3).y) > 0.5:
 		return
+	_writings.append([hit["position"], hit["normal"], who])
 	_show_writing.rpc(hit["position"], hit["normal"], who)
+
+
+## What it's written up tonight: [at, normal, name] each, for anyone who joins later.
+var _writings: Array = []
+
+
+## Host: a late joiner sees what's already on the walls.
+func send_writing_to(peer_id: int) -> void:
+	for writing: Array in _writings:
+		_show_writing.rpc_id(peer_id, writing[0], writing[1], writing[2])
 
 
 @rpc("authority", "call_local", "reliable")
@@ -162,10 +174,11 @@ func _show_writing(at: Vector3, normal: Vector3, who: String) -> void:
 	writing.outline_size = 0
 	writing.shaded = true
 	writing.double_sided = false
-	writing.rotation.z = randf_range(-0.08, 0.08)
-	get_parent().add_child(writing)
+	# (On the director, not among the monsters, which is all the monster list should hold.)
+	director.add_child(writing)
 	writing.global_position = at + normal * 0.02
 	writing.look_at(writing.global_position - normal, Vector3.UP)
+	writing.rotate_object_local(Vector3.FORWARD, randf_range(-0.08, 0.08))
 	# Gone with it at the end of the night.
 	tree_exiting.connect(writing.queue_free)
 

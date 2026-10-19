@@ -121,6 +121,9 @@ var _direct_only := false
 
 
 func _ready() -> void:
+	# (A ghost watching the cameras switches the world off behind the feed; a session left
+	# that way would otherwise stay dark.)
+	get_viewport().disable_3d = false
 	# A daily shift seeds the random numbers; leaving it early mustn't make the next run predictable.
 	randomize()
 	add_to_group("game")
@@ -1048,6 +1051,9 @@ func _catch_up_late_joiner(peer_id: int) -> void:
 		_camera_signal.rpc_id(peer_id, camera_index, false)
 	totems.send_state_to(peer_id)
 	director.lockers.send_state_to(peer_id)
+	for monster in director._container.get_children():
+		if monster is Substitute:
+			(monster as Substitute).send_writing_to(peer_id)
 	for slot: int in cameras.portable_spots:
 		cameras.place_portable.rpc_id(peer_id, slot, cameras.portable_spots[slot][0], cameras.portable_spots[slot][1])
 	if night.phone.ringing:

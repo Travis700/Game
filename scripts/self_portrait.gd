@@ -97,8 +97,8 @@ func update(minutes: float) -> void:
 		3:
 			director.tell(_subject, "Your face feels stiff, like drying paint. Something in the art room is nearly done with you.")
 		4:
-			director.tell(_subject, "Somewhere in the art room, a portrait of Guard %d is almost finished." % subject.slot)
-			director.announcement.emit("A smell of fresh paint drifts through the school. In the art room, a portrait of Guard %d is almost finished." % subject.slot, "")
+			director.tell(_subject, "Somewhere in the art room, a portrait of %s is almost finished." % subject.display_name())
+			director.announcement.emit("A smell of fresh paint drifts through the school. In the art room, a portrait of %s is almost finished." % subject.display_name(), "")
 		FINISHED:
 			director.kill(subject, "the Self-Portrait")
 			_next_at = minutes + randf_range(REST_MINUTES.x, REST_MINUTES.y)
