@@ -2367,7 +2367,7 @@ func on_rank_up(rank: int, title: String) -> void:
 			_request_rank.rpc_id(1, rank)
 
 
-## Host: a guard was promoted mid-session; everyone updates their name tag (and the shop knows).
+## Host: a guard was promoted mid-session; everyone updates their rank (and the shop knows).
 @rpc("any_peer", "call_remote", "reliable")
 func _request_rank(rank: int) -> void:
 	if not multiplayer.is_server():
