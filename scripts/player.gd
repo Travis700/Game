@@ -428,6 +428,8 @@ func _pin_badge() -> void:
 	white.albedo_color = Color(0.92, 0.9, 0.84)
 	white.roughness = 0.6
 	card.material_override = white
+	# (It fades with the body when they're a ghost.)
+	_model_materials.append(white)
 	card.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	holder.add_child(card)
 	_badge_text = Label3D.new()
@@ -602,6 +604,8 @@ func update_visibility(viewer_is_dead: bool) -> void:
 	for model_material in _model_materials:
 		model_material.transparency = material.transparency
 		model_material.albedo_color.a = material.albedo_color.a
+	if _badge_text:
+		_badge_text.modulate.a = material.albedo_color.a
 	if is_local():
 		# Your own body only shows on the security cameras, and not at all once you're a ghost.
 		body_mesh.visible = not is_dead
