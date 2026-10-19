@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/hat_bucket_Image_2.jpg-45eb2dc14184a258f6489e
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

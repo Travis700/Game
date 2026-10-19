@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/prop_piano_Image_1_2.jpg-dda6fde8d95d9a9103df
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

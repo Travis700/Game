@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/hat_badge_cap_Image_1.jpg-38fc8f9e0370d000f76
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

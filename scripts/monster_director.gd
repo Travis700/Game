@@ -1256,25 +1256,25 @@ func ghost_passing(at: Vector3, distance: float) -> void:
 ## Leaves a guard's body where they fell.
 func place_corpse(peer_id: int, at: Vector3, color: Color, slot := 0) -> void:
 	remove_corpse(peer_id)
-	# The guard, curled on their side where they fell, in their own shirt. (Turned the same way
+	# The guard on their back where they fell, sprawled, in their own shirt. (Turned the same way
 	# on every computer.)
 	var holder := Node3D.new()
 	holder.position = at
-	holder.basis = Basis(Vector3.UP, float(peer_id % 360) * 0.0174533) * Basis(Vector3.FORWARD, PI * 0.5)
-	holder.position.y = at.y + 0.22
+	holder.rotation.y = float(peer_id % 360) * 0.0174533
 	add_child(holder)
-	var model := ModelKit.add(holder, "guard", Guard.MODEL_HEIGHT, PI)
+	var lying := Node3D.new()
+	# The model's front (+Z) turned to face up, its feet towards +Z, its back just off the floor.
+	lying.rotation_degrees = Vector3(-90, 0, 0)
+	lying.position = Vector3(0, CORPSE_LIFT, 0.85)
+	holder.add_child(lying)
+	var model := ModelKit.add(lying, "guard", Guard.MODEL_HEIGHT, 0.0)
 	if model:
 		var shirt := load("res://assets/models/guard_uniform_%d.jpg" % (maxi(slot - 1, 0) % Guard.UNIFORM_COLORS.size() + 1)) as Texture2D
 		if shirt and slot > 0:
 			for material in ModelKit.own_materials(model):
 				if material.albedo_texture != null:
 					material.albedo_texture = shirt
-		var moves := ModelKit.moves(model)
-		if moves and moves.has_animation("sit"):
-			moves.play("sit")
-			moves.seek(moves.current_animation_length, true)
-			moves.pause()
+		ModelKit.fallen_pose(model)
 		_corpses[peer_id] = holder
 		return
 	holder.queue_free()
@@ -1287,6 +1287,10 @@ func place_corpse(peer_id: int, at: Vector3, color: Color, slot := 0) -> void:
 	body.rotation_degrees = Vector3(90, randf() * 360.0, 0)
 	add_child(body)
 	_corpses[peer_id] = body
+
+
+## How far above the floor a lying body's back is (half its depth front to back).
+const CORPSE_LIFT := 0.13
 
 
 func remove_corpse(peer_id: int) -> void:

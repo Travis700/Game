@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/prop_pencil_cup_Image_1.jpg-e5d6c071cc5b1b120
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

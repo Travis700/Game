@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/hat_beanie_Image_0.jpg-1f3c97ecd8da1054f634b4
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/prop_coffee_mug_Image_1.jpg-78231d5ef6cc89dc1
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

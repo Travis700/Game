@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/prop_tissue_box_Image_0.jpg-99ae3360f328e9538
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

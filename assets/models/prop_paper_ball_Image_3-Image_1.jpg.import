@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/prop_paper_ball_Image_3-Image_1.jpg-0b336e736
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

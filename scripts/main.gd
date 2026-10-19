@@ -1070,7 +1070,7 @@ func _catch_up_late_joiner(peer_id: int) -> void:
 			_show_ghost.rpc_id(peer_id, guard.name.to_int(), false)
 			var body: Node3D = director._corpses.get(guard.name.to_int())
 			if is_instance_valid(body):
-				_show_corpse.rpc_id(peer_id, guard.name.to_int(), body.global_position - Vector3(0, 0.22, 0))
+				_show_corpse.rpc_id(peer_id, guard.name.to_int(), body.global_position)
 	if not back_alive:
 		_show_ghost.rpc(peer_id, true)
 

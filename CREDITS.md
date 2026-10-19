@@ -83,6 +83,7 @@ with `tools/slim_glb.py`. In `assets/models/` as `prop_<asset>.glb`.
 | Metal Jug | Anzor Lezhava |
 | Street Lamp 01 | Josh Dean |
 | Painted Wooden Bench | Kirill Sannikov |
+| Small Plastic Torch (the torch other players see in a guard's hand, darkened) | Abiyyu Panggalih (Abiyyu_xyz) |
 
 ## Models: Sketchfab (CC BY 4.0)
 
@@ -205,6 +206,8 @@ commercial use before release.
   Meshy from the key art.
 - Hats: the halo, the bulldog ears and the antennae (and the night-vision goggles' strap) are made in
   code from simple shapes (`scripts/hats.gd`).
+- The first-person hand and flashlight (`assets/models/fp_hand_torch.glb`): made with Meshy from a
+  generated reference image.
 - Props (`assets/models/prop_*.glb`, those not credited above): made with Meshy from generated
   reference images (time clock, office chair and the anomaly props).
 - Make sure the Meshy account's plan gives commercial rights before release (free-plan output is

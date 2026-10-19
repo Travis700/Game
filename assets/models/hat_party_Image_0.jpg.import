@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/hat_party_Image_0.jpg-28eb7a6c44f8f7636209989
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

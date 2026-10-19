@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/hat_fedora_Image_6.jpg-eb5662c2a34df32dacb51d
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

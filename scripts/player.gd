@@ -244,11 +244,55 @@ func _process(delta: float) -> void:
 		_viewmodel_fill.visible = flashlight.visible
 	elif not is_local():
 		_update_flare()
+	_carry_torch(delta)
 	# The field of view from the Esc menu (Profile looked up by path, see _look).
 	if is_local():
 		var profile := get_node_or_null("/root/Profile")
 		if profile:
 			camera.fov = float(profile.get("fov"))
+
+
+# --- How everyone else sees the flashlight ------------------------------------------
+
+## The right arm brought up to chest height with a torch in the fist while the light is on, so
+## the beam comes from a hand rather than a face (seen by the others and the security cameras).
+var _arm: BoneTweak
+var _hand: Node3D
+var _held_torch: Node3D
+const ARM_RAISE := -72.0
+
+
+func _make_held_torch() -> void:
+	var bones := _model.find_child("Skeleton3D", true, false) as Skeleton3D if _model else null
+	if bones == null or bones.find_bone("RightHand") < 0 or not ResourceLoader.exists("res://assets/models/prop_small_plastic_torch.glb"):
+		return
+	_arm = BoneTweak.new()
+	_arm.bone = "RightArm"
+	_arm.axis = Vector3.RIGHT
+	_arm.angle = deg_to_rad(ARM_RAISE)
+	_arm.amount = 0.0
+	bones.add_child(_arm)
+	_hand = ModelKit.bone_anchor(_model, self, "RightHand", bones.get_bone_global_rest(bones.find_bone("RightHand")).origin)
+	_held_torch = Node3D.new()
+	_held_torch.name = "HeldTorch"
+	add_child(_held_torch)
+	var torch := ModelKit.add(_held_torch, "prop_small_plastic_torch", 0.055, 0.0, SELF_LAYER if is_local() else 1)
+	# A dark security torch, not the model's camping yellow.
+	for material in ModelKit.own_materials(torch):
+		material.albedo_color = Color(0.2, 0.2, 0.21)
+	_held_torch.visible = false
+
+
+func _carry_torch(delta: float) -> void:
+	if _arm == null:
+		return
+	var lit := flashlight.visible and not is_dead and seated_desk < 0
+	_arm.amount = move_toward(_arm.amount, 1.0 if lit else 0.0, delta * 5.0)
+	_held_torch.visible = _arm.amount > 0.6 and body_mesh.visible
+	# In the fist, pointing where the beam goes.
+	_held_torch.global_transform = Transform3D(_beam_basis, _hand.global_position - _beam_basis.z * 0.05)
+	if not is_local() and lit:
+		flashlight.global_position = _held_torch.global_position - _beam_basis.z * 0.12
 
 
 ## Dust hanging in the air round the guard: lit specks, so only seen where a light (mostly the
@@ -309,9 +353,14 @@ func _make_viewmodel() -> void:
 	_viewmodel.name = "Viewmodel"
 	_viewmodel.position = VIEWMODEL_AT
 	camera.add_child(_viewmodel)
-	var model := VIEWMODEL.instantiate() as Node3D
-	model.scale = Vector3.ONE * VIEWMODEL_SIZE
-	_viewmodel.add_child(model)
+	var lens_radius := 0.0136
+	if ResourceLoader.exists(HAND_TORCH):
+		_viewmodel.add_child(_hand_torch())
+		lens_radius = HAND_TORCH_LENS_RADIUS
+	else:
+		var model := VIEWMODEL.instantiate() as Node3D
+		model.scale = Vector3.ONE * VIEWMODEL_SIZE
+		_viewmodel.add_child(model)
 	# The lens: a disc over the torch's glass, lit while the flashlight is on.
 	_lens_on = StandardMaterial3D.new()
 	_lens_on.albedo_color = Color(1.0, 0.96, 0.88)
@@ -323,8 +372,8 @@ func _make_viewmodel() -> void:
 	_lens_off.metallic = 0.4
 	_lens_off.roughness = 0.2
 	var disc := CylinderMesh.new()
-	disc.top_radius = 0.0136 * VIEWMODEL_SIZE
-	disc.bottom_radius = 0.0136 * VIEWMODEL_SIZE
+	disc.top_radius = lens_radius * VIEWMODEL_SIZE
+	disc.bottom_radius = lens_radius * VIEWMODEL_SIZE
 	disc.height = 0.001
 	disc.radial_segments = 16
 	_viewmodel_lens = MeshInstance3D.new()
@@ -348,6 +397,28 @@ func _make_viewmodel() -> void:
 	_viewmodel.add_child(_viewmodel_fill)
 	# The beam comes out of it.
 	flashlight.position = VIEWMODEL_AT + Vector3(0, 0, -0.02)
+
+
+## The hand and forearm gripping the torch (a Meshy model made from a photo-style reference):
+## the model lies along +X with the lens at HAND_TORCH_LENS, and is about twice life size.
+const HAND_TORCH := "res://assets/models/fp_hand_torch.glb"
+const HAND_TORCH_LENS := Vector3(0.479, 0.006, 0.032)
+const HAND_TORCH_SCALE := 0.5
+const HAND_TORCH_LENS_RADIUS := 0.019
+## How the arm is held: pitch, yaw and roll (degrees) about the lens, so the forearm comes in
+## from the bottom right and you see the back of the hand.
+const HAND_TORCH_HOLD := Vector3(4.0, -14.0, -20.0)
+
+
+## The hand model set up so its lens is at the origin, pointing -Z (like the viewmodel's).
+func _hand_torch() -> Node3D:
+	var hold := Node3D.new()
+	hold.rotation_degrees = HAND_TORCH_HOLD
+	var model := (load(HAND_TORCH) as PackedScene).instantiate() as Node3D
+	var turn := Basis(Vector3.UP, PI * 0.5).scaled(Vector3.ONE * HAND_TORCH_SCALE * VIEWMODEL_SIZE)
+	model.transform = Transform3D(turn, -(turn * HAND_TORCH_LENS))
+	hold.add_child(model)
+	return hold
 
 
 ## Someone else's flashlight, seen from here: a glare on its lens, brighter the more squarely
@@ -522,6 +593,7 @@ func _dress() -> void:
 	var moves := ModelKit.moves(_model)
 	if moves:
 		_strider = Strider.attach(self, moves, MODEL_HEIGHT)
+	_make_held_torch()
 
 
 ## Where the eyes are on the model, as a share of its height (hats sit relative to eye level).

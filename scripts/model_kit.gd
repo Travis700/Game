@@ -135,6 +135,43 @@ static func bone_anchor(model: Node3D, owner: Node3D, bone: String, at: Vector3)
 	return anchor
 
 
+## Turns one bone of a still (unanimated) model about `axis` (in the skeleton's space, the model
+## facing +Z), around its own joint, carrying its children with it.
+static func bend(bones: Skeleton3D, bone: String, axis: Vector3, degrees: float) -> void:
+	var index := bones.find_bone(bone)
+	if index < 0:
+		return
+	var current := bones.get_bone_global_pose(index)
+	var bent := Transform3D(Basis(axis.normalized(), deg_to_rad(degrees)) * current.basis, current.origin)
+	var parent := bones.get_bone_parent(index)
+	var above := bones.get_bone_global_pose(parent) if parent >= 0 else Transform3D()
+	bones.set_bone_pose_rotation(index, (above.affine_inverse() * bent).basis.get_rotation_quaternion())
+
+
+## Folds a standing humanoid (the guard) into how someone lies where they fell: head to one
+## side, one arm flung out, the other across the body, a knee up. The caller lays it on its back.
+static func fallen_pose(model: Node3D) -> void:
+	var player := model.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if player:
+		player.stop()
+	var bones := model.find_child("Skeleton3D", true, false) as Skeleton3D
+	if bones == null:
+		return
+	bones.reset_bone_poses()
+	bend(bones, "Head", Vector3.UP, -50.0)
+	bend(bones, "Head", Vector3.FORWARD, 12.0)
+	bend(bones, "RightArm", Vector3.FORWARD, -40.0)
+	bend(bones, "RightForeArm", Vector3.FORWARD, -20.0)
+	bend(bones, "LeftArm", Vector3.RIGHT, -45.0)
+	bend(bones, "LeftArm", Vector3.FORWARD, -25.0)
+	bend(bones, "LeftForeArm", Vector3.UP, -70.0)
+	bend(bones, "RightUpLeg", Vector3.FORWARD, -9.0)
+	bend(bones, "LeftUpLeg", Vector3.RIGHT, -40.0)
+	bend(bones, "LeftUpLeg", Vector3.FORWARD, 10.0)
+	bend(bones, "LeftLeg", Vector3.RIGHT, 75.0)
+	bend(bones, "RightFoot", Vector3.FORWARD, -20.0)
+
+
 ## Makes every surface of the model see-through and faintly glowing, e.g. the Ghost.
 static func ghostly(model: Node3D, tint: Color, glow: float) -> void:
 	var meshes: Array[MeshInstance3D] = []
