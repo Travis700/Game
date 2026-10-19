@@ -403,11 +403,11 @@ func _make_viewmodel() -> void:
 ## the model lies along +X with the lens at HAND_TORCH_LENS, and is about twice life size.
 const HAND_TORCH := "res://assets/models/fp_hand_torch.glb"
 const HAND_TORCH_LENS := Vector3(0.479, 0.006, 0.032)
-const HAND_TORCH_SCALE := 0.5
+const HAND_TORCH_SCALE := 0.42
 const HAND_TORCH_LENS_RADIUS := 0.019
 ## How the arm is held: pitch, yaw and roll (degrees) about the lens, so the forearm comes in
 ## from the bottom right and you see the back of the hand.
-const HAND_TORCH_HOLD := Vector3(4.0, -14.0, -20.0)
+const HAND_TORCH_HOLD := Vector3(14.0, 28.0, -10.0)
 
 
 ## The hand model set up so its lens is at the origin, pointing -Z (like the viewmodel's).
