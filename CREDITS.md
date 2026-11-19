@@ -172,7 +172,7 @@ are drawn by `tools/gen_gym_art.py` (text in Bebas Neue, see Fonts).
 ## Sounds: Kenney (CC0, public domain)
 
 From https://kenney.nl (Impact Sounds, Interface Sounds and RPG Audio packs), licensed CC0. In
-`assets/sounds/`: footsteps (`step_concrete_*`, `step_grass_*`, `step_wood_*`), `creak_*`,
+`assets/sounds/`: `creak_*`,
 `door_open_*`, `door_close_*`, `latch`, `metal_click`, `land_*` (thrown clutter), `slam_metal`,
 `ui_*`, `glitch_*`, `paper_*`, `cloth_*`, `switch`, `ping`.
 
@@ -180,7 +180,8 @@ From https://kenney.nl (Impact Sounds, Interface Sounds and RPG Audio packs), li
 
 Made for Night Shift with ElevenLabs Sound Effects v2 through Creative Claw (creativeclaw.co), on
 the project owner's account, then levelled and converted to mono OGG. Check the provider's current
-terms for commercial use before release. In `assets/sounds/`: whistles (`whistle_*`), `lunch_hum`,
+terms for commercial use before release. In `assets/sounds/`: footsteps (`step_concrete_*`, `step_grass_*`,
+`step_wood_*`), whistles (`whistle_*`), `lunch_hum`,
 `monitor_beep`, `flash_charge`, `flash_pop`, `shush`, `hiss`, `skitter`, `giggle`, `wet_voice`,
 `ghost_breath`, `phone_ring`, `school_bell`, `siren`, `intercom`, `punch_clock`, `power_down`,
 `power_up`, `scream`, `stinger`, `ambience`, `heartbeat`, `door_bang`, `gate`, `air_horn`,

@@ -9,6 +9,10 @@ extends CharacterBody3D
 ## Monsters live on physics layer 4, so they never block guards or line-of-sight checks.
 const LAYER := 1 << 3
 const KILL_DISTANCE := 1.1
+## Once its path runs out it walks straight at whatever it was going to, from this close in...
+const CLOSE_IN_RANGE := 2.5
+## ...until it's this close.
+const CLOSE_IN := 0.5
 const GRAVITY := 9.8
 ## The Bell never pushes a monster faster than this (just under a guard's running speed),
 ## so every chase can still be outrun.
@@ -266,10 +270,19 @@ func set_mood(new_mood: String) -> void:
 ## e.g. the guard room before night 7.
 func move_to(target: Vector3, speed: float) -> bool:
 	_agent.target_position = target
+	var next: Vector3
 	if _agent.is_navigation_finished():
-		halt()
-		return true
-	var next := _agent.get_next_path_position()
+		# The agent calls it done up to a metre short of the path's end, and the path ends at the
+		# nearest point of the walkable area, which can be a little way off a guard standing by a
+		# wall or a desk. From close by, it covers that last stretch straight on (so a chase
+		# doesn't end standing just out of reach, frozen).
+		var gap := Vector2(target.x - global_position.x, target.z - global_position.z).length()
+		if gap < CLOSE_IN or gap > CLOSE_IN_RANGE or not director.may_enter(target):
+			halt()
+			return true
+		next = target
+	else:
+		next = _agent.get_next_path_position()
 	if not director.may_enter(next):
 		halt()
 		return false
@@ -521,7 +534,11 @@ func catch_nearby() -> bool:
 	if harmless:
 		return false
 	for guard in director.targetable_guards():
-		if distance_to_guard(guard) < KILL_DISTANCE:
+		# Measured across the floor (with a little leeway for height: a guard on a step, or a
+		# monster's origin settling into the floor), so standing still can't keep a guard just
+		# out of reach.
+		var flat := Vector2(guard.global_position.x - global_position.x, guard.global_position.z - global_position.z).length()
+		if flat < KILL_DISTANCE and absf(guard.global_position.y - global_position.y) < 1.2:
 			director.kill(guard, display_name, face_point())
 			return true
 	return false

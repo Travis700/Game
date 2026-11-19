@@ -151,6 +151,7 @@ func _ready() -> void:
 
 	_footsteps = Footsteps.new()
 	_footsteps.name = "Footsteps"
+	_footsteps.paced = true
 	add_child(_footsteps)
 	flashlight.set_meta("base_energy", flashlight.light_energy)
 	# A torch's beam, not an even cone: a hot centre and a ring from the reflector, dust in the air.

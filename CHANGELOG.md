@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Fixed: a monster that chased you right up to a wall or a desk could stop just out of reach and stand there, frozen. It now closes the last stretch and catches you.
+- New footstep recordings for the halls, the gym floor and the grass (eight of each, never the same one twice in a row).
+- Your steps keep an easy rhythm when you walk, and when you run they start a little quicker and keep quickening for the first couple of seconds.
+
 ## 1.2.0
 
 **In your hands**
